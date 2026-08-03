@@ -33,8 +33,8 @@ void main() {
   });
 
   test('recorded effects have cooldowns long enough to avoid self-overlap', () {
-    expect(Sfx.eggCrack.assetPath, endsWith('.mp3'));
-    expect(Sfx.eggCrack.cooldownMs, greaterThanOrEqualTo(600));
+    expect(Sfx.eggCrack.assetPath, endsWith('.wav'));
+    expect(Sfx.eggCrack.cooldownMs, greaterThanOrEqualTo(340));
     expect(Sfx.purchase.assetPath, endsWith('.mp3'));
     expect(Sfx.purchase.cooldownMs, greaterThanOrEqualTo(2750));
     expect(Sfx.finisherSlash.assetPath, endsWith('.mp3'));

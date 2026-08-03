@@ -6,7 +6,7 @@ class AudioAssets {
   static const musicBossBattle = 'sounds/music/boss_music.mp3';
   static const musicFinalBoss = 'sounds/music/final_boss_music.mp3';
 
-  static const sfxEggCrack = 'sounds/sfx/egg_crack_recorded.mp3';
+  static const sfxEggCrack = 'sounds/sfx/egg_crack_recorded.wav';
   static const sfxHatchReveal = 'sounds/sfx/hatch_reveal.wav';
   static const sfxRareChime = 'sounds/sfx/rare_chime.wav';
   static const sfxCoinReward = 'sounds/sfx/coin_reward.wav';
