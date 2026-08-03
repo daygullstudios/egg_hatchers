@@ -12,12 +12,7 @@ import 'game_sprite.dart';
 import 'hatching_egg_widgets.dart';
 
 /// Stages of the egg cracking hatch reveal animation.
-enum _HatchStage {
-  gentleShake,
-  cracking,
-  pop,
-  revealed,
-}
+enum _HatchStage { gentleShake, cracking, pop, revealed }
 
 /// Animated dialog for Triple Hatch showing one crack then three results.
 class MultiHatchDialog extends StatefulWidget {
@@ -29,6 +24,7 @@ class MultiHatchDialog extends StatefulWidget {
     this.customSprites,
     this.sourceEggId,
     this.masteryLevel = 0,
+    this.initialDelay = const Duration(milliseconds: 900),
   });
 
   final Egg egg;
@@ -37,6 +33,7 @@ class MultiHatchDialog extends StatefulWidget {
   final CustomSpriteService? customSprites;
   final String? sourceEggId;
   final int masteryLevel;
+  final Duration initialDelay;
 
   static Future<void> show(
     BuildContext context, {
@@ -46,6 +43,7 @@ class MultiHatchDialog extends StatefulWidget {
     CustomSpriteService? customSprites,
     String? sourceEggId,
     int masteryLevel = 0,
+    Duration initialDelay = const Duration(milliseconds: 900),
   }) {
     return showDialog<void>(
       context: context,
@@ -57,6 +55,7 @@ class MultiHatchDialog extends StatefulWidget {
         customSprites: customSprites,
         sourceEggId: sourceEggId,
         masteryLevel: masteryLevel,
+        initialDelay: initialDelay,
       ),
     );
   }
@@ -113,7 +112,7 @@ class _MultiHatchDialogState extends State<MultiHatchDialog>
   }
 
   Future<void> _runHatchSequence() async {
-    await Future<void>.delayed(const Duration(milliseconds: 900));
+    await Future<void>.delayed(widget.initialDelay);
     if (!mounted) return;
 
     setState(() {
@@ -150,8 +149,7 @@ class _MultiHatchDialogState extends State<MultiHatchDialog>
     super.dispose();
   }
 
-  bool get _hasMutation =>
-      widget.results.any((r) => !r.mutation.isNormal);
+  bool get _hasMutation => widget.results.any((r) => !r.mutation.isNormal);
 
   double get _shakeAmount {
     switch (_stage) {
@@ -187,10 +185,7 @@ class _MultiHatchDialogState extends State<MultiHatchDialog>
     final eggSize = screenWidth < 360 ? 58.0 : 68.0;
     final accent = _hasMutation && revealed
         ? GameTheme.mutationAccent(
-            widget.results
-                .firstWhere((r) => !r.mutation.isNormal)
-                .mutation
-                .id,
+            widget.results.firstWhere((r) => !r.mutation.isNormal).mutation.id,
           )
         : widget.theme.primaryColor;
 
@@ -256,29 +251,28 @@ class _MultiHatchDialogState extends State<MultiHatchDialog>
                             child: _buildResultsGrid(context),
                           )
                         : _stage == _HatchStage.pop
-                            ? ScaleTransition(
-                                scale: _popScale,
-                                child: AnimatedTripleEggRow(
-                                  egg: widget.egg,
-                                  eggSize: eggSize,
-                                  showCracks: true,
-                                  shakeAmount: 0,
-                                  shakePhase: 0,
-                                ),
-                              )
-                            : AnimatedBuilder(
-                                animation: _shakeController,
-                                builder: (context, _) {
-                                  return AnimatedTripleEggRow(
-                                    egg: widget.egg,
-                                    eggSize: eggSize,
-                                    showCracks:
-                                        _stage == _HatchStage.cracking,
-                                    shakeAmount: _shakeAmount,
-                                    shakePhase: _shakeAnimation.value,
-                                  );
-                                },
-                              ),
+                        ? ScaleTransition(
+                            scale: _popScale,
+                            child: AnimatedTripleEggRow(
+                              egg: widget.egg,
+                              eggSize: eggSize,
+                              showCracks: true,
+                              shakeAmount: 0,
+                              shakePhase: 0,
+                            ),
+                          )
+                        : AnimatedBuilder(
+                            animation: _shakeController,
+                            builder: (context, _) {
+                              return AnimatedTripleEggRow(
+                                egg: widget.egg,
+                                eggSize: eggSize,
+                                showCracks: _stage == _HatchStage.cracking,
+                                shakeAmount: _shakeAmount,
+                                shakePhase: _shakeAnimation.value,
+                              );
+                            },
+                          ),
                   ),
                 ),
               ),
@@ -301,10 +295,7 @@ class _MultiHatchDialogState extends State<MultiHatchDialog>
                   height: 52,
                   child: FilledButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    style: GameTheme.filledButton(
-                      widget.theme,
-                      color: accent,
-                    ),
+                    style: GameTheme.filledButton(widget.theme, color: accent),
                     child: Text(
                       _hasMutation ? 'Amazing!' : 'Awesome!',
                       style: const TextStyle(
@@ -333,7 +324,10 @@ class _MultiHatchDialogState extends State<MultiHatchDialog>
           for (var i = 0; i < widget.results.length; i++)
             Expanded(
               child: Padding(
-                padding: EdgeInsets.only(left: i == 0 ? 0 : 6, right: i == 2 ? 0 : 6),
+                padding: EdgeInsets.only(
+                  left: i == 0 ? 0 : 6,
+                  right: i == 2 ? 0 : 6,
+                ),
                 child: _TripleResultTile(
                   result: widget.results[i],
                   theme: widget.theme,
@@ -408,8 +402,9 @@ class _TripleResultTile extends StatelessWidget {
       decoration: GameTheme.cardDecoration(
         theme,
         borderColor: isMutated ? mutationColor : null,
-        backgroundColor:
-            isMutated ? GameTheme.mutationTint(result.mutation.id) : null,
+        backgroundColor: isMutated
+            ? GameTheme.mutationTint(result.mutation.id)
+            : null,
       ),
       padding: EdgeInsets.all(compact ? 10 : 12),
       child: compact
@@ -417,8 +412,9 @@ class _TripleResultTile extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 GameAnimalPortrait(
-                  customSprite:
-                      customSprites?.getDisplaySprite(result.animal.id),
+                  customSprite: customSprites?.getDisplaySprite(
+                    result.animal.id,
+                  ),
                   animalId: result.animal.id,
                   spritePath: result.animal.spritePath,
                   fallbackEmoji: result.animal.emoji,
@@ -443,14 +439,11 @@ class _TripleResultTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  isMutated
-                      ? result.mutation.displayName
-                      : '$income/s',
+                  isMutated ? result.mutation.displayName : '$income/s',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight:
-                        isMutated ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: isMutated ? FontWeight.w700 : FontWeight.w500,
                     color: isMutated
                         ? mutationColor
                         : theme.cardTextSecondaryColor,
@@ -461,8 +454,9 @@ class _TripleResultTile extends StatelessWidget {
           : Row(
               children: [
                 GameAnimalPortrait(
-                  customSprite:
-                      customSprites?.getDisplaySprite(result.animal.id),
+                  customSprite: customSprites?.getDisplaySprite(
+                    result.animal.id,
+                  ),
                   animalId: result.animal.id,
                   spritePath: result.animal.spritePath,
                   fallbackEmoji: result.animal.emoji,
@@ -493,8 +487,9 @@ class _TripleResultTile extends StatelessWidget {
                             : '${result.animal.coinsPerSecond}/s base',
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight:
-                              isMutated ? FontWeight.w700 : FontWeight.w500,
+                          fontWeight: isMutated
+                              ? FontWeight.w700
+                              : FontWeight.w500,
                           color: isMutated
                               ? mutationColor
                               : theme.cardTextSecondaryColor,

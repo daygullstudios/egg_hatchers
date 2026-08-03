@@ -102,11 +102,12 @@ class _EggGolemDefeatAnimationState extends State<EggGolemDefeatAnimation>
     _soundGuard.maybeAt(t, 'crackSpread', 1000, audio.playEggCrack);
     _soundGuard.maybeAt(t, 'crackDeep', 3500, audio.playEggCrack);
     _soundGuard.maybeAt(t, 'armDetach', _armDetachStartMs, audio.playEggCrack);
-    _soundGuard.maybeAt(t, 'lightning', _lightningStartMs, () => audio.playSfx(Sfx.golemCrack));
-    _soundGuard.maybeAt(t, 'collapse', _collapseStartMs, () {
-      audio.playEggCrack();
-      audio.playSfx(Sfx.golemCrack);
-    });
+    _soundGuard.maybeAt(
+      t,
+      'collapseImpact',
+      _collapseStartMs + 150,
+      () => audio.playSfx(Sfx.golemCrack),
+    );
   }
 
   @override

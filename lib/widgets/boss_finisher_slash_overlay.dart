@@ -96,8 +96,7 @@ class _BossFinisherSlashOverlayState extends State<BossFinisherSlashOverlay>
     widget.onComplete(_totals);
   }
 
-  Offset _bossCenter(Size size) =>
-      Offset(size.width / 2, size.height * 0.48);
+  Offset _bossCenter(Size size) => Offset(size.width / 2, size.height * 0.48);
 
   double get _bossHitRadius => _bossDisplaySize * 0.52;
 
@@ -146,7 +145,11 @@ class _BossFinisherSlashOverlayState extends State<BossFinisherSlashOverlay>
     final roll = BossFinisherRewards.rollBonus(widget.boss.id, _random);
     _totals = _totals.addRoll(roll);
     if (roll.grantsReward) {
-      AudioScope.maybeOf(context)?.playRewardTriumph();
+      Future<void>.delayed(const Duration(milliseconds: 240), () {
+        if (mounted) {
+          AudioScope.maybeOf(context)?.playRewardTriumph();
+        }
+      });
     }
     _addFloater(mid, roll.message, isReward: roll.grantsReward);
   }
@@ -188,8 +191,9 @@ class _BossFinisherSlashOverlayState extends State<BossFinisherSlashOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final remaining =
-        (BossFinisherRewards.slashWindowSeconds - _elapsed).ceil().clamp(0, 5);
+    final remaining = (BossFinisherRewards.slashWindowSeconds - _elapsed)
+        .ceil()
+        .clamp(0, 5);
     final maxRolls = BossFinisherRewards.maxBonusRolls(widget.boss);
 
     return Material(
@@ -252,11 +256,14 @@ class _BossFinisherSlashOverlayState extends State<BossFinisherSlashOverlay>
                             color: f.isReward
                                 ? Colors.amber.shade200
                                 : f.isNoReward
-                                    ? Colors.white.withValues(alpha: 0.58)
-                                    : _style.sparkColor,
-                            fontSize: f.isReward ? 13 : (f.isNoReward ? 11 : 10),
-                            fontWeight:
-                                f.isReward ? FontWeight.bold : FontWeight.w600,
+                                ? Colors.white.withValues(alpha: 0.58)
+                                : _style.sparkColor,
+                            fontSize: f.isReward
+                                ? 13
+                                : (f.isNoReward ? 11 : 10),
+                            fontWeight: f.isReward
+                                ? FontWeight.bold
+                                : FontWeight.w600,
                             shadows: const [
                               Shadow(color: Colors.black87, blurRadius: 4),
                             ],
@@ -313,7 +320,9 @@ class _BossFinisherSlashOverlayState extends State<BossFinisherSlashOverlay>
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
-                          color: widget.theme.secondaryColor.withValues(alpha: 0.9),
+                          color: widget.theme.secondaryColor.withValues(
+                            alpha: 0.9,
+                          ),
                           shadows: const [
                             Shadow(color: Colors.black54, blurRadius: 3),
                           ],

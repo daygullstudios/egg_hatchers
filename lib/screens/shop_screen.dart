@@ -45,6 +45,14 @@ class ShopScreen extends StatelessWidget {
   final CustomSpriteService customSprites;
   final CustomEggService customEggs;
 
+  Duration _hatchLeadIn(BuildContext context) {
+    final audio = AudioScope.maybeOf(context);
+    if (audio?.sfxEnabled == true && audio?.userUnlocked == true) {
+      return const Duration(milliseconds: 2850);
+    }
+    return const Duration(milliseconds: 900);
+  }
+
   void _openCustomEggsScreen(BuildContext context) {
     final theme = preferences.selectedTheme;
     openWithThemedTransition(
@@ -107,11 +115,7 @@ class ShopScreen extends StatelessWidget {
 
     game.buyTripleHatch(egg);
     UiSound.purchase(context);
-    final results = game.hatchEggMultiple(
-      egg,
-      3,
-      customEgg: customDefinition,
-    );
+    final results = game.hatchEggMultiple(egg, 3, customEgg: customDefinition);
 
     if (context.mounted) {
       await MultiHatchDialog.show(
@@ -124,6 +128,7 @@ class ShopScreen extends StatelessWidget {
             ? egg.id
             : null,
         masteryLevel: game.masteryLevelForEgg(egg.id),
+        initialDelay: _hatchLeadIn(context),
       );
       if (context.mounted) {
         showPendingHatchNotifications(
@@ -179,6 +184,7 @@ class ShopScreen extends StatelessWidget {
         result: result,
         theme: bg,
         customSprites: customSprites,
+        initialDelay: _hatchLeadIn(context),
       );
       TutorialService.instance.notifyHatchDialogClosed();
       if (context.mounted) {
@@ -194,7 +200,12 @@ class ShopScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([game, preferences, customEggs, customSprites]),
+      listenable: Listenable.merge([
+        game,
+        preferences,
+        customEggs,
+        customSprites,
+      ]),
       builder: (context, _) {
         final bg = preferences.selectedTheme;
         final lifetime = game.lifetimeCoinsEarned;
@@ -214,223 +225,218 @@ class ShopScreen extends StatelessWidget {
                 _buyAndHatch(context, GameData.eggs.first),
           },
           child: ReturnToHatcheryPopScope(
-          theme: bg,
-          child: QuestNotificationListener(
-          game: game,
-          preferences: preferences,
-          child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: PhoneWidthAppBar(
-            title: '🛒 Egg Shop',
-            titleStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-            backgroundColor: bg.appBarColor,
-            foregroundColor: Colors.white,
-            automaticallyImplyLeading: false,
-            leading: ReturnToHatcheryBackButton(
-              theme: bg,
-              color: Colors.white,
-              tutorialKey: TutorialTargets.screenBackButton,
-            ),
-            actions: [
-              CompactAppBarIconAction(
-                icon: Icons.egg_alt_outlined,
-                tooltip: 'Custom Eggs',
-                onPressed: () => _openCustomEggsScreen(context),
-              ),
-            ],
-          ),
-          body: GameBackground(
             theme: bg,
-            child: PhoneWidthLayout(
-              child: Column(
-                children: [
-                  CoinHeader(
-                    coins: game.coins,
-                    coinsPerSecond: game.coinsPerSecond,
-                    theme: bg,
+            child: QuestNotificationListener(
+              game: game,
+              preferences: preferences,
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                appBar: PhoneWidthAppBar(
+                  title: '🛒 Egg Shop',
+                  titleStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
                   ),
-                  const SizedBox(height: 18),
-                  Expanded(
-                    child: ListView(
+                  backgroundColor: bg.appBarColor,
+                  foregroundColor: Colors.white,
+                  automaticallyImplyLeading: false,
+                  leading: ReturnToHatcheryBackButton(
+                    theme: bg,
+                    color: Colors.white,
+                    tutorialKey: TutorialTargets.screenBackButton,
+                  ),
+                  actions: [
+                    CompactAppBarIconAction(
+                      icon: Icons.egg_alt_outlined,
+                      tooltip: 'Custom Eggs',
+                      onPressed: () => _openCustomEggsScreen(context),
+                    ),
+                  ],
+                ),
+                body: GameBackground(
+                  theme: bg,
+                  child: PhoneWidthLayout(
+                    child: Column(
                       children: [
-                                  for (var i = 0;
-                                      i < GameData.eggs.length;
-                                      i++) ...[
-                                    if (i > 0) const SizedBox(height: 14),
-                                    EggCard(
-                                      egg: GameData.eggs[i],
-                                      theme: bg,
-                                      buyButtonKey: i == 0
-                                          ? TutorialTargets.basicEggBuyButton
-                                          : null,
-                                      isUnlocked:
-                                          game.isEggUnlocked(GameData.eggs[i]),
-                                      unlockMessageOverride:
-                                          game.eggLockedDisplayMessage(
+                        CoinHeader(
+                          coins: game.coins,
+                          coinsPerSecond: game.coinsPerSecond,
+                          theme: bg,
+                        ),
+                        const SizedBox(height: 18),
+                        Expanded(
+                          child: ListView(
+                            children: [
+                              for (
+                                var i = 0;
+                                i < GameData.eggs.length;
+                                i++
+                              ) ...[
+                                if (i > 0) const SizedBox(height: 14),
+                                EggCard(
+                                  egg: GameData.eggs[i],
+                                  theme: bg,
+                                  buyButtonKey: i == 0
+                                      ? TutorialTargets.basicEggBuyButton
+                                      : null,
+                                  isUnlocked: game.isEggUnlocked(
+                                    GameData.eggs[i],
+                                  ),
+                                  unlockMessageOverride: game
+                                      .eggLockedDisplayMessage(
                                         GameData.eggs[i],
                                       ),
-                                      canAfford:
-                                          game.canAfford(GameData.eggs[i]),
-                                      lifetimeCoinsEarned:
-                                          game.lifetimeCoinsEarned,
-                                      tripleHatchCost: GameService.tripleHatchCost(
-                                        GameData.eggs[i],
-                                      ),
-                                      canAffordTripleHatch:
-                                          game.canAffordTripleHatch(
-                                        GameData.eggs[i],
-                                      ),
-                                      onBuy: () => _buyAndHatch(
-                                        context,
-                                        GameData.eggs[i],
-                                      ),
-                                      onTripleHatch: () => _tripleHatch(
-                                        context,
-                                        GameData.eggs[i],
-                                      ),
-                                      masteryProgress:
-                                          game.eggMasteryProgress(
-                                        GameData.eggs[i].id,
-                                      ),
+                                  canAfford: game.canAfford(GameData.eggs[i]),
+                                  lifetimeCoinsEarned: game.lifetimeCoinsEarned,
+                                  tripleHatchCost: GameService.tripleHatchCost(
+                                    GameData.eggs[i],
+                                  ),
+                                  canAffordTripleHatch: game
+                                      .canAffordTripleHatch(GameData.eggs[i]),
+                                  onBuy: () =>
+                                      _buyAndHatch(context, GameData.eggs[i]),
+                                  onTripleHatch: () =>
+                                      _tripleHatch(context, GameData.eggs[i]),
+                                  masteryProgress: game.eggMasteryProgress(
+                                    GameData.eggs[i].id,
+                                  ),
+                                ),
+                              ],
+                              if (GameData.battleEggs.isNotEmpty) ...[
+                                const SizedBox(height: 24),
+                                Text(
+                                  'Battle Eggs',
+                                  style: GameTheme.sectionTitle(bg),
+                                ),
+                                const SizedBox(height: 12),
+                                for (
+                                  var i = 0;
+                                  i < GameData.battleEggs.length;
+                                  i++
+                                ) ...[
+                                  if (i > 0) const SizedBox(height: 14),
+                                  EggCard(
+                                    egg: GameData.battleEggs[i],
+                                    theme: bg,
+                                    isUnlocked: game.isEggUnlocked(
+                                      GameData.battleEggs[i],
                                     ),
-                                  ],
-                                  if (GameData.battleEggs.isNotEmpty) ...[
-                                    const SizedBox(height: 24),
-                                    Text(
-                                      'Battle Eggs',
-                                      style: GameTheme.sectionTitle(bg),
+                                    canAfford: game.canAfford(
+                                      GameData.battleEggs[i],
                                     ),
-                                    const SizedBox(height: 12),
-                                    for (var i = 0;
-                                        i < GameData.battleEggs.length;
-                                        i++) ...[
-                                      if (i > 0) const SizedBox(height: 14),
-                                      EggCard(
-                                        egg: GameData.battleEggs[i],
+                                    lifetimeCoinsEarned:
+                                        game.lifetimeCoinsEarned,
+                                    battleTokens: game.battleTokens,
+                                    tripleHatchCost:
+                                        GameService.tripleHatchCost(
+                                          GameData.battleEggs[i],
+                                        ),
+                                    canAffordTripleHatch: game
+                                        .canAffordTripleHatch(
+                                          GameData.battleEggs[i],
+                                        ),
+                                    onBuy: () => _buyAndHatch(
+                                      context,
+                                      GameData.battleEggs[i],
+                                    ),
+                                    onTripleHatch: () => _tripleHatch(
+                                      context,
+                                      GameData.battleEggs[i],
+                                    ),
+                                    masteryProgress: game.eggMasteryProgress(
+                                      GameData.battleEggs[i].id,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                              const SizedBox(height: 24),
+                              Text(
+                                'Custom Eggs',
+                                style: GameTheme.sectionTitle(bg),
+                              ),
+                              const SizedBox(height: 12),
+                              if (customShopEggs.isNotEmpty) ...[
+                                for (
+                                  var i = 0;
+                                  i < customShopEggs.length;
+                                  i++
+                                ) ...[
+                                  if (i > 0) const SizedBox(height: 14),
+                                  Builder(
+                                    builder: (context) {
+                                      final customEgg = customShopEggs[i];
+                                      final eggModel = customEgg.toEgg(
+                                        lifetimeCoinsEarned: lifetime,
+                                        rebirthLevel: game.rebirthLevel,
+                                      );
+                                      return EggCard(
+                                        egg: eggModel,
                                         theme: bg,
-                                        isUnlocked: game.isEggUnlocked(
-                                          GameData.battleEggs[i],
-                                        ),
-                                        canAfford: game.canAfford(
-                                          GameData.battleEggs[i],
-                                        ),
-                                        lifetimeCoinsEarned:
-                                            game.lifetimeCoinsEarned,
-                                        battleTokens: game.battleTokens,
+                                        isUnlocked: true,
+                                        canAfford: game.canAfford(eggModel),
+                                        lifetimeCoinsEarned: lifetime,
+                                        isCustomEgg: true,
+                                        customSprites: customSprites,
                                         tripleHatchCost:
                                             GameService.tripleHatchCost(
-                                          GameData.battleEggs[i],
-                                        ),
-                                        canAffordTripleHatch:
-                                            game.canAffordTripleHatch(
-                                          GameData.battleEggs[i],
-                                        ),
-                                        onBuy: () => _buyAndHatch(
-                                          context,
-                                          GameData.battleEggs[i],
-                                        ),
-                                        onTripleHatch: () => _tripleHatch(
-                                          context,
-                                          GameData.battleEggs[i],
-                                        ),
-                                        masteryProgress:
-                                            game.eggMasteryProgress(
-                                          GameData.battleEggs[i].id,
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                  const SizedBox(height: 24),
-                                  Text(
-                                    'Custom Eggs',
-                                    style: GameTheme.sectionTitle(bg),
+                                              eggModel,
+                                            ),
+                                        canAffordTripleHatch: game
+                                            .canAffordTripleHatch(eggModel),
+                                        onBuy: () =>
+                                            _buyAndHatch(context, eggModel),
+                                        onTripleHatch: () =>
+                                            _tripleHatch(context, eggModel),
+                                      );
+                                    },
                                   ),
-                                  const SizedBox(height: 12),
-                                  if (customShopEggs.isNotEmpty) ...[
-                                    for (var i = 0;
-                                        i < customShopEggs.length;
-                                        i++) ...[
-                                      if (i > 0) const SizedBox(height: 14),
-                                      Builder(
-                                        builder: (context) {
-                                          final customEgg = customShopEggs[i];
-                                          final eggModel = customEgg.toEgg(
-                                            lifetimeCoinsEarned: lifetime,
-                                            rebirthLevel: game.rebirthLevel,
-                                          );
-                                          return EggCard(
-                                            egg: eggModel,
-                                            theme: bg,
-                                            isUnlocked: true,
-                                            canAfford: game.canAfford(eggModel),
-                                            lifetimeCoinsEarned: lifetime,
-                                            isCustomEgg: true,
-                                            customSprites: customSprites,
-                                            tripleHatchCost:
-                                                GameService.tripleHatchCost(
-                                              eggModel,
-                                            ),
-                                            canAffordTripleHatch:
-                                                game.canAffordTripleHatch(
-                                              eggModel,
-                                            ),
-                                            onBuy: () => _buyAndHatch(
-                                              context,
-                                              eggModel,
-                                            ),
-                                            onTripleHatch: () => _tripleHatch(
-                                              context,
-                                              eggModel,
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                    const SizedBox(height: 14),
-                                    OutlinedButton.icon(
-                                      onPressed: () =>
-                                          _openCreateCustomEgg(context),
-                                      icon: const Icon(Icons.add_rounded),
-                                      label: const Text('Create Custom Egg'),
-                                      style: OutlinedButton.styleFrom(
-                                        minimumSize:
-                                            const Size(double.infinity, 44),
-                                        foregroundColor: bg.primaryColor,
-                                        side: BorderSide(color: bg.primaryColor),
-                                      ),
-                                    ),
-                                  ]
-                                  else if (hasHiddenCustomEggs)
-                                    _CustomEggsShopNotice(
-                                      theme: bg,
-                                      message:
-                                          'You have custom eggs, but none are '
-                                          'enabled for the shop.',
-                                      buttonLabel: 'Manage Custom Eggs',
-                                      onPressed: () =>
-                                          _openCustomEggsScreen(context),
-                                    )
-                                  else
-                                    _CustomEggsShopNotice(
-                                      theme: bg,
-                                      message:
-                                          'No custom eggs yet.\n'
-                                          'Create your own egg to hatch your '
-                                          'favorite animals.',
-                                      buttonLabel: 'Create Custom Egg',
-                                      onPressed: () =>
-                                          _openCreateCustomEgg(context),
-                                    ),
                                 ],
-                              ),
-                            ),
-                          ],
+                                const SizedBox(height: 14),
+                                OutlinedButton.icon(
+                                  onPressed: () =>
+                                      _openCreateCustomEgg(context),
+                                  icon: const Icon(Icons.add_rounded),
+                                  label: const Text('Create Custom Egg'),
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size(
+                                      double.infinity,
+                                      44,
+                                    ),
+                                    foregroundColor: bg.primaryColor,
+                                    side: BorderSide(color: bg.primaryColor),
+                                  ),
+                                ),
+                              ] else if (hasHiddenCustomEggs)
+                                _CustomEggsShopNotice(
+                                  theme: bg,
+                                  message:
+                                      'You have custom eggs, but none are '
+                                      'enabled for the shop.',
+                                  buttonLabel: 'Manage Custom Eggs',
+                                  onPressed: () =>
+                                      _openCustomEggsScreen(context),
+                                )
+                              else
+                                _CustomEggsShopNotice(
+                                  theme: bg,
+                                  message:
+                                      'No custom eggs yet.\n'
+                                      'Create your own egg to hatch your '
+                                      'favorite animals.',
+                                  buttonLabel: 'Create Custom Egg',
+                                  onPressed: () =>
+                                      _openCreateCustomEgg(context),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
-        ),
-        ),
         );
       },
     );
@@ -478,10 +484,7 @@ class _CustomEggsShopNotice extends StatelessWidget {
             ),
             child: Text(
               buttonLabel,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ),
         ],

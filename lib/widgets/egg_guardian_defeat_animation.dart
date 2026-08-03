@@ -64,14 +64,15 @@ class _EggGuardianDefeatAnimationState extends State<EggGuardianDefeatAnimation>
     super.initState();
     _fragments = _ShellFragment.generate(32);
     _soundGuard = CinematicSoundGuard();
-    _controller = AnimationController(
-      vsync: this,
-      duration: EggGuardianDefeatAnimation.duration,
-    )
-      ..addStatusListener((status) {
-        if (status == AnimationStatus.completed) _finishOnce();
-      })
-      ..forward();
+    _controller =
+        AnimationController(
+            vsync: this,
+            duration: EggGuardianDefeatAnimation.duration,
+          )
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed) _finishOnce();
+          })
+          ..forward();
   }
 
   void _finishOnce() {
@@ -105,17 +106,21 @@ class _EggGuardianDefeatAnimationState extends State<EggGuardianDefeatAnimation>
     final audio = AudioScope.maybeOf(context);
     if (audio == null) return;
     _soundGuard.maybeAt(t, 'firstCrack', 1000, audio.playEggCrack);
-    _soundGuard.maybeAt(t, 'leftArm', _leftArmStart, () {
-      audio.playEggCrack();
-      audio.playSfx(Sfx.guardianShatter);
-    });
+    _soundGuard.maybeAt(
+      t,
+      'leftArm',
+      _leftArmStart,
+      () => audio.playSfx(Sfx.guardianShatter),
+    );
     _soundGuard.maybeAt(t, 'rightArm', _rightArmStart, audio.playEggCrack);
     _soundGuard.maybeAt(t, 'leftLeg', _leftLegStart, audio.playEggCrack);
     _soundGuard.maybeAt(t, 'rightLeg', _rightLegStart, audio.playEggCrack);
-    _soundGuard.maybeAt(t, 'torso', _torsoStartMs, () {
-      audio.playEggCrack();
-      audio.playSfx(Sfx.guardianShatter);
-    });
+    _soundGuard.maybeAt(
+      t,
+      'torso',
+      _torsoStartMs,
+      () => audio.playSfx(Sfx.guardianShatter),
+    );
     _soundGuard.maybeAt(t, 'burst', _burstEndMs, audio.playEggCrack);
   }
 
@@ -140,15 +145,20 @@ class _EggGuardianDefeatAnimationState extends State<EggGuardianDefeatAnimation>
         final darken = (0.28 + zoomPhase * 0.32).clamp(0.0, 0.62);
 
         final buildUp = _phase(1000, 3000);
-        final crackSpread = Curves.easeIn.transform(_phase(1000, _torsoStartMs));
+        final crackSpread = Curves.easeIn.transform(
+          _phase(1000, _torsoStartMs),
+        );
 
         final leftArmBreak = _stageProgress(_leftArmStart, _leftArmEnd);
         final rightArmBreak = _stageProgress(_rightArmStart, _rightArmEnd);
         final leftLegBreak = _stageProgress(_leftLegStart, _leftLegEnd);
         final rightLegBreak = _stageProgress(_rightLegStart, _rightLegEnd);
-        final torsoBurst = Curves.easeIn.transform(_phase(_torsoStartMs, _burstEndMs));
+        final torsoBurst = Curves.easeIn.transform(
+          _phase(_torsoStartMs, _burstEndMs),
+        );
 
-        final stageShake = _preBreakShakeBoost(t, _leftArmStart) +
+        final stageShake =
+            _preBreakShakeBoost(t, _leftArmStart) +
             _preBreakShakeBoost(t, _rightArmStart) +
             _preBreakShakeBoost(t, _leftLegStart) +
             _preBreakShakeBoost(t, _rightLegStart) +
@@ -179,7 +189,9 @@ class _EggGuardianDefeatAnimationState extends State<EggGuardianDefeatAnimation>
         final energyLeak = _phase(3000, _torsoStartMs);
 
         final torsoFragmentTravel = t >= _torsoStartMs
-            ? Curves.easeOutCubic.transform(_phase(_torsoStartMs, _burstEndMs + 600))
+            ? Curves.easeOutCubic.transform(
+                _phase(_torsoStartMs, _burstEndMs + 600),
+              )
             : 0.0;
         final shockwave = t >= _torsoStartMs
             ? Curves.easeOut.transform(_phase(_torsoStartMs, _burstEndMs + 400))
@@ -247,14 +259,16 @@ class _EggGuardianDefeatAnimationState extends State<EggGuardianDefeatAnimation>
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: const Color(0xFF42A5F5)
-                                            .withValues(alpha: glowPulse * 0.5),
+                                        color: const Color(
+                                          0xFF42A5F5,
+                                        ).withValues(alpha: glowPulse * 0.5),
                                         blurRadius: 36,
                                         spreadRadius: 8,
                                       ),
                                       BoxShadow(
-                                        color: const Color(0xFFFFD54F)
-                                            .withValues(alpha: glowPulse * 0.25),
+                                        color: const Color(
+                                          0xFFFFD54F,
+                                        ).withValues(alpha: glowPulse * 0.25),
                                         blurRadius: 24,
                                         spreadRadius: 4,
                                       ),
@@ -269,7 +283,10 @@ class _EggGuardianDefeatAnimationState extends State<EggGuardianDefeatAnimation>
                                 semanticLabel: widget.boss.name,
                               ),
                               CustomPaint(
-                                size: Size(_baseSpriteSize, _baseSpriteSize * 1.12),
+                                size: Size(
+                                  _baseSpriteSize,
+                                  _baseSpriteSize * 1.12,
+                                ),
                                 painter: _GuardianCrackOverlayPainter(
                                   progress: crackSpread,
                                   energy: energyLeak,
@@ -282,7 +299,10 @@ class _EggGuardianDefeatAnimationState extends State<EggGuardianDefeatAnimation>
                                   child: _BodyCoverPatch(
                                     width: 34,
                                     height: 50,
-                                    opacity: (leftArmBreak * 2.5).clamp(0.0, 1.0),
+                                    opacity: (leftArmBreak * 2.5).clamp(
+                                      0.0,
+                                      1.0,
+                                    ),
                                   ),
                                 ),
                               if (rightArmBreak > 0.04)
@@ -292,7 +312,10 @@ class _EggGuardianDefeatAnimationState extends State<EggGuardianDefeatAnimation>
                                   child: _BodyCoverPatch(
                                     width: 34,
                                     height: 50,
-                                    opacity: (rightArmBreak * 2.5).clamp(0.0, 1.0),
+                                    opacity: (rightArmBreak * 2.5).clamp(
+                                      0.0,
+                                      1.0,
+                                    ),
                                   ),
                                 ),
                               if (leftLegBreak > 0.04)
@@ -302,7 +325,10 @@ class _EggGuardianDefeatAnimationState extends State<EggGuardianDefeatAnimation>
                                   child: _BodyCoverPatch(
                                     width: 30,
                                     height: 38,
-                                    opacity: (leftLegBreak * 2.5).clamp(0.0, 1.0),
+                                    opacity: (leftLegBreak * 2.5).clamp(
+                                      0.0,
+                                      1.0,
+                                    ),
                                   ),
                                 ),
                               if (rightLegBreak > 0.04)
@@ -312,7 +338,10 @@ class _EggGuardianDefeatAnimationState extends State<EggGuardianDefeatAnimation>
                                   child: _BodyCoverPatch(
                                     width: 30,
                                     height: 38,
-                                    opacity: (rightLegBreak * 2.5).clamp(0.0, 1.0),
+                                    opacity: (rightLegBreak * 2.5).clamp(
+                                      0.0,
+                                      1.0,
+                                    ),
                                   ),
                                 ),
                             ],
@@ -355,11 +384,15 @@ class _EggGuardianDefeatAnimationState extends State<EggGuardianDefeatAnimation>
                   ),
                 if (burstFlash > 0)
                   ColoredBox(
-                    color: const Color(0xFF81D4FA).withValues(alpha: burstFlash * 0.42),
+                    color: const Color(
+                      0xFF81D4FA,
+                    ).withValues(alpha: burstFlash * 0.42),
                   ),
                 if (burstFlash > 0)
                   ColoredBox(
-                    color: const Color(0xFFFFF8E1).withValues(alpha: burstFlash * 0.18),
+                    color: const Color(
+                      0xFFFFF8E1,
+                    ).withValues(alpha: burstFlash * 0.18),
                   ),
                 if (energyIntensity > 0)
                   Transform.translate(
@@ -463,7 +496,10 @@ class _GuardianCrackOverlayPainter extends CustomPainter {
     for (var i = 0; i < 6; i++) {
       final angle = -math.pi / 2 + i * math.pi / 3;
       final len = 20 + progress * 38;
-      final end = Offset(cx + math.cos(angle) * len, cy + math.sin(angle) * len);
+      final end = Offset(
+        cx + math.cos(angle) * len,
+        cy + math.sin(angle) * len,
+      );
       final mid = Offset.lerp(Offset(cx, cy), end, progress * 0.6)!;
       canvas.drawLine(Offset(cx, cy), mid, crack);
       canvas.drawLine(mid, end, glow);
@@ -492,7 +528,9 @@ class _GuardianRuneRingPainter extends CustomPainter {
     final maxDim = math.max(size.width, size.height);
 
     final ringPaint = Paint()
-      ..color = const Color(0xFF64B5F6).withValues(alpha: intensity * fade * 0.5)
+      ..color = const Color(
+        0xFF64B5F6,
+      ).withValues(alpha: intensity * fade * 0.5)
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
 
@@ -513,7 +551,9 @@ class _GuardianRuneRingPainter extends CustomPainter {
           height: maxDim * (0.04 + shockwave * 0.08),
         ),
         Paint()
-          ..color = const Color(0xFFFFD54F).withValues(alpha: fade * shockwave * 0.25)
+          ..color = const Color(
+            0xFFFFD54F,
+          ).withValues(alpha: fade * shockwave * 0.25)
           ..style = PaintingStyle.stroke
           ..strokeWidth = 3,
       );
@@ -628,13 +668,17 @@ class _StagedBodyBreakPainter extends CustomPainter {
 
     for (final f in fragments) {
       if (torsoFragmentTravel <= 0) continue;
-      final localT = ((torsoFragmentTravel - f.delay) / (1 - f.delay)).clamp(0.0, 1.0);
+      final localT = ((torsoFragmentTravel - f.delay) / (1 - f.delay)).clamp(
+        0.0,
+        1.0,
+      );
       if (localT <= 0) continue;
       final eased = Curves.easeOutCubic.transform(localT);
       final burstBoost = torsoBurst * 0.65;
       final dist = f.distance * maxDim * (eased + burstBoost);
       final gravity = eased * eased * maxDim * 0.12;
-      final pos = center +
+      final pos =
+          center +
           Offset(
             math.cos(f.angle) * dist,
             math.sin(f.angle) * dist * 0.48 + gravity,
@@ -647,14 +691,22 @@ class _StagedBodyBreakPainter extends CustomPainter {
       canvas.rotate(f.rotation + eased * math.pi);
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset.zero, width: f.size, height: f.size * 0.75),
+          Rect.fromCenter(
+            center: Offset.zero,
+            width: f.size,
+            height: f.size * 0.75,
+          ),
           const Radius.circular(3),
         ),
         Paint()..color = const Color(0xFFECEFF1).withValues(alpha: alpha * 0.9),
       );
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset.zero, width: f.size, height: f.size * 0.75),
+          Rect.fromCenter(
+            center: Offset.zero,
+            width: f.size,
+            height: f.size * 0.75,
+          ),
           const Radius.circular(3),
         ),
         Paint()
@@ -732,13 +784,18 @@ class _StagedBodyBreakPainter extends CustomPainter {
         final chipT = (progress - i * 0.06).clamp(0.0, 1.0);
         if (chipT <= 0) continue;
         final cx = attach.dx + fallDir * Curves.easeIn.transform(chipT) * 45;
-        final cy = attach.dy + Curves.easeIn.transform(chipT) * Curves.easeIn.transform(chipT) * 70;
+        final cy =
+            attach.dy +
+            Curves.easeIn.transform(chipT) *
+                Curves.easeIn.transform(chipT) *
+                70;
         canvas.drawRRect(
           RRect.fromRectAndRadius(
             Rect.fromCenter(center: Offset(cx, cy), width: 7, height: 5),
             const Radius.circular(2),
           ),
-          Paint()..color = const Color(0xFFECEFF1).withValues(alpha: fade * 0.65),
+          Paint()
+            ..color = const Color(0xFFECEFF1).withValues(alpha: fade * 0.65),
         );
       }
     }
@@ -755,7 +812,9 @@ class _StagedBodyBreakPainter extends CustomPainter {
           height: 12 + landT * 8,
         ),
         Paint()
-          ..color = const Color(0xFFBCAAA4).withValues(alpha: fade * landT * 0.45),
+          ..color = const Color(
+            0xFFBCAAA4,
+          ).withValues(alpha: fade * landT * 0.45),
       );
     }
   }
@@ -776,9 +835,8 @@ class _StagedBodyBreakPainter extends CustomPainter {
     ];
     for (final (offset, w, h, rotDir) in plates) {
       final eased = Curves.easeOut.transform(burst);
-      final pos = center +
-          offset +
-          Offset(rotDir * eased * 55, eased * eased * 70);
+      final pos =
+          center + offset + Offset(rotDir * eased * 55, eased * eased * 70);
       final alpha = (fade * (1 - eased * 0.12)).clamp(0.0, 1.0);
       canvas.save();
       canvas.translate(pos.dx, pos.dy);
@@ -788,7 +846,8 @@ class _StagedBodyBreakPainter extends CustomPainter {
           Rect.fromCenter(center: Offset.zero, width: w, height: h),
           const Radius.circular(5),
         ),
-        Paint()..color = const Color(0xFFECEFF1).withValues(alpha: alpha * 0.92),
+        Paint()
+          ..color = const Color(0xFFECEFF1).withValues(alpha: alpha * 0.92),
       );
       canvas.drawRRect(
         RRect.fromRectAndRadius(
@@ -851,7 +910,8 @@ class _FractureSparkPainter extends CustomPainter {
       canvas.drawCircle(
         center,
         20 + torsoBurst * 40,
-        Paint()..color = const Color(0xFF81D4FA).withValues(alpha: alpha * 0.35),
+        Paint()
+          ..color = const Color(0xFF81D4FA).withValues(alpha: alpha * 0.35),
       );
     }
   }
@@ -922,7 +982,12 @@ class _GuardianEnergyBurstPainter extends CustomPainter {
 
     final bolts = isTorsoBurst
         ? [
-            _energyBolt(center, const Offset(-70, -50), const Offset(-20, 10), 4),
+            _energyBolt(
+              center,
+              const Offset(-70, -50),
+              const Offset(-20, 10),
+              4,
+            ),
             _energyBolt(center, const Offset(65, -45), const Offset(18, 15), 5),
             _energyBolt(center, const Offset(-30, 70), const Offset(5, 0), 4),
             _energyBolt(center, const Offset(40, 65), const Offset(-8, 5), 4),
@@ -954,7 +1019,8 @@ class _GuardianEnergyBurstPainter extends CustomPainter {
         canvas.drawCircle(
           center + Offset(math.cos(angle) * dist, math.sin(angle) * dist),
           2 + intensity * 2,
-          Paint()..color = const Color(0xFFFFD54F).withValues(alpha: alpha * 0.8),
+          Paint()
+            ..color = const Color(0xFFFFD54F).withValues(alpha: alpha * 0.8),
         );
       }
     }

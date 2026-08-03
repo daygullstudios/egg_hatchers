@@ -20,15 +20,22 @@ void main() {
     }
   });
 
-  test('registered effects are full layered WAV files, not tiny tones', () {
+  test('registered effects are complete audio files, not tiny tones', () {
     for (final sound in Sfx.values) {
       final file = File('assets/${sound.assetPath}');
-      expect(file.lengthSync(), greaterThan(10000), reason: sound.name);
-      expect(
-        file.readAsBytesSync().take(4).toList(),
-        [82, 73, 70, 70],
-        reason: '${sound.name} must be a RIFF WAV',
-      );
+      expect(file.lengthSync(), greaterThan(5000), reason: sound.name);
+      final header = file.readAsBytesSync().take(4).toList();
+      final isWave = header.toString() == [82, 73, 70, 70].toString();
+      final isMp3 =
+          header.length >= 2 && header[0] == 0xFF && header[1] >= 0xE0;
+      expect(isWave || isMp3, isTrue, reason: '${sound.name} format');
     }
+  });
+
+  test('recorded effects have cooldowns long enough to avoid self-overlap', () {
+    expect(Sfx.purchase.assetPath, endsWith('.mp3'));
+    expect(Sfx.purchase.cooldownMs, greaterThanOrEqualTo(2750));
+    expect(Sfx.finisherSlash.assetPath, endsWith('.mp3'));
+    expect(Sfx.finisherSlash.cooldownMs, greaterThanOrEqualTo(165));
   });
 }

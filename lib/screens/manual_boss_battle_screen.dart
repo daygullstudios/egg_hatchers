@@ -572,7 +572,6 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     if (_gameOver) return;
     _livesLostThisBattle++;
     _lives = max(0, _lives - 1);
-    _audio.playSfx(Sfx.playerHit);
     _floatingDamages.add(
       _FloatingDamage(
         x: _playerX,
@@ -582,6 +581,8 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     );
     if (_lives <= 0) {
       _endBattle(won: false);
+    } else {
+      _audio.playSfx(Sfx.playerHit);
     }
   }
 
@@ -611,7 +612,11 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
       _bossSpeedBannerIsRage = true;
       _bossSpeedBannerRemaining = 2.0;
       _shieldFlash = 0.45;
-      _audio.playSfx(Sfx.rageMode);
+      Future<void>.delayed(const Duration(milliseconds: 460), () {
+        if (mounted && _rageModeActive && !_gameOver) {
+          _audio.playSfx(Sfx.rageMode);
+        }
+      });
     } else {
       _bossSpeedBannerIsRage = false;
       _bossSpeedBannerRemaining = 1.8;

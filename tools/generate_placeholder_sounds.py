@@ -165,23 +165,6 @@ def coin_cluster(seed: int = 20, count: int = 5, duration: float = 0.72) -> list
     return normalized(output, 0.82)
 
 
-def register_purchase() -> list[float]:
-    output = blank(1.18)
-    add(output, mechanical_click(31, 1.1), gain=0.78)
-    add(output, mechanical_click(32, 0.8), at=0.085, gain=0.64)
-    drawer = lowpass(noise(0.34, 33), 1400)
-    drawer = highpass(drawer, 90)
-    for index in range(len(drawer)):
-        p = index / max(1, len(drawer) - 1)
-        drawer[index] *= math.sin(math.pi * p) * 0.42
-    add(output, drawer, at=0.12)
-    add(output, impact(34, heavy=False, duration=0.25), at=0.34, gain=0.58)
-    add(output, struck(1320, 0.75, decay=5.8, brightness=0.68), at=0.31, gain=0.72)
-    add(output, coin_cluster(35, count=6, duration=0.65), at=0.42, gain=0.74)
-    add(output, mechanical_click(41, 0.65), at=0.94, gain=0.52)
-    return normalized(output, 0.88)
-
-
 def ascending_chime(notes: tuple[float, ...], seed: int = 50, duration: float = 1.1) -> list[float]:
     output = blank(duration)
     spacing = min(0.18, duration / (len(notes) + 1))
@@ -265,10 +248,6 @@ def build_sounds() -> dict[str, list[float]]:
     add(rage, impact(130, heavy=True, duration=0.68), gain=0.76)
     add(rage, sweep(64, 118, 0.72, decay=1.5, roughness=0.09), gain=0.68)
 
-    slash = blank(0.38)
-    add(slash, whoosh(140, 0.31), gain=0.82)
-    add(slash, highpass(shaped_noise(0.09, 141, decay=36), 1400), at=0.19, gain=0.52)
-
     flap = blank(0.52)
     add(flap, whoosh(150, 0.44, low=True), gain=0.76)
     add(flap, impact(151, duration=0.2), at=0.18, gain=0.18)
@@ -298,7 +277,6 @@ def build_sounds() -> dict[str, list[float]]:
     return {
         "ui_tap": mechanical_click(2, 0.8),
         "confirm": confirm,
-        "purchase": register_purchase(),
         "error_locked": error,
         "hatch_reveal": hatch,
         "rare_chime": ascending_chime((880, 1174.66, 1396.91), duration=1.35),
@@ -312,7 +290,6 @@ def build_sounds() -> dict[str, list[float]]:
         "rage_mode": normalized(rage, 0.86),
         "victory": victory(),
         "defeat": defeat(),
-        "finisher_slash": normalized(slash, 0.8),
         "finisher_bonus": ascending_chime((698.46, 987.77, 1318.51), duration=0.9),
         "slime_pop": liquid_pop(30),
         "golem_crack": crack(40, heavy=True),

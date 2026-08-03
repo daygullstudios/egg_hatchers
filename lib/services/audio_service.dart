@@ -13,9 +13,9 @@ class AudioService extends ChangeNotifier {
   static const _musicVolumeKey = 'audioMusicVolume';
   static const _sfxVolumeKey = 'audioSfxVolume';
 
-  static const rewardTriumphCooldownMs = 700;
-  static const rewardBigCooldownMs = 1200;
-  static const assetPathCooldownMs = 100;
+  static const rewardTriumphCooldownMs = 1000;
+  static const rewardBigCooldownMs = 1500;
+  static const assetPathCooldownMs = 180;
   static const rewardRecentGapMs = 2000;
 
   final AudioPlayer _musicPlayer = AudioPlayer(playerId: 'music');
@@ -143,8 +143,9 @@ class AudioService extends ChangeNotifier {
 
     if (track == MusicTrack.finalBoss) {
       debugPrint('[AUDIO] finalBoss failed, falling back to bossBattle');
-      final fallbackPlayed =
-          await _tryPlayMusicAsset(MusicTrack.bossBattle.assetPath);
+      final fallbackPlayed = await _tryPlayMusicAsset(
+        MusicTrack.bossBattle.assetPath,
+      );
       if (fallbackPlayed) {
         _currentTrack = MusicTrack.bossBattle;
       } else {
@@ -178,7 +179,7 @@ class AudioService extends ChangeNotifier {
   Future<void> playBigRewardTriumph() => playSfx(Sfx.eggShardReward);
 
   Future<void> playFinisherSlash() =>
-      playSfx(Sfx.finisherSlash, volumeScale: 0.42);
+      playSfx(Sfx.finisherSlash, volumeScale: 0.72);
 
   Future<void> playHatchReveal({required bool bigReward}) {
     if (bigReward) return playSfx(Sfx.rareChime);
@@ -190,13 +191,13 @@ class AudioService extends ChangeNotifier {
     if (!_canPlaySfx(sfx)) return;
     if (!_canPlayAssetPath(sfx.assetPath)) return;
     if (!_canPlayRewardFamily(sfx.assetPath)) return;
+    _recordSfxPlayed(sfx);
 
     final player = _sfxPlayers[_sfxRoundRobin++ % _sfxPlayers.length];
     try {
       await player.stop();
       await player.setVolume((_sfxVolume * volumeScale).clamp(0.0, 1.0));
       await player.play(AssetSource(sfx.assetPath));
-      _recordSfxPlayed(sfx);
       if (kDebugMode) {
         debugPrint('[SFX] ${sfx.name} → ${sfx.assetPath}');
       }
@@ -218,7 +219,8 @@ class AudioService extends ChangeNotifier {
   bool _canPlayAssetPath(String assetPath) {
     final last = _lastAssetPathPlayed[assetPath];
     if (last == null) return true;
-    return DateTime.now().difference(last).inMilliseconds >= assetPathCooldownMs;
+    return DateTime.now().difference(last).inMilliseconds >=
+        assetPathCooldownMs;
   }
 
   bool _canPlayRewardFamily(String assetPath) {

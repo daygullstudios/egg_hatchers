@@ -37,7 +37,6 @@ class BackgroundsScreen extends StatelessWidget {
   final SpriteReferenceOverlayService referenceOverlay;
 
   Future<void> _selectTheme(BuildContext context, BackgroundTheme theme) async {
-    UiSound.click(context);
     await preferences.setBackgroundTheme(theme);
     if (context.mounted) {
       UiSound.confirm(context);
@@ -53,7 +52,6 @@ class BackgroundsScreen extends StatelessWidget {
     BuildContext context,
     AnimalSpriteTheme theme,
   ) async {
-    UiSound.click(context);
     await preferences.setAnimalSpriteTheme(theme);
     if (context.mounted) {
       UiSound.confirm(context);

@@ -10,12 +10,7 @@ import 'audio_scope.dart';
 import 'game_sprite.dart';
 
 /// Stages of the egg cracking hatch reveal animation.
-enum _HatchStage {
-  gentleShake,
-  cracking,
-  pop,
-  revealed,
-}
+enum _HatchStage { gentleShake, cracking, pop, revealed }
 
 /// Animated dialog shown after buying an egg to reveal the hatched animal.
 class HatchDialog extends StatefulWidget {
@@ -26,6 +21,7 @@ class HatchDialog extends StatefulWidget {
     required this.theme,
     this.customSprites,
     this.revealedTitle,
+    this.initialDelay = const Duration(milliseconds: 900),
   });
 
   final Egg egg;
@@ -33,6 +29,7 @@ class HatchDialog extends StatefulWidget {
   final BackgroundTheme theme;
   final CustomSpriteService? customSprites;
   final String? revealedTitle;
+  final Duration initialDelay;
 
   static Future<void> show(
     BuildContext context, {
@@ -41,6 +38,7 @@ class HatchDialog extends StatefulWidget {
     required BackgroundTheme theme,
     CustomSpriteService? customSprites,
     String? revealedTitle,
+    Duration initialDelay = const Duration(milliseconds: 900),
   }) {
     return showDialog<void>(
       context: context,
@@ -51,6 +49,7 @@ class HatchDialog extends StatefulWidget {
         theme: theme,
         customSprites: customSprites,
         revealedTitle: revealedTitle,
+        initialDelay: initialDelay,
       ),
     );
   }
@@ -108,7 +107,7 @@ class _HatchDialogState extends State<HatchDialog>
 
   Future<void> _runHatchSequence() async {
     // Stage 1: gentle shake
-    await Future<void>.delayed(const Duration(milliseconds: 900));
+    await Future<void>.delayed(widget.initialDelay);
     if (!mounted) return;
 
     // Stage 2: harder shake + cracks
@@ -196,10 +195,7 @@ class _HatchDialogState extends State<HatchDialog>
           ? GameTheme.mutationTint(widget.result.mutation.id)
           : widget.theme.cardColor,
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 420,
-          maxHeight: maxHeight,
-        ),
+        constraints: BoxConstraints(maxWidth: 420, maxHeight: maxHeight),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -227,8 +223,7 @@ class _HatchDialogState extends State<HatchDialog>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: isMutated ? 16 : 15,
-                    fontWeight:
-                        isMutated ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isMutated ? FontWeight.bold : FontWeight.normal,
                     color: isMutated
                         ? mutationColor
                         : widget.theme.cardTextSecondaryColor,
@@ -247,22 +242,22 @@ class _HatchDialogState extends State<HatchDialog>
                             child: _buildRevealedContent(isMutated),
                           )
                         : _stage == _HatchStage.pop
-                            ? ScaleTransition(
-                                scale: _popScale,
-                                child: _buildEggVisual(showCracks: true),
-                              )
-                            : AnimatedBuilder(
-                                animation: _shakeController,
-                                builder: (context, child) {
-                                  return Transform.translate(
-                                    offset: Offset(_shakeAmount, 0),
-                                    child: child,
-                                  );
-                                },
-                                child: _buildEggVisual(
-                                  showCracks: _stage == _HatchStage.cracking,
-                                ),
-                              ),
+                        ? ScaleTransition(
+                            scale: _popScale,
+                            child: _buildEggVisual(showCracks: true),
+                          )
+                        : AnimatedBuilder(
+                            animation: _shakeController,
+                            builder: (context, child) {
+                              return Transform.translate(
+                                offset: Offset(_shakeAmount, 0),
+                                child: child,
+                              );
+                            },
+                            child: _buildEggVisual(
+                              showCracks: _stage == _HatchStage.cracking,
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -335,8 +330,9 @@ class _HatchDialogState extends State<HatchDialog>
 
   Widget _buildRevealedContent(bool isMutated) {
     return GameAnimalPortrait(
-      customSprite:
-          widget.customSprites?.getDisplaySprite(widget.result.animal.id),
+      customSprite: widget.customSprites?.getDisplaySprite(
+        widget.result.animal.id,
+      ),
       animalId: widget.result.animal.id,
       spritePath: widget.result.animal.spritePath,
       fallbackEmoji: widget.result.animal.emoji,
@@ -357,9 +353,7 @@ class _CrackMarks extends StatelessWidget {
     return SizedBox(
       width: 88,
       height: 88,
-      child: CustomPaint(
-        painter: _CrackPainter(),
-      ),
+      child: CustomPaint(painter: _CrackPainter()),
     );
   }
 }

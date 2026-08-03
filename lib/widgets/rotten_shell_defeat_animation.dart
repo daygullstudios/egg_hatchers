@@ -115,15 +115,16 @@ class _RottenShellDefeatAnimationState extends State<RottenShellDefeatAnimation>
     final audio = AudioScope.maybeOf(context);
     if (audio == null) return;
     _soundGuard.maybeAt(t, 'cracks', 1000, audio.playEggCrack);
-    _soundGuard.maybeAt(t, 'coreReveal', 3000, audio.playEggCrack);
     _soundGuard.maybeAt(t, 'core', 3000, () => audio.playSfx(Sfx.rottenPulse));
-    _soundGuard.maybeAt(t, 'meltdown', 5500, () => audio.playSfx(Sfx.rottenPulse));
     _soundGuard.maybeAt(t, 'shellSplit', 5500, audio.playEggCrack);
+    _soundGuard.maybeAt(t, 'meltdown', 6100, () => audio.playSfx(Sfx.rottenPulse));
     _soundGuard.maybeAt(t, 'collapse', 7500, () => audio.playSfx(Sfx.rottenCollapse));
-    _soundGuard.maybeAt(t, 'explosion', 9200, () {
-      audio.playEggCrack();
-      audio.playSfx(Sfx.rottenExplosion);
-    });
+    _soundGuard.maybeAt(
+      t,
+      'explosion',
+      9200,
+      () => audio.playSfx(Sfx.rottenExplosion),
+    );
     _soundGuard.maybeAt(t, 'harvest', 10200, () {
       if (widget.eggShardReward > 0) {
         audio.playBigRewardTriumph();
