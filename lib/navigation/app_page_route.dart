@@ -148,7 +148,9 @@ const String kCustomSpritesRouteName = '/custom-sprites';
 const String kSecretToolsRouteName = '/secret-tools';
 const String kSettingsRouteName = '/settings';
 
-/// Tracks the navigator's top route name for duplicate-route guards.
+/// Tracks the navigator's top page route name for duplicate-route guards.
+/// Popup routes such as dialogs and bottom sheets do not change the active
+/// screen beneath them.
 class AppNavigationTracker extends NavigatorObserver {
   AppNavigationTracker._();
   static final AppNavigationTracker instance = AppNavigationTracker._();
@@ -179,21 +181,25 @@ class AppNavigationTracker extends NavigatorObserver {
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (route is PopupRoute<dynamic>) return;
     _syncTop(route);
   }
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (route is PopupRoute<dynamic>) return;
     _syncTop(previousRoute);
   }
 
   @override
   void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (route is PopupRoute<dynamic>) return;
     _syncTop(previousRoute);
   }
 
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    if (newRoute is PopupRoute<dynamic>) return;
     _syncTop(newRoute);
   }
 }

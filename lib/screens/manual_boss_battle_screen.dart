@@ -209,15 +209,20 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _resetBattleState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final track = boss.id == EggShardLogic.rottenShellBossId
-          ? MusicTrack.finalBoss
-          : MusicTrack.bossBattle;
-      debugPrint('[AUDIO] ManualBattle start ${track.name}');
-      _audio.playMusic(track);
+      _playBattleMusic();
     });
   }
 
   AudioService get _audio => _audioService ?? AudioScope.of(context);
+
+  MusicTrack get _battleMusicTrack => boss.id == EggShardLogic.rottenShellBossId
+      ? MusicTrack.finalBoss
+      : MusicTrack.bossBattle;
+
+  void _playBattleMusic() {
+    debugPrint('[AUDIO] ManualBattle start ${_battleMusicTrack.name}');
+    _audio.playMusic(_battleMusicTrack);
+  }
 
   void _restoreHatcheryMusic() {
     debugPrint('[AUDIO] ManualBattle restore hatchery');
@@ -767,6 +772,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
             _resetBattleState();
             _resultDialogShown = false;
           });
+          _playBattleMusic();
         },
       ),
     );
