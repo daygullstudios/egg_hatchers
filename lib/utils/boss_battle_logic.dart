@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
+
 import '../data/boss_data.dart';
 import '../models/boss_battle.dart';
 import '../models/owned_animal.dart';
@@ -34,6 +36,32 @@ class BossBattleLogic {
   static const Duration manualEggCooldown = Duration(milliseconds: 850);
   static const int manualMaxBossProjectiles = 6;
   static const int manualBattleLives = 3;
+  static const double mobileTouchMoveSpeedMultiplier = 1.5;
+  static const double mobileProjectileSpeedScale = 0.88;
+
+  static bool isMobileAssistEnabled({
+    bool? isWebOverride,
+    TargetPlatform? platformOverride,
+  }) {
+    final isWeb = isWebOverride ?? kIsWeb;
+    final platform = platformOverride ?? defaultTargetPlatform;
+    return !isWeb &&
+        (platform == TargetPlatform.iOS || platform == TargetPlatform.android);
+  }
+
+  static double manualTouchMoveSpeed(
+    double baseSpeed, {
+    required bool mobileAssistEnabled,
+  }) {
+    return baseSpeed *
+        (mobileAssistEnabled ? mobileTouchMoveSpeedMultiplier : 1.0);
+  }
+
+  static double manualPlatformProjectileSpeedScale({
+    required bool mobileAssistEnabled,
+  }) {
+    return mobileAssistEnabled ? mobileProjectileSpeedScale : 1.0;
+  }
 
   static const int hardPhaseUnlockWins = 5;
   static const int hardPhaseShieldBaseMisses = 8;
@@ -76,15 +104,11 @@ class BossBattleLogic {
     PlayerState state,
   ) {
     if (boss.unlockNightmareWinsBossId == null) return false;
-    final wins =
-        state.nightmareWins[boss.unlockNightmareWinsBossId] ?? 0;
+    final wins = state.nightmareWins[boss.unlockNightmareWinsBossId] ?? 0;
     return wins >= boss.unlockNightmareWinsRequired;
   }
 
-  static int eliteUnlockProgress(
-    BossBattleDefinition boss,
-    PlayerState state,
-  ) {
+  static int eliteUnlockProgress(BossBattleDefinition boss, PlayerState state) {
     if (boss.unlockNightmareWinsBossId == null) return 0;
     return state.nightmareWins[boss.unlockNightmareWinsBossId] ?? 0;
   }
@@ -183,20 +207,20 @@ class BossBattleLogic {
     }
     final (base, increment, cap) = switch (mode) {
       ManualBattleMode.hard => (
-          hardPhaseShieldBaseMisses,
-          2,
-          hardPhaseShieldMaxMisses,
-        ),
+        hardPhaseShieldBaseMisses,
+        2,
+        hardPhaseShieldMaxMisses,
+      ),
       ManualBattleMode.nightmare => (
-          nightmareShieldBaseMisses,
-          2,
-          nightmareShieldMaxMisses,
-        ),
+        nightmareShieldBaseMisses,
+        2,
+        nightmareShieldMaxMisses,
+      ),
       ManualBattleMode.normal => (
-          manualShieldBaseMisses,
-          1,
-          manualShieldMaxMisses,
-        ),
+        manualShieldBaseMisses,
+        1,
+        manualShieldMaxMisses,
+      ),
     };
     return min(cap, base + successfulEggHits * increment);
   }
@@ -218,7 +242,8 @@ class BossBattleLogic {
     final hitStrength = _hitStrengthScale(mode, boss: boss);
     final hitPerBump = 0.15 * hitStrength;
     final hitTimeBump = 0.10 * hitStrength;
-    final multiplier = base +
+    final multiplier =
+        base +
         (elapsedSeconds / 30.0) +
         bossHitCount * hitPerBump +
         bossHitCount * hitTimeBump;
@@ -244,9 +269,8 @@ class BossBattleLogic {
         : switch (mode) {
             ManualBattleMode.hard =>
               (bossDef.projectileIntervalMs * hardPhaseIntervalScale).round(),
-            ManualBattleMode.nightmare => (bossDef.projectileIntervalMs *
-                    nightmareIntervalScale)
-                .round(),
+            ManualBattleMode.nightmare =>
+              (bossDef.projectileIntervalMs * nightmareIntervalScale).round(),
             ManualBattleMode.normal => bossDef.projectileIntervalMs,
           };
     final hitScale = 0.12 * _hitStrengthScale(mode, boss: bossDef);
@@ -258,12 +282,11 @@ class BossBattleLogic {
   static int _manualMinProjectileIntervalMs(
     BossBattleDefinition bossDef,
     ManualBattleMode mode,
-  ) =>
-      _isEliteDifficulty(bossDef)
-          ? eliteMinProjectileIntervalMs
-          : mode == ManualBattleMode.nightmare
-              ? nightmareMinProjectileIntervalMs
-              : manualMinProjectileIntervalMs;
+  ) => _isEliteDifficulty(bossDef)
+      ? eliteMinProjectileIntervalMs
+      : mode == ManualBattleMode.nightmare
+      ? nightmareMinProjectileIntervalMs
+      : manualMinProjectileIntervalMs;
 
   static int manualProjectileIntervalMsWithRage(
     BossBattleDefinition bossDef,
@@ -273,11 +296,7 @@ class BossBattleLogic {
     required int livesRemaining,
     required int maxLives,
   }) {
-    final base = manualProjectileIntervalMs(
-      bossDef,
-      bossHitCount,
-      mode: mode,
-    );
+    final base = manualProjectileIntervalMs(bossDef, bossHitCount, mode: mode);
     final scale = rageModeSpeedScale(
       boss: bossDef,
       livesRemaining: livesRemaining,
@@ -304,11 +323,7 @@ class BossBattleLogic {
             ManualBattleMode.normal => 1.0,
           };
     return bossDef.manualBossMoveSpeed *
-        manualBossMoveSpeedMultiplier(
-          bossHitCount,
-          mode: mode,
-          boss: bossDef,
-        ) *
+        manualBossMoveSpeedMultiplier(bossHitCount, mode: mode, boss: bossDef) *
         trackingScale;
   }
 
@@ -333,9 +348,7 @@ class BossBattleLogic {
     ManualBattleMode mode = ManualBattleMode.normal,
   }) {
     if (_isEliteDifficulty(bossDef)) {
-      return bossDef.manualPredictionStrength *
-          nightmarePredictionScale *
-          1.05;
+      return bossDef.manualPredictionStrength * nightmarePredictionScale * 1.05;
     }
     return switch (mode) {
       ManualBattleMode.hard =>
@@ -414,8 +427,7 @@ class BossBattleLogic {
     int? startingPlayerHp,
   }) {
     final battlePower = BattlePowerLogic.battlePowerForOwnedAnimal(fighter);
-    final initialPlayerHp =
-        startingPlayerHp ?? maxAnimalHpFor(battlePower);
+    final initialPlayerHp = startingPlayerHp ?? maxAnimalHpFor(battlePower);
     var playerHp = initialPlayerHp;
     var bossHp = boss.maxHp;
     final log = <BattleLogEntry>[];
@@ -424,8 +436,8 @@ class BossBattleLogic {
 
     while (rounds < maxRounds && playerHp > 0 && bossHp > 0) {
       rounds++;
-      final playerDamage =
-          (battlePower * (0.85 + random.nextDouble() * 0.30)).round();
+      final playerDamage = (battlePower * (0.85 + random.nextDouble() * 0.30))
+          .round();
       bossHp = max(0, bossHp - playerDamage);
       final playerHitText =
           '$fighterDisplayName hit ${boss.name} for $playerDamage.';
@@ -442,8 +454,7 @@ class BossBattleLogic {
       if (bossHp <= 0) break;
 
       final bossDamage =
-          (boss.recommendedPower * (0.35 + random.nextDouble() * 0.40))
-              .round();
+          (boss.recommendedPower * (0.35 + random.nextDouble() * 0.40)).round();
       playerHp = max(0, playerHp - bossDamage);
       final bossHitText = '${boss.name} splashed back for $bossDamage.';
       log.add(BattleLogEntry(text: bossHitText));

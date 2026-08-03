@@ -2,17 +2,70 @@ import 'package:egg_hatchers/data/boss_data.dart';
 import 'package:egg_hatchers/models/boss_battle.dart';
 import 'package:egg_hatchers/models/player_state.dart';
 import 'package:egg_hatchers/utils/boss_battle_logic.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('mobile assist applies only to native iOS and Android', () {
+    expect(
+      BossBattleLogic.isMobileAssistEnabled(
+        isWebOverride: false,
+        platformOverride: TargetPlatform.iOS,
+      ),
+      isTrue,
+    );
+    expect(
+      BossBattleLogic.isMobileAssistEnabled(
+        isWebOverride: false,
+        platformOverride: TargetPlatform.android,
+      ),
+      isTrue,
+    );
+    expect(
+      BossBattleLogic.isMobileAssistEnabled(
+        isWebOverride: true,
+        platformOverride: TargetPlatform.iOS,
+      ),
+      isFalse,
+    );
+    expect(
+      BossBattleLogic.isMobileAssistEnabled(
+        isWebOverride: false,
+        platformOverride: TargetPlatform.macOS,
+      ),
+      isFalse,
+    );
+  });
+
+  test('mobile assist speeds touch movement and slows boss projectiles', () {
+    expect(
+      BossBattleLogic.manualTouchMoveSpeed(280, mobileAssistEnabled: true),
+      420,
+    );
+    expect(
+      BossBattleLogic.manualTouchMoveSpeed(280, mobileAssistEnabled: false),
+      280,
+    );
+    expect(
+      BossBattleLogic.manualPlatformProjectileSpeedScale(
+        mobileAssistEnabled: true,
+      ),
+      0.88,
+    );
+    expect(
+      BossBattleLogic.manualPlatformProjectileSpeedScale(
+        mobileAssistEnabled: false,
+      ),
+      1.0,
+    );
+  });
+
   test('elite boss unlock requires three nightmare wins on prerequisite', () {
     final slimeKing = BossData.bossById('slime_king')!;
     final empty = PlayerState.initial();
     expect(BossBattleLogic.isEliteBossUnlocked(slimeKing, empty), isFalse);
 
-    final unlocked = empty.copyWith(
-      nightmareWins: const {'slime_boss': 3},
-    );
+    final unlocked = empty.copyWith(nightmareWins: const {'slime_boss': 3});
     expect(BossBattleLogic.isEliteBossUnlocked(slimeKing, unlocked), isTrue);
   });
 
@@ -31,13 +84,16 @@ void main() {
     );
   });
 
-  test('manual boss projectile damage uses half recommended power minimum 10', () {
-    final slime = BossData.bossById('slime_boss')!;
-    expect(BossBattleLogic.manualBossProjectileDamage(slime), 50);
+  test(
+    'manual boss projectile damage uses half recommended power minimum 10',
+    () {
+      final slime = BossData.bossById('slime_boss')!;
+      expect(BossBattleLogic.manualBossProjectileDamage(slime), 50);
 
-    final golem = BossData.bossById('egg_golem')!;
-    expect(BossBattleLogic.manualBossProjectileDamage(golem), 750);
-  });
+      final golem = BossData.bossById('egg_golem')!;
+      expect(BossBattleLogic.manualBossProjectileDamage(golem), 750);
+    },
+  );
 
   test('manual egg damage uses battle power divided by 8 minimum 10', () {
     expect(BossBattleLogic.manualEggDamage(80), 10);
@@ -50,10 +106,7 @@ void main() {
       BossBattleLogic.manualBossLives(BossData.bossById('slime_boss')!),
       1,
     );
-    expect(
-      BossBattleLogic.manualBossLives(BossData.bossById('egg_golem')!),
-      2,
-    );
+    expect(BossBattleLogic.manualBossLives(BossData.bossById('egg_golem')!), 2);
     expect(
       BossBattleLogic.manualBossLives(BossData.bossById('shadow_rooster')!),
       3,
@@ -133,17 +186,11 @@ void main() {
 
   test('nightmare shield misses start at 10 increase by 2 capped at 20', () {
     expect(
-      BossBattleLogic.manualRequiredMisses(
-        0,
-        mode: ManualBattleMode.nightmare,
-      ),
+      BossBattleLogic.manualRequiredMisses(0, mode: ManualBattleMode.nightmare),
       10,
     );
     expect(
-      BossBattleLogic.manualRequiredMisses(
-        5,
-        mode: ManualBattleMode.nightmare,
-      ),
+      BossBattleLogic.manualRequiredMisses(5, mode: ManualBattleMode.nightmare),
       20,
     );
   });
@@ -262,34 +309,37 @@ void main() {
     expect(BossBattleLogic.manualBattleLives, 3);
   });
 
-  test('manual boss aim target predicts player velocity with per-boss error', () {
-    final slime = BossData.bossById('slime_boss')!;
-    final rooster = BossData.bossById('shadow_rooster')!;
+  test(
+    'manual boss aim target predicts player velocity with per-boss error',
+    () {
+      final slime = BossData.bossById('slime_boss')!;
+      final rooster = BossData.bossById('shadow_rooster')!;
 
-    final slimeTarget = BossBattleLogic.manualBossAimTarget(
-      boss: slime,
-      playerX: 160,
-      playerVelocityX: 8,
-      minX: 40,
-      maxX: 280,
-      aimError: 0,
-    );
-    final roosterTarget = BossBattleLogic.manualBossAimTarget(
-      boss: rooster,
-      playerX: 160,
-      playerVelocityX: 8,
-      minX: 40,
-      maxX: 280,
-      aimError: 0,
-    );
+      final slimeTarget = BossBattleLogic.manualBossAimTarget(
+        boss: slime,
+        playerX: 160,
+        playerVelocityX: 8,
+        minX: 40,
+        maxX: 280,
+        aimError: 0,
+      );
+      final roosterTarget = BossBattleLogic.manualBossAimTarget(
+        boss: rooster,
+        playerX: 160,
+        playerVelocityX: 8,
+        minX: 40,
+        maxX: 280,
+        aimError: 0,
+      );
 
-    expect(slimeTarget, lessThan(roosterTarget));
-    expect(slime.manualAimErrorMax, greaterThan(rooster.manualAimErrorMax));
-    expect(
-      slime.manualPredictionStrength,
-      lessThan(rooster.manualPredictionStrength),
-    );
-  });
+      expect(slimeTarget, lessThan(roosterTarget));
+      expect(slime.manualAimErrorMax, greaterThan(rooster.manualAimErrorMax));
+      expect(
+        slime.manualPredictionStrength,
+        lessThan(rooster.manualPredictionStrength),
+      );
+    },
+  );
 
   test('boss definitions define manual aim tuning', () {
     for (final boss in BossData.bosses) {

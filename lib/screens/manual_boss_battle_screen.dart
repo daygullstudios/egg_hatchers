@@ -136,6 +136,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   BackgroundTheme get theme => widget.preferences.selectedTheme;
   BossBattleDefinition get boss => widget.boss;
   ManualBattleMode get _mode => widget.mode;
+  bool get _mobileAssistEnabled => BossBattleLogic.isMobileAssistEnabled();
 
   double get _eggSpeed =>
       BattleUpgradeLogic.manualEggSpeed(widget.game.battleShotSpeedLevel);
@@ -163,7 +164,10 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
         mode: _mode,
         boss: boss,
       ) *
-      _rageModeSpeedScale;
+      _rageModeSpeedScale *
+      BossBattleLogic.manualPlatformProjectileSpeedScale(
+        mobileAssistEnabled: _mobileAssistEnabled,
+      );
 
   int get _currentProjectileIntervalMs =>
       BossBattleLogic.manualProjectileIntervalMsWithRage(
@@ -406,7 +410,12 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     if (_pointerActive && _targetX != null) {
       final target = _targetX!.clamp(minX, maxX);
       final diff = target - _playerX;
-      final step = _playerSpeed * dt;
+      final step =
+          BossBattleLogic.manualTouchMoveSpeed(
+            _playerSpeed,
+            mobileAssistEnabled: _mobileAssistEnabled,
+          ) *
+          dt;
       if (diff.abs() <= step) {
         _playerX = target;
       } else {
@@ -448,6 +457,9 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
 
     _updateBossProjectiles(dt);
     _updateEgg(dt);
+    if (_mobileAssistEnabled) {
+      _shootEgg();
+    }
 
     for (var i = _floatingDamages.length - 1; i >= 0; i--) {
       _floatingDamages[i].age += dt;
