@@ -43,6 +43,11 @@ class PlayerState {
     this.dailyQuests = const [],
     this.lastDailyRewardPopupDismissDate,
     this.eggMastery = const {},
+    this.arenaRating = 1000,
+    this.arenaWins = 0,
+    this.arenaLosses = 0,
+    this.arenaWinStreak = 0,
+    this.arenaBestStreak = 0,
   });
 
   final int coins;
@@ -79,6 +84,11 @@ class PlayerState {
   final List<DailyQuestProgress> dailyQuests;
   final String? lastDailyRewardPopupDismissDate;
   final Map<String, EggMasteryProgress> eggMastery;
+  final int arenaRating;
+  final int arenaWins;
+  final int arenaLosses;
+  final int arenaWinStreak;
+  final int arenaBestStreak;
 
   static PlayerState initial() {
     return PlayerState(
@@ -131,6 +141,11 @@ class PlayerState {
     String? lastDailyRewardPopupDismissDate,
     bool clearLastDailyRewardPopupDismissDate = false,
     Map<String, EggMasteryProgress>? eggMastery,
+    int? arenaRating,
+    int? arenaWins,
+    int? arenaLosses,
+    int? arenaWinStreak,
+    int? arenaBestStreak,
   }) {
     return PlayerState(
       coins: coins ?? this.coins,
@@ -148,8 +163,7 @@ class PlayerState {
       bossWins: bossWins ?? this.bossWins,
       hardPhaseWins: hardPhaseWins ?? this.hardPhaseWins,
       nightmareWins: nightmareWins ?? this.nightmareWins,
-      bossMutationUnlocked:
-          bossMutationUnlocked ?? this.bossMutationUnlocked,
+      bossMutationUnlocked: bossMutationUnlocked ?? this.bossMutationUnlocked,
       activeAutoBattle: clearActiveAutoBattle
           ? null
           : activeAutoBattle ?? this.activeAutoBattle,
@@ -184,53 +198,62 @@ class PlayerState {
       lastDailyRewardPopupDismissDate: clearLastDailyRewardPopupDismissDate
           ? null
           : lastDailyRewardPopupDismissDate ??
-              this.lastDailyRewardPopupDismissDate,
+                this.lastDailyRewardPopupDismissDate,
       eggMastery: eggMastery ?? this.eggMastery,
+      arenaRating: arenaRating ?? this.arenaRating,
+      arenaWins: arenaWins ?? this.arenaWins,
+      arenaLosses: arenaLosses ?? this.arenaLosses,
+      arenaWinStreak: arenaWinStreak ?? this.arenaWinStreak,
+      arenaBestStreak: arenaBestStreak ?? this.arenaBestStreak,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'coins': coins,
-        'ownedAnimals': ownedAnimals.map((a) => a.toJson()).toList(),
-        'lastSavedTime': lastSavedTime.toIso8601String(),
-        'lifetimeCoinsEarned': lifetimeCoinsEarned,
-        'luckLevel': luckLevel,
-        'rebirthLevel': rebirthLevel,
-        'questProgress': questProgress.toJson(),
-        'secretSpaceEggClaimed': secretSpaceEggClaimed,
-        'fullDeveloperToolsUnlocked': fullDeveloperToolsUnlocked,
-        'battleTokens': battleTokens,
-        'bossWins': bossWins,
-        'hardPhaseWins': hardPhaseWins,
-        'nightmareWins': nightmareWins,
-        'bossMutationUnlocked': bossMutationUnlocked,
-        if (activeAutoBattle != null)
-          'activeAutoBattle': activeAutoBattle!.toJson(),
-        'tutorialCompleted': tutorialCompleted,
-        'tutorialSkipped': tutorialSkipped,
-        'tutorialVersionCompleted': tutorialVersionCompleted,
-        'battleHomingLevel': battleHomingLevel,
-        'battleShotSpeedLevel': battleShotSpeedLevel,
-        'battleExtraLifeLevel': battleExtraLifeLevel,
-        'eggShards': eggShards,
-        'shadowPhoenixFlawlessWin': shadowPhoenixFlawlessWin,
-        'battleLimitBreakLevel': battleLimitBreakLevel,
-        'extraLifeLimitBreakLevel': extraLifeLimitBreakLevel,
-        'eggRebirthReductionLevel': eggRebirthReductionLevel,
-        'customSpriteCanvasTier': customSpriteCanvasTier,
-        if (lastDailyRewardClaimDate != null)
-          'lastDailyRewardClaimDate': lastDailyRewardClaimDate,
-        'dailyRewardStreak': dailyRewardStreak,
-        'bestDailyRewardStreak': bestDailyRewardStreak,
-        if (dailyQuestDate != null) 'dailyQuestDate': dailyQuestDate,
-        'dailyQuests': dailyQuests.map((quest) => quest.toJson()).toList(),
-        if (lastDailyRewardPopupDismissDate != null)
-          'lastDailyRewardPopupDismissDate': lastDailyRewardPopupDismissDate,
-        'eggMastery': {
-          for (final entry in eggMastery.entries)
-            entry.key: entry.value.toJson(),
-        },
-      };
+    'coins': coins,
+    'ownedAnimals': ownedAnimals.map((a) => a.toJson()).toList(),
+    'lastSavedTime': lastSavedTime.toIso8601String(),
+    'lifetimeCoinsEarned': lifetimeCoinsEarned,
+    'luckLevel': luckLevel,
+    'rebirthLevel': rebirthLevel,
+    'questProgress': questProgress.toJson(),
+    'secretSpaceEggClaimed': secretSpaceEggClaimed,
+    'fullDeveloperToolsUnlocked': fullDeveloperToolsUnlocked,
+    'battleTokens': battleTokens,
+    'bossWins': bossWins,
+    'hardPhaseWins': hardPhaseWins,
+    'nightmareWins': nightmareWins,
+    'bossMutationUnlocked': bossMutationUnlocked,
+    if (activeAutoBattle != null)
+      'activeAutoBattle': activeAutoBattle!.toJson(),
+    'tutorialCompleted': tutorialCompleted,
+    'tutorialSkipped': tutorialSkipped,
+    'tutorialVersionCompleted': tutorialVersionCompleted,
+    'battleHomingLevel': battleHomingLevel,
+    'battleShotSpeedLevel': battleShotSpeedLevel,
+    'battleExtraLifeLevel': battleExtraLifeLevel,
+    'eggShards': eggShards,
+    'shadowPhoenixFlawlessWin': shadowPhoenixFlawlessWin,
+    'battleLimitBreakLevel': battleLimitBreakLevel,
+    'extraLifeLimitBreakLevel': extraLifeLimitBreakLevel,
+    'eggRebirthReductionLevel': eggRebirthReductionLevel,
+    'customSpriteCanvasTier': customSpriteCanvasTier,
+    if (lastDailyRewardClaimDate != null)
+      'lastDailyRewardClaimDate': lastDailyRewardClaimDate,
+    'dailyRewardStreak': dailyRewardStreak,
+    'bestDailyRewardStreak': bestDailyRewardStreak,
+    if (dailyQuestDate != null) 'dailyQuestDate': dailyQuestDate,
+    'dailyQuests': dailyQuests.map((quest) => quest.toJson()).toList(),
+    if (lastDailyRewardPopupDismissDate != null)
+      'lastDailyRewardPopupDismissDate': lastDailyRewardPopupDismissDate,
+    'eggMastery': {
+      for (final entry in eggMastery.entries) entry.key: entry.value.toJson(),
+    },
+    'arenaRating': arenaRating,
+    'arenaWins': arenaWins,
+    'arenaLosses': arenaLosses,
+    'arenaWinStreak': arenaWinStreak,
+    'arenaBestStreak': arenaBestStreak,
+  };
 
   factory PlayerState.fromJson(Map<String, dynamic> json) {
     final coins = json['coins'] as int;
@@ -268,8 +291,7 @@ class PlayerState {
           : null,
       tutorialCompleted: json['tutorialCompleted'] as bool? ?? false,
       tutorialSkipped: json['tutorialSkipped'] as bool? ?? false,
-      tutorialVersionCompleted:
-          json['tutorialVersionCompleted'] as int? ?? 0,
+      tutorialVersionCompleted: json['tutorialVersionCompleted'] as int? ?? 0,
       battleHomingLevel: EggShardLogic.clampHomingLevel(
         json['battleHomingLevel'] as int? ?? 0,
         battleLimitBreak,
@@ -302,6 +324,11 @@ class PlayerState {
       lastDailyRewardPopupDismissDate:
           json['lastDailyRewardPopupDismissDate'] as String?,
       eggMastery: _eggMasteryFromJson(json['eggMastery']),
+      arenaRating: (json['arenaRating'] as num?)?.toInt() ?? 1000,
+      arenaWins: (json['arenaWins'] as num?)?.toInt() ?? 0,
+      arenaLosses: (json['arenaLosses'] as num?)?.toInt() ?? 0,
+      arenaWinStreak: (json['arenaWinStreak'] as num?)?.toInt() ?? 0,
+      arenaBestStreak: (json['arenaBestStreak'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -321,9 +348,7 @@ class PlayerState {
     if (raw is! List || raw.isEmpty) return const [];
     return raw
         .map(
-          (item) => DailyQuestProgress.fromJson(
-            item as Map<String, dynamic>,
-          ),
+          (item) => DailyQuestProgress.fromJson(item as Map<String, dynamic>),
         )
         .toList();
   }

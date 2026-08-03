@@ -8,6 +8,7 @@ import '../data/game_data.dart';
 import '../data/tutorial_data.dart';
 import '../data/quest_data.dart';
 import '../models/active_auto_battle.dart';
+import '../models/arena.dart';
 import '../models/animal.dart';
 import '../models/boss_battle.dart';
 import '../models/custom_egg.dart';
@@ -31,6 +32,7 @@ import '../models/quest_progress.dart';
 import '../utils/quest_logic.dart';
 import '../utils/rebirth_logic.dart';
 import '../utils/animal_sell_logic.dart';
+import '../utils/arena_logic.dart';
 import '../utils/built_in_egg_logic.dart';
 import '../utils/egg_mastery_logic.dart';
 import '../utils/battle_power_logic.dart';
@@ -295,6 +297,12 @@ class GameService extends ChangeNotifier {
   bool get canUseSecretRewardBadge =>
       !_state.secretSpaceEggClaimed && _state.ownedAnimals.isNotEmpty;
   int get battleTokens => _state.battleTokens;
+  int get arenaRating => _state.arenaRating;
+  int get arenaWins => _state.arenaWins;
+  int get arenaLosses => _state.arenaLosses;
+  int get arenaWinStreak => _state.arenaWinStreak;
+  int get arenaBestStreak => _state.arenaBestStreak;
+  String get arenaDivision => ArenaLogic.divisionFor(_state.arenaRating);
   Map<String, int> get bossWins => Map.unmodifiable(_state.bossWins);
   int get totalBossWins =>
       _state.bossWins.values.fold<int>(0, (sum, count) => sum + count);
@@ -1520,6 +1528,31 @@ class GameService extends ChangeNotifier {
       coins: _state.coins + coins,
       battleTokens: _state.battleTokens + tokens,
       questProgress: progress,
+    );
+    _refreshQuestNotifications();
+    notifyListeners();
+    save();
+  }
+
+  /// Records one completed Arena match and grants its calculated reward.
+  void applyArenaResult({required bool won, required ArenaReward reward}) {
+    final nextStreak = won ? _state.arenaWinStreak + 1 : 0;
+    var progress = _state.questProgress;
+    if (reward.battleTokens > 0) {
+      progress = progress.copyWith(
+        totalBattleTokensEarned:
+            progress.totalBattleTokensEarned + reward.battleTokens,
+      );
+    }
+    _state = _state.copyWith(
+      coins: _state.coins + reward.coins,
+      battleTokens: _state.battleTokens + reward.battleTokens,
+      questProgress: progress,
+      arenaRating: max(0, _state.arenaRating + reward.ratingChange),
+      arenaWins: _state.arenaWins + (won ? 1 : 0),
+      arenaLosses: _state.arenaLosses + (won ? 0 : 1),
+      arenaWinStreak: nextStreak,
+      arenaBestStreak: max(_state.arenaBestStreak, nextStreak),
     );
     _refreshQuestNotifications();
     notifyListeners();
