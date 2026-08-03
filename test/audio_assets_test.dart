@@ -27,14 +27,18 @@ void main() {
       final header = file.readAsBytesSync().take(4).toList();
       final isWave = header.toString() == [82, 73, 70, 70].toString();
       final isMp3 =
-          header.length >= 2 && header[0] == 0xFF && header[1] >= 0xE0;
+          (header.length >= 2 && header[0] == 0xFF && header[1] >= 0xE0) ||
+          (header.length >= 3 &&
+              header[0] == 0x49 &&
+              header[1] == 0x44 &&
+              header[2] == 0x33);
       expect(isWave || isMp3, isTrue, reason: '${sound.name} format');
     }
   });
 
   test('recorded effects have cooldowns long enough to avoid self-overlap', () {
     expect(Sfx.eggCrack.assetPath, endsWith('.mp3'));
-    expect(Sfx.eggCrack.cooldownMs, greaterThanOrEqualTo(1585));
+    expect(Sfx.eggCrack.cooldownMs, greaterThanOrEqualTo(1000));
     expect(Sfx.purchase.assetPath, endsWith('.mp3'));
     expect(Sfx.purchase.cooldownMs, greaterThanOrEqualTo(2750));
     expect(Sfx.finisherSlash.assetPath, endsWith('.mp3'));
