@@ -62,6 +62,35 @@ void main() {
       expect(opponent.rating, inInclusiveRange(940, 1060));
     });
 
+    test('challenger roster is unique, ordered, and spans player rating', () {
+      const team = [
+        ArenaFighter(
+          animalId: 'fox',
+          mutationId: 'none',
+          level: 10,
+          power: 250,
+        ),
+      ];
+
+      final roster = ArenaLogic.generateOpponentRoster(
+        playerTeam: team,
+        playerRating: 1000,
+        random: Random(42),
+      );
+
+      expect(roster, hasLength(8));
+      expect(roster.map((opponent) => opponent.name).toSet(), hasLength(8));
+      expect(roster.first.rating, lessThan(1000));
+      expect(roster.last.rating, greaterThan(1000));
+      expect(
+        roster.map((opponent) => opponent.rating),
+        orderedEquals(
+          roster.map((opponent) => opponent.rating).toList()..sort(),
+        ),
+      );
+      expect(roster.every((opponent) => opponent.team.length == 3), isTrue);
+    });
+
     test('same opponent seed always produces the same battle', () {
       const playerTeam = [
         ArenaFighter(

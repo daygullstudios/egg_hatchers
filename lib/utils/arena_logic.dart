@@ -60,12 +60,14 @@ class ArenaLogic {
     required List<ArenaFighter> playerTeam,
     required int playerRating,
     required Random random,
+    int? ratingOffset,
+    Set<String> excludedNames = const {},
   }) {
     final targetTotal = max(
       teamSize,
       playerTeam.fold<int>(0, (sum, fighter) => sum + fighter.power),
     );
-    final ratingDrift = random.nextInt(121) - 60;
+    final ratingDrift = ratingOffset ?? random.nextInt(121) - 60;
     final opponentRating = max(100, playerRating + ratingDrift);
     final strengthFactor =
         (0.90 + random.nextDouble() * 0.20) *
@@ -106,13 +108,45 @@ class ArenaLogic {
       );
     }
 
+    final availableNames = _botNames
+        .where((name) => !excludedNames.contains(name))
+        .toList();
+    final names = availableNames.isEmpty ? _botNames : availableNames;
     return ArenaOpponent(
-      name: _botNames[random.nextInt(_botNames.length)],
+      name: names[random.nextInt(names.length)],
       title: _botTitles[random.nextInt(_botTitles.length)],
       rating: opponentRating,
       team: fighters,
       seed: random.nextInt(1 << 31),
     );
+  }
+
+  static List<ArenaOpponent> generateOpponentRoster({
+    required List<ArenaFighter> playerTeam,
+    required int playerRating,
+    required Random random,
+    int count = 8,
+  }) {
+    final offsets = <int>[-120, -85, -50, -20, 20, 50, 85, 120]
+      ..shuffle(random);
+    final usedNames = <String>{};
+    final opponents = <ArenaOpponent>[];
+    for (var i = 0; i < count.clamp(1, _botNames.length); i++) {
+      final offset = i < offsets.length
+          ? offsets[i]
+          : random.nextInt(241) - 120;
+      final opponent = generateOpponent(
+        playerTeam: playerTeam,
+        playerRating: playerRating,
+        random: random,
+        ratingOffset: offset,
+        excludedNames: usedNames,
+      );
+      usedNames.add(opponent.name);
+      opponents.add(opponent);
+    }
+    opponents.sort((a, b) => a.rating.compareTo(b.rating));
+    return opponents;
   }
 
   static ArenaBattleSimulation simulate({

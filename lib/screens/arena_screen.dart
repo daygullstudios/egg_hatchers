@@ -42,21 +42,21 @@ class ArenaScreen extends StatefulWidget {
 class _ArenaScreenState extends State<ArenaScreen> {
   final _random = Random();
   List<OwnedAnimal> _team = [];
-  ArenaOpponent? _opponent;
+  List<ArenaOpponent> _challengers = [];
 
   @override
   void initState() {
     super.initState();
     _team = ArenaLogic.recommendedTeam(widget.game.state.ownedAnimals);
-    _refreshOpponent();
+    _refreshChallengers();
   }
 
-  void _refreshOpponent() {
+  void _refreshChallengers() {
     if (_team.isEmpty) {
-      _opponent = null;
+      _challengers = [];
       return;
     }
-    _opponent = ArenaLogic.generateOpponent(
+    _challengers = ArenaLogic.generateOpponentRoster(
       playerTeam: _team.map(ArenaLogic.fighterFromOwned).toList(),
       playerRating: widget.game.arenaRating,
       random: _random,
@@ -76,7 +76,7 @@ class _ArenaScreenState extends State<ArenaScreen> {
       } else {
         _team[_team.length - 1] = owned;
       }
-      _refreshOpponent();
+      _refreshChallengers();
     });
   }
 
@@ -227,9 +227,8 @@ class _ArenaScreenState extends State<ArenaScreen> {
     );
   }
 
-  Future<void> _fight(BackgroundTheme theme) async {
-    final opponent = _opponent;
-    if (_team.isEmpty || opponent == null) return;
+  Future<void> _fight(BackgroundTheme theme, ArenaOpponent opponent) async {
+    if (_team.isEmpty) return;
     final simulation = ArenaLogic.simulate(
       playerTeam: _team.map(ArenaLogic.fighterFromOwned).toList(),
       opponent: opponent,
@@ -247,7 +246,6 @@ class _ArenaScreenState extends State<ArenaScreen> {
     );
     if (!mounted) return;
     await AudioScope.of(context).playMusic(MusicTrack.hatchery);
-    setState(_refreshOpponent);
   }
 
   @override
@@ -260,6 +258,11 @@ class _ArenaScreenState extends State<ArenaScreen> {
       ]),
       builder: (context, _) {
         final theme = widget.preferences.selectedTheme;
+        final playerFighters = _team.map(ArenaLogic.fighterFromOwned).toList();
+        final playerPower = playerFighters.fold(
+          0,
+          (sum, fighter) => sum + fighter.power,
+        );
         return Scaffold(
           backgroundColor: Colors.transparent,
           appBar: PhoneWidthAppBar(
@@ -287,51 +290,36 @@ class _ArenaScreenState extends State<ArenaScreen> {
                   ),
                   const SizedBox(height: 10),
                   _TeamStrip(
-                    team: _team.map(ArenaLogic.fighterFromOwned).toList(),
+                    team: playerFighters,
                     theme: theme,
                     customSprites: widget.customSprites,
                     emptyLabel: 'Choose an animal',
                     onTap: () => _chooseTeam(theme),
                   ),
                   const SizedBox(height: 20),
-                  _SectionHeading(
-                    title: 'Opponent',
-                    actionLabel: 'REROLL',
-                    onTap: () => setState(_refreshOpponent),
-                    theme: theme,
-                    icon: Icons.refresh,
-                  ),
+                  _SectionHeading(title: 'Challengers', theme: theme),
                   const SizedBox(height: 10),
-                  if (_opponent != null)
-                    _OpponentCard(
-                      opponent: _opponent!,
-                      theme: theme,
-                      customSprites: widget.customSprites,
+                  if (_challengers.isNotEmpty)
+                    ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: _challengers.length,
+                      separatorBuilder: (_, index) => const SizedBox(height: 9),
+                      itemBuilder: (context, index) {
+                        final challenger = _challengers[index];
+                        return _ChallengerCard(
+                          opponent: challenger,
+                          playerPower: playerPower,
+                          theme: theme,
+                          customSprites: widget.customSprites,
+                          onChallenge: _team.isEmpty
+                              ? null
+                              : () => _fight(theme, challenger),
+                        );
+                      },
                     )
                   else
                     _EmptyArenaCard(theme: theme),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    height: 56,
-                    child: FilledButton.icon(
-                      onPressed: _team.isEmpty ? null : () => _fight(theme),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFE65100),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      icon: const Icon(Icons.sports_martial_arts),
-                      label: Text(
-                        _team.isEmpty ? 'CHOOSE A TEAM' : 'ENTER ARENA',
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -894,16 +882,14 @@ class _ArenaRecordBanner extends StatelessWidget {
 class _SectionHeading extends StatelessWidget {
   const _SectionHeading({
     required this.title,
-    required this.actionLabel,
-    required this.onTap,
     required this.theme,
-    this.icon,
+    this.actionLabel,
+    this.onTap,
   });
   final String title;
-  final String actionLabel;
-  final VoidCallback onTap;
+  final String? actionLabel;
+  final VoidCallback? onTap;
   final BackgroundTheme theme;
-  final IconData? icon;
   @override
   Widget build(BuildContext context) => Row(
     children: [
@@ -917,14 +903,15 @@ class _SectionHeading extends StatelessWidget {
           ),
         ),
       ),
-      TextButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon ?? Icons.edit, size: 17),
-        label: Text(
-          actionLabel,
-          style: const TextStyle(fontWeight: FontWeight.w800),
+      if (actionLabel != null && onTap != null)
+        TextButton.icon(
+          onPressed: onTap,
+          icon: const Icon(Icons.edit, size: 17),
+          label: Text(
+            actionLabel!,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
         ),
-      ),
     ],
   );
 }
@@ -1060,92 +1047,208 @@ class _FighterSlot extends StatelessWidget {
   }
 }
 
-class _OpponentCard extends StatelessWidget {
-  const _OpponentCard({
+class _ChallengerCard extends StatelessWidget {
+  const _ChallengerCard({
     required this.opponent,
+    required this.playerPower,
     required this.theme,
     required this.customSprites,
+    required this.onChallenge,
   });
   final ArenaOpponent opponent;
+  final int playerPower;
   final BackgroundTheme theme;
   final CustomSpriteService customSprites;
+  final VoidCallback? onChallenge;
+
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: GameTheme.cardDecoration(
-      theme,
-      borderColor: const Color(0xFFE65100),
-    ),
-    child: Column(
-      children: [
-        Row(
+  Widget build(BuildContext context) {
+    final ratio = opponent.totalPower / max(1, playerPower);
+    final difficulty = ratio > 1.12
+        ? 'TOUGH'
+        : ratio < 0.88
+        ? 'FAVORABLE'
+        : 'EVEN';
+    final difficultyColor = ratio > 1.12
+        ? const Color(0xFFE53935)
+        : ratio < 0.88
+        ? const Color(0xFF2E7D32)
+        : const Color(0xFFF9A825);
+    return Material(
+      color: theme.cardColor,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: theme.panelAccentColor.withValues(alpha: 0.55),
+          ),
+        ),
+        child: Column(
           children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFFFE0B2),
-              ),
-              child: const Icon(Icons.smart_toy, color: Color(0xFFE65100)),
-            ),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    opponent.name,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                      color: theme.cardTextPrimaryColor,
-                    ),
-                  ),
-                  Text(
-                    opponent.title,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: theme.cardTextSecondaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            Row(
               children: [
-                Text(
-                  '${opponent.rating}',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: theme.cardTextPrimaryColor,
+                Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFF263238),
+                  ),
+                  child: Text(
+                    opponent.name.characters.first,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-                Text(
-                  ArenaLogic.divisionFor(opponent.rating),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFFE65100),
-                    fontWeight: FontWeight.w800,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        opponent.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                          color: theme.cardTextPrimaryColor,
+                        ),
+                      ),
+                      Text(
+                        opponent.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: theme.cardTextSecondaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${opponent.rating} ELO',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: theme.cardTextPrimaryColor,
+                      ),
+                    ),
+                    Text(
+                      ArenaLogic.divisionFor(opponent.rating).toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: Color(0xFFE65100),
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                for (var i = 0; i < opponent.team.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 5),
+                  _ChallengerAnimal(
+                    fighter: opponent.team[i],
+                    customSprites: customSprites,
+                  ),
+                ],
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${formatCoins(opponent.totalPower)} POWER',
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: theme.cardTextPrimaryColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        difficulty,
+                        style: TextStyle(
+                          color: difficultyColor,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                FilledButton.icon(
+                  onPressed: onChallenge,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFE65100),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 9,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  icon: const Icon(Icons.sports_martial_arts, size: 16),
+                  label: const Text(
+                    'CHALLENGE',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
                   ),
                 ),
               ],
             ),
           ],
         ),
-        const SizedBox(height: 14),
-        _TeamStrip(
-          team: opponent.team,
-          theme: theme,
-          customSprites: customSprites,
-          emptyLabel: '',
-          onTap: () {},
+      ),
+    );
+  }
+}
+
+class _ChallengerAnimal extends StatelessWidget {
+  const _ChallengerAnimal({required this.fighter, required this.customSprites});
+  final ArenaFighter fighter;
+  final CustomSpriteService customSprites;
+
+  @override
+  Widget build(BuildContext context) {
+    final animal = GameData.animalById(fighter.animalId)!;
+    return Tooltip(
+      message: '${animal.name}  Lv ${fighter.level}',
+      child: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white54),
         ),
-      ],
-    ),
-  );
+        child: ClipOval(
+          child: GameAnimalPortrait(
+            customSprite: customSprites.getDisplaySprite(animal.id),
+            animalId: animal.id,
+            spritePath: animal.spritePath,
+            fallbackEmoji: animal.emoji,
+            mutation: GameData.mutationById(fighter.mutationId),
+            size: 36,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _EmptyArenaCard extends StatelessWidget {

@@ -69,10 +69,51 @@ void main() {
 
     expect(find.text('Arena'), findsOneWidget);
     expect(find.text('Your lineup'), findsOneWidget);
-    expect(find.text('Opponent'), findsOneWidget);
-    expect(find.text('ENTER ARENA'), findsOneWidget);
+    expect(find.text('Challengers'), findsOneWidget);
+    expect(find.text('CHALLENGE'), findsNWidgets(8));
+    expect(find.textContaining('ELO'), findsNWidgets(8));
+    expect(find.textContaining('POWER'), findsAtLeastNWidgets(8));
+    expect(find.text('REROLL'), findsNothing);
     expect(tester.takeException(), isNull);
     setup.game.dispose();
+  });
+
+  testWidgets('challenger button opens a match against that profile', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final setup = await services();
+    final audio = AudioService();
+
+    await tester.pumpWidget(
+      AudioScope(
+        audio: audio,
+        child: MaterialApp(
+          home: ArenaScreen(
+            game: setup.game,
+            preferences: setup.preferences,
+            customSprites: setup.sprites,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final challenge = find.widgetWithText(FilledButton, 'CHALLENGE').first;
+    expect(challenge, findsOneWidget);
+    await tester.ensureVisible(challenge);
+    await tester.pumpAndSettle();
+    await tester.tap(challenge);
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byType(ArenaBattleScreen, skipOffstage: false), findsOneWidget);
+    expect(find.text('0 / 10 ENERGY', skipOffstage: false), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    setup.game.dispose();
+    audio.dispose();
   });
 
   testWidgets(

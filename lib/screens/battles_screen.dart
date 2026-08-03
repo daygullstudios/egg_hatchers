@@ -835,7 +835,7 @@ class _ArenaEntryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Bot Arena',
+                      'Rival Arena',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 19,
