@@ -120,10 +120,10 @@ class _MultiHatchDialogState extends State<MultiHatchDialog>
       _shakeController.duration = const Duration(milliseconds: 120);
     });
     AudioScope.maybeOf(context)?.playEggCrack();
-    await Future<void>.delayed(const Duration(milliseconds: 550));
+    await Future<void>.delayed(const Duration(milliseconds: 650));
     if (!mounted) return;
     AudioScope.maybeOf(context)?.playEggCrack();
-    await Future<void>.delayed(const Duration(milliseconds: 550));
+    await Future<void>.delayed(const Duration(milliseconds: 650));
     if (!mounted) return;
 
     setState(() => _stage = _HatchStage.pop);
