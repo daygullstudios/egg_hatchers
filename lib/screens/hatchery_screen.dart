@@ -257,7 +257,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
     );
     if (newLevel != null) {
       TutorialService.instance.notifyAnimalUpgraded();
-      UiSound.confirm(context);
+      UiSound.purchase(context);
       showGameSnackBar(
         context,
         message: '$displayName upgraded to Level $newLevel!',

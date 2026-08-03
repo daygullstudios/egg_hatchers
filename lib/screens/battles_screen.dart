@@ -73,7 +73,7 @@ class BattlesScreen extends StatelessWidget {
     }
 
     if (game.unlockBossMutation() && context.mounted) {
-      UiSound.rewardBigTriumph(context);
+      UiSound.purchase(context);
       showGameSnackBar(
         context,
         message: 'Boss Mutation unlocked!',
@@ -120,7 +120,7 @@ class BattlesScreen extends StatelessWidget {
     }
 
     if (context.mounted) {
-      UiSound.confirm(context);
+      UiSound.purchase(context);
       showGameSnackBar(
         context,
         message: 'Boss Mutation applied!',
@@ -146,7 +146,7 @@ class BattlesScreen extends StatelessWidget {
     }
 
     if (game.upgradeBattleHoming() && context.mounted) {
-      UiSound.confirm(context);
+      UiSound.purchase(context);
       showGameSnackBar(
         context,
         message: 'Egg Homing upgraded!',
@@ -172,7 +172,7 @@ class BattlesScreen extends StatelessWidget {
     }
 
     if (game.upgradeBattleShotSpeed() && context.mounted) {
-      UiSound.confirm(context);
+      UiSound.purchase(context);
       showGameSnackBar(
         context,
         message: 'Egg Speed upgraded!',
@@ -198,7 +198,7 @@ class BattlesScreen extends StatelessWidget {
     }
 
     if (game.upgradeBattleExtraLife() && context.mounted) {
-      UiSound.confirm(context);
+      UiSound.purchase(context);
       showGameSnackBar(
         context,
         message: 'Extra Life upgraded!',

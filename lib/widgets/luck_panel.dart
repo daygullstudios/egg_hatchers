@@ -38,7 +38,7 @@ class LuckPanel extends StatelessWidget {
 
     final newLevel = game.upgradeLuck();
     if (newLevel != null && context.mounted) {
-      UiSound.confirm(context);
+      UiSound.purchase(context);
       showGameSnackBar(
         context,
         message: 'Luck upgraded to Level $newLevel!',

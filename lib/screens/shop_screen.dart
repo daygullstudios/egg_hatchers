@@ -13,6 +13,7 @@ import '../services/preferences_service.dart';
 import '../theme/game_theme.dart';
 import '../utils/quest_notification_utils.dart';
 import '../utils/snackbar_utils.dart';
+import '../utils/ui_sound.dart';
 import '../widgets/coin_header.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/egg_card.dart';
@@ -105,7 +106,7 @@ class ShopScreen extends StatelessWidget {
         : null;
 
     game.buyTripleHatch(egg);
-    AudioScope.maybeOf(context)?.playSfx(Sfx.purchase);
+    UiSound.purchase(context);
     final results = game.hatchEggMultiple(
       egg,
       3,
@@ -166,7 +167,7 @@ class ShopScreen extends StatelessWidget {
         : null;
 
     game.buyEgg(egg);
-    AudioScope.maybeOf(context)?.playSfx(Sfx.purchase);
+    UiSound.purchase(context);
     TutorialService.instance.notifyEggPurchased();
     final result = game.hatchEgg(egg, customEgg: customDefinition);
 

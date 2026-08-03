@@ -196,6 +196,7 @@ class _SpriteEditorScreenState extends State<SpriteEditorScreen> {
       widget.animal.id,
       displayedReward: displayedReward,
     )) {
+      UiSound.locked(context);
       showGameSnackBar(
         context,
         message: 'Not enough coins to unlock overlay.',
@@ -212,12 +213,14 @@ class _SpriteEditorScreenState extends State<SpriteEditorScreen> {
     if (!mounted) return;
 
     if (unlocked) {
+      UiSound.purchase(context);
       showGameSnackBar(
         context,
         message: 'Reference Overlay unlocked!',
         backgroundColor: widget.theme.primaryColor,
       );
     } else {
+      UiSound.locked(context);
       showGameSnackBar(
         context,
         message: 'Not enough coins to unlock overlay.',

@@ -6,6 +6,7 @@ import '../theme/game_theme.dart';
 import '../models/background_theme.dart';
 import '../utils/egg_shard_logic.dart';
 import '../utils/snackbar_utils.dart';
+import '../utils/ui_sound.dart';
 import 'audio_scope.dart';
 
 /// Egg Shard limit-break upgrades on the Battles screen.
@@ -145,7 +146,7 @@ class EggShardUpgradesCard extends StatelessWidget {
       );
       return;
     }
-    AudioScope.maybeOf(context)?.playSfx(Sfx.purchase);
+    UiSound.purchase(context);
     showGameSnackBar(
       context,
       message: message,

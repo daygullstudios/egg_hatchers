@@ -44,7 +44,7 @@ class CollectionScreen extends StatelessWidget {
       isProtected: isProtected,
     );
     if (newLevel != null) {
-      UiSound.confirm(context);
+      UiSound.purchase(context);
       showGameSnackBar(
         context,
         message: '$displayName upgraded to Level $newLevel!',

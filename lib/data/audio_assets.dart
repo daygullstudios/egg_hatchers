@@ -13,6 +13,8 @@ class AudioAssets {
   static const sfxTokenReward = 'sounds/sfx/token_reward.wav';
   static const sfxEggShardReward = 'sounds/sfx/egg_shard_reward.wav';
   static const sfxPurchase = 'sounds/sfx/purchase.wav';
+  static const sfxUiTap = 'sounds/sfx/ui_tap.wav';
+  static const sfxConfirm = 'sounds/sfx/confirm.wav';
   static const sfxErrorLocked = 'sounds/sfx/error_locked.wav';
   static const sfxPlayerShoot = 'sounds/sfx/player_shoot.wav';
   static const sfxPlayerHit = 'sounds/sfx/player_hit.wav';
@@ -53,7 +55,9 @@ enum Sfx {
   coinReward(AudioAssets.sfxCoinReward, cooldownMs: 700),
   tokenReward(AudioAssets.sfxTokenReward, cooldownMs: 700),
   eggShardReward(AudioAssets.sfxEggShardReward, cooldownMs: 1200),
-  purchase(AudioAssets.sfxPurchase, cooldownMs: 0),
+  uiTap(AudioAssets.sfxUiTap, cooldownMs: 45),
+  confirm(AudioAssets.sfxConfirm, cooldownMs: 100),
+  purchase(AudioAssets.sfxPurchase, cooldownMs: 300),
   errorLocked(AudioAssets.sfxErrorLocked, cooldownMs: 250),
   playerShoot(AudioAssets.sfxPlayerShoot, cooldownMs: 120),
   playerHit(AudioAssets.sfxPlayerHit, cooldownMs: 0),
