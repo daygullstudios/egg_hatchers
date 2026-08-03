@@ -705,6 +705,7 @@ class GameData {
       },
       emoji: '⚔️🥚',
       description: 'Battle-hardened companions',
+      spritePath: 'assets/images/eggs/boss_egg.png',
       costCurrency: EggCostCurrency.battleTokens,
     ),
   ];

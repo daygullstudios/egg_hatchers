@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../data/egg_theme_assets.dart';
 import '../data/realistic_animal_sprites.dart';
 import '../data/retro_pixel_animal_sprites.dart';
 import '../models/animal_sprite_theme.dart';
 import '../models/custom_sprite_data.dart';
+import '../models/egg.dart';
 import '../models/mutation.dart';
 import '../theme/game_theme.dart';
 import 'animal_sprite_theme_scope.dart';
@@ -22,6 +24,8 @@ class GameSprite extends StatelessWidget {
     this.semanticLabel,
     this.fit = BoxFit.contain,
     this.emojiFontSize,
+    this.filterQuality = FilterQuality.none,
+    this.errorSpritePath,
   });
 
   final CustomSpriteData? customSprite;
@@ -32,6 +36,8 @@ class GameSprite extends StatelessWidget {
   final String? semanticLabel;
   final BoxFit fit;
   final double? emojiFontSize;
+  final FilterQuality filterQuality;
+  final String? errorSpritePath;
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +85,14 @@ class GameSprite extends StatelessWidget {
       return _emojiFallback(emojiSize);
     }
 
-    return _assetImage(spritePath!, emojiSize);
+    return _assetImage(
+      spritePath!,
+      emojiSize,
+      filterQuality: filterQuality,
+      errorFallback: errorSpritePath == null
+          ? null
+          : (_) => _assetImage(errorSpritePath!, emojiSize),
+    );
   }
 
   Widget _assetImage(
@@ -115,6 +128,42 @@ class GameSprite extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
       ),
+    );
+  }
+}
+
+/// Built-in egg artwork that follows the selected animal sprite theme.
+class GameEggSprite extends StatelessWidget {
+  const GameEggSprite({
+    super.key,
+    required this.egg,
+    required this.size,
+    this.semanticLabel,
+    this.emojiFontSize,
+  });
+
+  final Egg egg;
+  final double size;
+  final String? semanticLabel;
+  final double? emojiFontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AnimalSpriteThemeScope.of(context);
+    final themedPath = EggThemeAssets.assetPathFor(
+      themeId: theme.id,
+      eggId: egg.id,
+    );
+    return GameSprite(
+      spritePath: themedPath ?? egg.spritePath,
+      errorSpritePath: themedPath == null ? null : egg.spritePath,
+      fallbackEmoji: egg.emoji,
+      size: size,
+      semanticLabel: semanticLabel ?? egg.name,
+      emojiFontSize: emojiFontSize,
+      filterQuality: theme.id == AnimalSpriteThemes.realistic.id
+          ? FilterQuality.high
+          : FilterQuality.none,
     );
   }
 }

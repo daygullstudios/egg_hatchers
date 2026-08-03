@@ -449,9 +449,8 @@ class _EggArtwork extends StatelessWidget {
         ),
       ),
       child: isUnlocked
-          ? GameSprite(
-              spritePath: egg.spritePath,
-              fallbackEmoji: egg.emoji,
+          ? GameEggSprite(
+              egg: egg,
               size: 56,
               semanticLabel: egg.name,
               emojiFontSize: 40,

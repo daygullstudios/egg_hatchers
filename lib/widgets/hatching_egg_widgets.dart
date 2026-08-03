@@ -75,9 +75,8 @@ class AnimatedHatchingEgg extends StatelessWidget {
     return Stack(
       alignment: Alignment.center,
       children: [
-        GameSprite(
-          spritePath: egg.spritePath,
-          fallbackEmoji: egg.emoji,
+        GameEggSprite(
+          egg: egg,
           size: size,
           semanticLabel: egg.name,
           emojiFontSize: size * 0.92,

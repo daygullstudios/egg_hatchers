@@ -316,9 +316,8 @@ class _HatchDialogState extends State<HatchDialog>
     return Stack(
       alignment: Alignment.center,
       children: [
-        GameSprite(
-          spritePath: widget.egg.spritePath,
-          fallbackEmoji: widget.egg.emoji,
+        GameEggSprite(
+          egg: widget.egg,
           size: 88,
           semanticLabel: widget.egg.name,
           emojiFontSize: 88,

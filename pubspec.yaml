@@ -61,6 +61,8 @@ flutter:
     - assets/images/animal_themes/realistic/
     - assets/images/boss_backgrounds/realistic/
     - assets/images/eggs/
+    - assets/images/egg_themes/retro_pixel/
+    - assets/images/egg_themes/realistic/
     - assets/images/mutations/
     - assets/images/ui/
     - assets/images/projectiles/

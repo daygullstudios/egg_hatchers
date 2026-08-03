@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:egg_hatchers/data/game_data.dart';
+import 'package:egg_hatchers/data/egg_theme_assets.dart';
 import 'package:egg_hatchers/data/realistic_animal_sprites.dart';
 import 'package:egg_hatchers/data/realistic_boss_background_assets.dart';
 import 'package:egg_hatchers/data/retro_pixel_animal_sprites.dart';
@@ -46,6 +47,45 @@ void main() {
     expect(AnimalSpriteThemes.byId('unknown').id, 'classic');
     expect(AnimalSpriteThemes.byId('retroPixel').id, 'retroPixel');
     expect(AnimalSpriteThemes.byId('realistic').id, 'realistic');
+  });
+
+  test('Every built-in egg has Classic, Retro Pixel, and Realistic art', () {
+    final eggs = [...GameData.eggs, ...GameData.battleEggs];
+    final expectedIds = eggs.map((egg) => egg.id).toSet();
+
+    expect(EggThemeAssets.supportedEggIds, expectedIds);
+
+    for (final egg in eggs) {
+      expect(egg.spritePath, isNotNull, reason: '${egg.id} Classic path');
+      expect(
+        File(egg.spritePath!).existsSync(),
+        isTrue,
+        reason: egg.spritePath,
+      );
+
+      for (final theme in [
+        AnimalSpriteThemes.retroPixel,
+        AnimalSpriteThemes.realistic,
+      ]) {
+        final path = EggThemeAssets.assetPathFor(
+          themeId: theme.id,
+          eggId: egg.id,
+        );
+        expect(path, isNotNull, reason: '${egg.id} ${theme.id} path');
+        expect(File(path!).existsSync(), isTrue, reason: path);
+      }
+    }
+  });
+
+  test('Egg theme resolver keeps Classic and custom eggs on fallback art', () {
+    expect(
+      EggThemeAssets.assetPathFor(themeId: 'classic', eggId: 'basic'),
+      isNull,
+    );
+    expect(
+      EggThemeAssets.assetPathFor(themeId: 'realistic', eggId: 'custom_egg'),
+      isNull,
+    );
   });
 
   test('Realistic theme includes generated assets for every animal', () {
