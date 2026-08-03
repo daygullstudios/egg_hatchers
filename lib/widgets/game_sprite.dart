@@ -24,7 +24,7 @@ class GameSprite extends StatelessWidget {
     this.semanticLabel,
     this.fit = BoxFit.contain,
     this.emojiFontSize,
-    this.filterQuality = FilterQuality.none,
+    this.filterQuality = FilterQuality.high,
     this.errorSpritePath,
   });
 

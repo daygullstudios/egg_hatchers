@@ -6,7 +6,6 @@ import '../utils/egg_shard_logic.dart';
 import 'animal_sprite_theme_scope.dart';
 import 'game_sprite.dart';
 import 'retro_pixel_boss_sprite.dart';
-import 'rotten_shell_classic_sprite.dart';
 
 /// Boss portrait with PNG sprite and emoji fallback.
 ///
@@ -45,7 +44,13 @@ class BossSprite extends StatelessWidget {
 
     if (bossId == EggShardLogic.rottenShellBossId &&
         animalTheme?.id != AnimalSpriteThemes.realistic.id) {
-      return RottenShellClassicSprite(size: size, semanticLabel: semanticLabel);
+      return GameSprite(
+        spritePath: 'assets/images/bosses/rotten_shell.png',
+        fallbackEmoji: fallbackEmoji,
+        size: size,
+        semanticLabel: semanticLabel,
+        emojiFontSize: size * 0.55,
+      );
     }
 
     return GameSprite(

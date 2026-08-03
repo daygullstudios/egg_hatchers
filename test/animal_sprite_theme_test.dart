@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:egg_hatchers/data/game_data.dart';
 import 'package:egg_hatchers/data/egg_theme_assets.dart';
+import 'package:egg_hatchers/data/boss_data.dart';
 import 'package:egg_hatchers/data/realistic_animal_sprites.dart';
 import 'package:egg_hatchers/data/realistic_boss_background_assets.dart';
 import 'package:egg_hatchers/data/retro_pixel_animal_sprites.dart';
@@ -39,6 +41,36 @@ bool _isPureUpscale(
     }
   }
   return true;
+}
+
+Future<void> _expectTransparentPng(
+  String path, {
+  required int expectedSize,
+}) async {
+  final bytes = await File(path).readAsBytes();
+  final codec = await ui.instantiateImageCodec(bytes);
+  final frame = await codec.getNextFrame();
+  final image = frame.image;
+  final pixels = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+
+  expect(image.width, expectedSize, reason: path);
+  expect(image.height, expectedSize, reason: path);
+  expect(pixels, isNotNull, reason: path);
+
+  final data = pixels!;
+  final lastPixel = image.width * image.height - 1;
+  final cornerAlphaOffsets = [
+    3,
+    (image.width - 1) * 4 + 3,
+    (image.width * (image.height - 1)) * 4 + 3,
+    lastPixel * 4 + 3,
+  ];
+  for (final offset in cornerAlphaOffsets) {
+    expect(data.getUint8(offset), 0, reason: '$path corner alpha');
+  }
+
+  image.dispose();
+  codec.dispose();
 }
 
 void main() {
@@ -99,6 +131,34 @@ void main() {
       final assetPath = RealisticAnimalSprites.assetPathFor(animalId);
       expect(assetPath, isNotNull, reason: animalId);
       expect(File(assetPath!).existsSync(), isTrue, reason: assetPath);
+    }
+  });
+
+  test('Classic and Realistic character art has transparent corners', () async {
+    for (final animal in GameData.animals) {
+      await _expectTransparentPng(animal.spritePath!, expectedSize: 256);
+    }
+    for (final boss in BossData.bosses) {
+      if (boss.spritePath != null) {
+        await _expectTransparentPng(boss.spritePath!, expectedSize: 256);
+      }
+    }
+    await _expectTransparentPng(
+      'assets/images/bosses/rotten_shell.png',
+      expectedSize: 256,
+    );
+
+    final realisticPaths = <String>{};
+    for (final id in {
+      ...RealisticAnimalSprites.supportedAnimalIds,
+      ...RealisticAnimalSprites.supportedBossIds,
+    }) {
+      final path = RealisticAnimalSprites.assetPathFor(id);
+      expect(path, isNotNull, reason: id);
+      realisticPaths.add(path!);
+    }
+    for (final path in realisticPaths) {
+      await _expectTransparentPng(path, expectedSize: 512);
     }
   });
 
