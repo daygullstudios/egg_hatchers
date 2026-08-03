@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../data/arena_ability_data.dart';
 import '../data/audio_assets.dart';
 import '../data/game_data.dart';
 import '../models/arena.dart';
@@ -14,6 +15,7 @@ import '../services/game_service.dart';
 import '../services/preferences_service.dart';
 import '../theme/game_theme.dart';
 import '../utils/arena_logic.dart';
+import '../utils/arena_combat_logic.dart';
 import '../utils/battle_power_logic.dart';
 import '../utils/format_utils.dart';
 import '../widgets/audio_scope.dart';
@@ -359,91 +361,322 @@ class ArenaBattleScreen extends StatefulWidget {
 }
 
 class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
-  Timer? _timer;
+  Timer? _circleSpawnTimer;
+  Timer? _circleLifetimeTimer;
+  Timer? _botTimer;
+  Timer? _attackTimer;
+  late final Random _battleRandom;
   late final List<int> _playerHealth;
   late final List<int> _botHealth;
-  late final ArenaReward _reward;
-  var _stepIndex = -1;
+  ArenaReward? _reward;
+  var _playerActiveIndex = 0;
+  var _botActiveIndex = 0;
+  var _playerEnergy = 0;
+  var _botEnergy = 0;
+  var _playerShield = 0;
+  var _botShield = 0;
+  var _circleX = 0.5;
+  var _circleY = 0.5;
+  var _circleVisible = false;
+  var _circleIsGolden = false;
+  var _combo = 0;
+  var _bestCombo = 0;
+  var _circlesHit = 0;
+  var _circlesMissed = 0;
+  var _playerAttacking = false;
+  var _botAttacking = false;
+  var _battleMessage = 'Collect energy!';
   var _finished = false;
   var _rewardApplied = false;
+  bool? _playerWon;
 
   @override
   void initState() {
     super.initState();
+    _battleRandom = Random(widget.simulation.opponent.seed);
     _playerHealth = widget.simulation.playerTeam
         .map((fighter) => fighter.maxHealth)
         .toList();
     _botHealth = widget.simulation.opponent.team
         .map((fighter) => fighter.maxHealth)
         .toList();
-    _reward = ArenaLogic.rewardFor(
-      won: widget.simulation.playerWon,
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      AudioScope.of(context).playMusic(MusicTrack.bossBattle);
+      _scheduleCircle(initial: true);
+      _botTimer = Timer.periodic(
+        ArenaCombatLogic.botEnergyInterval(widget.simulation.opponent.rating),
+        (_) => _botTick(),
+      );
+    });
+  }
+
+  void _scheduleCircle({bool initial = false}) {
+    _circleSpawnTimer?.cancel();
+    _circleLifetimeTimer?.cancel();
+    if (_finished) return;
+    final delay = initial
+        ? const Duration(milliseconds: 650)
+        : ArenaCombatLogic.nextCircleDelay(_battleRandom);
+    _circleSpawnTimer = Timer(delay, () {
+      if (!mounted || _finished) return;
+      setState(() {
+        _circleX = 0.08 + _battleRandom.nextDouble() * 0.84;
+        _circleY = 0.08 + _battleRandom.nextDouble() * 0.84;
+        _circleIsGolden = _battleRandom.nextInt(10) == 0;
+        _circleVisible = true;
+      });
+      _circleLifetimeTimer = Timer(ArenaCombatLogic.circleLifetime, () {
+        if (!mounted || !_circleVisible || _finished) return;
+        setState(() {
+          _circleVisible = false;
+          _combo = 0;
+          _circlesMissed++;
+          _battleMessage = 'Missed! Next circle incoming...';
+        });
+        _scheduleCircle();
+      });
+    });
+  }
+
+  void _collectEnergy() {
+    if (!_circleVisible || _finished) return;
+    _circleLifetimeTimer?.cancel();
+    final gain = _circleIsGolden ? 2 : 1;
+    setState(() {
+      _circleVisible = false;
+      _playerEnergy = min(ArenaCombatLogic.maxEnergy, _playerEnergy + gain);
+      _combo++;
+      _bestCombo = max(_bestCombo, _combo);
+      _circlesHit++;
+      _battleMessage = _circleIsGolden
+          ? '+2 energy! Golden circle'
+          : '+1 energy  |  $_combo combo';
+    });
+    AudioScope.of(context).playSfx(Sfx.uiTap, volumeScale: 0.42);
+    _scheduleCircle();
+  }
+
+  void _botTick() {
+    if (_finished || !mounted) return;
+    setState(() {
+      _botEnergy = min(ArenaCombatLogic.maxEnergy, _botEnergy + 1);
+    });
+    final style = ArenaCombatLogic.botStyleForTitle(
+      widget.simulation.opponent.title,
+    );
+    if (!ArenaCombatLogic.botShouldSpend(
+      energy: _botEnergy,
+      style: style,
+      random: _battleRandom,
+    )) {
+      return;
+    }
+    final fighter = widget.simulation.opponent.team[_botActiveIndex];
+    final abilities = ArenaAbilityData.forAnimal(fighter.animalId);
+    final ability = ArenaCombatLogic.chooseBotAbility(
+      abilities: abilities,
+      energy: _botEnergy,
+      healthFraction: _botHealth[_botActiveIndex] / fighter.maxHealth,
+      random: _battleRandom,
+      style: style,
+    );
+    if (ability != null) _useBotAbility(ability);
+  }
+
+  void _usePlayerAbility(ArenaAbility ability) {
+    if (_finished || _playerEnergy < ability.energyCost) return;
+    final attacker = widget.simulation.playerTeam[_playerActiveIndex];
+    final defender = widget.simulation.opponent.team[_botActiveIndex];
+    final damage = ArenaCombatLogic.attackDamage(
+      attacker: attacker,
+      defender: defender,
+      ability: ability,
+      random: _battleRandom,
+    );
+    setState(() {
+      _playerEnergy -= ability.energyCost;
+      final dealt = _damageAfterShield(damage, playerTarget: false);
+      _botHealth[_botActiveIndex] = max(0, _botHealth[_botActiveIndex] - dealt);
+      _applyPlayerEffect(attacker, ability);
+      _playerAttacking = true;
+      _botAttacking = false;
+      _battleMessage = '${ability.name}  -$dealt';
+    });
+    AudioScope.of(context).playSfx(Sfx.bossHit, volumeScale: 0.58);
+    _resetAttackFlash();
+    _resolveDefeat(playerTarget: false);
+  }
+
+  void _useBotAbility(ArenaAbility ability) {
+    if (_finished || _botEnergy < ability.energyCost) return;
+    final attacker = widget.simulation.opponent.team[_botActiveIndex];
+    final defender = widget.simulation.playerTeam[_playerActiveIndex];
+    final damage = ArenaCombatLogic.attackDamage(
+      attacker: attacker,
+      defender: defender,
+      ability: ability,
+      random: _battleRandom,
+    );
+    setState(() {
+      _botEnergy -= ability.energyCost;
+      final dealt = _damageAfterShield(damage, playerTarget: true);
+      _playerHealth[_playerActiveIndex] = max(
+        0,
+        _playerHealth[_playerActiveIndex] - dealt,
+      );
+      _applyBotEffect(attacker, ability);
+      _botAttacking = true;
+      _playerAttacking = false;
+      _battleMessage =
+          '${widget.simulation.opponent.name}: ${ability.name}  -$dealt';
+    });
+    AudioScope.of(context).playSfx(Sfx.playerHit, volumeScale: 0.58);
+    _resetAttackFlash();
+    _resolveDefeat(playerTarget: true);
+  }
+
+  int _damageAfterShield(int damage, {required bool playerTarget}) {
+    final shield = playerTarget ? _playerShield : _botShield;
+    final absorbed = min(shield, damage);
+    if (playerTarget) {
+      _playerShield -= absorbed;
+    } else {
+      _botShield -= absorbed;
+    }
+    return damage - absorbed;
+  }
+
+  void _applyPlayerEffect(ArenaFighter fighter, ArenaAbility ability) {
+    final amount = ArenaCombatLogic.supportAmount(fighter, ability);
+    switch (ability.effect) {
+      case ArenaAbilityEffect.damage:
+        break;
+      case ArenaAbilityEffect.shield:
+        _playerShield += amount;
+      case ArenaAbilityEffect.heal:
+        _playerHealth[_playerActiveIndex] = min(
+          fighter.maxHealth,
+          _playerHealth[_playerActiveIndex] + amount,
+        );
+      case ArenaAbilityEffect.drain:
+        final drained = min(_botEnergy, ability.effectScale.round());
+        _botEnergy -= drained;
+        _playerEnergy = min(
+          ArenaCombatLogic.maxEnergy,
+          _playerEnergy + drained,
+        );
+    }
+  }
+
+  void _applyBotEffect(ArenaFighter fighter, ArenaAbility ability) {
+    final amount = ArenaCombatLogic.supportAmount(fighter, ability);
+    switch (ability.effect) {
+      case ArenaAbilityEffect.damage:
+        break;
+      case ArenaAbilityEffect.shield:
+        _botShield += amount;
+      case ArenaAbilityEffect.heal:
+        _botHealth[_botActiveIndex] = min(
+          fighter.maxHealth,
+          _botHealth[_botActiveIndex] + amount,
+        );
+      case ArenaAbilityEffect.drain:
+        final drained = min(_playerEnergy, ability.effectScale.round());
+        _playerEnergy -= drained;
+        _botEnergy = min(ArenaCombatLogic.maxEnergy, _botEnergy + drained);
+    }
+  }
+
+  void _resetAttackFlash() {
+    _attackTimer?.cancel();
+    _attackTimer = Timer(const Duration(milliseconds: 240), () {
+      if (!mounted) return;
+      setState(() {
+        _playerAttacking = false;
+        _botAttacking = false;
+      });
+    });
+  }
+
+  void _resolveDefeat({required bool playerTarget}) {
+    final health = playerTarget ? _playerHealth : _botHealth;
+    final active = playerTarget ? _playerActiveIndex : _botActiveIndex;
+    if (health[active] > 0) return;
+    final next = health.indexWhere((value) => value > 0);
+    if (next < 0) {
+      _finish(playerWon: !playerTarget);
+      return;
+    }
+    setState(() {
+      if (playerTarget) {
+        _playerActiveIndex = next;
+        _playerShield = 0;
+        _battleMessage = 'Your next animal enters!';
+      } else {
+        _botActiveIndex = next;
+        _botShield = 0;
+        _battleMessage =
+            '${widget.simulation.opponent.name} sends in the next animal!';
+      }
+    });
+  }
+
+  void _switchPlayer(int index) {
+    if (_finished ||
+        index == _playerActiveIndex ||
+        _playerHealth[index] <= 0 ||
+        _playerEnergy < ArenaCombatLogic.switchEnergyCost) {
+      return;
+    }
+    setState(() {
+      _playerEnergy -= ArenaCombatLogic.switchEnergyCost;
+      _playerActiveIndex = index;
+      _playerShield = 0;
+      _battleMessage = 'Switched fighters  |  -1 energy';
+    });
+  }
+
+  void _finish({required bool playerWon}) {
+    if (_finished) return;
+    _circleSpawnTimer?.cancel();
+    _circleLifetimeTimer?.cancel();
+    _botTimer?.cancel();
+    final reward = ArenaLogic.rewardFor(
+      won: playerWon,
       playerRating: widget.game.arenaRating,
       opponentRating: widget.simulation.opponent.rating,
       opponentPower: widget.simulation.opponent.totalPower,
       currentStreak: widget.game.arenaWinStreak,
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      AudioScope.of(context).playMusic(MusicTrack.bossBattle);
-      _timer = Timer.periodic(
-        const Duration(milliseconds: 560),
-        (_) => _advance(),
-      );
-    });
-  }
-
-  void _advance() {
-    if (_stepIndex + 1 >= widget.simulation.steps.length) {
-      _finish();
-      return;
-    }
-    final nextIndex = _stepIndex + 1;
-    final step = widget.simulation.steps[nextIndex];
     setState(() {
-      _stepIndex = nextIndex;
-      if (step.playerAttacks) {
-        _botHealth[step.targetIndex] = step.targetHealthAfter;
-      } else {
-        _playerHealth[step.targetIndex] = step.targetHealthAfter;
-      }
+      _finished = true;
+      _circleVisible = false;
+      _playerWon = playerWon;
+      _reward = reward;
+      _battleMessage = playerWon ? 'Arena victory!' : 'Team defeated';
     });
-    final audio = AudioScope.of(context);
-    audio.playSfx(
-      step.playerAttacks ? Sfx.bossHit : Sfx.playerHit,
-      volumeScale: 0.45,
-    );
-  }
-
-  void _finish() {
-    if (_finished) return;
-    _timer?.cancel();
-    setState(() => _finished = true);
     if (!_rewardApplied) {
       _rewardApplied = true;
-      widget.game.applyArenaResult(
-        won: widget.simulation.playerWon,
-        reward: _reward,
-      );
-      AudioScope.of(
-        context,
-      ).playSfx(widget.simulation.playerWon ? Sfx.victory : Sfx.defeat);
+      widget.game.applyArenaResult(won: playerWon, reward: reward);
+      AudioScope.of(context).playSfx(playerWon ? Sfx.victory : Sfx.defeat);
     }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _circleSpawnTimer?.cancel();
+    _circleLifetimeTimer?.cancel();
+    _botTimer?.cancel();
+    _attackTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final activeStep = _stepIndex >= 0
-        ? widget.simulation.steps[_stepIndex]
-        : null;
-    final playerActive = _firstAlive(_playerHealth);
-    final botActive = _firstAlive(_botHealth);
+    final playerFighter = widget.simulation.playerTeam[_playerActiveIndex];
+    final botFighter = widget.simulation.opponent.team[_botActiveIndex];
+    final abilities = ArenaAbilityData.forAnimal(playerFighter.animalId);
     return PopScope(
       canPop: _finished,
       child: Scaffold(
@@ -456,50 +689,77 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
                 children: [
                   _BattleTopBar(
                     opponent: widget.simulation.opponent,
-                    step: min(_stepIndex + 1, widget.simulation.steps.length),
-                    totalSteps: widget.simulation.steps.length,
+                    playerEnergy: _playerEnergy,
+                    botEnergy: _botEnergy,
                     canLeave: _finished,
                   ),
                   Expanded(
                     child: LayoutBuilder(
-                      builder: (context, constraints) => Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _ActiveFighter(
-                            fighter:
-                                widget.simulation.opponent.team[botActive.clamp(
-                                  0,
-                                  widget.simulation.opponent.team.length - 1,
-                                )],
-                            health: botActive < _botHealth.length
-                                ? _botHealth[botActive]
-                                : 0,
-                            customSprites: widget.customSprites,
-                            isOpponent: true,
-                            isAttacking:
-                                activeStep?.playerAttacks == false &&
-                                !_finished,
-                            label: widget.simulation.opponent.name,
-                          ),
-                          _VersusPulse(step: activeStep, finished: _finished),
-                          _ActiveFighter(
-                            fighter:
-                                widget.simulation.playerTeam[playerActive.clamp(
-                                  0,
-                                  widget.simulation.playerTeam.length - 1,
-                                )],
-                            health: playerActive < _playerHealth.length
-                                ? _playerHealth[playerActive]
-                                : 0,
-                            customSprites: widget.customSprites,
-                            isOpponent: false,
-                            isAttacking:
-                                activeStep?.playerAttacks == true && !_finished,
-                            label: 'You',
-                          ),
-                        ],
-                      ),
+                      builder: (context, constraints) {
+                        const circleSize = 68.0;
+                        final compact = constraints.maxHeight < 440;
+                        return Stack(
+                          children: [
+                            Positioned.fill(
+                              child: Column(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                children: [
+                                  _ActiveFighter(
+                                    fighter: botFighter,
+                                    health: _botHealth[_botActiveIndex],
+                                    shield: _botShield,
+                                    customSprites: widget.customSprites,
+                                    isOpponent: true,
+                                    isAttacking: _botAttacking && !_finished,
+                                    label: widget.simulation.opponent.name,
+                                    compact: compact,
+                                  ),
+                                  _CombatPulse(
+                                    message: _battleMessage,
+                                    combo: _combo,
+                                    finished: _finished,
+                                  ),
+                                  _ActiveFighter(
+                                    fighter: playerFighter,
+                                    health: _playerHealth[_playerActiveIndex],
+                                    shield: _playerShield,
+                                    customSprites: widget.customSprites,
+                                    isOpponent: false,
+                                    isAttacking: _playerAttacking && !_finished,
+                                    label: 'You',
+                                    compact: compact,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (_circleVisible && !_finished)
+                              Positioned(
+                                key: const Key('arena-energy-circle'),
+                                left:
+                                    _circleX *
+                                    max(0, constraints.maxWidth - circleSize),
+                                top:
+                                    _circleY *
+                                    max(0, constraints.maxHeight - circleSize),
+                                child: _EnergyCircle(
+                                  golden: _circleIsGolden,
+                                  onTap: _collectEnergy,
+                                ),
+                              ),
+                          ],
+                        );
+                      },
                     ),
+                  ),
+                  _ArenaAbilityPanel(
+                    abilities: abilities,
+                    energy: _playerEnergy,
+                    maxEnergy: ArenaCombatLogic.maxEnergy,
+                    circlesHit: _circlesHit,
+                    circlesMissed: _circlesMissed,
+                    enabled: !_finished,
+                    onAbility: _usePlayerAbility,
                   ),
                   _BattleBenches(
                     playerTeam: widget.simulation.playerTeam,
@@ -507,6 +767,9 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
                     playerHealth: _playerHealth,
                     botHealth: _botHealth,
                     customSprites: widget.customSprites,
+                    playerActiveIndex: _playerActiveIndex,
+                    botActiveIndex: _botActiveIndex,
+                    onPlayerTap: _switchPlayer,
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -515,10 +778,26 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
             if (_finished)
               Positioned.fill(
                 child: _ArenaResultOverlay(
-                  won: widget.simulation.playerWon,
-                  reward: _reward,
+                  won: _playerWon!,
+                  reward: _reward!,
                   rating: widget.game.arenaRating,
                   streak: widget.game.arenaWinStreak,
+                  skillGrade: ArenaCombatLogic.skillGrade(
+                    won: _playerWon!,
+                    hits: _circlesHit,
+                    misses: _circlesMissed,
+                    bestCombo: _bestCombo,
+                    remainingHealth: _playerHealth.fold(0, (a, b) => a + b),
+                    maxHealth: widget.simulation.playerTeam.fold(
+                      0,
+                      (sum, fighter) => sum + fighter.maxHealth,
+                    ),
+                  ),
+                  accuracy: _circlesHit + _circlesMissed == 0
+                      ? 0
+                      : (_circlesHit * 100 / (_circlesHit + _circlesMissed))
+                            .round(),
+                  bestCombo: _bestCombo,
                   onContinue: () => Navigator.pop(context),
                 ),
               ),
@@ -526,11 +805,6 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
         ),
       ),
     );
-  }
-
-  int _firstAlive(List<int> health) {
-    final index = health.indexWhere((value) => value > 0);
-    return index < 0 ? health.length - 1 : index;
   }
 }
 
@@ -893,13 +1167,13 @@ class _EmptyArenaCard extends StatelessWidget {
 class _BattleTopBar extends StatelessWidget {
   const _BattleTopBar({
     required this.opponent,
-    required this.step,
-    required this.totalSteps,
+    required this.playerEnergy,
+    required this.botEnergy,
     required this.canLeave,
   });
   final ArenaOpponent opponent;
-  final int step;
-  final int totalSteps;
+  final int playerEnergy;
+  final int botEnergy;
   final bool canLeave;
   @override
   Widget build(BuildContext context) => Padding(
@@ -933,18 +1207,65 @@ class _BattleTopBar extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(
-          width: 56,
-          child: Text(
-            '$step/$totalSteps',
-            textAlign: TextAlign.end,
-            style: const TextStyle(
-              color: Color(0xFFFFD54F),
-              fontWeight: FontWeight.w800,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              'YOU $playerEnergy',
+              style: const TextStyle(
+                color: Color(0xFF4DD0E1),
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            Text(
+              'BOT $botEnergy',
+              style: const TextStyle(
+                color: Color(0xFFFF8A65),
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+class _EnergyCircle extends StatelessWidget {
+  const _EnergyCircle({required this.golden, required this.onTap});
+  final bool golden;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: golden ? 'Golden energy circle' : 'Energy circle',
+    child: TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.72, end: 1),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) =>
+          Transform.scale(scale: scale, child: child),
+      child: Material(
+        color: golden ? const Color(0xFFFFC107) : const Color(0xFF26C6DA),
+        shape: const CircleBorder(),
+        elevation: 12,
+        shadowColor: golden ? Colors.amber : Colors.cyanAccent,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox.square(
+            dimension: 68,
+            child: Icon(
+              golden ? Icons.bolt : Icons.add,
+              color: const Color(0xFF07131C),
+              size: 34,
             ),
           ),
         ),
-      ],
+      ),
     ),
   );
 }
@@ -953,22 +1274,28 @@ class _ActiveFighter extends StatelessWidget {
   const _ActiveFighter({
     required this.fighter,
     required this.health,
+    required this.shield,
     required this.customSprites,
     required this.isOpponent,
     required this.isAttacking,
     required this.label,
+    required this.compact,
   });
   final ArenaFighter fighter;
   final int health;
+  final int shield;
   final CustomSpriteService customSprites;
   final bool isOpponent;
   final bool isAttacking;
   final String label;
+  final bool compact;
   @override
   Widget build(BuildContext context) {
     final animal = GameData.animalById(fighter.animalId)!;
     final mutation = GameData.mutationById(fighter.mutationId)!;
     final fraction = (health / fighter.maxHealth).clamp(0.0, 1.0);
+    final portraitSize = compact ? 82.0 : 104.0;
+    final frameSize = portraitSize + 10;
     return AnimatedSlide(
       duration: const Duration(milliseconds: 180),
       offset: isAttacking ? Offset(0, isOpponent ? 0.12 : -0.12) : Offset.zero,
@@ -987,8 +1314,8 @@ class _ActiveFighter extends StatelessWidget {
             duration: const Duration(milliseconds: 180),
             scale: isAttacking ? 1.1 : 1,
             child: Container(
-              width: 128,
-              height: 128,
+              width: frameSize,
+              height: frameSize,
               padding: const EdgeInsets.all(5),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -1016,12 +1343,12 @@ class _ActiveFighter extends StatelessWidget {
                   spritePath: animal.spritePath,
                   fallbackEmoji: animal.emoji,
                   mutation: mutation,
-                  size: 116,
+                  size: portraitSize,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: compact ? 3 : 6),
           Text(
             mutation.fullName(animal),
             style: const TextStyle(
@@ -1029,9 +1356,9 @@ class _ActiveFighter extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: compact ? 3 : 5),
           SizedBox(
-            width: 210,
+            width: compact ? 170 : 200,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
@@ -1048,7 +1375,9 @@ class _ActiveFighter extends StatelessWidget {
           ),
           const SizedBox(height: 3),
           Text(
-            '${max(0, health)} / ${fighter.maxHealth}',
+            shield > 0
+                ? '${max(0, health)} / ${fighter.maxHealth}  +$shield shield'
+                : '${max(0, health)} / ${fighter.maxHealth}',
             style: const TextStyle(color: Colors.white70, fontSize: 11),
           ),
         ],
@@ -1057,27 +1386,174 @@ class _ActiveFighter extends StatelessWidget {
   }
 }
 
-class _VersusPulse extends StatelessWidget {
-  const _VersusPulse({required this.step, required this.finished});
-  final ArenaBattleStep? step;
+class _CombatPulse extends StatelessWidget {
+  const _CombatPulse({
+    required this.message,
+    required this.combo,
+    required this.finished,
+  });
+  final String message;
+  final int combo;
   final bool finished;
   @override
   Widget build(BuildContext context) => AnimatedSwitcher(
     duration: const Duration(milliseconds: 160),
-    child: Text(
-      finished
-          ? 'MATCH COMPLETE'
-          : step == null
-          ? 'READY'
-          : '-${step!.damage}',
-      key: ValueKey('${step?.damage}-${step?.targetHealthAfter}-$finished'),
-      style: TextStyle(
-        color: step?.targetDefeated == true
-            ? const Color(0xFFFFD54F)
-            : Colors.white,
-        fontSize: step?.targetDefeated == true ? 22 : 18,
-        fontWeight: FontWeight.w900,
-        shadows: const [Shadow(color: Colors.black, blurRadius: 8)],
+    child: Column(
+      key: ValueKey('$message-$finished'),
+      children: [
+        Text(
+          finished ? 'MATCH COMPLETE' : message,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w900,
+            shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+          ),
+        ),
+        if (!finished && combo >= 2)
+          Text(
+            '$combo HIT COMBO',
+            style: const TextStyle(
+              color: Color(0xFFFFD54F),
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+class _ArenaAbilityPanel extends StatelessWidget {
+  const _ArenaAbilityPanel({
+    required this.abilities,
+    required this.energy,
+    required this.maxEnergy,
+    required this.circlesHit,
+    required this.circlesMissed,
+    required this.enabled,
+    required this.onAbility,
+  });
+  final List<ArenaAbility> abilities;
+  final int energy;
+  final int maxEnergy;
+  final int circlesHit;
+  final int circlesMissed;
+  final bool enabled;
+  final ValueChanged<ArenaAbility> onAbility;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.fromLTRB(10, 2, 10, 7),
+    padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+    decoration: BoxDecoration(
+      color: const Color(0xE612222B),
+      border: Border.all(color: const Color(0xFF26C6DA), width: 1.5),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.bolt, color: Color(0xFFFFD54F), size: 18),
+            const SizedBox(width: 4),
+            Text(
+              '$energy / $maxEnergy ENERGY',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: energy / maxEnergy,
+                  minHeight: 8,
+                  backgroundColor: Colors.white12,
+                  color: const Color(0xFFFFC107),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$circlesHit hit  $circlesMissed miss',
+              style: const TextStyle(color: Colors.white54, fontSize: 9),
+            ),
+          ],
+        ),
+        const SizedBox(height: 7),
+        Row(
+          children: [
+            for (var i = 0; i < abilities.length; i++) ...[
+              if (i > 0) const SizedBox(width: 6),
+              Expanded(
+                child: _AbilityButton(
+                  ability: abilities[i],
+                  enabled: enabled && energy >= abilities[i].energyCost,
+                  onTap: () => onAbility(abilities[i]),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+class _AbilityButton extends StatelessWidget {
+  const _AbilityButton({
+    required this.ability,
+    required this.enabled,
+    required this.onTap,
+  });
+  final ArenaAbility ability;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 54,
+    child: FilledButton(
+      onPressed: enabled ? onTap : null,
+      style: FilledButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+        backgroundColor: ability.energyCost >= 7
+            ? const Color(0xFFE65100)
+            : const Color(0xFF00796B),
+        disabledBackgroundColor: Colors.white10,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            ability.name,
+            maxLines: 2,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: enabled ? Colors.white : Colors.white38,
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          Text(
+            '${ability.energyCost} ENERGY',
+            style: TextStyle(
+              color: enabled ? const Color(0xFFFFD54F) : Colors.white24,
+              fontSize: 8,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
       ),
     ),
   );
@@ -1090,12 +1566,18 @@ class _BattleBenches extends StatelessWidget {
     required this.playerHealth,
     required this.botHealth,
     required this.customSprites,
+    required this.playerActiveIndex,
+    required this.botActiveIndex,
+    required this.onPlayerTap,
   });
   final List<ArenaFighter> playerTeam;
   final List<ArenaFighter> opponentTeam;
   final List<int> playerHealth;
   final List<int> botHealth;
   final CustomSpriteService customSprites;
+  final int playerActiveIndex;
+  final int botActiveIndex;
+  final ValueChanged<int> onPlayerTap;
   @override
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.symmetric(horizontal: 12),
@@ -1112,6 +1594,8 @@ class _BattleBenches extends StatelessWidget {
           team: playerTeam,
           health: playerHealth,
           customSprites: customSprites,
+          activeIndex: playerActiveIndex,
+          onTap: onPlayerTap,
         ),
         const Text(
           'TEAMS',
@@ -1125,6 +1609,7 @@ class _BattleBenches extends StatelessWidget {
           team: opponentTeam,
           health: botHealth,
           customSprites: customSprites,
+          activeIndex: botActiveIndex,
         ),
       ],
     ),
@@ -1136,35 +1621,50 @@ class _BenchSide extends StatelessWidget {
     required this.team,
     required this.health,
     required this.customSprites,
+    required this.activeIndex,
+    this.onTap,
   });
   final List<ArenaFighter> team;
   final List<int> health;
   final CustomSpriteService customSprites;
+  final int activeIndex;
+  final ValueChanged<int>? onTap;
   @override
   Widget build(BuildContext context) => Row(
     children: List.generate(team.length, (index) {
       final animal = GameData.animalById(team[index].animalId)!;
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2),
-        child: Opacity(
-          opacity: health[index] > 0 ? 1 : 0.28,
-          child: Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: health[index] > 0 ? Colors.white54 : Colors.red,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap != null && health[index] > 0
+              ? () => onTap!(index)
+              : null,
+          child: Opacity(
+            opacity: health[index] > 0 ? 1 : 0.28,
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: health[index] <= 0
+                      ? Colors.red
+                      : index == activeIndex
+                      ? const Color(0xFFFFD54F)
+                      : Colors.white54,
+                  width: index == activeIndex ? 2.5 : 1,
+                ),
               ),
-            ),
-            child: ClipOval(
-              child: GameAnimalPortrait(
-                customSprite: customSprites.getDisplaySprite(animal.id),
-                animalId: animal.id,
-                spritePath: animal.spritePath,
-                fallbackEmoji: animal.emoji,
-                mutation: GameData.mutationById(team[index].mutationId),
-                size: 32,
+              child: ClipOval(
+                child: GameAnimalPortrait(
+                  customSprite: customSprites.getDisplaySprite(animal.id),
+                  animalId: animal.id,
+                  spritePath: animal.spritePath,
+                  fallbackEmoji: animal.emoji,
+                  mutation: GameData.mutationById(team[index].mutationId),
+                  size: 32,
+                ),
               ),
             ),
           ),
@@ -1180,12 +1680,18 @@ class _ArenaResultOverlay extends StatelessWidget {
     required this.reward,
     required this.rating,
     required this.streak,
+    required this.skillGrade,
+    required this.accuracy,
+    required this.bestCombo,
     required this.onContinue,
   });
   final bool won;
   final ArenaReward reward;
   final int rating;
   final int streak;
+  final String skillGrade;
+  final int accuracy;
+  final int bestCombo;
   final VoidCallback onContinue;
   @override
   Widget build(BuildContext context) => ColoredBox(
@@ -1226,6 +1732,16 @@ class _ArenaResultOverlay extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white70,
                 fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'SKILL GRADE $skillGrade  |  $accuracy% accuracy  |  $bestCombo combo',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFF80CBC4),
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
               ),
             ),
             const SizedBox(height: 18),

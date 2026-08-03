@@ -76,3 +76,37 @@ class ArenaReward {
   final int coins;
   final int battleTokens;
 }
+
+enum ArenaAbilityEffect { damage, shield, heal, drain }
+
+class ArenaAbility {
+  const ArenaAbility({
+    required this.name,
+    required this.energyCost,
+    required this.damageScale,
+    this.effect = ArenaAbilityEffect.damage,
+    this.effectScale = 0,
+  });
+
+  final String name;
+  final int energyCost;
+  final double damageScale;
+  final ArenaAbilityEffect effect;
+  final double effectScale;
+}
+
+class ArenaAbilityLoadout {
+  const ArenaAbilityLoadout({
+    required this.quickName,
+    required this.techniqueName,
+    required this.signatureName,
+    this.techniqueEffect = ArenaAbilityEffect.damage,
+    this.signatureEffect = ArenaAbilityEffect.damage,
+  });
+
+  final String quickName;
+  final String techniqueName;
+  final String signatureName;
+  final ArenaAbilityEffect techniqueEffect;
+  final ArenaAbilityEffect signatureEffect;
+}

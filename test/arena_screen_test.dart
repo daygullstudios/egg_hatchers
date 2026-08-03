@@ -1,5 +1,4 @@
-import 'dart:math';
-
+import 'package:egg_hatchers/models/arena.dart';
 import 'package:egg_hatchers/models/owned_animal.dart';
 import 'package:egg_hatchers/screens/arena_screen.dart';
 import 'package:egg_hatchers/services/audio_service.dart';
@@ -76,53 +75,80 @@ void main() {
     setup.game.dispose();
   });
 
-  testWidgets('Arena battle reaches a result without layout errors', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final setup = await services();
-    final playerTeam = ArenaLogic.recommendedTeam(
-      setup.game.state.ownedAnimals,
-    ).map(ArenaLogic.fighterFromOwned).toList();
-    final opponent = ArenaLogic.generateOpponent(
-      playerTeam: playerTeam,
-      playerRating: setup.game.arenaRating,
-      random: Random(12),
-    );
-    final simulation = ArenaLogic.simulate(
-      playerTeam: playerTeam,
-      opponent: opponent,
-    );
-    final audio = AudioService();
+  testWidgets(
+    'Arena battle uses delayed circles and abilities to reach a result',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final setup = await services();
+      const playerTeam = [
+        ArenaFighter(
+          animalId: 'chicken',
+          mutationId: 'none',
+          level: 200,
+          power: 100000,
+        ),
+      ];
+      const opponent = ArenaOpponent(
+        name: 'Milo',
+        title: 'Arena Regular',
+        rating: 1000,
+        seed: 12,
+        team: [
+          ArenaFighter(
+            animalId: 'mouse',
+            mutationId: 'none',
+            level: 1,
+            power: 1,
+          ),
+        ],
+      );
+      final simulation = ArenaLogic.simulate(
+        playerTeam: playerTeam,
+        opponent: opponent,
+      );
+      final audio = AudioService();
 
-    await tester.pumpWidget(
-      AudioScope(
-        audio: audio,
-        child: MaterialApp(
-          home: ArenaBattleScreen(
-            game: setup.game,
-            preferences: setup.preferences,
-            customSprites: setup.sprites,
-            simulation: simulation,
+      await tester.pumpWidget(
+        AudioScope(
+          audio: audio,
+          child: MaterialApp(
+            home: ArenaBattleScreen(
+              game: setup.game,
+              preferences: setup.preferences,
+              customSprites: setup.sprites,
+              simulation: simulation,
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pump();
-    for (var i = 0; i <= simulation.steps.length; i++) {
-      await tester.pump(const Duration(milliseconds: 570));
-    }
+      );
+      await tester.pump();
+      expect(find.text('Chicken Scratch'), findsOneWidget);
+      expect(find.byKey(const Key('arena-energy-circle')), findsNothing);
 
-    expect(
-      find.text(simulation.playerWon ? 'VICTORY' : 'DEFEAT'),
-      findsOneWidget,
-    );
-    expect(find.text('NEXT OPPONENT'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-    setup.game.dispose();
-    audio.dispose();
-  });
+      await tester.pump(const Duration(milliseconds: 650));
+      expect(find.byKey(const Key('arena-energy-circle')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('arena-energy-circle')));
+      await tester.pump();
+      expect(find.byKey(const Key('arena-energy-circle')), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byKey(const Key('arena-energy-circle')), findsNothing);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byKey(const Key('arena-energy-circle')), findsOneWidget);
+      await tester.tap(find.byKey(const Key('arena-energy-circle')));
+      await tester.pump();
+
+      await tester.tap(find.text('Chicken Scratch'));
+      await tester.pump();
+
+      expect(find.text('VICTORY'), findsOneWidget);
+      expect(find.text('NEXT OPPONENT'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      setup.game.dispose();
+      audio.dispose();
+    },
+  );
 }
