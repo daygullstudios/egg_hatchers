@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../data/game_data.dart';
+import '../data/audio_assets.dart';
 import '../models/arena.dart';
 import '../models/background_theme.dart';
 import '../models/multiplayer.dart';
 import '../models/owned_animal.dart';
 import '../models/player_account.dart';
+import '../navigation/app_page_route.dart';
 import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
 import '../services/multiplayer_service.dart';
@@ -17,6 +19,8 @@ import '../widgets/game_background.dart';
 import '../widgets/game_sprite.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/account_scope.dart';
+import '../widgets/audio_scope.dart';
+import 'multiplayer_battle_screen.dart';
 
 typedef FindOnlineMatch =
     Future<void> Function(MultiplayerPlayerSnapshot player);
@@ -82,7 +86,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
     final opponent = multiplayer.opponent;
     if (opponent == null) return;
     final theme = widget.preferences.selectedTheme;
-    await showDialog<void>(
+    final startBattle = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
@@ -139,7 +143,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
               ),
               const SizedBox(height: 14),
               const Text(
-                'Both players are connected. Live battle synchronization is the next step.',
+                'Your teams are locked in. Collect energy and defeat every animal on the opposing team.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Color(0xFFC5D0FF), height: 1.3),
               ),
@@ -148,14 +152,32 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
         ),
         actions: [
           FilledButton.icon(
-            onPressed: () => Navigator.pop(dialogContext),
-            icon: const Icon(Icons.check),
-            label: const Text('READY'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            icon: const Icon(Icons.sports_martial_arts),
+            label: const Text('BATTLE'),
           ),
         ],
       ),
     );
-    multiplayer.clearMatch();
+    if (!mounted || startBattle != true) return;
+    final player = MultiplayerPlayerSnapshot.fromPlayer(
+      account: widget.account,
+      team: _team.map(ArenaLogic.fighterFromOwned).toList(growable: false),
+    );
+    await pushThemedAppRoute<void>(
+      context,
+      theme: theme,
+      settings: const RouteSettings(name: kMultiplayerBattleRouteName),
+      builder: (_) => MultiplayerBattleScreen(
+        multiplayer: multiplayer,
+        player: player,
+        opponent: opponent,
+        customSprites: widget.customSprites,
+      ),
+    );
+    if (mounted) {
+      AudioScope.maybeOf(context)?.playMusic(MusicTrack.hatchery);
+    }
   }
 
   void _toggleTeamMember(OwnedAnimal owned) {

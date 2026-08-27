@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 
 import 'package:egg_hatchers/models/arena.dart';
 import 'package:egg_hatchers/models/multiplayer.dart';
@@ -8,43 +6,12 @@ import 'package:egg_hatchers/models/player_account.dart';
 import 'package:egg_hatchers/services/multiplayer_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-void main() {
-  test('two connected players receive each other as a match', () async {
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    final waiting = <({WebSocket socket, Map<String, dynamic> player})>[];
-    final serverTask = server.forEach((request) async {
-      final socket = await WebSocketTransformer.upgrade(request);
-      socket.listen((raw) {
-        final message = jsonDecode(raw as String) as Map<String, dynamic>;
-        if (message['type'] != 'queue') return;
-        final player = Map<String, dynamic>.from(message['player'] as Map);
-        if (waiting.isEmpty) {
-          waiting.add((socket: socket, player: player));
-          socket.add(jsonEncode({'type': 'queued'}));
-          return;
-        }
-        final opponent = waiting.removeAt(0);
-        socket.add(
-          jsonEncode({
-            'type': 'matched',
-            'matchId': 'test_match',
-            'opponent': opponent.player,
-          }),
-        );
-        opponent.socket.add(
-          jsonEncode({
-            'type': 'matched',
-            'matchId': 'test_match',
-            'opponent': player,
-          }),
-        );
-      });
-    });
-    addTearDown(() async {
-      await server.close(force: true);
-      await serverTask;
-    });
+import '../tool/multiplayer_server.dart';
 
+void main() {
+  test('two matched players share a server-authoritative battle', () async {
+    final server = await LocalMultiplayerServer.start(port: 0);
+    addTearDown(server.close);
     final uri = Uri.parse('ws://127.0.0.1:${server.port}/ws');
     final first = MultiplayerService(serverUri: uri);
     final second = MultiplayerService(serverUri: uri);
@@ -57,9 +24,37 @@ void main() {
     await _waitFor(() => first.state == MultiplayerConnectionState.matched);
     await _waitFor(() => second.state == MultiplayerConnectionState.matched);
 
-    expect(first.matchId, 'test_match');
+    expect(first.matchId, isNotNull);
+    expect(first.matchId, second.matchId);
     expect(first.opponent!.username, 'second');
     expect(second.opponent!.username, 'first');
+
+    first.enterBattle();
+    second.enterBattle();
+    await _waitFor(
+      () => first.battleState != null && second.battleState != null,
+    );
+    final startingHealth = first.battleState!.opponent.health.first;
+
+    while ((first.battleState?.self.energy ?? 0) < 2) {
+      await _waitFor(() => first.energySpawn != null);
+      first.collectEnergy(first.energySpawn!.id);
+      await _waitFor(() => first.energySpawn == null);
+    }
+    first.useAbility(0);
+
+    await _waitFor(
+      () => first.battleState!.opponent.health.first < startingHealth,
+    );
+    await _waitFor(
+      () =>
+          second.battleState!.self.health.first ==
+          first.battleState!.opponent.health.first,
+    );
+
+    expect(first.battleState!.self.energy, lessThan(2));
+    expect(first.battleState!.opponent.health, second.battleState!.self.health);
+    expect(first.battleState!.revision, second.battleState!.revision);
   });
 }
 
@@ -82,7 +77,7 @@ MultiplayerPlayerSnapshot _player(String id, String name) {
 }
 
 Future<void> _waitFor(bool Function() condition) async {
-  final deadline = DateTime.now().add(const Duration(seconds: 2));
+  final deadline = DateTime.now().add(const Duration(seconds: 5));
   while (!condition()) {
     if (DateTime.now().isAfter(deadline)) {
       throw TimeoutException('Expected multiplayer state was not reached.');

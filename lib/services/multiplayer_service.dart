@@ -25,12 +25,16 @@ class MultiplayerService extends ChangeNotifier {
   MultiplayerPlayerSnapshot? _opponent;
   String? _matchId;
   String? _message;
+  MultiplayerBattleState? _battleState;
+  MultiplayerEnergySpawn? _energySpawn;
   bool _disposed = false;
 
   MultiplayerConnectionState get state => _state;
   MultiplayerPlayerSnapshot? get opponent => _opponent;
   String? get matchId => _matchId;
   String? get message => _message;
+  MultiplayerBattleState? get battleState => _battleState;
+  MultiplayerEnergySpawn? get energySpawn => _energySpawn;
   bool get isConnected =>
       _state != MultiplayerConnectionState.connecting &&
       _state != MultiplayerConnectionState.offline;
@@ -80,6 +84,8 @@ class MultiplayerService extends ChangeNotifier {
     if (_state != MultiplayerConnectionState.ready || _channel == null) return;
     _opponent = null;
     _matchId = null;
+    _battleState = null;
+    _energySpawn = null;
     _channel!.sink.add(
       jsonEncode({'type': 'queue', 'player': player.toJson()}),
     );
@@ -100,7 +106,32 @@ class MultiplayerService extends ChangeNotifier {
     _opponent = null;
     _matchId = null;
     _message = null;
+    _battleState = null;
+    _energySpawn = null;
     if (_channel != null) _setState(MultiplayerConnectionState.ready);
+  }
+
+  void enterBattle() => _sendMatchMessage('ready');
+
+  void collectEnergy(int spawnId) {
+    _sendMatchMessage('collectEnergy', {'spawnId': spawnId});
+  }
+
+  void useAbility(int abilityIndex) {
+    _sendMatchMessage('ability', {'abilityIndex': abilityIndex});
+  }
+
+  void switchFighter(int fighterIndex) {
+    _sendMatchMessage('switch', {'fighterIndex': fighterIndex});
+  }
+
+  void leaveBattle() => _sendMatchMessage('leave');
+
+  void _sendMatchMessage(String type, [Map<String, dynamic>? payload]) {
+    if (_channel == null || _matchId == null) return;
+    _channel!.sink.add(
+      jsonEncode({'type': type, 'matchId': _matchId, ...?payload}),
+    );
   }
 
   void _handleMessage(dynamic raw) {
@@ -117,6 +148,19 @@ class MultiplayerService extends ChangeNotifier {
         );
         _message = 'Opponent found!';
         _setState(MultiplayerConnectionState.matched);
+      case 'battleState':
+        _battleState = MultiplayerBattleState.fromJson(data);
+        _message = _battleState!.message;
+        notifyListeners();
+      case 'energy':
+        _energySpawn = MultiplayerEnergySpawn.fromJson(data);
+        notifyListeners();
+      case 'energyGone':
+        final id = (data['id'] as num?)?.toInt();
+        if (id == null || _energySpawn?.id == id) {
+          _energySpawn = null;
+          notifyListeners();
+        }
       case 'error':
         _message = data['message'] as String? ?? 'Matchmaking failed.';
         _setState(MultiplayerConnectionState.ready);
@@ -129,6 +173,8 @@ class MultiplayerService extends ChangeNotifier {
     _channel = null;
     _opponent = null;
     _matchId = null;
+    _battleState = null;
+    _energySpawn = null;
     _message = 'Connection to the match server was lost.';
     _setState(MultiplayerConnectionState.offline);
   }

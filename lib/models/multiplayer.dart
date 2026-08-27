@@ -94,3 +94,92 @@ class MultiplayerPlayerSnapshot {
     );
   }
 }
+
+class MultiplayerCombatantState {
+  const MultiplayerCombatantState({
+    required this.health,
+    required this.activeIndex,
+    required this.energy,
+    required this.shield,
+    required this.energyHits,
+    required this.energyMisses,
+  });
+
+  final List<int> health;
+  final int activeIndex;
+  final int energy;
+  final int shield;
+  final int energyHits;
+  final int energyMisses;
+
+  factory MultiplayerCombatantState.fromJson(Map<String, dynamic> json) {
+    return MultiplayerCombatantState(
+      health: (json['health'] as List<dynamic>)
+          .map((value) => (value as num).toInt())
+          .toList(growable: false),
+      activeIndex: (json['activeIndex'] as num).toInt(),
+      energy: (json['energy'] as num).toInt(),
+      shield: (json['shield'] as num).toInt(),
+      energyHits: (json['energyHits'] as num?)?.toInt() ?? 0,
+      energyMisses: (json['energyMisses'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class MultiplayerBattleState {
+  const MultiplayerBattleState({
+    required this.self,
+    required this.opponent,
+    required this.message,
+    required this.revision,
+    this.lastActorId,
+    this.winnerId,
+  });
+
+  final MultiplayerCombatantState self;
+  final MultiplayerCombatantState opponent;
+  final String message;
+  final int revision;
+  final String? lastActorId;
+  final String? winnerId;
+
+  bool get finished => winnerId != null;
+
+  factory MultiplayerBattleState.fromJson(Map<String, dynamic> json) {
+    return MultiplayerBattleState(
+      self: MultiplayerCombatantState.fromJson(
+        Map<String, dynamic>.from(json['self'] as Map),
+      ),
+      opponent: MultiplayerCombatantState.fromJson(
+        Map<String, dynamic>.from(json['opponent'] as Map),
+      ),
+      message: json['message'] as String? ?? 'Battle ready',
+      revision: (json['revision'] as num?)?.toInt() ?? 0,
+      lastActorId: json['lastActorId'] as String?,
+      winnerId: json['winnerId'] as String?,
+    );
+  }
+}
+
+class MultiplayerEnergySpawn {
+  const MultiplayerEnergySpawn({
+    required this.id,
+    required this.x,
+    required this.y,
+    required this.golden,
+  });
+
+  final int id;
+  final double x;
+  final double y;
+  final bool golden;
+
+  factory MultiplayerEnergySpawn.fromJson(Map<String, dynamic> json) {
+    return MultiplayerEnergySpawn(
+      id: (json['id'] as num).toInt(),
+      x: (json['x'] as num).toDouble(),
+      y: (json['y'] as num).toDouble(),
+      golden: json['golden'] as bool? ?? false,
+    );
+  }
+}
