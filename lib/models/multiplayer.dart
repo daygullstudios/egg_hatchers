@@ -46,6 +46,7 @@ class MultiplayerPlayerSnapshot {
     required this.displayName,
     required this.username,
     required this.avatarColorValue,
+    required this.rating,
     required this.team,
   });
 
@@ -53,17 +54,20 @@ class MultiplayerPlayerSnapshot {
   final String displayName;
   final String username;
   final int avatarColorValue;
+  final int rating;
   final List<MultiplayerFighterSnapshot> team;
 
   factory MultiplayerPlayerSnapshot.fromPlayer({
     required PlayerAccount account,
     required List<ArenaFighter> team,
+    required int rating,
   }) {
     return MultiplayerPlayerSnapshot(
       playerId: account.id,
       displayName: account.displayName,
       username: account.username,
       avatarColorValue: account.avatarColorValue,
+      rating: rating,
       team: team
           .map(MultiplayerFighterSnapshot.fromArenaFighter)
           .toList(growable: false),
@@ -75,6 +79,7 @@ class MultiplayerPlayerSnapshot {
     'displayName': displayName,
     'username': username,
     'avatarColorValue': avatarColorValue,
+    'rating': rating,
     'team': team.map((fighter) => fighter.toJson()).toList(growable: false),
   };
 
@@ -84,6 +89,7 @@ class MultiplayerPlayerSnapshot {
       displayName: json['displayName'] as String,
       username: json['username'] as String,
       avatarColorValue: json['avatarColorValue'] as int,
+      rating: (json['rating'] as num?)?.toInt() ?? 1000,
       team: (json['team'] as List<dynamic>)
           .map(
             (item) => MultiplayerFighterSnapshot.fromJson(

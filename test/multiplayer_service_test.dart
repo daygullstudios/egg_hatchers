@@ -72,10 +72,38 @@ void main() {
     expect(first.battleState!.self.energy, lessThan(2));
     expect(first.battleState!.opponent.health, second.battleState!.self.health);
     expect(first.battleState!.revision, second.battleState!.revision);
+
+    final far = MultiplayerService(serverUri: uri);
+    final nearbyFirst = MultiplayerService(serverUri: uri);
+    final nearbySecond = MultiplayerService(serverUri: uri);
+    addTearDown(far.dispose);
+    addTearDown(nearbyFirst.dispose);
+    addTearDown(nearbySecond.dispose);
+    await Future.wait([
+      far.connect(),
+      nearbyFirst.connect(),
+      nearbySecond.connect(),
+    ]);
+    far.findMatch(_player('far', 'Far Player', rating: 1450));
+    nearbyFirst.findMatch(_player('near_1', 'Nearby One', rating: 900));
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    expect(far.state, MultiplayerConnectionState.searching);
+    expect(nearbyFirst.state, MultiplayerConnectionState.searching);
+
+    nearbySecond.findMatch(_player('near_2', 'Nearby Two', rating: 950));
+    await _waitFor(
+      () => nearbyFirst.state == MultiplayerConnectionState.matched,
+    );
+    await _waitFor(
+      () => nearbySecond.state == MultiplayerConnectionState.matched,
+    );
+    expect(nearbyFirst.opponent!.rating, 950);
+    expect(nearbySecond.opponent!.rating, 900);
+    expect(far.state, MultiplayerConnectionState.searching);
   });
 }
 
-MultiplayerPlayerSnapshot _player(String id, String name) {
+MultiplayerPlayerSnapshot _player(String id, String name, {int rating = 1000}) {
   final account = PlayerAccount(
     id: id,
     displayName: name,
@@ -85,6 +113,7 @@ MultiplayerPlayerSnapshot _player(String id, String name) {
   );
   return MultiplayerPlayerSnapshot.fromPlayer(
     account: account,
+    rating: rating,
     team: const [
       ArenaFighter(animalId: 'chicken', mutationId: 'none', level: 1, power: 1),
       ArenaFighter(animalId: 'fox', mutationId: 'none', level: 1, power: 2),

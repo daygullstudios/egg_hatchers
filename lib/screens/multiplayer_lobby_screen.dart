@@ -163,6 +163,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
     final player = MultiplayerPlayerSnapshot.fromPlayer(
       account: widget.account,
       team: _team.map(ArenaLogic.fighterFromOwned).toList(growable: false),
+      rating: widget.game.arenaRating,
     );
     await pushThemedAppRoute<void>(
       context,
@@ -170,6 +171,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
       settings: const RouteSettings(name: kMultiplayerBattleRouteName),
       builder: (_) => MultiplayerBattleScreen(
         multiplayer: multiplayer,
+        game: widget.game,
         player: player,
         opponent: opponent,
         customSprites: widget.customSprites,
@@ -354,6 +356,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
     final snapshot = MultiplayerPlayerSnapshot.fromPlayer(
       account: widget.account,
       team: _team.map(ArenaLogic.fighterFromOwned).toList(),
+      rating: widget.game.arenaRating,
     );
     if (widget.onFindMatch == null) {
       _multiplayer?.findMatch(snapshot);
@@ -430,7 +433,10 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(14, 14, 14, 28),
                 children: [
-                  _PlayerBanner(account: widget.account),
+                  _PlayerBanner(
+                    account: widget.account,
+                    rating: widget.game.arenaRating,
+                  ),
                   const SizedBox(height: 18),
                   Row(
                     children: [
@@ -527,9 +533,10 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
 }
 
 class _PlayerBanner extends StatelessWidget {
-  const _PlayerBanner({required this.account});
+  const _PlayerBanner({required this.account, required this.rating});
 
   final PlayerAccount account;
+  final int rating;
 
   @override
   Widget build(BuildContext context) {
@@ -579,19 +586,19 @@ class _PlayerBanner extends StatelessWidget {
               ],
             ),
           ),
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                'UNRANKED',
-                style: TextStyle(
+                ArenaLogic.divisionFor(rating).toUpperCase(),
+                style: const TextStyle(
                   color: Color(0xFFFFD45C),
                   fontWeight: FontWeight.w900,
                 ),
               ),
               Text(
-                'Online',
-                style: TextStyle(color: Color(0xFFA9B8E8), fontSize: 12),
+                '$rating rating',
+                style: const TextStyle(color: Color(0xFFA9B8E8), fontSize: 12),
               ),
             ],
           ),

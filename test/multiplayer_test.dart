@@ -14,6 +14,7 @@ void main() {
     );
     final snapshot = MultiplayerPlayerSnapshot.fromPlayer(
       account: account,
+      rating: 1234,
       team: const [
         ArenaFighter(
           animalId: 'chicken',
@@ -28,6 +29,7 @@ void main() {
 
     expect(restored.playerId, 'player_1');
     expect(restored.username, 'egg_hero');
+    expect(restored.rating, 1234);
     expect(restored.team, hasLength(1));
     expect(restored.team.single.animalId, 'chicken');
     expect(restored.team.single.power, 420);

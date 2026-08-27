@@ -146,7 +146,9 @@ class MultiplayerService extends ChangeNotifier {
     final data = jsonDecode(raw) as Map<String, dynamic>;
     switch (data['type']) {
       case 'queued':
-        _message = 'Waiting for another player...';
+        _message =
+            data['message'] as String? ??
+            'Waiting for a nearby-ranked player...';
         _setState(MultiplayerConnectionState.searching);
       case 'matched':
         _matchId = data['matchId'] as String;

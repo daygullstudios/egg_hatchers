@@ -5,6 +5,7 @@ import 'package:egg_hatchers/models/multiplayer.dart';
 import 'package:egg_hatchers/models/player_account.dart';
 import 'package:egg_hatchers/screens/multiplayer_battle_screen.dart';
 import 'package:egg_hatchers/services/custom_sprite_service.dart';
+import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/multiplayer_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +26,7 @@ void main() {
     late MultiplayerPlayerSnapshot firstPlayer;
     late MultiplayerPlayerSnapshot secondPlayer;
     late CustomSpriteService sprites;
+    late GameService game;
     await tester.runAsync(() async {
       server = await LocalMultiplayerServer.start(port: 0);
       final uri = Uri.parse('ws://127.0.0.1:${server.port}/ws');
@@ -41,17 +43,20 @@ void main() {
       await _waitFor(() => first.battleState != null);
 
       SharedPreferences.setMockInitialValues({});
+      game = GameService();
       sprites = CustomSpriteService();
-      await sprites.initialize();
+      await Future.wait([game.initialize(), sprites.initialize()]);
     });
     addTearDown(server.close);
     addTearDown(first.dispose);
     addTearDown(second.dispose);
+    addTearDown(game.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
         home: MultiplayerBattleScreen(
           multiplayer: first,
+          game: game,
           player: firstPlayer,
           opponent: secondPlayer,
           customSprites: sprites,
@@ -79,6 +84,7 @@ MultiplayerPlayerSnapshot _player(String id, String name) {
       avatarColorValue: 0xFF5271FF,
       createdAt: DateTime.utc(2026, 8, 27),
     ),
+    rating: 1000,
     team: const [
       ArenaFighter(animalId: 'chicken', mutationId: 'none', level: 1, power: 1),
       ArenaFighter(animalId: 'fox', mutationId: 'none', level: 1, power: 2),

@@ -134,8 +134,16 @@ ContentType _contentTypeFor(String path) {
 }
 
 class _Matchmaker {
+  _Matchmaker() {
+    _matchTimer = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _tryMatches(),
+    );
+  }
+
   final List<_QueuedPlayer> _waiting = [];
   final Map<WebSocket, _BattleMatch> _matchesBySocket = {};
+  late final Timer _matchTimer;
   var _nextMatch = 1;
 
   int get waitingCount => _waiting.length;
@@ -181,23 +189,63 @@ class _Matchmaker {
       return;
     }
 
-    final opponentIndex = _waiting.indexWhere(
-      (candidate) => candidate.player['playerId'] != playerId,
+    final rating = (player['rating'] as num?)?.toInt() ?? 1000;
+    player['rating'] = rating;
+    _waiting.add(
+      _QueuedPlayer(socket: socket, player: player, queuedAt: DateTime.now()),
     );
-    if (opponentIndex < 0) {
-      _waiting.add(_QueuedPlayer(socket: socket, player: player));
-      _send(socket, {'type': 'queued'});
-      return;
-    }
+    _send(socket, {
+      'type': 'queued',
+      'message': 'Searching near your $rating rating...',
+    });
+    _tryMatches();
+  }
 
-    final opponent = _waiting.removeAt(opponentIndex);
+  void _tryMatches() {
+    while (true) {
+      var firstIndex = -1;
+      var secondIndex = -1;
+      var closestGap = 1 << 30;
+      final now = DateTime.now();
+      for (var i = 0; i < _waiting.length; i++) {
+        for (var j = i + 1; j < _waiting.length; j++) {
+          final first = _waiting[i];
+          final second = _waiting[j];
+          if (first.player['playerId'] == second.player['playerId']) continue;
+          final gap = (first.rating - second.rating).abs();
+          final allowedGap = min(
+            _allowedRatingGap(first, now),
+            _allowedRatingGap(second, now),
+          );
+          if (gap <= allowedGap && gap < closestGap) {
+            firstIndex = i;
+            secondIndex = j;
+            closestGap = gap;
+          }
+        }
+      }
+      if (firstIndex < 0) return;
+      final second = _waiting.removeAt(secondIndex);
+      final first = _waiting.removeAt(firstIndex);
+      _createMatch(first, second);
+    }
+  }
+
+  int _allowedRatingGap(_QueuedPlayer player, DateTime now) {
+    final steps = now.difference(player.queuedAt).inSeconds ~/ 5;
+    return (100 + steps * 50).clamp(100, 400);
+  }
+
+  void _createMatch(_QueuedPlayer opponent, _QueuedPlayer challenger) {
+    final socket = challenger.socket;
+    final player = challenger.player;
     final matchId =
         'local_match_${DateTime.now().microsecondsSinceEpoch}_${_nextMatch++}';
     late final _BattleMatch match;
     match = _BattleMatch(
       id: matchId,
       first: opponent,
-      second: _QueuedPlayer(socket: socket, player: player),
+      second: challenger,
       onFinished: () => _releaseMatch(match),
     );
     _matchesBySocket[opponent.socket] = match;
@@ -224,6 +272,7 @@ class _Matchmaker {
   }
 
   void close() {
+    _matchTimer.cancel();
     for (final match in _matchesBySocket.values.toSet()) {
       match.close();
     }
@@ -527,10 +576,17 @@ class _BattlePlayer {
 }
 
 class _QueuedPlayer {
-  const _QueuedPlayer({required this.socket, required this.player});
+  const _QueuedPlayer({
+    required this.socket,
+    required this.player,
+    required this.queuedAt,
+  });
 
   final WebSocket socket;
   final Map<String, dynamic> player;
+  final DateTime queuedAt;
+
+  int get rating => (player['rating'] as num?)?.toInt() ?? 1000;
 }
 
 typedef VoidCallback = void Function();

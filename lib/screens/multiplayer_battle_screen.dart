@@ -9,8 +9,11 @@ import '../data/game_data.dart';
 import '../models/arena.dart';
 import '../models/multiplayer.dart';
 import '../services/custom_sprite_service.dart';
+import '../services/game_service.dart';
 import '../services/multiplayer_service.dart';
 import '../utils/arena_combat_logic.dart';
+import '../utils/arena_logic.dart';
+import '../utils/format_utils.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/game_sprite.dart';
 
@@ -18,12 +21,14 @@ class MultiplayerBattleScreen extends StatefulWidget {
   const MultiplayerBattleScreen({
     super.key,
     required this.multiplayer,
+    required this.game,
     required this.player,
     required this.opponent,
     required this.customSprites,
   });
 
   final MultiplayerService multiplayer;
+  final GameService game;
   final MultiplayerPlayerSnapshot player;
   final MultiplayerPlayerSnapshot opponent;
   final CustomSpriteService customSprites;
@@ -39,6 +44,8 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
   var _opponentAttacking = false;
   var _lastRevision = -1;
   var _resultSoundPlayed = false;
+  ArenaReward? _reward;
+  var _rewardApplied = false;
 
   List<ArenaFighter> get _playerTeam =>
       widget.player.team.map(_arenaFighterFromSnapshot).toList(growable: false);
@@ -85,8 +92,28 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
         final won = state.winnerId == widget.player.playerId;
         AudioScope.maybeOf(context)?.playSfx(won ? Sfx.victory : Sfx.defeat);
       }
+      if (state.finished && !_rewardApplied) {
+        _applyReward(state);
+      }
     }
     setState(() {});
+  }
+
+  void _applyReward(MultiplayerBattleState state) {
+    _rewardApplied = true;
+    final won = state.winnerId == widget.player.playerId;
+    final reward = ArenaLogic.rewardFor(
+      won: won,
+      playerRating: widget.player.rating,
+      opponentRating: widget.opponent.rating,
+      opponentPower: widget.opponent.team.fold(
+        0,
+        (sum, fighter) => sum + fighter.power,
+      ),
+      currentStreak: widget.game.arenaWinStreak,
+    );
+    _reward = reward;
+    widget.game.applyArenaResult(won: won, reward: reward);
   }
 
   void _collectEnergy() {
@@ -230,11 +257,13 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                 ],
               ),
             ),
-            if (finished)
+            if (finished && _reward != null)
               Positioned.fill(
                 child: _OnlineResultOverlay(
                   won: state.winnerId == widget.player.playerId,
                   opponentName: widget.opponent.displayName,
+                  reward: _reward!,
+                  rating: widget.game.arenaRating,
                   onContinue: _continue,
                 ),
               ),
@@ -780,11 +809,15 @@ class _OnlineResultOverlay extends StatelessWidget {
   const _OnlineResultOverlay({
     required this.won,
     required this.opponentName,
+    required this.reward,
+    required this.rating,
     required this.onContinue,
   });
 
   final bool won;
   final String opponentName;
+  final ArenaReward reward;
+  final int rating;
   final VoidCallback onContinue;
 
   @override
@@ -825,6 +858,36 @@ class _OnlineResultOverlay extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white70),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${ArenaLogic.divisionFor(rating)}  |  $rating rating',
+                    style: const TextStyle(
+                      color: Color(0xFF70D9FF),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _OnlineRewardStat(
+                        icon: Icons.trending_up,
+                        value:
+                            '${reward.ratingChange >= 0 ? '+' : ''}${reward.ratingChange}',
+                        label: 'RATING',
+                      ),
+                      _OnlineRewardStat(
+                        icon: Icons.monetization_on,
+                        value: formatCoins(reward.coins),
+                        label: 'COINS',
+                      ),
+                      _OnlineRewardStat(
+                        icon: Icons.sports_martial_arts,
+                        value: '${reward.battleTokens}',
+                        label: 'TOKENS',
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 22),
                   SizedBox(
                     width: double.infinity,
@@ -845,6 +908,44 @@ class _OnlineResultOverlay extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _OnlineRewardStat extends StatelessWidget {
+  const _OnlineRewardStat({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: const Color(0xFFFFD54F), size: 22),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 17,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white60,
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
     );
   }
 }
