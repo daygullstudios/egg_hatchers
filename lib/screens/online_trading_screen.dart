@@ -94,6 +94,74 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
     _trading.findTrader(_traderSnapshot());
   }
 
+  Future<void> _chooseRequestedAnimal(OnlineTradeState trade) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * 0.68,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Request from ${trade.opponent.displayName}',
+                        style: const TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: trade.opponentInventory.isEmpty
+                    ? const Center(child: Text('No animals can be requested.'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+                        itemCount: trade.opponentInventory.length,
+                        itemBuilder: (context, index) {
+                          final animal = trade.opponentInventory[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _AnimalTradeTile(
+                              owned: animal,
+                              customSprites: widget.customSprites,
+                              actionLabel: 'REQUEST',
+                              onTap: () {
+                                _trading.requestAnimal(animal);
+                                Navigator.pop(sheetContext);
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _offerRequestedAnimal(OwnedAnimal requested) {
+    for (final owned in widget.game.tradableAnimals) {
+      if (_sameAnimal(owned, requested)) {
+        _trading.offer(owned);
+        return;
+      }
+    }
+  }
+
   @override
   void dispose() {
     if (_trading.state == TradingConnectionState.searching) {
@@ -246,6 +314,15 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 14),
+        _TradeChatPanel(
+          messages: _trading.chatMessages,
+          opponentName: trade.opponent.displayName,
+          customSprites: widget.customSprites,
+          onSend: _trading.sendChat,
+          onRequestAnimal: () => _chooseRequestedAnimal(trade),
+          onOfferRequested: _offerRequestedAnimal,
         ),
         const SizedBox(height: 14),
         SizedBox(
@@ -511,11 +588,13 @@ class _AnimalTradeTile extends StatelessWidget {
     required this.customSprites,
     this.selected = false,
     this.onTap,
+    this.actionLabel,
   });
   final OwnedAnimal owned;
   final CustomSpriteService customSprites;
   final bool selected;
   final VoidCallback? onTap;
+  final String? actionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -566,10 +645,207 @@ class _AnimalTradeTile extends StatelessWidget {
                 ),
               ),
               Text('x${owned.quantity}'),
+              if (actionLabel != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(
+                    actionLabel!,
+                    style: const TextStyle(
+                      color: Color(0xFF32C989),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
               if (onTap != null)
                 Icon(selected ? Icons.check_circle : Icons.chevron_right),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TradeChatPanel extends StatelessWidget {
+  const _TradeChatPanel({
+    required this.messages,
+    required this.opponentName,
+    required this.customSprites,
+    required this.onSend,
+    required this.onRequestAnimal,
+    required this.onOfferRequested,
+  });
+
+  final List<TradeChatMessage> messages;
+  final String opponentName;
+  final CustomSpriteService customSprites;
+  final ValueChanged<TradeChatTag> onSend;
+  final VoidCallback onRequestAnimal;
+  final ValueChanged<OwnedAnimal> onOfferRequested;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleMessages = messages.length > 5
+        ? messages.sublist(messages.length - 5)
+        : messages;
+    return Container(
+      key: const ValueKey('trade-chat-panel'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF102D35),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF32C989)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.forum, color: Color(0xFF83E6C1), size: 19),
+              SizedBox(width: 7),
+              Text(
+                'Trade Chat',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (visibleMessages.isEmpty)
+            const Text(
+              'Use the choices below to negotiate safely.',
+              style: TextStyle(color: Colors.white60, fontSize: 12),
+            )
+          else
+            for (final message in visibleMessages)
+              _TradeChatBubble(
+                message: message,
+                opponentName: opponentName,
+                customSprites: customSprites,
+                onOfferRequested: onOfferRequested,
+              ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              _TradeChatChoice(
+                label: 'YES',
+                onPressed: () => onSend(TradeChatTag.yes),
+              ),
+              _TradeChatChoice(
+                label: 'NO',
+                onPressed: () => onSend(TradeChatTag.no),
+              ),
+              _TradeChatChoice(
+                label: 'IS THIS FAIR?',
+                onPressed: () => onSend(TradeChatTag.isThisFair),
+              ),
+              _TradeChatChoice(
+                label: 'REQUEST ANIMAL',
+                icon: Icons.pets,
+                onPressed: onRequestAnimal,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TradeChatChoice extends StatelessWidget {
+  const _TradeChatChoice({
+    required this.label,
+    required this.onPressed,
+    this.icon,
+  });
+  final String label;
+  final VoidCallback onPressed;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      avatar: icon == null ? null : Icon(icon, size: 16),
+      label: Text(label),
+      onPressed: onPressed,
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
+class _TradeChatBubble extends StatelessWidget {
+  const _TradeChatBubble({
+    required this.message,
+    required this.opponentName,
+    required this.customSprites,
+    required this.onOfferRequested,
+  });
+
+  final TradeChatMessage message;
+  final String opponentName;
+  final CustomSpriteService customSprites;
+  final ValueChanged<OwnedAnimal> onOfferRequested;
+
+  @override
+  Widget build(BuildContext context) {
+    final animal = message.animal == null
+        ? null
+        : GameData.animalById(message.animal!.animalId);
+    final speaker = message.fromSelf ? 'You' : opponentName;
+    final text = switch (message.tag) {
+      TradeChatTag.yes => '$speaker: Yes',
+      TradeChatTag.no => '$speaker: No',
+      TradeChatTag.isThisFair => '$speaker: Is this fair?',
+      TradeChatTag.requestAnimal =>
+        message.fromSelf
+            ? 'You requested ${animal?.name ?? 'an animal'}'
+            : '$opponentName wants ${animal?.name ?? 'an animal'}',
+    };
+    return Align(
+      alignment: message.fromSelf
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 285),
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: message.fromSelf
+              ? const Color(0xFF175A50)
+              : const Color(0xFF233C55),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (animal != null) ...[
+              GameAnimalPortrait(
+                customSprite: customSprites.getDisplaySprite(animal.id),
+                animalId: animal.id,
+                spritePath: animal.spritePath,
+                fallbackEmoji: animal.emoji,
+                mutation: GameData.mutationById(message.animal!.mutationId),
+                size: 34,
+              ),
+              const SizedBox(width: 7),
+            ],
+            Flexible(
+              child: Text(
+                text,
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+            if (!message.fromSelf && message.animal != null)
+              TextButton(
+                onPressed: () => onOfferRequested(message.animal!),
+                child: const Text('OFFER'),
+              ),
+          ],
         ),
       ),
     );

@@ -29,12 +29,14 @@ class TradingService extends ChangeNotifier {
   OnlineTradeCompletion? _completion;
   String? _tradeId;
   String? _message;
+  final List<TradeChatMessage> _chatMessages = [];
   var _disposed = false;
 
   TradingConnectionState get state => _state;
   OnlineTradeState? get trade => _trade;
   OnlineTradeCompletion? get completion => _completion;
   String? get message => _message;
+  List<TradeChatMessage> get chatMessages => List.unmodifiable(_chatMessages);
 
   Future<void> connect() async {
     if (_channel != null || _disposed) return;
@@ -62,6 +64,7 @@ class TradingService extends ChangeNotifier {
     _trade = null;
     _completion = null;
     _tradeId = null;
+    _chatMessages.clear();
     _channel!.sink.add(jsonEncode({'type': 'queueTrade', ...trader.toJson()}));
     _message = 'Looking for another trader...';
     _setState(TradingConnectionState.searching);
@@ -72,6 +75,7 @@ class TradingService extends ChangeNotifier {
     _trade = null;
     _completion = null;
     _tradeId = null;
+    _chatMessages.clear();
     _channel!.sink.add(
       jsonEncode({
         'type': 'joinTradeInvite',
@@ -96,12 +100,25 @@ class TradingService extends ChangeNotifier {
 
   void confirm() => _send('tradeConfirm');
 
+  void sendChat(TradeChatTag tag) {
+    if (tag == TradeChatTag.requestAnimal) return;
+    _send('tradeChat', {'tag': tag.wireName});
+  }
+
+  void requestAnimal(OwnedAnimal animal) {
+    _send('tradeChat', {
+      'tag': TradeChatTag.requestAnimal.wireName,
+      'animal': animal.copyWith(quantity: 1).toJson(),
+    });
+  }
+
   void leaveTrade() => _send('leaveTrade');
 
   void reset() {
     _trade = null;
     _completion = null;
     _tradeId = null;
+    _chatMessages.clear();
     _message = null;
     if (_channel != null) _setState(TradingConnectionState.ready);
   }
@@ -129,6 +146,10 @@ class TradingService extends ChangeNotifier {
         _completion = OnlineTradeCompletion.fromJson(data);
         _message = 'Trade complete!';
         _setState(TradingConnectionState.completed);
+      case 'tradeChat':
+        _chatMessages.add(TradeChatMessage.fromJson(data));
+        if (_chatMessages.length > 20) _chatMessages.removeAt(0);
+        notifyListeners();
       case 'tradeCancelled':
         _trade = null;
         _tradeId = null;
@@ -146,6 +167,7 @@ class TradingService extends ChangeNotifier {
     _subscription = null;
     _trade = null;
     _tradeId = null;
+    _chatMessages.clear();
     _message = 'Connection to the trading server was lost.';
     _setState(TradingConnectionState.offline);
   }

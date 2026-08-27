@@ -53,6 +53,21 @@ void main() {
           second.state == TradingConnectionState.trading,
     );
 
+    expect(first.trade!.opponentInventory.single.animalId, 'fox');
+    expect(second.trade!.opponentInventory.single.animalId, 'chicken');
+    first.sendChat(TradeChatTag.isThisFair);
+    await _waitFor(() => second.chatMessages.isNotEmpty);
+    expect(second.chatMessages.last.tag, TradeChatTag.isThisFair);
+    expect(second.chatMessages.last.fromSelf, isFalse);
+    second.sendChat(TradeChatTag.yes);
+    await _waitFor(() => first.chatMessages.length == 2);
+    expect(first.chatMessages.last.tag, TradeChatTag.yes);
+    first.requestAnimal(fox);
+    await _waitFor(() => second.chatMessages.length == 3);
+    expect(second.chatMessages.last.tag, TradeChatTag.requestAnimal);
+    expect(second.chatMessages.last.animal!.animalId, 'fox');
+    expect(second.chatMessages.last.fromSelf, isFalse);
+
     first.offer(chicken);
     second.offer(fox);
     await _waitFor(

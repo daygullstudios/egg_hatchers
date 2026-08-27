@@ -726,6 +726,7 @@ class _TradeSession {
   final List<_TradePlayer> players;
   final VoidCallback onFinished;
   var _finished = false;
+  var _nextChatId = 1;
 
   void start() => _broadcast('Choose an animal to offer.');
 
@@ -759,8 +760,51 @@ class _TradeSession {
         } else {
           _broadcast('${actor.name} confirmed the trade.');
         }
+      case 'tradeChat':
+        _handleChat(actor, data);
       case 'leaveTrade':
         disconnect(socket);
+    }
+  }
+
+  void _handleChat(_TradePlayer actor, Map<String, dynamic> data) {
+    const allowedTags = {'yes', 'no', 'is_this_fair', 'request_animal'};
+    final tag = data['tag'] as String?;
+    if (!allowedTags.contains(tag)) {
+      _send(actor.socket, {
+        'type': 'error',
+        'message': 'That trade message is not allowed.',
+      });
+      return;
+    }
+    Map<String, dynamic>? animal;
+    if (tag == 'request_animal') {
+      final rawAnimal = data['animal'];
+      if (rawAnimal is! Map) return;
+      final requested = Map<String, dynamic>.from(rawAnimal);
+      final opponent = _opponentOf(actor);
+      final index = opponent.inventory.indexWhere(
+        (owned) => _sameTradeAnimal(owned, requested),
+      );
+      if (index < 0) {
+        _send(actor.socket, {
+          'type': 'error',
+          'message': 'That animal is no longer available.',
+        });
+        return;
+      }
+      animal = _singleTradeAnimal(opponent.inventory[index]);
+    }
+    final chatId = '${id}_chat_${_nextChatId++}';
+    for (final player in players) {
+      _send(player.socket, {
+        'type': 'tradeChat',
+        'tradeId': id,
+        'chatId': chatId,
+        'tag': tag,
+        'fromSelf': identical(player, actor),
+        'animal': ?animal,
+      });
     }
   }
 
@@ -790,6 +834,10 @@ class _TradeSession {
         'selfConfirmed': player.confirmed,
         'opponentConfirmed': opponent.confirmed,
         'message': message,
+        'opponentInventory': opponent.inventory
+            .where(_isTradableAnimal)
+            .map(_singleTradeAnimal)
+            .toList(growable: false),
       });
     }
   }
