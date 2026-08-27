@@ -53,6 +53,7 @@ class LocalMultiplayerServer {
             'status': 'ok',
             'waiting': _matchmaker.waitingCount,
             'matches': _matchmaker.matchCount,
+            'online': _matchmaker.onlineCount,
           }),
         );
       await request.response.close();
@@ -145,11 +146,16 @@ class _Matchmaker {
   final Map<WebSocket, _BattleMatch> _matchesBySocket = {};
   final List<_QueuedTrader> _tradeWaiting = [];
   final Map<WebSocket, _TradeSession> _tradesBySocket = {};
+  final Map<WebSocket, _PresenceClient> _presenceBySocket = {};
+  final Map<String, _LobbyInvite> _invites = {};
+  final Map<String, _DirectRoom> _directRooms = {};
   late final Timer _matchTimer;
   var _nextMatch = 1;
 
   int get waitingCount => _waiting.length;
   int get matchCount => _matchesBySocket.values.toSet().length;
+  int get onlineCount =>
+      _presenceBySocket.values.map((entry) => entry.playerId).toSet().length;
 
   void attach(WebSocket socket) {
     socket.listen(
@@ -165,6 +171,41 @@ class _Matchmaker {
     try {
       final data = jsonDecode(raw) as Map<String, dynamic>;
       final type = data['type'] as String?;
+      if (type == 'registerPresence') {
+        _registerPresence(socket, data);
+        return;
+      }
+      if (type == 'sendInvite') {
+        _sendInvite(socket, data);
+        return;
+      }
+      if (type == 'respondInvite') {
+        _respondInvite(socket, data);
+        return;
+      }
+      if (type == 'presetMessage') {
+        _sendPresetMessage(socket, data);
+        return;
+      }
+      if (type == 'joinBattleInvite') {
+        _joinBattleInvite(
+          socket,
+          data['roomId'] as String?,
+          Map<String, dynamic>.from(data['player'] as Map),
+        );
+        return;
+      }
+      if (type == 'joinTradeInvite') {
+        _joinTradeInvite(
+          socket,
+          data['roomId'] as String?,
+          Map<String, dynamic>.from(data['player'] as Map),
+          (data['inventory'] as List<dynamic>)
+              .map((item) => Map<String, dynamic>.from(item as Map))
+              .toList(growable: false),
+        );
+        return;
+      }
       if (type == 'queue') {
         _queue(socket, Map<String, dynamic>.from(data['player'] as Map));
         return;
@@ -195,6 +236,240 @@ class _Matchmaker {
       _matchesBySocket[socket]?.handle(socket, data);
     } catch (_) {
       _send(socket, {'type': 'error', 'message': 'Invalid match request.'});
+    }
+  }
+
+  void _registerPresence(WebSocket socket, Map<String, dynamic> data) {
+    final account = data['account'];
+    if (account is! Map || account['id'] is! String) {
+      _send(socket, {
+        'type': 'lobbyError',
+        'message': 'Invalid player profile.',
+      });
+      return;
+    }
+    final player = <String, dynamic>{
+      'account': Map<String, dynamic>.from(account),
+      'rating': (data['rating'] as num?)?.toInt() ?? 1000,
+      'team': (data['team'] as List<dynamic>? ?? const [])
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList(growable: false),
+      'animals': (data['animals'] as List<dynamic>? ?? const [])
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList(growable: false),
+    };
+    _presenceBySocket[socket] = _PresenceClient(socket, player);
+    _broadcastPresence();
+  }
+
+  void _broadcastPresence() {
+    final latestByPlayer = <String, _PresenceClient>{};
+    for (final client in _presenceBySocket.values) {
+      latestByPlayer[client.playerId] = client;
+    }
+    for (final client in _presenceBySocket.values) {
+      _send(client.socket, {
+        'type': 'presenceList',
+        'players': latestByPlayer.values
+            .where((other) => other.playerId != client.playerId)
+            .map((other) => other.player)
+            .toList(growable: false),
+      });
+    }
+  }
+
+  _PresenceClient? _presenceForPlayer(String? playerId) {
+    if (playerId == null) return null;
+    for (final client in _presenceBySocket.values.toList().reversed) {
+      if (client.playerId == playerId) return client;
+    }
+    return null;
+  }
+
+  void _sendInvite(WebSocket socket, Map<String, dynamic> data) {
+    final sender = _presenceBySocket[socket];
+    final target = _presenceForPlayer(data['targetPlayerId'] as String?);
+    final kind = data['kind'] == 'trade' ? 'trade' : 'battle';
+    if (sender == null ||
+        target == null ||
+        sender.playerId == target.playerId) {
+      _send(socket, {
+        'type': 'lobbyError',
+        'message': 'That player is no longer online.',
+      });
+      return;
+    }
+    final eligible = kind == 'battle'
+        ? (target.player['team'] as List).length == 3
+        : (target.player['animals'] as List).cast<Map<String, dynamic>>().any(
+            _isTradableAnimal,
+          );
+    if (!eligible) {
+      _send(socket, {
+        'type': 'lobbyError',
+        'message': 'That player is not ready for this activity.',
+      });
+      return;
+    }
+    _invites.removeWhere(
+      (_, invite) =>
+          invite.sender.playerId == sender.playerId &&
+          invite.target.playerId == target.playerId &&
+          invite.kind == kind,
+    );
+    final inviteId =
+        'invite_${DateTime.now().microsecondsSinceEpoch}_${_nextMatch++}';
+    final invite = _LobbyInvite(inviteId, kind, sender, target);
+    _invites[inviteId] = invite;
+    _send(target.socket, {
+      'type': 'inviteReceived',
+      'inviteId': inviteId,
+      'kind': kind,
+      'from': sender.account,
+    });
+    _send(socket, {'type': 'inviteSent', 'inviteId': inviteId, 'kind': kind});
+  }
+
+  void _respondInvite(WebSocket socket, Map<String, dynamic> data) {
+    final invite = _invites.remove(data['inviteId'] as String?);
+    if (invite == null || !identical(invite.target.socket, socket)) {
+      _send(socket, {
+        'type': 'lobbyError',
+        'message': 'That invitation expired.',
+      });
+      return;
+    }
+    if (data['accept'] != true) {
+      _send(invite.sender.socket, {
+        'type': 'inviteDeclined',
+        'displayName': invite.target.account['displayName'],
+      });
+      return;
+    }
+    final roomId =
+        'room_${DateTime.now().microsecondsSinceEpoch}_${_nextMatch++}';
+    _directRooms[roomId] = _DirectRoom(roomId, invite.kind, {
+      invite.sender.playerId,
+      invite.target.playerId,
+    });
+    _sendSessionReady(invite.sender, invite.target, invite.kind, roomId);
+    _sendSessionReady(invite.target, invite.sender, invite.kind, roomId);
+  }
+
+  void _sendSessionReady(
+    _PresenceClient recipient,
+    _PresenceClient opponent,
+    String kind,
+    String roomId,
+  ) {
+    _send(recipient.socket, {
+      'type': 'sessionReady',
+      'roomId': roomId,
+      'kind': kind,
+      'opponent': opponent.account,
+    });
+  }
+
+  void _sendPresetMessage(WebSocket socket, Map<String, dynamic> data) {
+    const allowedTags = {'hello', 'good_luck', 'nice_team', 'good_game'};
+    final sender = _presenceBySocket[socket];
+    final target = _presenceForPlayer(data['targetPlayerId'] as String?);
+    final tag = data['tag'] as String?;
+    if (sender == null || target == null || !allowedTags.contains(tag)) {
+      _send(socket, {
+        'type': 'lobbyError',
+        'message': 'Message could not be sent.',
+      });
+      return;
+    }
+    _send(target.socket, {
+      'type': 'presetMessage',
+      'from': sender.account,
+      'tag': tag,
+    });
+  }
+
+  void _joinBattleInvite(
+    WebSocket socket,
+    String? roomId,
+    Map<String, dynamic> player,
+  ) {
+    final room = _directRooms[roomId];
+    final playerId = player['playerId'] as String?;
+    if (room == null ||
+        room.kind != 'battle' ||
+        !room.playerIds.contains(playerId)) {
+      _send(socket, {
+        'type': 'error',
+        'message': 'This battle invitation expired.',
+      });
+      return;
+    }
+    if ((player['team'] as List?)?.length != 3) {
+      _send(socket, {'type': 'error', 'message': 'A full team is required.'});
+      return;
+    }
+    room.battlePlayers[playerId!] = _QueuedPlayer(
+      socket: socket,
+      player: player,
+      queuedAt: DateTime.now(),
+    );
+    _send(socket, {'type': 'queued', 'message': 'Joining invited battle...'});
+    if (room.battlePlayers.length == 2) {
+      final players = room.battlePlayers.values.toList(growable: false);
+      _directRooms.remove(room.id);
+      _createMatch(players[0], players[1]);
+    }
+  }
+
+  void _joinTradeInvite(
+    WebSocket socket,
+    String? roomId,
+    Map<String, dynamic> player,
+    List<Map<String, dynamic>> inventory,
+  ) {
+    final room = _directRooms[roomId];
+    final playerId = player['id'] as String?;
+    final eligibleInventory = inventory
+        .where(_isTradableAnimal)
+        .toList(growable: false);
+    if (room == null ||
+        room.kind != 'trade' ||
+        !room.playerIds.contains(playerId)) {
+      _send(socket, {
+        'type': 'error',
+        'message': 'This trade invitation expired.',
+      });
+      return;
+    }
+    if (eligibleInventory.isEmpty) {
+      _send(socket, {
+        'type': 'error',
+        'message': 'You need a tradable animal.',
+      });
+      return;
+    }
+    room.tradePlayers[playerId!] = _QueuedTrader(
+      socket: socket,
+      player: player,
+      inventory: eligibleInventory,
+    );
+    _send(socket, {'type': 'tradeQueued'});
+    if (room.tradePlayers.length == 2) {
+      final players = room.tradePlayers.values.toList(growable: false);
+      _directRooms.remove(room.id);
+      final tradeId =
+          'trade_${DateTime.now().microsecondsSinceEpoch}_${_nextMatch++}';
+      late final _TradeSession session;
+      session = _TradeSession(
+        id: tradeId,
+        first: players[0],
+        second: players[1],
+        onFinished: () => _releaseTrade(session),
+      );
+      _tradesBySocket[players[0].socket] = session;
+      _tradesBySocket[players[1].socket] = session;
+      session.start();
     }
   }
 
@@ -346,6 +621,15 @@ class _Matchmaker {
     _tradeWaiting.removeWhere((entry) => identical(entry.socket, socket));
     _matchesBySocket[socket]?.disconnect(socket);
     _tradesBySocket[socket]?.disconnect(socket);
+    final presence = _presenceBySocket.remove(socket);
+    if (presence != null) {
+      _invites.removeWhere(
+        (_, invite) =>
+            invite.sender.playerId == presence.playerId ||
+            invite.target.playerId == presence.playerId,
+      );
+      _broadcastPresence();
+    }
   }
 
   void close() {
@@ -362,15 +646,49 @@ class _Matchmaker {
     for (final waiting in _tradeWaiting) {
       waiting.socket.close();
     }
+    for (final client in _presenceBySocket.values) {
+      client.socket.close();
+    }
     _waiting.clear();
     _tradeWaiting.clear();
     _matchesBySocket.clear();
     _tradesBySocket.clear();
+    _presenceBySocket.clear();
+    _invites.clear();
+    _directRooms.clear();
   }
 
   void _send(WebSocket socket, Map<String, dynamic> message) {
     if (socket.readyState == WebSocket.open) socket.add(jsonEncode(message));
   }
+}
+
+class _PresenceClient {
+  const _PresenceClient(this.socket, this.player);
+
+  final WebSocket socket;
+  final Map<String, dynamic> player;
+
+  String get playerId => account['id'] as String;
+  Map<String, dynamic> get account =>
+      Map<String, dynamic>.from(player['account'] as Map);
+}
+
+class _LobbyInvite {
+  const _LobbyInvite(this.id, this.kind, this.sender, this.target);
+  final String id;
+  final String kind;
+  final _PresenceClient sender;
+  final _PresenceClient target;
+}
+
+class _DirectRoom {
+  _DirectRoom(this.id, this.kind, this.playerIds);
+  final String id;
+  final String kind;
+  final Set<String> playerIds;
+  final Map<String, _QueuedPlayer> battlePlayers = {};
+  final Map<String, _QueuedTrader> tradePlayers = {};
 }
 
 bool _isTradableAnimal(Map<String, dynamic> animal) {

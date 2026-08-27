@@ -3,13 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'models/background_theme.dart';
+import 'models/multiplayer.dart';
+import 'models/online_lobby.dart';
 import 'screens/account_onboarding_screen.dart';
 import 'screens/hatchery_screen.dart';
+import 'screens/multiplayer_lobby_screen.dart';
+import 'screens/online_trading_screen.dart';
 import 'services/account_service.dart';
 import 'services/audio_service.dart';
 import 'services/custom_egg_service.dart';
 import 'services/custom_sprite_service.dart';
 import 'services/game_service.dart';
+import 'services/online_lobby_service.dart';
 import 'services/preferences_service.dart';
 import 'services/sprite_rating_service.dart';
 import 'services/sprite_reference_overlay_service.dart';
@@ -17,8 +22,11 @@ import 'widgets/animal_sprite_theme_scope.dart';
 import 'widgets/account_scope.dart';
 import 'widgets/app_theme_background.dart';
 import 'widgets/audio_scope.dart';
+import 'widgets/online_lobby_host.dart';
+import 'widgets/online_lobby_scope.dart';
 import 'widgets/tutorial_host.dart';
 import 'navigation/app_page_route.dart';
+import 'utils/arena_logic.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +51,8 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   final SpriteReferenceOverlayService _referenceOverlay =
       SpriteReferenceOverlayService();
   final AudioService _audio = AudioService();
+  final OnlineLobbyService _onlineLobby = OnlineLobbyService();
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   String? _loadedAccountId;
   var _switchingAccount = false;
   var _legacyMigrationPending = false;
@@ -79,10 +89,12 @@ class _EggHatchersAppState extends State<EggHatchersApp>
       _spriteRating.initialize(),
       _referenceOverlay.initialize(),
     ]);
+    _syncOnlinePresence();
     if (mounted) setState(() {});
   }
 
   void _onGameChanged() {
+    _syncOnlinePresence();
     if (mounted) setState(() {});
   }
 
@@ -91,6 +103,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     final accountId = _accounts.account?.id;
     if (accountId == null) {
       _loadedAccountId = null;
+      unawaited(_onlineLobby.disconnect());
       return;
     }
     if (!_game.isInitialized || accountId == _loadedAccountId) return;
@@ -99,6 +112,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
 
   Future<void> _switchGameAccount(String accountId) async {
     _switchingAccount = true;
+    await _onlineLobby.disconnect();
     if (mounted) setState(() {});
     await _game.switchAccount(
       accountId,
@@ -107,7 +121,61 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     _legacyMigrationPending = false;
     _loadedAccountId = accountId;
     _switchingAccount = false;
+    _syncOnlinePresence();
     if (mounted) setState(() {});
+  }
+
+  void _syncOnlinePresence() {
+    final account = _accounts.account;
+    if (!_game.isInitialized || account == null) return;
+    final team = ArenaLogic.recommendedTeam(_game.state.ownedAnimals)
+        .map(ArenaLogic.fighterFromOwned)
+        .map(MultiplayerFighterSnapshot.fromArenaFighter)
+        .toList(growable: false);
+    _onlineLobby.updatePresence(
+      OnlinePresenceSnapshot(
+        account: account,
+        rating: _game.arenaRating,
+        team: team,
+        animals: _game.state.ownedAnimals,
+      ),
+    );
+  }
+
+  void _openOnlineSession(OnlineSessionLaunch launch) {
+    _onlineLobby.clearSessionLaunch();
+    final account = _accounts.account;
+    final navigator = _navigatorKey.currentState;
+    if (account == null || navigator == null) return;
+    if (launch.kind == OnlineInviteKind.battle) {
+      navigator.push(
+        MaterialPageRoute<void>(
+          settings: const RouteSettings(name: kMultiplayerArenaRouteName),
+          builder: (_) => MultiplayerLobbyScreen(
+            game: _game,
+            preferences: _preferences,
+            customSprites: _customSprites,
+            account: account,
+            directRoomId: launch.roomId,
+            lobby: _onlineLobby,
+          ),
+        ),
+      );
+    } else {
+      navigator.push(
+        MaterialPageRoute<void>(
+          settings: const RouteSettings(name: kOnlineTradingRouteName),
+          builder: (_) => OnlineTradingScreen(
+            game: _game,
+            account: account,
+            theme: _preferences.selectedTheme,
+            customSprites: _customSprites,
+            directRoomId: launch.roomId,
+            lobby: _onlineLobby,
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -130,6 +198,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     _referenceOverlay.removeListener(_onGameChanged);
     _audio.removeListener(_onGameChanged);
     _audio.dispose();
+    _onlineLobby.dispose();
     _game.dispose();
     super.dispose();
   }
@@ -150,6 +219,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
         : BackgroundThemes.defaultTheme;
 
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       title: 'Egg Hatchers',
       debugShowCheckedModeBanner: false,
       navigatorObservers: [AppNavigationTracker.instance],
@@ -177,12 +247,19 @@ class _EggHatchersAppState extends State<EggHatchersApp>
               audio: _audio,
               child: AccountScope(
                 accounts: _accounts,
-                child: AnimalSpriteThemeScope(
-                  theme: _preferences.animalSpriteTheme,
-                  child: TutorialHost(
-                    game: _game,
-                    theme: theme,
-                    child: content,
+                child: OnlineLobbyScope(
+                  lobby: _onlineLobby,
+                  child: OnlineLobbyHost(
+                    lobby: _onlineLobby,
+                    onSessionReady: _openOnlineSession,
+                    child: AnimalSpriteThemeScope(
+                      theme: _preferences.animalSpriteTheme,
+                      child: TutorialHost(
+                        game: _game,
+                        theme: theme,
+                        child: content,
+                      ),
+                    ),
                   ),
                 ),
               ),

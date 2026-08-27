@@ -67,6 +67,22 @@ class TradingService extends ChangeNotifier {
     _setState(TradingConnectionState.searching);
   }
 
+  void joinInvitedTrade(String roomId, OnlineTraderSnapshot trader) {
+    if (_state != TradingConnectionState.ready || _channel == null) return;
+    _trade = null;
+    _completion = null;
+    _tradeId = null;
+    _channel!.sink.add(
+      jsonEncode({
+        'type': 'joinTradeInvite',
+        'roomId': roomId,
+        ...trader.toJson(),
+      }),
+    );
+    _message = 'Joining invited trade...';
+    _setState(TradingConnectionState.searching);
+  }
+
   void cancelSearch() {
     if (_state != TradingConnectionState.searching) return;
     _channel?.sink.add(jsonEncode({'type': 'cancelTrade'}));

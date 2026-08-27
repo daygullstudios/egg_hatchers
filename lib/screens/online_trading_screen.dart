@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../data/game_data.dart';
 import '../models/background_theme.dart';
+import '../models/online_lobby.dart';
 import '../models/online_trade.dart';
 import '../models/owned_animal.dart';
 import '../models/player_account.dart';
 import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
+import '../services/online_lobby_service.dart';
 import '../services/trading_service.dart';
 import '../widgets/game_background.dart';
 import '../widgets/game_sprite.dart';
 import '../widgets/phone_width_layout.dart';
+import '../widgets/online_lobby_scope.dart';
+import '../widgets/online_player_list.dart';
 
 class OnlineTradingScreen extends StatefulWidget {
   const OnlineTradingScreen({
@@ -20,6 +24,8 @@ class OnlineTradingScreen extends StatefulWidget {
     required this.theme,
     required this.customSprites,
     this.trading,
+    this.directRoomId,
+    this.lobby,
   });
 
   final GameService game;
@@ -27,6 +33,8 @@ class OnlineTradingScreen extends StatefulWidget {
   final BackgroundTheme theme;
   final CustomSpriteService customSprites;
   final TradingService? trading;
+  final String? directRoomId;
+  final OnlineLobbyService? lobby;
 
   @override
   State<OnlineTradingScreen> createState() => _OnlineTradingScreenState();
@@ -36,6 +44,7 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
   late final TradingService _trading;
   late final bool _ownsTrading;
   var _completionApplied = false;
+  var _joinedDirectRoom = false;
 
   @override
   void initState() {
@@ -49,6 +58,7 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
   void _onTradingChanged() {
     if (!mounted) return;
     final completion = _trading.completion;
+    _joinDirectRoomIfReady();
     if (completion != null && !_completionApplied) {
       _completionApplied = true;
       widget.game.applyOnlineTrade(
@@ -59,13 +69,29 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
     setState(() {});
   }
 
+  OnlineTraderSnapshot _traderSnapshot() => OnlineTraderSnapshot(
+    account: widget.account,
+    inventory: widget.game.tradableAnimals,
+  );
+
+  void _joinDirectRoomIfReady() {
+    final roomId = widget.directRoomId;
+    if (roomId == null ||
+        _joinedDirectRoom ||
+        _trading.state != TradingConnectionState.ready ||
+        widget.game.tradableAnimals.isEmpty) {
+      return;
+    }
+    _joinedDirectRoom = true;
+    _completionApplied = false;
+    _trading.joinInvitedTrade(roomId, _traderSnapshot());
+  }
+
   void _findTrader() {
     final inventory = widget.game.tradableAnimals;
     if (inventory.isEmpty) return;
     _completionApplied = false;
-    _trading.findTrader(
-      OnlineTraderSnapshot(account: widget.account, inventory: inventory),
-    );
+    _trading.findTrader(_traderSnapshot());
   }
 
   @override
@@ -111,6 +137,7 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
 
   Widget _lobbyView() {
     final inventory = widget.game.tradableAnimals;
+    final lobby = widget.lobby ?? OnlineLobbyScope.maybeOf(context);
     final searching = _trading.state == TradingConnectionState.searching;
     final connected = _trading.state == TradingConnectionState.ready;
     return ListView(
@@ -169,6 +196,15 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
                 customSprites: widget.customSprites,
               ),
             ),
+        if (lobby != null) ...[
+          const SizedBox(height: 18),
+          OnlinePlayerList(
+            players: lobby.players,
+            activity: OnlineInviteKind.trade,
+            lobby: lobby,
+            customSprites: widget.customSprites,
+          ),
+        ],
       ],
     );
   }

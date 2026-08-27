@@ -100,6 +100,23 @@ class MultiplayerService extends ChangeNotifier {
     _setState(MultiplayerConnectionState.searching);
   }
 
+  void joinInvitedMatch(String roomId, MultiplayerPlayerSnapshot player) {
+    if (_state != MultiplayerConnectionState.ready || _channel == null) return;
+    _opponent = null;
+    _matchId = null;
+    _battleState = null;
+    _energySpawn = null;
+    _channel!.sink.add(
+      jsonEncode({
+        'type': 'joinBattleInvite',
+        'roomId': roomId,
+        'player': player.toJson(),
+      }),
+    );
+    _message = 'Joining invited battle...';
+    _setState(MultiplayerConnectionState.searching);
+  }
+
   void cancelSearch() {
     if (_state != MultiplayerConnectionState.searching || _channel == null) {
       return;

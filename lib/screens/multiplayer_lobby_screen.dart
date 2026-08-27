@@ -5,12 +5,14 @@ import '../data/audio_assets.dart';
 import '../models/arena.dart';
 import '../models/background_theme.dart';
 import '../models/multiplayer.dart';
+import '../models/online_lobby.dart';
 import '../models/owned_animal.dart';
 import '../models/player_account.dart';
 import '../navigation/app_page_route.dart';
 import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
 import '../services/multiplayer_service.dart';
+import '../services/online_lobby_service.dart';
 import '../services/preferences_service.dart';
 import '../utils/arena_logic.dart';
 import '../utils/battle_power_logic.dart';
@@ -19,6 +21,8 @@ import '../widgets/game_background.dart';
 import '../widgets/game_sprite.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/account_scope.dart';
+import '../widgets/online_lobby_scope.dart';
+import '../widgets/online_player_list.dart';
 import '../widgets/audio_scope.dart';
 import 'multiplayer_battle_screen.dart';
 
@@ -34,6 +38,8 @@ class MultiplayerLobbyScreen extends StatefulWidget {
     required this.account,
     this.onFindMatch,
     this.multiplayer,
+    this.directRoomId,
+    this.lobby,
   });
 
   final GameService game;
@@ -42,6 +48,8 @@ class MultiplayerLobbyScreen extends StatefulWidget {
   final PlayerAccount account;
   final FindOnlineMatch? onFindMatch;
   final MultiplayerService? multiplayer;
+  final String? directRoomId;
+  final OnlineLobbyService? lobby;
 
   @override
   State<MultiplayerLobbyScreen> createState() => _MultiplayerLobbyScreenState();
@@ -53,6 +61,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
   MultiplayerService? _multiplayer;
   bool _ownsMultiplayer = false;
   String? _shownMatchId;
+  bool _joinedDirectRoom = false;
 
   bool get _teamReady => _team.length == ArenaLogic.teamSize;
 
@@ -71,6 +80,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
   void _onMultiplayerChanged() {
     if (!mounted) return;
     setState(() {});
+    _joinDirectRoomIfReady();
     final multiplayer = _multiplayer;
     if (multiplayer?.state == MultiplayerConnectionState.matched &&
         multiplayer!.matchId != null &&
@@ -80,6 +90,25 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
         if (mounted) _showMatchFound(multiplayer);
       });
     }
+  }
+
+  MultiplayerPlayerSnapshot _playerSnapshot() =>
+      MultiplayerPlayerSnapshot.fromPlayer(
+        account: widget.account,
+        team: _team.map(ArenaLogic.fighterFromOwned).toList(growable: false),
+        rating: widget.game.arenaRating,
+      );
+
+  void _joinDirectRoomIfReady() {
+    final roomId = widget.directRoomId;
+    if (roomId == null ||
+        _joinedDirectRoom ||
+        !_teamReady ||
+        _multiplayer?.state != MultiplayerConnectionState.ready) {
+      return;
+    }
+    _joinedDirectRoom = true;
+    _multiplayer!.joinInvitedMatch(roomId, _playerSnapshot());
   }
 
   Future<void> _showMatchFound(MultiplayerService multiplayer) async {
@@ -353,11 +382,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
 
   Future<void> _findMatch() async {
     if (!_teamReady || _searching) return;
-    final snapshot = MultiplayerPlayerSnapshot.fromPlayer(
-      account: widget.account,
-      team: _team.map(ArenaLogic.fighterFromOwned).toList(),
-      rating: widget.game.arenaRating,
-    );
+    final snapshot = _playerSnapshot();
     if (widget.onFindMatch == null) {
       _multiplayer?.findMatch(snapshot);
       return;
@@ -393,6 +418,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
         widget.customSprites,
       ]),
       builder: (context, _) {
+        final lobby = widget.lobby ?? OnlineLobbyScope.maybeOf(context);
         final theme = widget.preferences.selectedTheme;
         final fighters = _team.map(ArenaLogic.fighterFromOwned).toList();
         final totalPower = fighters.fold<int>(
@@ -522,6 +548,15 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
                       ),
                     ),
                   ),
+                  if (lobby != null) ...[
+                    const SizedBox(height: 24),
+                    OnlinePlayerList(
+                      players: lobby.players,
+                      activity: OnlineInviteKind.battle,
+                      lobby: lobby,
+                      customSprites: widget.customSprites,
+                    ),
+                  ],
                 ],
               ),
             ),
