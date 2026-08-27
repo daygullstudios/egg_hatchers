@@ -18,10 +18,11 @@ Future<void> main() async {
 }
 
 class LocalMultiplayerServer {
-  LocalMultiplayerServer._(this._server, this._matchmaker);
+  LocalMultiplayerServer._(this._server, this._matchmaker, this._webRoot);
 
   final HttpServer _server;
   final _Matchmaker _matchmaker;
+  final Directory _webRoot;
   StreamSubscription<HttpRequest>? _requests;
 
   String get host => _server.address.address;
@@ -30,10 +31,15 @@ class LocalMultiplayerServer {
   static Future<LocalMultiplayerServer> start({
     String host = _defaultHost,
     int port = _defaultPort,
+    String webRoot = 'build/web',
   }) async {
     final httpServer = await HttpServer.bind(host, port);
     final matchmaker = _Matchmaker();
-    final server = LocalMultiplayerServer._(httpServer, matchmaker);
+    final server = LocalMultiplayerServer._(
+      httpServer,
+      matchmaker,
+      Directory(webRoot).absolute,
+    );
     server._requests = httpServer.listen(server._handleRequest);
     return server;
   }
@@ -52,15 +58,52 @@ class LocalMultiplayerServer {
       await request.response.close();
       return;
     }
-    if (request.uri.path != '/ws' ||
-        !WebSocketTransformer.isUpgradeRequest(request)) {
+    if (request.uri.path == '/ws' &&
+        WebSocketTransformer.isUpgradeRequest(request)) {
+      final socket = await WebSocketTransformer.upgrade(request);
+      _matchmaker.attach(socket);
+      return;
+    }
+
+    await _serveWebAsset(request);
+  }
+
+  Future<void> _serveWebAsset(HttpRequest request) async {
+    if (request.method != 'GET' && request.method != 'HEAD') {
+      request.response.statusCode = HttpStatus.methodNotAllowed;
+      await request.response.close();
+      return;
+    }
+    final segments = request.uri.pathSegments;
+    if (segments.any(
+      (segment) =>
+          segment == '..' || segment.contains('\\') || segment.contains(':'),
+    )) {
+      request.response.statusCode = HttpStatus.badRequest;
+      await request.response.close();
+      return;
+    }
+    final relativePath = segments.isEmpty
+        ? 'index.html'
+        : segments.join(Platform.pathSeparator);
+    var file = File('${_webRoot.path}${Platform.pathSeparator}$relativePath');
+    if (!await file.exists() &&
+        segments.isNotEmpty &&
+        !segments.last.contains('.')) {
+      file = File('${_webRoot.path}${Platform.pathSeparator}index.html');
+    }
+    if (!await file.exists()) {
       request.response.statusCode = HttpStatus.notFound;
       await request.response.close();
       return;
     }
-
-    final socket = await WebSocketTransformer.upgrade(request);
-    _matchmaker.attach(socket);
+    request.response.headers
+      ..contentType = _contentTypeFor(file.path)
+      ..set(HttpHeaders.cacheControlHeader, 'no-cache');
+    if (request.method == 'GET') {
+      await request.response.addStream(file.openRead());
+    }
+    await request.response.close();
   }
 
   Future<void> close() async {
@@ -68,6 +111,26 @@ class LocalMultiplayerServer {
     await _requests?.cancel();
     await _server.close(force: true);
   }
+}
+
+ContentType _contentTypeFor(String path) {
+  final extension = path.split('.').last.toLowerCase();
+  return switch (extension) {
+    'html' => ContentType.html,
+    'js' => ContentType('text', 'javascript', charset: 'utf-8'),
+    'json' || 'map' => ContentType.json,
+    'css' => ContentType('text', 'css', charset: 'utf-8'),
+    'svg' => ContentType('image', 'svg+xml'),
+    'png' => ContentType('image', 'png'),
+    'jpg' || 'jpeg' => ContentType('image', 'jpeg'),
+    'webp' => ContentType('image', 'webp'),
+    'gif' => ContentType('image', 'gif'),
+    'ico' => ContentType('image', 'x-icon'),
+    'wasm' => ContentType('application', 'wasm'),
+    'mp3' => ContentType('audio', 'mpeg'),
+    'wav' => ContentType('audio', 'wav'),
+    _ => ContentType.binary,
+  };
 }
 
 class _Matchmaker {

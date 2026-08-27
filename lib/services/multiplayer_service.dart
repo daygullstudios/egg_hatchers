@@ -42,7 +42,14 @@ class MultiplayerService extends ChangeNotifier {
   static Uri defaultServerUri() {
     if (kIsWeb) {
       final host = Uri.base.host.isEmpty ? '127.0.0.1' : Uri.base.host;
-      return Uri(scheme: 'ws', host: host, port: 53218, path: '/ws');
+      final localHost =
+          host == '127.0.0.1' || host == 'localhost' || host == '::1';
+      return Uri(
+        scheme: Uri.base.scheme == 'https' ? 'wss' : 'ws',
+        host: host,
+        port: localHost ? 53218 : (Uri.base.hasPort ? Uri.base.port : null),
+        path: '/ws',
+      );
     }
     return Uri.parse('ws://127.0.0.1:53218/ws');
   }

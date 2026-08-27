@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:egg_hatchers/models/arena.dart';
 import 'package:egg_hatchers/models/multiplayer.dart';
@@ -10,8 +12,23 @@ import '../tool/multiplayer_server.dart';
 
 void main() {
   test('two matched players share a server-authoritative battle', () async {
-    final server = await LocalMultiplayerServer.start(port: 0);
+    final webRoot = await Directory.systemTemp.createTemp('egg_hatchers_web_');
+    await File(
+      '${webRoot.path}${Platform.pathSeparator}index.html',
+    ).writeAsString('<!doctype html><title>Egg Hatchers</title>');
+    addTearDown(() => webRoot.delete(recursive: true));
+    final server = await LocalMultiplayerServer.start(
+      port: 0,
+      webRoot: webRoot.path,
+    );
     addTearDown(server.close);
+    final pageRequest = await HttpClient().getUrl(
+      Uri.parse('http://127.0.0.1:${server.port}/'),
+    );
+    final pageResponse = await pageRequest.close();
+    final page = await utf8.decoder.bind(pageResponse).join();
+    expect(pageResponse.statusCode, HttpStatus.ok);
+    expect(page, contains('Egg Hatchers'));
     final uri = Uri.parse('ws://127.0.0.1:${server.port}/ws');
     final first = MultiplayerService(serverUri: uri);
     final second = MultiplayerService(serverUri: uri);
