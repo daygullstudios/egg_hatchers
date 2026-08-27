@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:egg_hatchers/models/online_lobby.dart';
 import 'package:egg_hatchers/models/owned_animal.dart';
 import 'package:egg_hatchers/models/player_account.dart';
@@ -31,6 +33,17 @@ void main() {
     expect(find.text('challenger wants to battle you'), findsOneWidget);
     expect(find.byKey(const ValueKey('accept-online-invite')), findsOneWidget);
     expect(find.byKey(const ValueKey('decline-online-invite')), findsOneWidget);
+    final cardFinder = find.byKey(const ValueKey('invite_1'));
+    final originalRect = tester.getRect(cardFinder);
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    addTearDown(mouse.removePointer);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(
+      tester.getCenter(find.byKey(const ValueKey('accept-online-invite'))),
+    );
+    await tester.pump(const Duration(seconds: 1));
+    expect(tester.getRect(cardFinder), originalRect);
+    expect(find.text('Accept'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

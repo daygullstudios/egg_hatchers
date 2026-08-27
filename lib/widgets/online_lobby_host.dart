@@ -136,14 +136,12 @@ class _InviteCard extends StatelessWidget {
             ),
             IconButton(
               key: const ValueKey('decline-online-invite'),
-              tooltip: 'Decline',
               onPressed: () => lobby.respondToInvite(false),
               color: const Color(0xFFFF5B69),
               icon: const Icon(Icons.close),
             ),
             IconButton(
               key: const ValueKey('accept-online-invite'),
-              tooltip: 'Accept',
               onPressed: () => lobby.respondToInvite(true),
               color: const Color(0xFF42D98B),
               icon: const Icon(Icons.check_circle),
@@ -179,7 +177,6 @@ class _MessageCard extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Dismiss',
               onPressed: lobby.clearLatestMessage,
               icon: const Icon(Icons.close, color: Colors.white70),
             ),
