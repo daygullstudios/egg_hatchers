@@ -58,6 +58,7 @@ class _OnlineLobbyHostState extends State<OnlineLobbyHost> {
   Widget build(BuildContext context) {
     final invite = widget.lobby.incomingInvite;
     final message = widget.lobby.latestMessage;
+    final notice = widget.lobby.notice;
     return Stack(
       children: [
         widget.child,
@@ -66,12 +67,60 @@ class _OnlineLobbyHostState extends State<OnlineLobbyHost> {
             key: ValueKey(invite.id),
             child: _InviteCard(invite: invite, lobby: widget.lobby),
           )
+        else if (notice != null)
+          _BottomLeftOnlineCard(
+            key: ValueKey(notice.id),
+            child: _NoticeCard(notice: notice, lobby: widget.lobby),
+          )
         else if (message != null)
           _BottomLeftOnlineCard(
             key: ValueKey('${message.from.id}:${message.tag}'),
             child: _MessageCard(message: message, lobby: widget.lobby),
           ),
       ],
+    );
+  }
+}
+
+class _NoticeCard extends StatelessWidget {
+  const _NoticeCard({required this.notice, required this.lobby});
+  final OnlineLobbyNotice notice;
+  final OnlineLobbyService lobby;
+
+  @override
+  Widget build(BuildContext context) {
+    final success = notice.type == OnlineNoticeType.success;
+    final color = success ? const Color(0xFF42D98B) : const Color(0xFFFF5B69);
+    return Material(
+      elevation: 10,
+      color: const Color(0xFF111B3D),
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color, width: 2),
+        ),
+        child: Row(
+          children: [
+            Icon(success ? Icons.check_circle : Icons.error, color: color),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                notice.message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: lobby.clearNotice,
+              icon: const Icon(Icons.close, color: Colors.white70),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

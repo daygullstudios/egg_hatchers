@@ -29,6 +29,7 @@ class TradingService extends ChangeNotifier {
   OnlineTradeCompletion? _completion;
   String? _tradeId;
   String? _message;
+  String? _cancellationMessage;
   final List<TradeChatMessage> _chatMessages = [];
   var _disposed = false;
 
@@ -36,6 +37,7 @@ class TradingService extends ChangeNotifier {
   OnlineTradeState? get trade => _trade;
   OnlineTradeCompletion? get completion => _completion;
   String? get message => _message;
+  String? get cancellationMessage => _cancellationMessage;
   List<TradeChatMessage> get chatMessages => List.unmodifiable(_chatMessages);
 
   Future<void> connect() async {
@@ -65,6 +67,7 @@ class TradingService extends ChangeNotifier {
     _completion = null;
     _tradeId = null;
     _chatMessages.clear();
+    _cancellationMessage = null;
     _channel!.sink.add(jsonEncode({'type': 'queueTrade', ...trader.toJson()}));
     _message = 'Looking for another trader...';
     _setState(TradingConnectionState.searching);
@@ -76,6 +79,7 @@ class TradingService extends ChangeNotifier {
     _completion = null;
     _tradeId = null;
     _chatMessages.clear();
+    _cancellationMessage = null;
     _channel!.sink.add(
       jsonEncode({
         'type': 'joinTradeInvite',
@@ -119,6 +123,7 @@ class TradingService extends ChangeNotifier {
     _completion = null;
     _tradeId = null;
     _chatMessages.clear();
+    _cancellationMessage = null;
     _message = null;
     if (_channel != null) _setState(TradingConnectionState.ready);
   }
@@ -154,6 +159,7 @@ class TradingService extends ChangeNotifier {
         _trade = null;
         _tradeId = null;
         _message = data['message'] as String? ?? 'The trade was cancelled.';
+        _cancellationMessage = _message;
         _setState(TradingConnectionState.ready);
       case 'error':
         _message = data['message'] as String? ?? 'Trading failed.';
@@ -168,6 +174,7 @@ class TradingService extends ChangeNotifier {
     _trade = null;
     _tradeId = null;
     _chatMessages.clear();
+    _cancellationMessage = null;
     _message = 'Connection to the trading server was lost.';
     _setState(TradingConnectionState.offline);
   }

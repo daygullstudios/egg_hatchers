@@ -86,6 +86,49 @@ void main() {
     expect(second.completion!.received.animalId, 'chicken');
     expect(first.completion!.received.quantity, 1);
   });
+
+  test(
+    'leaving a live trade notifies the other player of the decline',
+    () async {
+      final webRoot = await Directory.systemTemp.createTemp('egg_trade_leave_');
+      addTearDown(() => webRoot.delete(recursive: true));
+      final server = await LocalMultiplayerServer.start(
+        port: 0,
+        webRoot: webRoot.path,
+      );
+      addTearDown(server.close);
+      final uri = Uri.parse('ws://127.0.0.1:${server.port}/ws');
+      final first = TradingService(serverUri: uri);
+      final second = TradingService(serverUri: uri);
+      addTearDown(first.dispose);
+      addTearDown(second.dispose);
+      await Future.wait([first.connect(), second.connect()]);
+      const chicken = OwnedAnimal(animalId: 'chicken', quantity: 1);
+      const fox = OwnedAnimal(animalId: 'fox', quantity: 1);
+      first.findTrader(
+        OnlineTraderSnapshot(
+          account: _account('first', 'First Trader'),
+          inventory: const [chicken],
+        ),
+      );
+      second.findTrader(
+        OnlineTraderSnapshot(
+          account: _account('second', 'Second Trader'),
+          inventory: const [fox],
+        ),
+      );
+      await _waitFor(
+        () =>
+            first.state == TradingConnectionState.trading &&
+            second.state == TradingConnectionState.trading,
+      );
+
+      second.leaveTrade();
+      await _waitFor(() => first.cancellationMessage != null);
+      expect(first.cancellationMessage, '@second declined the trade.');
+      expect(first.state, TradingConnectionState.ready);
+    },
+  );
 }
 
 PlayerAccount _account(String id, String name) => PlayerAccount(

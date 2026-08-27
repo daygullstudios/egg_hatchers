@@ -94,13 +94,40 @@ void main() {
     expect(find.text('Chicken'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('trade result notice fits the bottom-left phone area', (
+    tester,
+  ) async {
+    final lobby = _FakeOnlineLobbyService();
+    addTearDown(lobby.dispose);
+    await tester.binding.setSurfaceSize(const Size(320, 568));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OnlineLobbyHost(
+          lobby: lobby,
+          onSessionReady: (_) {},
+          child: const Scaffold(body: SizedBox.expand()),
+        ),
+      ),
+    );
+    lobby.showNotice();
+    await tester.pump();
+
+    expect(find.text('Trade sent to @second successfully'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 class _FakeOnlineLobbyService extends OnlineLobbyService {
   OnlineInvite? _invite;
+  OnlineLobbyNotice? _notice;
 
   @override
   OnlineInvite? get incomingInvite => _invite;
+
+  @override
+  OnlineLobbyNotice? get notice => _notice;
 
   void showInvite() {
     _invite = OnlineInvite(
@@ -113,6 +140,15 @@ class _FakeOnlineLobbyService extends OnlineLobbyService {
         avatarColorValue: 0xFF5271FF,
         createdAt: DateTime.utc(2026, 8, 27),
       ),
+    );
+    notifyListeners();
+  }
+
+  void showNotice() {
+    _notice = const OnlineLobbyNotice(
+      id: 'notice_1',
+      message: 'Trade sent to @second successfully',
+      type: OnlineNoticeType.success,
     );
     notifyListeners();
   }

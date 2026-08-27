@@ -104,6 +104,21 @@ void main() {
     ]);
     await _waitFor(() => first.players.length == 1);
 
+    first.invite('missing-player', OnlineInviteKind.trade);
+    await _waitFor(() => first.notice?.message == 'Trade Failed');
+    expect(first.notice!.type, OnlineNoticeType.failure);
+    first.clearNotice();
+
+    first.invite('second', OnlineInviteKind.trade);
+    await _waitFor(() => second.incomingInvite != null);
+    await _waitFor(
+      () => first.notice?.message == 'Trade sent to @second successfully',
+    );
+    expect(first.notice!.type, OnlineNoticeType.success);
+    second.respondToInvite(false);
+    await _waitFor(() => first.notice?.message == '@second declined the trade');
+    expect(first.notice!.type, OnlineNoticeType.failure);
+
     first.invite('second', OnlineInviteKind.trade);
     await _waitFor(() => second.incomingInvite != null);
     second.respondToInvite(true);

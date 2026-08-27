@@ -134,6 +134,20 @@ class OnlinePresetMessage {
       );
 }
 
+enum OnlineNoticeType { success, failure, info }
+
+class OnlineLobbyNotice {
+  const OnlineLobbyNotice({
+    required this.id,
+    required this.message,
+    required this.type,
+  });
+
+  final String id;
+  final String message;
+  final OnlineNoticeType type;
+}
+
 const Map<String, String> onlineMessageTags = {
   'hello': 'Hello!',
   'good_luck': 'Good luck!',

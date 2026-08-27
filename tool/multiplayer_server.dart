@@ -295,6 +295,7 @@ class _Matchmaker {
         sender.playerId == target.playerId) {
       _send(socket, {
         'type': 'lobbyError',
+        'kind': kind,
         'message': 'That player is no longer online.',
       });
       return;
@@ -307,6 +308,7 @@ class _Matchmaker {
     if (!eligible) {
       _send(socket, {
         'type': 'lobbyError',
+        'kind': kind,
         'message': 'That player is not ready for this activity.',
       });
       return;
@@ -327,7 +329,12 @@ class _Matchmaker {
       'kind': kind,
       'from': sender.account,
     });
-    _send(socket, {'type': 'inviteSent', 'inviteId': inviteId, 'kind': kind});
+    _send(socket, {
+      'type': 'inviteSent',
+      'inviteId': inviteId,
+      'kind': kind,
+      'targetUsername': target.account['username'],
+    });
   }
 
   void _respondInvite(WebSocket socket, Map<String, dynamic> data) {
@@ -343,6 +350,8 @@ class _Matchmaker {
       _send(invite.sender.socket, {
         'type': 'inviteDeclined',
         'displayName': invite.target.account['displayName'],
+        'username': invite.target.account['username'],
+        'kind': invite.kind,
       });
       return;
     }
@@ -850,7 +859,7 @@ class _TradeSession {
       final opponent = _opponentOf(actor);
       _send(opponent.socket, {
         'type': 'tradeCancelled',
-        'message': '${actor.name} left the trade.',
+        'message': '@${actor.username} declined the trade.',
       });
     }
     onFinished();
@@ -892,6 +901,7 @@ class _TradePlayer {
   bool confirmed = false;
 
   String get name => player['displayName'] as String;
+  String get username => player['username'] as String;
 }
 
 class _QueuedTrader {

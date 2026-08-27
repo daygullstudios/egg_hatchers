@@ -21,8 +21,12 @@ class OnlineLobbyService extends ChangeNotifier {
   OnlineInvite? _incomingInvite;
   OnlineSessionLaunch? _sessionLaunch;
   OnlinePresetMessage? _latestMessage;
+  OnlineLobbyNotice? _notice;
   String? _statusMessage;
   String? _presenceSignature;
+  OnlineInviteKind? _pendingInviteKind;
+  String? _pendingInviteUsername;
+  var _nextNoticeId = 1;
   bool _disposed = false;
 
   OnlineLobbyConnectionState get state => _state;
@@ -30,6 +34,7 @@ class OnlineLobbyService extends ChangeNotifier {
   OnlineInvite? get incomingInvite => _incomingInvite;
   OnlineSessionLaunch? get sessionLaunch => _sessionLaunch;
   OnlinePresetMessage? get latestMessage => _latestMessage;
+  OnlineLobbyNotice? get notice => _notice;
   String? get statusMessage => _statusMessage;
 
   Future<void> connect(OnlinePresenceSnapshot presence) async {
@@ -79,6 +84,15 @@ class OnlineLobbyService extends ChangeNotifier {
   }
 
   void invite(String playerId, OnlineInviteKind kind) {
+    OnlinePlayerPresence? target;
+    for (final player in _players) {
+      if (player.account.id == playerId) {
+        target = player;
+        break;
+      }
+    }
+    _pendingInviteKind = kind;
+    _pendingInviteUsername = target?.account.username;
     _channel?.sink.add(
       jsonEncode({
         'type': 'sendInvite',
@@ -120,6 +134,19 @@ class OnlineLobbyService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearNotice() {
+    _notice = null;
+    notifyListeners();
+  }
+
+  void _showNotice(String message, OnlineNoticeType type) {
+    _notice = OnlineLobbyNotice(
+      id: 'notice_${_nextNoticeId++}',
+      message: message,
+      type: type,
+    );
+  }
+
   Future<void> disconnect() async {
     await _subscription?.cancel();
     _subscription = null;
@@ -129,6 +156,7 @@ class OnlineLobbyService extends ChangeNotifier {
     _incomingInvite = null;
     _sessionLaunch = null;
     _latestMessage = null;
+    _notice = null;
     _presenceSignature = null;
     _state = OnlineLobbyConnectionState.disconnected;
     if (!_disposed) notifyListeners();
@@ -150,8 +178,33 @@ class OnlineLobbyService extends ChangeNotifier {
         _incomingInvite = OnlineInvite.fromJson(data);
       case 'inviteSent':
         _statusMessage = 'Invitation sent.';
+        final kind = OnlineInviteKind.fromWire(
+          data['kind'] as String? ?? _pendingInviteKind?.wireName ?? 'battle',
+        );
+        final username =
+            data['targetUsername'] as String? ??
+            _pendingInviteUsername ??
+            'player';
+        if (kind == OnlineInviteKind.trade) {
+          _showNotice(
+            'Trade sent to @$username successfully',
+            OnlineNoticeType.success,
+          );
+        }
+        _pendingInviteKind = null;
+        _pendingInviteUsername = null;
       case 'inviteDeclined':
-        _statusMessage = '${data['displayName'] ?? 'That player'} declined.';
+        final kind = OnlineInviteKind.fromWire(
+          data['kind'] as String? ?? 'battle',
+        );
+        final username = data['username'] as String? ?? 'That player';
+        _statusMessage = '@$username declined.';
+        if (kind == OnlineInviteKind.trade) {
+          _showNotice(
+            '@$username declined the trade',
+            OnlineNoticeType.failure,
+          );
+        }
       case 'sessionReady':
         _incomingInvite = null;
         _sessionLaunch = OnlineSessionLaunch.fromJson(data);
@@ -159,6 +212,12 @@ class OnlineLobbyService extends ChangeNotifier {
         _latestMessage = OnlinePresetMessage.fromJson(data);
       case 'lobbyError':
         _statusMessage = data['message'] as String? ?? 'Online action failed.';
+        if (_pendingInviteKind == OnlineInviteKind.trade ||
+            data['kind'] == 'trade') {
+          _showNotice('Trade Failed', OnlineNoticeType.failure);
+        }
+        _pendingInviteKind = null;
+        _pendingInviteUsername = null;
     }
     if (!_disposed) notifyListeners();
   }
@@ -168,6 +227,7 @@ class OnlineLobbyService extends ChangeNotifier {
     _channel = null;
     _subscription = null;
     _players = const [];
+    _notice = null;
     _state = OnlineLobbyConnectionState.disconnected;
     _statusMessage = 'Online lobby connection was lost.';
     notifyListeners();

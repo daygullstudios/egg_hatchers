@@ -10,6 +10,7 @@ import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
 import '../services/online_lobby_service.dart';
 import '../services/trading_service.dart';
+import '../utils/snackbar_utils.dart';
 import '../widgets/game_background.dart';
 import '../widgets/game_sprite.dart';
 import '../widgets/phone_width_layout.dart';
@@ -45,6 +46,7 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
   late final bool _ownsTrading;
   var _completionApplied = false;
   var _joinedDirectRoom = false;
+  String? _shownCancellation;
 
   @override
   void initState() {
@@ -58,6 +60,19 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
   void _onTradingChanged() {
     if (!mounted) return;
     final completion = _trading.completion;
+    final cancellation = _trading.cancellationMessage;
+    if (cancellation != null && cancellation != _shownCancellation) {
+      _shownCancellation = cancellation;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          showGameSnackBar(
+            context,
+            message: cancellation,
+            duration: kGameSnackBarDurationImportant,
+          );
+        }
+      });
+    }
     _joinDirectRoomIfReady();
     if (completion != null && !_completionApplied) {
       _completionApplied = true;
