@@ -31,6 +31,7 @@ import '../widgets/account_scope.dart';
 import 'manual_boss_battle_screen.dart';
 import 'arena_screen.dart';
 import 'multiplayer_lobby_screen.dart';
+import 'online_trading_screen.dart';
 
 /// Boss battle selection and auto-battle results.
 class BattlesScreen extends StatelessWidget {
@@ -81,6 +82,25 @@ class BattlesScreen extends StatelessWidget {
     if (context.mounted) {
       AudioScope.of(context).playMusic(MusicTrack.hatchery);
     }
+  }
+
+  Future<void> _openOnlineTrading(
+    BuildContext context,
+    BackgroundTheme theme,
+  ) async {
+    final account = AccountScope.of(context).account;
+    if (account == null) return;
+    await pushThemedAppRoute<void>(
+      context,
+      theme: theme,
+      settings: const RouteSettings(name: kOnlineTradingRouteName),
+      builder: (_) => OnlineTradingScreen(
+        game: game,
+        account: account,
+        theme: theme,
+        customSprites: customSprites,
+      ),
+    );
   }
 
   Future<void> _unlockBossMutation(BuildContext context) async {
@@ -714,6 +734,12 @@ class BattlesScreen extends StatelessWidget {
                               onTap: () =>
                                   _openMultiplayerArena(context, theme),
                             ),
+                            const SizedBox(height: 10),
+                            _TradingEntryCard(
+                              theme: theme,
+                              game: game,
+                              onTap: () => _openOnlineTrading(context, theme),
+                            ),
                             const SizedBox(height: 14),
                             _BattleUpgradesCard(
                               theme: theme,
@@ -970,6 +996,82 @@ class _MultiplayerEntryCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xFFC5D0FF),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.white, size: 30),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TradingEntryCard extends StatelessWidget {
+  const _TradingEntryCard({
+    required this.theme,
+    required this.game,
+    required this.onTap,
+  });
+
+  final BackgroundTheme theme;
+  final GameService game;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = game.tradableAnimals.isNotEmpty;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(GameTheme.cardRadius),
+        child: Ink(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: enabled ? const Color(0xFF063B36) : theme.disabledColor,
+            borderRadius: BorderRadius.circular(GameTheme.cardRadius),
+            border: Border.all(color: const Color(0xFF32C989), width: 2),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFF32C989),
+                ),
+                child: const Icon(
+                  Icons.swap_horiz,
+                  color: Color(0xFF063B36),
+                  size: 31,
+                ),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Online Trading',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      enabled
+                          ? '${game.tradableAnimals.length} stacks available'
+                          : 'No tradable animals available',
+                      style: const TextStyle(
+                        color: Color(0xFFB4F3DA),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),

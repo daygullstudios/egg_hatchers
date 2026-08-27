@@ -45,6 +45,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   final AudioService _audio = AudioService();
   String? _loadedAccountId;
   var _switchingAccount = false;
+  var _legacyMigrationPending = false;
 
   @override
   void initState() {
@@ -65,6 +66,8 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     unawaited(_audio.initialize());
     await _accounts.initialize();
     _loadedAccountId = _accounts.account?.id;
+    _legacyMigrationPending =
+        _loadedAccountId == null && _accounts.accounts.isNotEmpty;
     await _game.initialize(
       accountId: _loadedAccountId,
       migrateLegacySave: _loadedAccountId != null,
@@ -97,7 +100,11 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   Future<void> _switchGameAccount(String accountId) async {
     _switchingAccount = true;
     if (mounted) setState(() {});
-    await _game.switchAccount(accountId);
+    await _game.switchAccount(
+      accountId,
+      migrateLegacySave: _legacyMigrationPending,
+    );
+    _legacyMigrationPending = false;
     _loadedAccountId = accountId;
     _switchingAccount = false;
     if (mounted) setState(() {});

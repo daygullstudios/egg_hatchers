@@ -378,13 +378,21 @@ class GameService extends ChangeNotifier {
     _dailyRewardPopupShownThisSession = false;
   }
 
-  Future<void> switchAccount(String accountId) async {
+  Future<void> switchAccount(
+    String accountId, {
+    bool migrateLegacySave = false,
+  }) async {
     if (_activeAccountId == accountId) return;
     if (_activeAccountId != null) await save();
     _idleTimer?.cancel();
     _activeAccountId = accountId;
     _saveService = SaveService(accountId: accountId);
-    _loadState(await _saveService.load());
+    var saved = await _saveService.load();
+    if (saved == null && migrateLegacySave) {
+      saved = await SaveService().load();
+      if (saved != null) await _saveService.save(saved);
+    }
+    _loadState(saved);
     _startIdleTimer();
     notifyListeners();
   }
@@ -1059,6 +1067,76 @@ class GameService extends ChangeNotifier {
     mutationId: owned.mutationId,
     isProtected: owned.isProtected,
   );
+
+  List<OwnedAnimal> get tradableAnimals => _state.ownedAnimals
+      .where(
+        (owned) =>
+            owned.quantity > 0 &&
+            !owned.isProtected &&
+            !owned.isSecretReward &&
+            !owned.isEliteReward &&
+            !isOwnedStackAutoBattling(owned),
+      )
+      .toList(growable: false);
+
+  bool applyOnlineTrade({
+    required OwnedAnimal sent,
+    required OwnedAnimal received,
+  }) {
+    if (received.isProtected ||
+        received.isSecretReward ||
+        received.isEliteReward) {
+      return false;
+    }
+    final animals = [..._state.ownedAnimals];
+    final sentIndex = animals.indexWhere(
+      (owned) =>
+          _sameTradeStack(owned, sent) &&
+          owned.quantity > 0 &&
+          !owned.isProtected &&
+          !owned.isSecretReward &&
+          !owned.isEliteReward &&
+          !isOwnedStackAutoBattling(owned),
+    );
+    if (sentIndex < 0) return false;
+    final ownedSent = animals[sentIndex];
+    if (ownedSent.quantity == 1) {
+      animals.removeAt(sentIndex);
+    } else {
+      animals[sentIndex] = ownedSent.copyWith(quantity: ownedSent.quantity - 1);
+    }
+
+    final receivedIndex = animals.indexWhere(
+      (owned) => _sameTradeStack(owned, received) && !owned.isProtected,
+    );
+    if (receivedIndex >= 0) {
+      final existing = animals[receivedIndex];
+      animals[receivedIndex] = existing.copyWith(
+        quantity: existing.quantity + 1,
+      );
+    } else {
+      animals.add(
+        received.copyWith(
+          quantity: 1,
+          isProtected: false,
+          isSecretReward: false,
+          isEliteReward: false,
+        ),
+      );
+    }
+    _state = _state.copyWith(ownedAnimals: animals);
+    _refreshQuestNotifications();
+    notifyListeners();
+    save();
+    return true;
+  }
+
+  static bool _sameTradeStack(OwnedAnimal first, OwnedAnimal second) {
+    return first.animalId == second.animalId &&
+        first.mutationId == second.mutationId &&
+        first.level == second.level &&
+        first.sourceEggId == second.sourceEggId;
+  }
 
   Duration? timeUntilNextAutoBattleFight() {
     final battle = _state.activeAutoBattle;

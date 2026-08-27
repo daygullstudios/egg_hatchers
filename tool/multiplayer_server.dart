@@ -143,6 +143,8 @@ class _Matchmaker {
 
   final List<_QueuedPlayer> _waiting = [];
   final Map<WebSocket, _BattleMatch> _matchesBySocket = {};
+  final List<_QueuedTrader> _tradeWaiting = [];
+  final Map<WebSocket, _TradeSession> _tradesBySocket = {};
   late final Timer _matchTimer;
   var _nextMatch = 1;
 
@@ -171,10 +173,83 @@ class _Matchmaker {
         _waiting.removeWhere((entry) => identical(entry.socket, socket));
         return;
       }
+      if (type == 'queueTrade') {
+        _queueTrade(
+          socket,
+          Map<String, dynamic>.from(data['player'] as Map),
+          (data['inventory'] as List<dynamic>)
+              .map((item) => Map<String, dynamic>.from(item as Map))
+              .toList(growable: false),
+        );
+        return;
+      }
+      if (type == 'cancelTrade') {
+        _tradeWaiting.removeWhere((entry) => identical(entry.socket, socket));
+        return;
+      }
+      final trade = _tradesBySocket[socket];
+      if (trade != null) {
+        trade.handle(socket, data);
+        return;
+      }
       _matchesBySocket[socket]?.handle(socket, data);
     } catch (_) {
       _send(socket, {'type': 'error', 'message': 'Invalid match request.'});
     }
+  }
+
+  void _queueTrade(
+    WebSocket socket,
+    Map<String, dynamic> player,
+    List<Map<String, dynamic>> inventory,
+  ) {
+    _tradeWaiting.removeWhere((entry) => identical(entry.socket, socket));
+    if (_matchesBySocket.containsKey(socket) ||
+        _tradesBySocket.containsKey(socket)) {
+      _send(socket, {
+        'type': 'error',
+        'message': 'Finish your current online session first.',
+      });
+      return;
+    }
+    final playerId = player['id'] as String?;
+    if (playerId == null || inventory.where(_isTradableAnimal).isEmpty) {
+      _send(socket, {
+        'type': 'error',
+        'message': 'You need a tradable animal to enter.',
+      });
+      return;
+    }
+    final opponentIndex = _tradeWaiting.indexWhere(
+      (candidate) => candidate.player['id'] != playerId,
+    );
+    final trader = _QueuedTrader(
+      socket: socket,
+      player: player,
+      inventory: inventory.where(_isTradableAnimal).toList(growable: false),
+    );
+    if (opponentIndex < 0) {
+      _tradeWaiting.add(trader);
+      _send(socket, {'type': 'tradeQueued'});
+      return;
+    }
+    final opponent = _tradeWaiting.removeAt(opponentIndex);
+    final tradeId =
+        'trade_${DateTime.now().microsecondsSinceEpoch}_${_nextMatch++}';
+    late final _TradeSession session;
+    session = _TradeSession(
+      id: tradeId,
+      first: opponent,
+      second: trader,
+      onFinished: () => _releaseTrade(session),
+    );
+    _tradesBySocket[opponent.socket] = session;
+    _tradesBySocket[socket] = session;
+    session.start();
+  }
+
+  void _releaseTrade(_TradeSession session) {
+    _tradesBySocket.removeWhere((_, value) => identical(value, session));
   }
 
   void _queue(WebSocket socket, Map<String, dynamic> player) {
@@ -268,7 +343,9 @@ class _Matchmaker {
 
   void _remove(WebSocket socket) {
     _waiting.removeWhere((entry) => identical(entry.socket, socket));
+    _tradeWaiting.removeWhere((entry) => identical(entry.socket, socket));
     _matchesBySocket[socket]?.disconnect(socket);
+    _tradesBySocket[socket]?.disconnect(socket);
   }
 
   void close() {
@@ -279,13 +356,188 @@ class _Matchmaker {
     for (final waiting in _waiting) {
       waiting.socket.close();
     }
+    for (final trade in _tradesBySocket.values.toSet()) {
+      trade.close();
+    }
+    for (final waiting in _tradeWaiting) {
+      waiting.socket.close();
+    }
     _waiting.clear();
+    _tradeWaiting.clear();
     _matchesBySocket.clear();
+    _tradesBySocket.clear();
   }
 
   void _send(WebSocket socket, Map<String, dynamic> message) {
     if (socket.readyState == WebSocket.open) socket.add(jsonEncode(message));
   }
+}
+
+bool _isTradableAnimal(Map<String, dynamic> animal) {
+  final quantity = (animal['quantity'] as num?)?.toInt() ?? 0;
+  return quantity > 0 &&
+      animal['isProtected'] != true &&
+      animal['isSecretReward'] != true &&
+      animal['isEliteReward'] != true;
+}
+
+bool _sameTradeAnimal(Map<String, dynamic> first, Map<String, dynamic> second) {
+  return first['animalId'] == second['animalId'] &&
+      (first['mutationId'] ?? 'none') == (second['mutationId'] ?? 'none') &&
+      (first['level'] ?? 1) == (second['level'] ?? 1) &&
+      first['sourceEggId'] == second['sourceEggId'];
+}
+
+Map<String, dynamic> _singleTradeAnimal(Map<String, dynamic> animal) => {
+  ...animal,
+  'quantity': 1,
+  'isProtected': false,
+  'isSecretReward': false,
+  'isEliteReward': false,
+};
+
+class _TradeSession {
+  _TradeSession({
+    required this.id,
+    required _QueuedTrader first,
+    required _QueuedTrader second,
+    required this.onFinished,
+  }) : players = [_TradePlayer(first), _TradePlayer(second)];
+
+  final String id;
+  final List<_TradePlayer> players;
+  final VoidCallback onFinished;
+  var _finished = false;
+
+  void start() => _broadcast('Choose an animal to offer.');
+
+  void handle(WebSocket socket, Map<String, dynamic> data) {
+    if (_finished || data['tradeId'] != id) return;
+    final actor = _playerFor(socket);
+    if (actor == null) return;
+    switch (data['type']) {
+      case 'tradeOffer':
+        final requested = Map<String, dynamic>.from(data['animal'] as Map);
+        final inventoryIndex = actor.inventory.indexWhere(
+          (animal) => _sameTradeAnimal(animal, requested),
+        );
+        if (inventoryIndex < 0) {
+          _send(socket, {
+            'type': 'error',
+            'message': 'That animal is no longer available to trade.',
+          });
+          return;
+        }
+        actor.offer = _singleTradeAnimal(actor.inventory[inventoryIndex]);
+        for (final player in players) {
+          player.confirmed = false;
+        }
+        _broadcast('${actor.name} updated their offer.');
+      case 'tradeConfirm':
+        if (players.any((player) => player.offer == null)) return;
+        actor.confirmed = true;
+        if (players.every((player) => player.confirmed)) {
+          _complete();
+        } else {
+          _broadcast('${actor.name} confirmed the trade.');
+        }
+      case 'leaveTrade':
+        disconnect(socket);
+    }
+  }
+
+  void _complete() {
+    _finished = true;
+    for (final player in players) {
+      final opponent = _opponentOf(player);
+      _send(player.socket, {
+        'type': 'tradeComplete',
+        'tradeId': id,
+        'sent': player.offer,
+        'received': opponent.offer,
+      });
+    }
+    onFinished();
+  }
+
+  void _broadcast(String message) {
+    for (final player in players) {
+      final opponent = _opponentOf(player);
+      _send(player.socket, {
+        'type': 'tradeState',
+        'tradeId': id,
+        'opponent': opponent.player,
+        'selfOffer': player.offer,
+        'opponentOffer': opponent.offer,
+        'selfConfirmed': player.confirmed,
+        'opponentConfirmed': opponent.confirmed,
+        'message': message,
+      });
+    }
+  }
+
+  void disconnect(WebSocket socket) {
+    if (_finished) return;
+    _finished = true;
+    final actor = _playerFor(socket);
+    if (actor != null) {
+      final opponent = _opponentOf(actor);
+      _send(opponent.socket, {
+        'type': 'tradeCancelled',
+        'message': '${actor.name} left the trade.',
+      });
+    }
+    onFinished();
+  }
+
+  _TradePlayer? _playerFor(WebSocket socket) {
+    for (final player in players) {
+      if (identical(player.socket, socket)) return player;
+    }
+    return null;
+  }
+
+  _TradePlayer _opponentOf(_TradePlayer player) =>
+      identical(players.first, player) ? players.last : players.first;
+
+  void close() {
+    _finished = true;
+    for (final player in players) {
+      player.socket.close();
+    }
+    onFinished();
+  }
+
+  void _send(WebSocket socket, Map<String, dynamic> message) {
+    if (socket.readyState == WebSocket.open) socket.add(jsonEncode(message));
+  }
+}
+
+class _TradePlayer {
+  _TradePlayer(_QueuedTrader queued)
+    : socket = queued.socket,
+      player = queued.player,
+      inventory = queued.inventory;
+
+  final WebSocket socket;
+  final Map<String, dynamic> player;
+  final List<Map<String, dynamic>> inventory;
+  Map<String, dynamic>? offer;
+  bool confirmed = false;
+
+  String get name => player['displayName'] as String;
+}
+
+class _QueuedTrader {
+  const _QueuedTrader({
+    required this.socket,
+    required this.player,
+    required this.inventory,
+  });
+
+  final WebSocket socket;
+  final Map<String, dynamic> player;
+  final List<Map<String, dynamic>> inventory;
 }
 
 class _BattleMatch {
