@@ -246,6 +246,13 @@ class GameService extends ChangeNotifier {
   /// True when the one-time Secret Reward Badge has been applied or legacy void egg claimed.
   bool get secretRewardBadgeClaimed => _state.secretSpaceEggClaimed;
 
+  bool get isDayGullEggUnlocked =>
+      (_state.bossWins[EggShardLogic.rottenShellBossId] ?? 0) > 0;
+
+  List<Egg> get visibleShopEggs => GameData.eggs
+      .where((egg) => egg.id != GameData.dayGullEggId || isDayGullEggUnlocked)
+      .toList(growable: false);
+
   bool get tutorialCompleted => _state.tutorialCompleted;
   bool get tutorialSkipped => _state.tutorialSkipped;
   int get tutorialVersionCompleted => _state.tutorialVersionCompleted;
@@ -472,6 +479,9 @@ class GameService extends ChangeNotifier {
   }
 
   bool isEggUnlocked(Egg egg) {
+    if (egg.id == GameData.dayGullEggId) {
+      return isDayGullEggUnlocked;
+    }
     if (egg.usesBattleTokens) {
       return _state.ownedAnimals.isNotEmpty;
     }
@@ -515,6 +525,9 @@ class GameService extends ChangeNotifier {
       );
 
   String eggLockedDisplayMessage(Egg egg) {
+    if (egg.id == GameData.dayGullEggId) {
+      return 'Beat The Rotten Shell to unlock the DayGull Egg.';
+    }
     final effective = effectiveEggRebirthRequirement(egg);
     if (effective > 0 && _state.rebirthLevel < effective) {
       return 'Requires Rebirth Level $effective';

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/realistic_animal_sprites.dart';
 import '../models/animal_sprite_theme.dart';
 import '../models/background_theme.dart';
+import '../models/player_account.dart';
 import '../navigation/app_page_route.dart';
 import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
@@ -14,6 +15,7 @@ import '../theme/game_theme.dart';
 import '../utils/snackbar_utils.dart';
 import '../utils/ui_sound.dart';
 import '../widgets/audio_scope.dart';
+import '../widgets/account_scope.dart';
 import '../widgets/audio_settings_card.dart';
 import '../widgets/game_background.dart';
 import '../widgets/phone_width_layout.dart';
@@ -74,6 +76,12 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
+  void _switchAccount(BuildContext context) {
+    final accounts = AccountScope.of(context);
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    accounts.chooseAnotherAccount();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -81,6 +89,7 @@ class SettingsScreen extends StatelessWidget {
       builder: (context, _) {
         final selected = preferences.selectedTheme;
         final selectedAnimalTheme = preferences.animalSpriteTheme;
+        final account = AccountScope.of(context).account;
 
         return ReturnToHatcheryPopScope(
           theme: selected,
@@ -106,6 +115,18 @@ class SettingsScreen extends StatelessWidget {
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
+                    if (account != null) ...[
+                      _SettingsSection(
+                        theme: selected,
+                        title: 'Account',
+                        child: _AccountSettings(
+                          account: account,
+                          theme: selected,
+                          onSwitch: () => _switchAccount(context),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
                     _SettingsSection(
                       theme: selected,
                       title: 'Tutorials',
@@ -227,6 +248,83 @@ class SettingsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _AccountSettings extends StatelessWidget {
+  const _AccountSettings({
+    required this.account,
+    required this.theme,
+    required this.onSwitch,
+  });
+
+  final PlayerAccount account;
+  final BackgroundTheme theme;
+  final VoidCallback onSwitch;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: account.avatarColor,
+              child: Text(
+                account.displayName.characters.first.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    account.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: theme.cardTextPrimaryColor,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  Text(
+                    '@${account.username}',
+                    style: TextStyle(
+                      color: theme.cardTextSecondaryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          key: const ValueKey('settings-switch-account-button'),
+          onPressed: onSwitch,
+          icon: const Icon(Icons.switch_account),
+          label: const Text(
+            'Switch Account',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          style: GameTheme.filledButton(
+            theme,
+            color: theme.secondaryColor,
+            height: 48,
+          ),
+        ),
+      ],
     );
   }
 }

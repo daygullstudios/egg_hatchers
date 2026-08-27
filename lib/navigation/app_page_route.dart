@@ -146,6 +146,7 @@ const String kQuestsRouteName = '/quests';
 const String kBattlesRouteName = '/battles';
 const String kArenaRouteName = '/arena';
 const String kArenaBattleRouteName = '/arena/battle';
+const String kMultiplayerArenaRouteName = '/arena/online';
 const String kCustomSpritesRouteName = '/custom-sprites';
 const String kSecretToolsRouteName = '/secret-tools';
 const String kSettingsRouteName = '/settings';

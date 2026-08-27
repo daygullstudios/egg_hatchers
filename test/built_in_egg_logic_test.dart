@@ -5,6 +5,7 @@ import 'package:egg_hatchers/models/egg.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/utils/built_in_egg_logic.dart';
 import 'package:egg_hatchers/utils/custom_egg_logic.dart';
+import 'package:egg_hatchers/utils/egg_shard_logic.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -47,6 +48,16 @@ void main() {
     expect(BuiltInEggLogic.roundedChancePercent(space, 'star_fox'), 30);
     expect(BuiltInEggLogic.roundedChancePercent(space, 'alien_slime'), 20);
     expect(BuiltInEggLogic.roundedChancePercent(space, 'galaxy_dragon'), 10);
+  });
+
+  test('DayGull egg shop percents match configured weights', () {
+    final dayGull = GameData.eggById(GameData.dayGullEggId)!;
+    expect(
+      BuiltInEggLogic.roundedChancePercent(dayGull, 'crossword_beast'),
+      60,
+    );
+    expect(BuiltInEggLogic.roundedChancePercent(dayGull, 'boba_bazooka'), 35);
+    expect(BuiltInEggLogic.roundedChancePercent(dayGull, 'the_hatched_egg'), 5);
   });
 
   test('rebirth egg shop percents match configured weights', () {
@@ -101,6 +112,34 @@ void main() {
     game.setRebirthLevel(5);
     expect(game.isEggUnlocked(voidEgg), isTrue);
 
+    game.dispose();
+  });
+
+  test('DayGull Egg unlocks after a Rotten Shell win', () async {
+    SharedPreferences.setMockInitialValues({});
+    final game = GameService();
+    await game.initialize();
+
+    final dayGull = GameData.eggById(GameData.dayGullEggId)!;
+    expect(game.isDayGullEggUnlocked, isFalse);
+    expect(game.isEggUnlocked(dayGull), isFalse);
+    expect(
+      game.visibleShopEggs.map((egg) => egg.id),
+      isNot(contains(GameData.dayGullEggId)),
+    );
+    expect(
+      game.eggLockedDisplayMessage(dayGull),
+      'Beat The Rotten Shell to unlock the DayGull Egg.',
+    );
+
+    game.devAddBossWin(EggShardLogic.rottenShellBossId);
+
+    expect(game.isDayGullEggUnlocked, isTrue);
+    expect(game.isEggUnlocked(dayGull), isTrue);
+    expect(
+      game.visibleShopEggs.map((egg) => egg.id),
+      contains(GameData.dayGullEggId),
+    );
     game.dispose();
   });
 

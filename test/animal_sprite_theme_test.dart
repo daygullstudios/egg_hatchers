@@ -18,6 +18,7 @@ import 'package:egg_hatchers/models/animal_sprite_theme.dart';
 import 'package:egg_hatchers/models/retro_pixel_sprite_definition.dart';
 import 'package:egg_hatchers/models/retro_pixel_sprite_source.dart';
 import 'package:egg_hatchers/utils/boss_visual_config.dart';
+import 'package:egg_hatchers/widgets/hatched_egg_glitch_sprite.dart';
 
 bool _isPureUpscale(
   RetroPixelSpriteDefinition small,
@@ -79,6 +80,34 @@ void main() {
     expect(AnimalSpriteThemes.byId('unknown').id, 'classic');
     expect(AnimalSpriteThemes.byId('retroPixel').id, 'retroPixel');
     expect(AnimalSpriteThemes.byId('realistic').id, 'realistic');
+  });
+
+  test(
+    'The Hatched Egg has ten transparent front-facing head assets',
+    () async {
+      expect(HatchedEggGlitchSprite.goodHeadAnimalIds, hasLength(10));
+      for (final animalId in HatchedEggGlitchSprite.goodHeadAnimalIds) {
+        await _expectTransparentPng(
+          '${HatchedEggGlitchSprite.headAssetDirectory}/$animalId.png',
+          expectedSize: 256,
+        );
+      }
+    },
+  );
+
+  test('Crossword Beast has transparent art in all three styles', () async {
+    await _expectTransparentPng(
+      'assets/images/animals/crossword_beast.png',
+      expectedSize: 256,
+    );
+    await _expectTransparentPng(
+      'assets/images/animal_themes/realistic/crossword_beast.png',
+      expectedSize: 512,
+    );
+    await _expectTransparentPng(
+      'assets/images/animal_themes/retro_pixel/crossword_beast.png',
+      expectedSize: 128,
+    );
   });
 
   test('Every built-in egg has Classic, Retro Pixel, and Realistic art', () {

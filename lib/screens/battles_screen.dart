@@ -27,8 +27,10 @@ import '../widgets/boss_sprite.dart';
 import '../widgets/game_sprite.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/audio_scope.dart';
+import '../widgets/account_scope.dart';
 import 'manual_boss_battle_screen.dart';
 import 'arena_screen.dart';
+import 'multiplayer_lobby_screen.dart';
 
 /// Boss battle selection and auto-battle results.
 class BattlesScreen extends StatelessWidget {
@@ -52,6 +54,28 @@ class BattlesScreen extends StatelessWidget {
         game: game,
         preferences: preferences,
         customSprites: customSprites,
+      ),
+    );
+    if (context.mounted) {
+      AudioScope.of(context).playMusic(MusicTrack.hatchery);
+    }
+  }
+
+  Future<void> _openMultiplayerArena(
+    BuildContext context,
+    BackgroundTheme theme,
+  ) async {
+    final account = AccountScope.of(context).account;
+    if (account == null) return;
+    await pushThemedAppRoute<void>(
+      context,
+      theme: theme,
+      settings: const RouteSettings(name: kMultiplayerArenaRouteName),
+      builder: (_) => MultiplayerLobbyScreen(
+        game: game,
+        preferences: preferences,
+        customSprites: customSprites,
+        account: account,
       ),
     );
     if (context.mounted) {
@@ -683,6 +707,13 @@ class BattlesScreen extends StatelessWidget {
                               game: game,
                               onTap: () => _openArena(context, theme),
                             ),
+                            const SizedBox(height: 10),
+                            _MultiplayerEntryCard(
+                              theme: theme,
+                              game: game,
+                              onTap: () =>
+                                  _openMultiplayerArena(context, theme),
+                            ),
                             const SizedBox(height: 14),
                             _BattleUpgradesCard(
                               theme: theme,
@@ -848,6 +879,97 @@ class _ArenaEntryCard extends StatelessWidget {
                           : 'Hatch an animal to enter',
                       style: const TextStyle(
                         color: Color(0xFFB2DFDB),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.white, size: 30),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MultiplayerEntryCard extends StatelessWidget {
+  const _MultiplayerEntryCard({
+    required this.theme,
+    required this.game,
+    required this.onTap,
+  });
+
+  final BackgroundTheme theme;
+  final GameService game;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = game.state.ownedAnimals.isNotEmpty;
+    final account = AccountScope.of(context).account;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(GameTheme.cardRadius),
+        child: Ink(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: enabled
+                ? const LinearGradient(
+                    colors: [Color(0xFF111B3D), Color(0xFF43307C)],
+                  )
+                : null,
+            color: enabled ? null : theme.disabledColor,
+            borderRadius: BorderRadius.circular(GameTheme.cardRadius),
+            border: Border.all(color: const Color(0xFF70D9FF), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 12,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFF70D9FF),
+                ),
+                child: const Icon(
+                  Icons.public,
+                  color: Color(0xFF111B3D),
+                  size: 29,
+                ),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Online Arena',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      enabled
+                          ? '@${account?.username ?? 'player'} | Prepare your multiplayer team'
+                          : 'Hatch an animal to enter',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Color(0xFFC5D0FF),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),

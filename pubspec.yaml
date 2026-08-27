@@ -36,6 +36,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.3
   audioplayers: ^6.4.0
+  web_socket_channel: ^3.0.3
+  web: ^1.1.1
 
 dev_dependencies:
   flutter_test:
@@ -57,6 +59,7 @@ flutter:
 
   assets:
     - assets/images/animals/
+    - assets/images/hatched_egg_heads/
     - assets/images/animal_themes/retro_pixel/
     - assets/images/animal_themes/realistic/
     - assets/images/boss_backgrounds/realistic/

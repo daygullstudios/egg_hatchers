@@ -39,12 +39,18 @@ void main() {
 
   test('mobile assist speeds touch movement and slows boss projectiles', () {
     expect(
-      BossBattleLogic.manualTouchMoveSpeed(280, mobileAssistEnabled: true),
-      420,
+      BossBattleLogic.manualTouchMoveSpeed(
+        BossBattleLogic.manualPlayerMoveSpeed,
+        mobileAssistEnabled: true,
+      ),
+      525,
     );
     expect(
-      BossBattleLogic.manualTouchMoveSpeed(280, mobileAssistEnabled: false),
-      280,
+      BossBattleLogic.manualTouchMoveSpeed(
+        BossBattleLogic.manualPlayerMoveSpeed,
+        mobileAssistEnabled: false,
+      ),
+      350,
     );
     expect(
       BossBattleLogic.manualPlatformProjectileSpeedScale(

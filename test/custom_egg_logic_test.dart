@@ -275,6 +275,21 @@ void main() {
     );
   });
 
+  test('DayGull animals stay secret in custom egg editor', () {
+    expect(
+      CustomEggLogic.isAnimalUnlockedForCustomEgg(
+        'crossword_beast',
+        maxLifetime,
+        rebirthLevel: maxRebirth,
+      ),
+      isFalse,
+    );
+    expect(
+      CustomEggLogic.unlockMessageForAnimal('the_hatched_egg'),
+      'Unlocks from the DayGull Egg after beating The Rotten Shell.',
+    );
+  });
+
   test('canAddAnimalToCustomEgg respects six animal limit', () {
     expect(
       CustomEggLogic.canAddAnimalToCustomEgg(
@@ -354,10 +369,14 @@ void main() {
     );
     expect(
       ids.sublist(45, 48),
-      ['slime_pet', 'egg_golem_pet', 'night_rooster'],
+      ['crossword_beast', 'boba_bazooka', 'the_hatched_egg'],
     );
     expect(
       ids.sublist(48, 51),
+      ['slime_pet', 'egg_golem_pet', 'night_rooster'],
+    );
+    expect(
+      ids.sublist(51, 54),
       ['slime_king', 'egg_guardian', 'shadow_phoenix'],
     );
     expect(ids.last, 'shadow_phoenix');

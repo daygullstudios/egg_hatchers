@@ -325,6 +325,24 @@ class ArenaAbilityData {
       signatureName: 'Hydra Starfall',
       techniqueEffect: ArenaAbilityEffect.heal,
     ),
+    'crossword_beast': ArenaAbilityLoadout(
+      quickName: 'Clue Crunch',
+      techniqueName: 'Grid Guard',
+      signatureName: 'Puzzlequake',
+      techniqueEffect: ArenaAbilityEffect.shield,
+    ),
+    'boba_bazooka': ArenaAbilityLoadout(
+      quickName: 'Pearl Pop',
+      techniqueName: 'Tea Tap',
+      signatureName: 'Boba Blastoff',
+      techniqueEffect: ArenaAbilityEffect.drain,
+    ),
+    'the_hatched_egg': ArenaAbilityLoadout(
+      quickName: 'Rule Crack',
+      techniqueName: 'Shell Rewrite',
+      signatureName: 'Gamebreaker Hatch',
+      techniqueEffect: ArenaAbilityEffect.heal,
+    ),
     'slime_pet': ArenaAbilityLoadout(
       quickName: 'Slime Splash',
       techniqueName: 'Gelatin Guard',

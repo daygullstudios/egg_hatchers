@@ -17,6 +17,7 @@ class EggThemeAssets {
     'royal',
     'celestial',
     'void',
+    'daygull',
     'boss_egg',
   };
 

@@ -20,6 +20,11 @@ import 'package:egg_hatchers/utils/quest_logic.dart';
 import 'package:egg_hatchers/utils/rebirth_logic.dart';
 
 void main() {
+  test('Crossword Beast and Boba Bazooka use their swapped incomes', () {
+    expect(GameData.animalById('crossword_beast')!.coinsPerSecond, 6500000);
+    expect(GameData.animalById('boba_bazooka')!.coinsPerSecond, 4200000);
+  });
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('starting player has 250 coins and no animals', () {
@@ -106,10 +111,7 @@ void main() {
   });
 
   test('old saves without level or mutation default correctly', () {
-    final owned = OwnedAnimal.fromJson({
-      'animalId': 'chicken',
-      'quantity': 2,
-    });
+    final owned = OwnedAnimal.fromJson({'animalId': 'chicken', 'quantity': 2});
     expect(owned.level, 1);
     expect(owned.mutationId, 'none');
   });
@@ -155,32 +157,35 @@ void main() {
     expect(GameService.upgradeCostFor(animal, normalRabbit), 90);
   });
 
-  test('mutated and normal animals share the same upgrade cost at same level', () {
-    const animal = Animal(
-      id: 'chicken',
-      name: 'Chicken',
-      rarity: Rarity.common,
-      coinsPerSecond: 1,
-      emoji: '🐔',
-    );
-    const normal = OwnedAnimal(animalId: 'chicken', quantity: 1, level: 2);
-    const golden = OwnedAnimal(
-      animalId: 'chicken',
-      quantity: 1,
-      level: 2,
-      mutationId: 'golden',
-    );
-    const shadow = OwnedAnimal(
-      animalId: 'chicken',
-      quantity: 1,
-      level: 2,
-      mutationId: 'shadow',
-    );
+  test(
+    'mutated and normal animals share the same upgrade cost at same level',
+    () {
+      const animal = Animal(
+        id: 'chicken',
+        name: 'Chicken',
+        rarity: Rarity.common,
+        coinsPerSecond: 1,
+        emoji: '🐔',
+      );
+      const normal = OwnedAnimal(animalId: 'chicken', quantity: 1, level: 2);
+      const golden = OwnedAnimal(
+        animalId: 'chicken',
+        quantity: 1,
+        level: 2,
+        mutationId: 'golden',
+      );
+      const shadow = OwnedAnimal(
+        animalId: 'chicken',
+        quantity: 1,
+        level: 2,
+        mutationId: 'shadow',
+      );
 
-    expect(GameService.upgradeCostFor(animal, normal), 60);
-    expect(GameService.upgradeCostFor(animal, golden), 60);
-    expect(GameService.upgradeCostFor(animal, shadow), 60);
-  });
+      expect(GameService.upgradeCostFor(animal, normal), 60);
+      expect(GameService.upgradeCostFor(animal, golden), 60);
+      expect(GameService.upgradeCostFor(animal, shadow), 60);
+    },
+  );
 
   test('upgrading increases level and subtracts coins', () async {
     SharedPreferences.setMockInitialValues({});
@@ -200,7 +205,10 @@ void main() {
 
     expect(newLevel, 2);
     expect(game.coins, 150 - cost);
-    expect(game.ownedAnimal(owned.animalId, mutationId: owned.mutationId)!.level, 2);
+    expect(
+      game.ownedAnimal(owned.animalId, mutationId: owned.mutationId)!.level,
+      2,
+    );
 
     game.dispose();
   });
@@ -223,8 +231,10 @@ void main() {
 
       if (first.animal.id == second.animal.id &&
           first.mutation.id == second.mutation.id) {
-        final owned =
-            game.ownedAnimal(first.animal.id, mutationId: first.mutation.id)!;
+        final owned = game.ownedAnimal(
+          first.animal.id,
+          mutationId: first.mutation.id,
+        )!;
         expect(owned.quantity, 2);
         expect(owned.level, 2);
         found = true;
@@ -234,7 +244,11 @@ void main() {
       if (found) break;
     }
 
-    expect(found, isTrue, reason: 'Need a seed that hatches the same combo twice');
+    expect(
+      found,
+      isTrue,
+      reason: 'Need a seed that hatches the same combo twice',
+    );
   });
 
   test('golden and normal chickens are separate entries', () async {
@@ -335,8 +349,8 @@ void main() {
         );
       }
     }
-    expect(GameData.animals.length, 51);
-    expect(GameData.eggs.length, 13);
+    expect(GameData.animals.length, 54);
+    expect(GameData.eggs.length, 14);
   });
 
   test('egg unlocks based on lifetime coins earned', () async {
@@ -412,10 +426,7 @@ void main() {
     game.buyEgg(GameData.eggs.first);
     final result = game.hatchEgg(GameData.eggs.first);
 
-    expect(
-      GameData.eggs.first.possibleAnimalIds,
-      contains(result.animal.id),
-    );
+    expect(GameData.eggs.first.possibleAnimalIds, contains(result.animal.id));
 
     game.dispose();
   });
@@ -538,31 +549,34 @@ void main() {
     game.dispose();
   });
 
-  test('developer force slot selections persist in shared_preferences', () async {
-    SharedPreferences.setMockInitialValues({});
-    await DeveloperToolsPreferences.saveSlots(
-      DevForceSlotSelections(
-        slot1: const DevForceSlotSelection(
-          animalId: 'dragon',
-          mutationId: 'golden',
+  test(
+    'developer force slot selections persist in shared_preferences',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      await DeveloperToolsPreferences.saveSlots(
+        DevForceSlotSelections(
+          slot1: const DevForceSlotSelection(
+            animalId: 'dragon',
+            mutationId: 'golden',
+          ),
+          slot2: const DevForceSlotSelection(
+            animalId: 'rabbit',
+            mutationId: 'rainbow',
+          ),
+          slot3: const DevForceSlotSelection(
+            animalId: 'unicorn',
+            mutationId: 'shadow',
+          ),
         ),
-        slot2: const DevForceSlotSelection(
-          animalId: 'rabbit',
-          mutationId: 'rainbow',
-        ),
-        slot3: const DevForceSlotSelection(
-          animalId: 'unicorn',
-          mutationId: 'shadow',
-        ),
-      ),
-    );
+      );
 
-    final loaded = await DeveloperToolsPreferences.load();
-    expect(loaded.slot1.animalId, 'dragon');
-    expect(loaded.slot1.mutationId, 'golden');
-    expect(loaded.slot2.animalId, 'rabbit');
-    expect(loaded.slot3.animalId, 'unicorn');
-  });
+      final loaded = await DeveloperToolsPreferences.load();
+      expect(loaded.slot1.animalId, 'dragon');
+      expect(loaded.slot1.mutationId, 'golden');
+      expect(loaded.slot2.animalId, 'rabbit');
+      expect(loaded.slot3.animalId, 'unicorn');
+    },
+  );
 
   test('invalid saved force slots default safely', () async {
     SharedPreferences.setMockInitialValues({
@@ -771,19 +785,21 @@ void main() {
     game.dispose();
   });
 
-  test('luck level quest can complete from current luck without retroactive upgrades',
-      () async {
-    SharedPreferences.setMockInitialValues({});
-    final game = GameService();
-    await game.initialize();
+  test(
+    'luck level quest can complete from current luck without retroactive upgrades',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final game = GameService();
+      await game.initialize();
 
-    game.setLuckLevel(2);
-    final quest = QuestData.all.firstWhere((q) => q.id == 'beginner_luck_2');
+      game.setLuckLevel(2);
+      final quest = QuestData.all.firstWhere((q) => q.id == 'beginner_luck_2');
 
-    expect(QuestLogic.isComplete(quest, game.state), isTrue);
+      expect(QuestLogic.isComplete(quest, game.state), isTrue);
 
-    game.dispose();
-  });
+      game.dispose();
+    },
+  );
 
   test('ready to claim quests follow stable definition order', () async {
     SharedPreferences.setMockInitialValues({});
@@ -819,82 +835,91 @@ void main() {
 
     final restored = PlayerState.fromJson(state.toJson());
     expect(restored.questProgress.totalEggsHatched, 5);
-    expect(restored.questProgress.claimedQuestIds,
-        containsAll(['beginner_hatch_1', 'beginner_hatch_3']));
+    expect(
+      restored.questProgress.claimedQuestIds,
+      containsAll(['beginner_hatch_1', 'beginner_hatch_3']),
+    );
   });
 
-  test('hatch defers quest notification until hatch dialog is dismissed', () async {
-    SharedPreferences.setMockInitialValues({});
-    final game = GameService(random: Random(1));
-    await game.initialize();
+  test(
+    'hatch defers quest notification until hatch dialog is dismissed',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final game = GameService(random: Random(1));
+      await game.initialize();
 
-    final basicEgg = GameData.eggs.first;
-    game.setCoins(1000);
-    game.buyEgg(basicEgg);
-    game.hatchEgg(basicEgg);
+      final basicEgg = GameData.eggs.first;
+      game.setCoins(1000);
+      game.buyEgg(basicEgg);
+      game.hatchEgg(basicEgg);
 
-    expect(game.isQuestNotificationDeferred, isTrue);
-    expect(game.consumePendingQuestNotification(), isNull);
+      expect(game.isQuestNotificationDeferred, isTrue);
+      expect(game.consumePendingQuestNotification(), isNull);
 
-    final message = game.releaseDeferredQuestNotification();
-    expect(message, contains('Beginner Quest Complete'));
-    expect(game.consumePendingQuestNotification(), isNull);
+      final message = game.releaseDeferredQuestNotification();
+      expect(message, contains('Beginner Quest Complete'));
+      expect(game.consumePendingQuestNotification(), isNull);
 
-    game.dispose();
-  });
+      game.dispose();
+    },
+  );
 
-  test('quest completion notification is queued once per newly completed quest',
-      () async {
-    SharedPreferences.setMockInitialValues({});
-    final game = GameService();
-    await game.initialize();
+  test(
+    'quest completion notification is queued once per newly completed quest',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final game = GameService();
+      await game.initialize();
 
-    game.devAddEggsHatched(1);
+      game.devAddEggsHatched(1);
 
-    expect(
-      game.consumePendingQuestNotification(),
-      '🌱 Beginner Quest Complete! Claim your reward.',
-    );
-    expect(game.consumePendingQuestNotification(), isNull);
-    expect(
-      game.questProgress.wasCompletionNotified('beginner_hatch_1'),
-      isTrue,
-    );
+      expect(
+        game.consumePendingQuestNotification(),
+        '🌱 Beginner Quest Complete! Claim your reward.',
+      );
+      expect(game.consumePendingQuestNotification(), isNull);
+      expect(
+        game.questProgress.wasCompletionNotified('beginner_hatch_1'),
+        isTrue,
+      );
 
-    game.devAddEggsHatched(1);
-    expect(game.consumePendingQuestNotification(), isNull);
+      game.devAddEggsHatched(1);
+      expect(game.consumePendingQuestNotification(), isNull);
 
-    game.dispose();
-  });
+      game.dispose();
+    },
+  );
 
-  test('already completed quests are silenced on load without notification',
-      () async {
-    final saved = PlayerState(
-      coins: 1000,
-      ownedAnimals: const [],
-      lastSavedTime: DateTime(2025, 1, 1),
-      lifetimeCoinsEarned: 5000,
-      questProgress: QuestProgress.initial().copyWith(totalEggsHatched: 3),
-    );
-    SharedPreferences.setMockInitialValues({
-      'egg_hatchers_player_state': jsonEncode(saved.toJson()),
-    });
+  test(
+    'already completed quests are silenced on load without notification',
+    () async {
+      final saved = PlayerState(
+        coins: 1000,
+        ownedAnimals: const [],
+        lastSavedTime: DateTime(2025, 1, 1),
+        lifetimeCoinsEarned: 5000,
+        questProgress: QuestProgress.initial().copyWith(totalEggsHatched: 3),
+      );
+      SharedPreferences.setMockInitialValues({
+        'egg_hatchers_player_state': jsonEncode(saved.toJson()),
+      });
 
-    final game = GameService();
-    await game.initialize();
+      final game = GameService();
+      await game.initialize();
 
-    expect(game.consumePendingQuestNotification(), isNull);
-    expect(
-      game.questProgress.wasCompletionNotified('beginner_hatch_1'),
-      isTrue,
-    );
-    expect(
-      game.questProgress.wasCompletionNotified('beginner_hatch_3'),
-      isTrue,
-    );
+      expect(game.consumePendingQuestNotification(), isNull);
+      expect(
+        game.questProgress.wasCompletionNotified('beginner_hatch_1'),
+        isTrue,
+      );
+      expect(
+        game.questProgress.wasCompletionNotified('beginner_hatch_3'),
+        isTrue,
+      );
 
-    game.dispose();
-  });
+      game.dispose();
+    },
+  );
 
   test('multiple quest completions produce one combined notification', () {
     final message = QuestLogic.completionNotificationMessage(

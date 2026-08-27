@@ -209,6 +209,7 @@ class ShopScreen extends StatelessWidget {
       builder: (context, _) {
         final bg = preferences.selectedTheme;
         final lifetime = game.lifetimeCoinsEarned;
+        final builtInShopEggs = game.visibleShopEggs;
         final customShopEggs = customEggs.shopEggs(
           lifetime,
           rebirthLevel: game.rebirthLevel,
@@ -269,36 +270,36 @@ class ShopScreen extends StatelessWidget {
                             children: [
                               for (
                                 var i = 0;
-                                i < GameData.eggs.length;
+                                i < builtInShopEggs.length;
                                 i++
                               ) ...[
                                 if (i > 0) const SizedBox(height: 14),
                                 EggCard(
-                                  egg: GameData.eggs[i],
+                                  egg: builtInShopEggs[i],
                                   theme: bg,
                                   buyButtonKey: i == 0
                                       ? TutorialTargets.basicEggBuyButton
                                       : null,
                                   isUnlocked: game.isEggUnlocked(
-                                    GameData.eggs[i],
+                                    builtInShopEggs[i],
                                   ),
                                   unlockMessageOverride: game
                                       .eggLockedDisplayMessage(
-                                        GameData.eggs[i],
+                                        builtInShopEggs[i],
                                       ),
-                                  canAfford: game.canAfford(GameData.eggs[i]),
+                                  canAfford: game.canAfford(builtInShopEggs[i]),
                                   lifetimeCoinsEarned: game.lifetimeCoinsEarned,
                                   tripleHatchCost: GameService.tripleHatchCost(
-                                    GameData.eggs[i],
+                                    builtInShopEggs[i],
                                   ),
                                   canAffordTripleHatch: game
-                                      .canAffordTripleHatch(GameData.eggs[i]),
+                                      .canAffordTripleHatch(builtInShopEggs[i]),
                                   onBuy: () =>
-                                      _buyAndHatch(context, GameData.eggs[i]),
+                                      _buyAndHatch(context, builtInShopEggs[i]),
                                   onTripleHatch: () =>
-                                      _tripleHatch(context, GameData.eggs[i]),
+                                      _tripleHatch(context, builtInShopEggs[i]),
                                   masteryProgress: game.eggMasteryProgress(
-                                    GameData.eggs[i].id,
+                                    builtInShopEggs[i].id,
                                   ),
                                 ),
                               ],

@@ -8,7 +8,9 @@ import '../models/custom_sprite_data.dart';
 import '../models/egg.dart';
 import '../models/mutation.dart';
 import '../theme/game_theme.dart';
+import 'animated_animal_glitch.dart';
 import 'animal_sprite_theme_scope.dart';
+import 'hatched_egg_glitch_sprite.dart';
 import 'pixel_sprite.dart';
 import 'retro_pixel_animal_sprite.dart';
 
@@ -39,10 +41,34 @@ class GameSprite extends StatelessWidget {
   final FilterQuality filterQuality;
   final String? errorSpritePath;
 
+  static const _animatedGlitchAnimalIds = {'boba_bazooka', 'crossword_beast'};
+
   @override
   Widget build(BuildContext context) {
     final emojiSize = emojiFontSize ?? size * 0.58;
+    final sprite = _buildSprite(context, emojiSize);
+    final id = animalId;
 
+    if (id == 'the_hatched_egg') {
+      return HatchedEggGlitchSprite(
+        key: const ValueKey('hatched-egg-glitch'),
+        size: size,
+        body: sprite,
+      );
+    }
+
+    if (id != null && _animatedGlitchAnimalIds.contains(id)) {
+      return AnimatedAnimalGlitch(
+        key: ValueKey('animal-glitch-$id'),
+        size: size,
+        child: sprite,
+      );
+    }
+
+    return sprite;
+  }
+
+  Widget _buildSprite(BuildContext context, double emojiSize) {
     final custom = customSprite;
     if (custom != null && custom.hasVisiblePixels) {
       return Semantics(

@@ -36,6 +36,7 @@ class BossBattleLogic {
   static const Duration manualEggCooldown = Duration(milliseconds: 850);
   static const int manualMaxBossProjectiles = 6;
   static const int manualBattleLives = 3;
+  static const double manualPlayerMoveSpeed = 350;
   static const double mobileTouchMoveSpeedMultiplier = 1.5;
   static const double mobileProjectileSpeedScale = 0.88;
 

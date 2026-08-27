@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -23,6 +24,7 @@ import '../utils/battle_upgrade_logic.dart';
 import '../utils/boss_battle_logic.dart';
 import '../utils/egg_shard_logic.dart';
 import '../utils/format_utils.dart';
+import '../utils/rotten_shell_final_battle_logic.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/boss_battle_background.dart';
 import '../widgets/boss_defeat_animation.dart';
@@ -31,9 +33,12 @@ import '../widgets/boss_finisher_slash_overlay.dart';
 import '../widgets/boss_last_life_glow.dart';
 import '../widgets/boss_projectile_widget.dart';
 import '../widgets/boss_sprite.dart';
+import '../widgets/daygull_unlock_cinematic.dart';
+import '../widgets/daygull_discovery_sequence.dart';
 import '../widgets/game_background.dart';
 import '../widgets/game_sprite.dart';
 import '../widgets/phone_width_layout.dart';
+import '../widgets/rotten_shell_final_battle.dart';
 
 /// Top-view dodge boss fight: move side-to-side, break shield, shoot eggs.
 enum _ManualBattlePhase { intro, playing }
@@ -62,7 +67,7 @@ class ManualBossBattleScreen extends StatefulWidget {
 
 class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     with SingleTickerProviderStateMixin {
-  static const _playerSpeed = 280.0;
+  static const _playerSpeed = BossBattleLogic.manualPlayerMoveSpeed;
   static const _playerSize = 48.0;
   static const _bossSize = 80.0;
   static const _bossTop = 8.0;
@@ -114,6 +119,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   var _resultDialogShown = false;
   var _showVictoryAnimation = false;
   var _showFinisherSlash = false;
+  var _showFinalBattle = false;
   var _finisherRewardsApplied = false;
   var _phase = _ManualBattlePhase.intro;
   var _finisherBonusCoins = 0;
@@ -122,6 +128,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   var _victoryTokenReward = 0;
   var _victoryEggShardReward = 0;
   var _livesLostThisBattle = 0;
+  var _dayGullUnlockPending = false;
   String? _earnedRewardAnimalName;
   BossRewardGrant? _earnedRewardGrant;
 
@@ -273,6 +280,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _resultDialogShown = false;
     _showVictoryAnimation = false;
     _showFinisherSlash = false;
+    _showFinalBattle = false;
     _finisherRewardsApplied = false;
     _finisherBonusCoins = 0;
     _finisherBonusTokens = 0;
@@ -280,6 +288,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _victoryTokenReward = 0;
     _victoryEggShardReward = 0;
     _livesLostThisBattle = 0;
+    _dayGullUnlockPending = false;
     _earnedRewardAnimalName = null;
     _earnedRewardGrant = null;
     _lastTickElapsed = null;
@@ -598,6 +607,15 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
       _endBattle(won: true);
       return;
     }
+    if (RottenShellFinalBattleLogic.shouldEnter(
+      bossId: boss.id,
+      livesRemaining: _bossLives,
+      maxLives: _bossMaxLives,
+    )) {
+      _enterFinalBattle();
+      return;
+    }
+
     _regenerateShieldAfterHit();
 
     final enteringRage =
@@ -623,6 +641,39 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     }
   }
 
+  void _enterFinalBattle() {
+    _ticker.stop();
+    _bossProjectiles.clear();
+    _activeEgg = null;
+    _floatingDamages.clear();
+    _pointerActive = false;
+    _moveLeft = false;
+    _moveRight = false;
+    setState(() {
+      _rageModeActive = false;
+      _bossSpeedBannerRemaining = 0;
+      _showFinalBattle = true;
+    });
+  }
+
+  void _onFinalBattleVictory() {
+    if (!mounted || !_showFinalBattle || _gameOver) return;
+    setState(() {
+      _showFinalBattle = false;
+      _bossLives = 0;
+    });
+    _endBattle(won: true, skipFinisher: true);
+  }
+
+  void _onFinalBattleDefeat() {
+    if (!mounted || !_showFinalBattle || _gameOver) return;
+    setState(() {
+      _showFinalBattle = false;
+      _lives = 0;
+    });
+    _endBattle(won: false);
+  }
+
   void _shootEgg() {
     if (_phase != _ManualBattlePhase.playing ||
         _gameOver ||
@@ -642,7 +693,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _audio.playSfx(Sfx.playerShoot);
   }
 
-  void _endBattle({required bool won}) {
+  void _endBattle({required bool won, bool skipFinisher = false}) {
     if (_gameOver) return;
     _gameOver = true;
     _won = won;
@@ -653,6 +704,11 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _applyRewardsOnce();
     if (!won) {
       _audio.playSfx(Sfx.defeat);
+    }
+
+    if (won && skipFinisher) {
+      setState(() => _showVictoryAnimation = true);
+      return;
     }
 
     if (won) {
@@ -688,8 +744,23 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   }
 
   void _onVictoryAnimationComplete() {
+    unawaited(_handleVictoryAnimationComplete());
+  }
+
+  Future<void> _handleVictoryAnimationComplete() async {
     if (!mounted || !_showVictoryAnimation) return;
     setState(() => _showVictoryAnimation = false);
+    if (_dayGullUnlockPending) {
+      _dayGullUnlockPending = false;
+      await DayGullUnlockCinematic.show(context);
+      if (!mounted) return;
+      await DayGullDiscoverySequence.show(
+        context,
+        game: widget.game,
+        theme: theme,
+      );
+      if (!mounted) return;
+    }
     _showResultDialog();
   }
 
@@ -722,6 +793,10 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
       coinReward: coinReward,
       battleTokenReward: tokenReward,
     );
+    final dayGullUnlocksNow =
+        _won &&
+        boss.id == EggShardLogic.rottenShellBossId &&
+        !widget.game.isDayGullEggUnlocked;
     final grant = widget.game.applyBossBattleRewards(
       boss.id,
       result,
@@ -729,6 +804,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
       rewardAnimalId: _won ? boss.rewardAnimalId : null,
       livesLostThisBattle: _livesLostThisBattle,
     );
+    _dayGullUnlockPending = dayGullUnlocksNow;
     _earnedRewardAnimalName = grant?.displayName;
     _earnedRewardGrant = grant;
   }
@@ -914,6 +990,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
                                   _phase == _ManualBattlePhase.playing &&
                                   !_gameOver &&
                                   !_isPaused &&
+                                  !_showFinalBattle &&
                                   !_showVictoryAnimation &&
                                   !_showFinisherSlash,
                               onPause: _pauseBattle,
@@ -1032,6 +1109,16 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
                               onToggleBattleBackgrounds:
                                   widget.preferences.setShowBattleBackgrounds,
                             ),
+                          ),
+                        ),
+                      if (_showFinalBattle)
+                        Positioned.fill(
+                          child: RottenShellFinalBattle(
+                            fighter: widget.fighter,
+                            fighterCustomSprite: _fighterCustomSprite,
+                            boss: boss,
+                            onVictory: _onFinalBattleVictory,
+                            onDefeat: _onFinalBattleDefeat,
                           ),
                         ),
                       if (_showFinisherSlash)

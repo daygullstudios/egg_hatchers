@@ -11,6 +11,13 @@ import 'elite_boss_sprite_paths.dart';
 class GameData {
   GameData._();
 
+  static const dayGullEggId = 'daygull';
+  static const dayGullAnimalIds = {
+    'crossword_beast',
+    'boba_bazooka',
+    'the_hatched_egg',
+  };
+
   static const animals = <Animal>[
     // Basic Egg
     Animal(
@@ -385,6 +392,31 @@ class GameData {
       emoji: '🐉🌌',
       spritePath: 'assets/images/animals/nebula_hydra.png',
     ),
+    // DayGull Egg
+    Animal(
+      id: 'crossword_beast',
+      name: 'Crossword Beast',
+      rarity: Rarity.unknown,
+      coinsPerSecond: 6500000,
+      emoji: '🧩🐲',
+      spritePath: 'assets/images/animals/crossword_beast.png',
+    ),
+    Animal(
+      id: 'boba_bazooka',
+      name: 'Boba Bazooka',
+      rarity: Rarity.unknown,
+      coinsPerSecond: 4200000,
+      emoji: '🧋💥',
+      spritePath: 'assets/images/animals/boba_bazooka.png',
+    ),
+    Animal(
+      id: 'the_hatched_egg',
+      name: 'The Hatched Egg',
+      rarity: Rarity.boss,
+      coinsPerSecond: 12000000,
+      emoji: '🐣🥚',
+      spritePath: 'assets/images/animals/the_hatched_egg.png',
+    ),
     Animal(
       id: 'slime_pet',
       name: 'Slime Pet',
@@ -442,9 +474,15 @@ class GameData {
     'shadow_phoenix',
   };
 
+  /// Post-Rotten Shell hatchables extend the game without moving the existing
+  /// complete-collection quest beyond its original late-game finish line.
+  static const postRottenShellSecretAnimalIds = dayGullAnimalIds;
+
   static Iterable<Animal> get collectionQuestAnimals => animals.where(
-        (animal) => !bossVictoryRewardAnimalIds.contains(animal.id),
-      );
+    (animal) =>
+        !bossVictoryRewardAnimalIds.contains(animal.id) &&
+        !postRottenShellSecretAnimalIds.contains(animal.id),
+  );
 
   static const mutations = <Mutation>[
     Mutation(
@@ -494,11 +532,7 @@ class GameData {
       name: 'Basic Egg',
       cost: 100,
       possibleAnimalIds: ['chicken', 'mouse', 'rabbit'],
-      animalWeights: {
-        'chicken': 60,
-        'mouse': 30,
-        'rabbit': 10,
-      },
+      animalWeights: {'chicken': 60, 'mouse': 30, 'rabbit': 10},
       emoji: '🥚',
       description: 'Common farm friends',
       spritePath: 'assets/images/eggs/basic_egg.png',
@@ -508,11 +542,7 @@ class GameData {
       name: 'Forest Egg',
       cost: 400,
       possibleAnimalIds: ['fox', 'deer', 'bear'],
-      animalWeights: {
-        'fox': 50,
-        'deer': 35,
-        'bear': 15,
-      },
+      animalWeights: {'fox': 50, 'deer': 35, 'bear': 15},
       emoji: '🌲🥚',
       description: 'Woodland creatures',
       unlockLifetimeCoins: 300,
@@ -523,12 +553,7 @@ class GameData {
       name: 'Farm Egg',
       cost: 800,
       possibleAnimalIds: ['cow', 'pig', 'sheep', 'horse'],
-      animalWeights: {
-        'cow': 35,
-        'pig': 30,
-        'sheep': 25,
-        'horse': 10,
-      },
+      animalWeights: {'cow': 35, 'pig': 30, 'sheep': 25, 'horse': 10},
       emoji: '🚜🥚',
       description: 'Barnyard beasts',
       unlockLifetimeCoins: 750,
@@ -539,11 +564,7 @@ class GameData {
       name: 'Magic Egg',
       cost: 1500,
       possibleAnimalIds: ['tiger', 'dragon', 'unicorn'],
-      animalWeights: {
-        'tiger': 50,
-        'dragon': 35,
-        'unicorn': 15,
-      },
+      animalWeights: {'tiger': 50, 'dragon': 35, 'unicorn': 15},
       emoji: '✨🥚',
       description: 'Legendary wonders',
       unlockLifetimeCoins: 2500,
@@ -554,12 +575,7 @@ class GameData {
       name: 'Jungle Egg',
       cost: 3500,
       possibleAnimalIds: ['monkey', 'parrot', 'snake', 'gorilla'],
-      animalWeights: {
-        'monkey': 40,
-        'parrot': 30,
-        'snake': 20,
-        'gorilla': 10,
-      },
+      animalWeights: {'monkey': 40, 'parrot': 30, 'snake': 20, 'gorilla': 10},
       emoji: '🌴🥚',
       description: 'Wild jungle hunters',
       unlockLifetimeCoins: 5000,
@@ -570,12 +586,7 @@ class GameData {
       name: 'Ocean Egg',
       cost: 12000,
       possibleAnimalIds: ['fish', 'turtle', 'dolphin', 'shark'],
-      animalWeights: {
-        'fish': 45,
-        'turtle': 30,
-        'dolphin': 18,
-        'shark': 7,
-      },
+      animalWeights: {'fish': 45, 'turtle': 30, 'dolphin': 18, 'shark': 7},
       emoji: '🌊🥚',
       description: 'Deep sea legends',
       unlockLifetimeCoins: 20000,
@@ -617,7 +628,12 @@ class GameData {
       id: 'space',
       name: 'Space Egg',
       cost: 500000,
-      possibleAnimalIds: ['moon_cat', 'star_fox', 'alien_slime', 'galaxy_dragon'],
+      possibleAnimalIds: [
+        'moon_cat',
+        'star_fox',
+        'alien_slime',
+        'galaxy_dragon',
+      ],
       animalWeights: {
         'moon_cat': 40,
         'star_fox': 30,
@@ -634,11 +650,7 @@ class GameData {
       name: 'Ancient Egg',
       cost: 1500000,
       possibleAnimalIds: ['scarab_beetle', 'saber_cub', 'stone_golem'],
-      animalWeights: {
-        'scarab_beetle': 50,
-        'saber_cub': 35,
-        'stone_golem': 15,
-      },
+      animalWeights: {'scarab_beetle': 50, 'saber_cub': 35, 'stone_golem': 15},
       emoji: '🏛️🥚',
       description: 'Ruins and relic beasts',
       unlockRebirthLevel: 1,
@@ -649,11 +661,7 @@ class GameData {
       name: 'Royal Egg',
       cost: 5000000,
       possibleAnimalIds: ['royal_chicken', 'crown_fox', 'gem_dragon'],
-      animalWeights: {
-        'royal_chicken': 50,
-        'crown_fox': 35,
-        'gem_dragon': 15,
-      },
+      animalWeights: {'royal_chicken': 50, 'crown_fox': 35, 'gem_dragon': 15},
       emoji: '👑🥚',
       description: 'Regal hatchery treasures',
       unlockRebirthLevel: 2,
@@ -664,11 +672,7 @@ class GameData {
       name: 'Celestial Egg',
       cost: 15000000,
       possibleAnimalIds: ['cloud_bunny', 'sun_lion', 'cosmic_phoenix'],
-      animalWeights: {
-        'cloud_bunny': 50,
-        'sun_lion': 35,
-        'cosmic_phoenix': 15,
-      },
+      animalWeights: {'cloud_bunny': 50, 'sun_lion': 35, 'cosmic_phoenix': 15},
       emoji: '☀️🥚',
       description: 'Heavenly hatchlings',
       unlockRebirthLevel: 3,
@@ -679,15 +683,25 @@ class GameData {
       name: 'Void Egg',
       cost: 50000000,
       possibleAnimalIds: ['void_mouse', 'eclipse_wolf', 'nebula_hydra'],
-      animalWeights: {
-        'void_mouse': 50,
-        'eclipse_wolf': 35,
-        'nebula_hydra': 15,
-      },
+      animalWeights: {'void_mouse': 50, 'eclipse_wolf': 35, 'nebula_hydra': 15},
       emoji: '🌑🥚',
       description: 'Dark dimension dwellers',
       unlockRebirthLevel: 5,
       spritePath: 'assets/images/eggs/void_egg.png',
+    ),
+    Egg(
+      id: dayGullEggId,
+      name: 'DayGull Egg',
+      cost: 250000000,
+      possibleAnimalIds: ['crossword_beast', 'boba_bazooka', 'the_hatched_egg'],
+      animalWeights: {
+        'crossword_beast': 60,
+        'boba_bazooka': 35,
+        'the_hatched_egg': 5,
+      },
+      emoji: '🌘🥚',
+      description: 'Rule-breaking hatchlings beyond the final shell',
+      spritePath: 'assets/images/eggs/daygull_egg.png',
     ),
   ];
 
@@ -698,11 +712,7 @@ class GameData {
       name: 'Boss Egg',
       cost: 10,
       possibleAnimalIds: ['slime_pet', 'egg_golem_pet', 'night_rooster'],
-      animalWeights: {
-        'slime_pet': 65,
-        'egg_golem_pet': 30,
-        'night_rooster': 5,
-      },
+      animalWeights: {'slime_pet': 65, 'egg_golem_pet': 30, 'night_rooster': 5},
       emoji: '⚔️🥚',
       description: 'Battle-hardened companions',
       spritePath: 'assets/images/eggs/boss_egg.png',
@@ -792,12 +802,14 @@ class GameData {
       return animalIdA.compareTo(animalIdB);
     }
 
-    final rarityCompare =
-        animalB.rarity.sortOrder.compareTo(animalA.rarity.sortOrder);
+    final rarityCompare = animalB.rarity.sortOrder.compareTo(
+      animalA.rarity.sortOrder,
+    );
     if (rarityCompare != 0) return rarityCompare;
 
-    final incomeCompare =
-        animalB.coinsPerSecond.compareTo(animalA.coinsPerSecond);
+    final incomeCompare = animalB.coinsPerSecond.compareTo(
+      animalA.coinsPerSecond,
+    );
     if (incomeCompare != 0) return incomeCompare;
 
     return animalA.name.compareTo(animalB.name);

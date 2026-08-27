@@ -1,0 +1,83 @@
+import 'package:egg_hatchers/services/account_service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  test('new players start without an account', () async {
+    final accounts = AccountService();
+    await accounts.initialize();
+    expect(accounts.isInitialized, isTrue);
+    expect(accounts.hasAccount, isFalse);
+  });
+
+  test('created accounts persist and reload', () async {
+    final accounts = AccountService();
+    await accounts.initialize();
+    await accounts.createAccount(
+      displayName: 'Puzzle Fox',
+      username: 'Puzzle_Fox',
+      avatarColor: const Color(0xFF8B4DFF),
+    );
+
+    expect(accounts.account!.displayName, 'Puzzle Fox');
+    expect(accounts.account!.username, 'puzzle_fox');
+
+    final restored = AccountService();
+    await restored.initialize();
+    expect(restored.account!.id, accounts.account!.id);
+    expect(
+      restored.account!.avatarColorValue,
+      const Color(0xFF8B4DFF).toARGB32(),
+    );
+  });
+
+  test('account validation rejects unsafe usernames', () {
+    expect(AccountService.isUsernameValid('player_one'), isTrue);
+    expect(AccountService.isUsernameValid('no spaces'), isFalse);
+    expect(AccountService.isUsernameValid('ab'), isFalse);
+    expect(AccountService.normalizeUsername(' Egg Hero! '), 'egghero');
+  });
+
+  test('multiple local profiles can be selected independently', () async {
+    final accounts = AccountService();
+    await accounts.initialize();
+    await accounts.createAccount(
+      displayName: 'First Player',
+      username: 'first_player',
+      avatarColor: AccountService.avatarColors.first,
+    );
+    final firstId = accounts.account!.id;
+    accounts.chooseAnotherAccount();
+    await accounts.createAccount(
+      displayName: 'Second Player',
+      username: 'second_player',
+      avatarColor: AccountService.avatarColors.last,
+    );
+
+    expect(accounts.accounts, hasLength(2));
+    accounts.selectAccount(firstId);
+    expect(accounts.account!.username, 'first_player');
+  });
+
+  test('duplicate usernames on one device are rejected', () async {
+    final accounts = AccountService();
+    await accounts.initialize();
+    await accounts.createAccount(
+      displayName: 'First Player',
+      username: 'same_name',
+      avatarColor: AccountService.avatarColors.first,
+    );
+
+    expect(
+      () => accounts.createAccount(
+        displayName: 'Second Player',
+        username: 'same_name',
+        avatarColor: AccountService.avatarColors.last,
+      ),
+      throwsArgumentError,
+    );
+  });
+}

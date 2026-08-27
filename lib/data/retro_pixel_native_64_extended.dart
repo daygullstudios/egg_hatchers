@@ -55,6 +55,9 @@ class RetroPixelNative64Extended {
     'void_mouse',
     'eclipse_wolf',
     'nebula_hydra',
+    'crossword_beast',
+    'boba_bazooka',
+    'the_hatched_egg',
     'egg_golem_pet',
     'night_rooster',
     'slime_king',
@@ -95,6 +98,9 @@ class RetroPixelNative64Extended {
     'void_mouse': _voidMouse,
     'eclipse_wolf': _eclipseWolf,
     'nebula_hydra': _nebulaHydra,
+    'crossword_beast': _crosswordBeast,
+    'boba_bazooka': _bobaBazooka,
+    'the_hatched_egg': _theHatchedEgg,
     'egg_golem_pet': _eggGolemPet,
     'night_rooster': _nightRooster,
     'slime_king': _slimeKing,
@@ -578,6 +584,87 @@ class RetroPixelNative64Extended {
     c.fillRect(10, 20, 4, 3, _w);
     c.fillRect(50, 20, 4, 3, _w);
     return c.build(displayScale: 1.06);
+  }
+
+  static RetroPixelSpriteDefinition _crosswordBeast() {
+    final c = RetroPixelNative64Canvas();
+    c.outlineEllipse(32, 24, 13, 10, _dl, _k);
+    c.eye(27, 22, sclera: _l);
+    c.eye(37, 22, sclera: _l);
+    c.fillRect(22, 14, 6, 8, _pu);
+    c.fillRect(38, 14, 6, 8, _pu);
+    c.outlineEllipse(32, 42, 16, 12, _dl, _k);
+    c.fillRect(20, 34, 24, 4, _w);
+    c.fillRect(20, 42, 24, 4, _w);
+    c.fillRect(28, 30, 4, 20, _w);
+    c.fillRect(36, 30, 4, 20, _w);
+    for (var x = 20; x <= 43; x += 8) {
+      c.fillRect(x, 34, 2, 4, _k);
+      c.fillRect(x, 42, 2, 4, _k);
+    }
+    for (var y = 30; y <= 49; y += 8) {
+      c.fillRect(28, y, 4, 2, _k);
+      c.fillRect(36, y, 4, 2, _k);
+    }
+    c.fillRect(18, 48, 8, 8, _pu);
+    c.fillRect(38, 48, 8, 8, _pu);
+    c.fillRect(16, 56, 12, 3, _k);
+    c.fillRect(36, 56, 12, 3, _k);
+    return c.build(displayScale: 1.06);
+  }
+
+  static RetroPixelSpriteDefinition _bobaBazooka() {
+    final c = RetroPixelNative64Canvas();
+    c.rectOutline(24, 18, 18, 30, _tn, _k);
+    c.fillRect(26, 20, 14, 7, _cr);
+    c.fillRect(26, 28, 14, 16, _b);
+    for (final point in [(28, 39), (33, 36), (37, 41), (30, 44), (38, 34)]) {
+      c.fillEllipse(point.$1, point.$2, 2, 2, _k);
+    }
+    c.fillRect(30, 8, 4, 12, _l);
+    c.fillRect(34, 6, 4, 14, _pu);
+    c.fillRect(42, 28, 14, 7, _dl);
+    c.fillRect(54, 26, 6, 11, _l);
+    c.fillRect(58, 28, 4, 7, _pu);
+    c.set(60, 27, _k);
+    c.set(60, 35, _k);
+    c.eye(28, 24, sclera: _w);
+    c.sideEye(36, 24);
+    c.fillRect(29, 30, 7, 2, _k);
+    c.fillRect(18, 34, 6, 10, _tn);
+    c.fillRect(40, 42, 8, 6, _tn);
+    c.fillRect(24, 48, 5, 10, _tn);
+    c.fillRect(36, 48, 5, 10, _tn);
+    c.fillRect(23, 58, 7, 2, _k);
+    c.fillRect(35, 58, 7, 2, _k);
+    return c.build(displayScale: 1.06);
+  }
+
+  static RetroPixelSpriteDefinition _theHatchedEgg() {
+    final c = RetroPixelNative64Canvas();
+    c.outlineEllipse(32, 36, 18, 21, _cr, _k);
+    c.fillRect(18, 22, 6, 5, _w);
+    c.fillRect(25, 17, 7, 6, _w);
+    c.fillRect(34, 18, 7, 5, _w);
+    c.fillRect(42, 23, 5, 5, _w);
+    c.fillRect(20, 24, 4, 3, _k);
+    c.fillRect(30, 21, 5, 3, _k);
+    c.fillRect(40, 25, 5, 3, _k);
+    c.outlineEllipse(32, 35, 10, 9, _y, _k);
+    c.fillRect(24, 32, 16, 4, _o);
+    c.eye(28, 32, sclera: _w);
+    c.eye(36, 32, sclera: _w);
+    c.fillRect(30, 39, 5, 3, _o);
+    c.fillRect(18, 42, 8, 10, _cr);
+    c.fillRect(40, 42, 8, 10, _cr);
+    c.fillRect(24, 55, 8, 4, _o);
+    c.fillRect(34, 55, 8, 4, _o);
+    c.fillRect(22, 58, 11, 2, _k);
+    c.fillRect(33, 58, 11, 2, _k);
+    c.fillRect(12, 28, 8, 2, _pu);
+    c.fillRect(44, 16, 9, 2, _l);
+    c.fillRect(48, 44, 8, 2, _pu);
+    return c.build(displayScale: 1.08);
   }
 
   static RetroPixelSpriteDefinition _eggGolemPet() {

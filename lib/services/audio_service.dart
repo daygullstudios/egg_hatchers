@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,6 +31,7 @@ class AudioService extends ChangeNotifier {
   var _musicVolume = 0.6;
   var _sfxVolume = 0.8;
   var _isInitialized = false;
+  Future<void>? _initialization;
   var _userUnlocked = false;
   MusicTrack? _currentTrack;
   MusicTrack? _pendingTrack;
@@ -45,8 +48,9 @@ class AudioService extends ChangeNotifier {
   double get sfxVolume => _sfxVolume;
   bool get userUnlocked => _userUnlocked;
 
-  Future<void> initialize() async {
-    if (_isInitialized) return;
+  Future<void> initialize() => _initialization ??= _initialize();
+
+  Future<void> _initialize() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       _musicEnabled = prefs.getBool(_musicEnabledKey) ?? true;
@@ -65,6 +69,7 @@ class AudioService extends ChangeNotifier {
   Future<void> unlockFromUserGesture() async {
     if (_userUnlocked) return;
     _userUnlocked = true;
+    unawaited(initialize());
     final pending = _pendingTrack ?? MusicTrack.hatchery;
     _pendingTrack = null;
     await playMusic(pending);

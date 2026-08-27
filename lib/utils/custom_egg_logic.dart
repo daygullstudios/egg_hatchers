@@ -43,6 +43,7 @@ class CustomEggLogic {
     if (GameData.animalById(animalId) == null) return false;
     final source = findSourceEggForAnimal(animalId);
     if (source == null) return false;
+    if (source.id == GameData.dayGullEggId) return false;
     return source.isUnlocked(
       lifetimeCoinsEarned: lifetimeCoinsEarned,
       rebirthLevel: rebirthLevel,
@@ -71,6 +72,9 @@ class CustomEggLogic {
   }) {
     final source = findSourceEggForAnimal(animalId);
     if (source == null) return 'This animal is unavailable.';
+    if (source.id == GameData.dayGullEggId) {
+      return 'Unlocks from the DayGull Egg after beating The Rotten Shell.';
+    }
     if (source.unlockRebirthLevel > 0 &&
         rebirthLevel < source.unlockRebirthLevel) {
       return 'Requires Rebirth Level ${source.unlockRebirthLevel}';

@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'models/background_theme.dart';
+import 'screens/account_onboarding_screen.dart';
 import 'screens/hatchery_screen.dart';
+import 'services/account_service.dart';
 import 'services/audio_service.dart';
 import 'services/custom_egg_service.dart';
 import 'services/custom_sprite_service.dart';
@@ -10,6 +14,7 @@ import 'services/preferences_service.dart';
 import 'services/sprite_rating_service.dart';
 import 'services/sprite_reference_overlay_service.dart';
 import 'widgets/animal_sprite_theme_scope.dart';
+import 'widgets/account_scope.dart';
 import 'widgets/app_theme_background.dart';
 import 'widgets/audio_scope.dart';
 import 'widgets/tutorial_host.dart';
@@ -30,6 +35,7 @@ class EggHatchersApp extends StatefulWidget {
 class _EggHatchersAppState extends State<EggHatchersApp>
     with WidgetsBindingObserver {
   final GameService _game = GameService();
+  final AccountService _accounts = AccountService();
   final PreferencesService _preferences = PreferencesService();
   final CustomSpriteService _customSprites = CustomSpriteService();
   final CustomEggService _customEggs = CustomEggService();
@@ -44,6 +50,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     WidgetsBinding.instance.addObserver(this);
     _initialize();
     _game.addListener(_onGameChanged);
+    _accounts.addListener(_onGameChanged);
     _preferences.addListener(_onGameChanged);
     _customSprites.addListener(_onGameChanged);
     _customEggs.addListener(_onGameChanged);
@@ -53,14 +60,15 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   }
 
   Future<void> _initialize() async {
+    unawaited(_audio.initialize());
     await Future.wait([
       _game.initialize(),
+      _accounts.initialize(),
       _preferences.initialize(),
       _customSprites.initialize(),
       _customEggs.initialize(),
       _spriteRating.initialize(),
       _referenceOverlay.initialize(),
-      _audio.initialize(),
     ]);
     if (mounted) setState(() {});
   }
@@ -81,6 +89,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _game.removeListener(_onGameChanged);
+    _accounts.removeListener(_onGameChanged);
     _preferences.removeListener(_onGameChanged);
     _customSprites.removeListener(_onGameChanged);
     _customEggs.removeListener(_onGameChanged);
@@ -94,12 +103,12 @@ class _EggHatchersAppState extends State<EggHatchersApp>
 
   bool get _isReady =>
       _game.isInitialized &&
+      _accounts.isInitialized &&
       _preferences.isInitialized &&
       _customSprites.isInitialized &&
       _customEggs.isInitialized &&
       _spriteRating.isInitialized &&
-      _referenceOverlay.isInitialized &&
-      _audio.isInitialized;
+      _referenceOverlay.isInitialized;
 
   @override
   Widget build(BuildContext context) {
@@ -133,24 +142,33 @@ class _EggHatchersAppState extends State<EggHatchersApp>
             audio: _audio,
             child: AudioUnlockListener(
               audio: _audio,
-              child: AnimalSpriteThemeScope(
-                theme: _preferences.animalSpriteTheme,
-                child: TutorialHost(game: _game, theme: theme, child: content),
+              child: AccountScope(
+                accounts: _accounts,
+                child: AnimalSpriteThemeScope(
+                  theme: _preferences.animalSpriteTheme,
+                  child: TutorialHost(
+                    game: _game,
+                    theme: theme,
+                    child: content,
+                  ),
+                ),
               ),
             ),
           ),
         );
       },
-      home: _isReady
-          ? HatcheryScreen(
+      home: !_isReady
+          ? const _LoadingScreen()
+          : !_accounts.hasAccount
+          ? AccountOnboardingScreen(accounts: _accounts)
+          : HatcheryScreen(
               game: _game,
               preferences: _preferences,
               customSprites: _customSprites,
               customEggs: _customEggs,
               spriteRating: _spriteRating,
               referenceOverlay: _referenceOverlay,
-            )
-          : const _LoadingScreen(),
+            ),
     );
   }
 }
