@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 
 import '../models/player_account.dart';
 import '../services/account_service.dart';
+import '../services/game_service.dart';
 
 class AccountOnboardingScreen extends StatefulWidget {
-  const AccountOnboardingScreen({super.key, required this.accounts});
+  const AccountOnboardingScreen({
+    super.key,
+    required this.accounts,
+    required this.game,
+  });
 
   final AccountService accounts;
+  final GameService game;
 
   @override
   State<AccountOnboardingScreen> createState() =>
@@ -46,6 +52,37 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  Future<void> _deleteAccount(PlayerAccount account) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete account?'),
+        content: Text(
+          'Delete ${account.displayName} and all progress saved for this account? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('CANCEL'),
+          ),
+          FilledButton.icon(
+            key: const ValueKey('confirm-delete-account-button'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            icon: const Icon(Icons.delete_forever),
+            label: const Text('DELETE'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await widget.game.deleteAccountSave(account.id);
+    await widget.accounts.deleteAccount(account.id);
+    if (!mounted) return;
+    setState(() {
+      _showCreateForm = widget.accounts.accounts.isEmpty;
+    });
   }
 
   @override
@@ -99,6 +136,7 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
                             account: account,
                             onPressed: () =>
                                 widget.accounts.selectAccount(account.id),
+                            onDelete: () => _deleteAccount(account),
                           ),
                         ),
                       const SizedBox(height: 6),
@@ -210,10 +248,15 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
 }
 
 class _AccountChoice extends StatelessWidget {
-  const _AccountChoice({required this.account, required this.onPressed});
+  const _AccountChoice({
+    required this.account,
+    required this.onPressed,
+    required this.onDelete,
+  });
 
   final PlayerAccount account;
   final VoidCallback onPressed;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -249,6 +292,12 @@ class _AccountChoice extends StatelessWidget {
                     Text('@${account.username}'),
                   ],
                 ),
+              ),
+              IconButton(
+                key: ValueKey('delete-account-${account.id}'),
+                onPressed: onDelete,
+                tooltip: 'Delete account',
+                icon: const Icon(Icons.delete_outline),
               ),
               const Icon(Icons.login),
             ],

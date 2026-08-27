@@ -82,6 +82,40 @@ class SettingsScreen extends StatelessWidget {
     accounts.chooseAnotherAccount();
   }
 
+  Future<void> _deleteAccount(
+    BuildContext context,
+    PlayerAccount account,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete account?'),
+        content: Text(
+          'Delete ${account.displayName} and all progress saved for this account? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('CANCEL'),
+          ),
+          FilledButton.icon(
+            key: const ValueKey('settings-confirm-delete-account'),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            icon: const Icon(Icons.delete_forever),
+            label: const Text('DELETE'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final accounts = AccountScope.of(context);
+    await game.deleteAccountSave(account.id);
+    await accounts.deleteAccount(account.id);
+    if (context.mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -123,6 +157,7 @@ class SettingsScreen extends StatelessWidget {
                           account: account,
                           theme: selected,
                           onSwitch: () => _switchAccount(context),
+                          onDelete: () => _deleteAccount(context, account),
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -257,11 +292,13 @@ class _AccountSettings extends StatelessWidget {
     required this.account,
     required this.theme,
     required this.onSwitch,
+    required this.onDelete,
   });
 
   final PlayerAccount account;
   final BackgroundTheme theme;
   final VoidCallback onSwitch;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -322,6 +359,20 @@ class _AccountSettings extends StatelessWidget {
             theme,
             color: theme.secondaryColor,
             height: 48,
+          ),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          key: const ValueKey('settings-delete-account-button'),
+          onPressed: onDelete,
+          icon: const Icon(Icons.delete_outline),
+          label: const Text(
+            'Delete Account',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.redAccent,
+            minimumSize: const Size.fromHeight(46),
           ),
         ),
       ],

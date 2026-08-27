@@ -43,6 +43,8 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   final SpriteReferenceOverlayService _referenceOverlay =
       SpriteReferenceOverlayService();
   final AudioService _audio = AudioService();
+  String? _loadedAccountId;
+  var _switchingAccount = false;
 
   @override
   void initState() {
@@ -50,7 +52,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     WidgetsBinding.instance.addObserver(this);
     _initialize();
     _game.addListener(_onGameChanged);
-    _accounts.addListener(_onGameChanged);
+    _accounts.addListener(_onAccountsChanged);
     _preferences.addListener(_onGameChanged);
     _customSprites.addListener(_onGameChanged);
     _customEggs.addListener(_onGameChanged);
@@ -61,9 +63,13 @@ class _EggHatchersAppState extends State<EggHatchersApp>
 
   Future<void> _initialize() async {
     unawaited(_audio.initialize());
+    await _accounts.initialize();
+    _loadedAccountId = _accounts.account?.id;
+    await _game.initialize(
+      accountId: _loadedAccountId,
+      migrateLegacySave: _loadedAccountId != null,
+    );
     await Future.wait([
-      _game.initialize(),
-      _accounts.initialize(),
       _preferences.initialize(),
       _customSprites.initialize(),
       _customEggs.initialize(),
@@ -74,6 +80,26 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   }
 
   void _onGameChanged() {
+    if (mounted) setState(() {});
+  }
+
+  void _onAccountsChanged() {
+    _onGameChanged();
+    final accountId = _accounts.account?.id;
+    if (accountId == null) {
+      _loadedAccountId = null;
+      return;
+    }
+    if (!_game.isInitialized || accountId == _loadedAccountId) return;
+    unawaited(_switchGameAccount(accountId));
+  }
+
+  Future<void> _switchGameAccount(String accountId) async {
+    _switchingAccount = true;
+    if (mounted) setState(() {});
+    await _game.switchAccount(accountId);
+    _loadedAccountId = accountId;
+    _switchingAccount = false;
     if (mounted) setState(() {});
   }
 
@@ -89,7 +115,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _game.removeListener(_onGameChanged);
-    _accounts.removeListener(_onGameChanged);
+    _accounts.removeListener(_onAccountsChanged);
     _preferences.removeListener(_onGameChanged);
     _customSprites.removeListener(_onGameChanged);
     _customEggs.removeListener(_onGameChanged);
@@ -133,7 +159,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
       ),
       builder: (context, child) {
         final content = child ?? const SizedBox.shrink();
-        if (!_isReady) {
+        if (!_isReady || _switchingAccount) {
           return AppThemeBackground(theme: theme, child: content);
         }
         return AppThemeBackground(
@@ -157,10 +183,10 @@ class _EggHatchersAppState extends State<EggHatchersApp>
           ),
         );
       },
-      home: !_isReady
+      home: !_isReady || _switchingAccount
           ? const _LoadingScreen()
           : !_accounts.hasAccount
-          ? AccountOnboardingScreen(accounts: _accounts)
+          ? AccountOnboardingScreen(accounts: _accounts, game: _game)
           : HatcheryScreen(
               game: _game,
               preferences: _preferences,

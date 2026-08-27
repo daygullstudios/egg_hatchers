@@ -148,6 +148,19 @@ class AccountService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteAccount(String id) async {
+    final index = _accounts.indexWhere((account) => account.id == id);
+    if (index < 0) return;
+    _accounts.removeAt(index);
+    if (_account?.id == id) {
+      _account = null;
+      writeActiveAccountId(null);
+    }
+    final preferences = await SharedPreferences.getInstance();
+    await _saveAccounts(preferences);
+    notifyListeners();
+  }
+
   bool isUsernameAvailable(String username) {
     final clean = normalizeUsername(username);
     return _accounts.every((account) => account.username != clean);

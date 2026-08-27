@@ -48,8 +48,9 @@ class GameService extends ChangeNotifier {
     : _saveService = saveService ?? SaveService(),
       _random = random ?? Random();
 
-  final SaveService _saveService;
+  SaveService _saveService;
   final Random _random;
+  String? _activeAccountId;
 
   PlayerState _state = GameData.startingPlayerState();
   Timer? _idleTimer;
@@ -340,8 +341,26 @@ class GameService extends ChangeNotifier {
       _forcedHatchQueue.isEmpty ? null : _forcedHatchQueue.first.mutationId;
 
   /// Load saved progress, apply offline earnings, and start idle income.
-  Future<void> initialize() async {
-    final saved = await _saveService.load();
+  Future<void> initialize({
+    String? accountId,
+    bool migrateLegacySave = false,
+  }) async {
+    if (accountId != null) {
+      _activeAccountId = accountId;
+      _saveService = SaveService(accountId: accountId);
+    }
+    var saved = await _saveService.load();
+    if (saved == null && accountId != null && migrateLegacySave) {
+      saved = await SaveService().load();
+      if (saved != null) await _saveService.save(saved);
+    }
+    _loadState(saved);
+    _isInitialized = true;
+    _startIdleTimer();
+    notifyListeners();
+  }
+
+  void _loadState(PlayerState? saved) {
     if (saved != null) {
       _state = _migrateEliteRewardAnimals(saved);
       _refreshDailyQuestsIfNeeded();
@@ -353,9 +372,33 @@ class GameService extends ChangeNotifier {
     }
 
     _silenceExistingQuestNotifications();
-    _isInitialized = true;
+    _pendingQuestNotification = null;
+    _pendingMasteryNotifications.clear();
+    _pendingAutoBattleCompletion = null;
+    _dailyRewardPopupShownThisSession = false;
+  }
+
+  Future<void> switchAccount(String accountId) async {
+    if (_activeAccountId == accountId) return;
+    if (_activeAccountId != null) await save();
+    _idleTimer?.cancel();
+    _activeAccountId = accountId;
+    _saveService = SaveService(accountId: accountId);
+    _loadState(await _saveService.load());
     _startIdleTimer();
     notifyListeners();
+  }
+
+  Future<void> deleteAccountSave(String accountId) async {
+    if (_activeAccountId == accountId) {
+      _idleTimer?.cancel();
+      _activeAccountId = null;
+      _saveService = SaveService();
+      _loadState(null);
+      _startIdleTimer();
+      notifyListeners();
+    }
+    await SaveService(accountId: accountId).delete();
   }
 
   void _applyOfflineEarnings() {

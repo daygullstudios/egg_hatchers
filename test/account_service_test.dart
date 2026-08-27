@@ -1,4 +1,5 @@
 import 'package:egg_hatchers/services/account_service.dart';
+import 'package:egg_hatchers/services/game_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -79,5 +80,44 @@ void main() {
       ),
       throwsArgumentError,
     );
+  });
+
+  test('account save slots preserve progress independently', () async {
+    final game = GameService();
+    await game.initialize(accountId: 'first');
+    game.setCoins(9999);
+    await game.save();
+
+    await game.switchAccount('second');
+    expect(game.coins, 250);
+    game.setCoins(777);
+    await game.save();
+
+    await game.switchAccount('first');
+    expect(game.coins, 9999);
+    await game.deleteAccountSave('first');
+    await game.switchAccount('second');
+    expect(game.coins, 777);
+    game.dispose();
+  });
+
+  test('deleting one profile leaves other profiles available', () async {
+    final accounts = AccountService();
+    await accounts.initialize();
+    await accounts.createAccount(
+      displayName: 'First Player',
+      username: 'first_player',
+      avatarColor: AccountService.avatarColors.first,
+    );
+    final firstId = accounts.account!.id;
+    await accounts.createAccount(
+      displayName: 'Second Player',
+      username: 'second_player',
+      avatarColor: AccountService.avatarColors.last,
+    );
+
+    await accounts.deleteAccount(firstId);
+    expect(accounts.accounts, hasLength(1));
+    expect(accounts.accounts.single.username, 'second_player');
   });
 }
