@@ -138,6 +138,13 @@ void main() {
     }
   });
 
+  test('Every Classic egg uses polished transparent v2 artwork', () async {
+    for (final egg in [...GameData.eggs, ...GameData.battleEggs]) {
+      expect(egg.spritePath, endsWith('_v2.png'), reason: egg.id);
+      await _expectTransparentPng(egg.spritePath!, expectedSize: 256);
+    }
+  });
+
   test('Egg theme resolver keeps Classic and custom eggs on fallback art', () {
     expect(
       EggThemeAssets.assetPathFor(themeId: 'classic', eggId: 'basic'),

@@ -535,7 +535,7 @@ class GameData {
       animalWeights: {'chicken': 60, 'mouse': 30, 'rabbit': 10},
       emoji: '🥚',
       description: 'Common farm friends',
-      spritePath: 'assets/images/eggs/basic_egg.png',
+      spritePath: 'assets/images/eggs/basic_egg_v2.png',
     ),
     Egg(
       id: 'forest',
@@ -546,7 +546,7 @@ class GameData {
       emoji: '🌲🥚',
       description: 'Woodland creatures',
       unlockLifetimeCoins: 300,
-      spritePath: 'assets/images/eggs/forest_egg.png',
+      spritePath: 'assets/images/eggs/forest_egg_v2.png',
     ),
     Egg(
       id: 'farm',
@@ -557,7 +557,7 @@ class GameData {
       emoji: '🚜🥚',
       description: 'Barnyard beasts',
       unlockLifetimeCoins: 750,
-      spritePath: 'assets/images/eggs/farm_egg.png',
+      spritePath: 'assets/images/eggs/farm_egg_v2.png',
     ),
     Egg(
       id: 'magic',
@@ -568,7 +568,7 @@ class GameData {
       emoji: '✨🥚',
       description: 'Legendary wonders',
       unlockLifetimeCoins: 2500,
-      spritePath: 'assets/images/eggs/magic_egg.png',
+      spritePath: 'assets/images/eggs/magic_egg_v2.png',
     ),
     Egg(
       id: 'jungle',
@@ -579,7 +579,7 @@ class GameData {
       emoji: '🌴🥚',
       description: 'Wild jungle hunters',
       unlockLifetimeCoins: 5000,
-      spritePath: 'assets/images/eggs/jungle_egg.png',
+      spritePath: 'assets/images/eggs/jungle_egg_v2.png',
     ),
     Egg(
       id: 'ocean',
@@ -590,7 +590,7 @@ class GameData {
       emoji: '🌊🥚',
       description: 'Deep sea legends',
       unlockLifetimeCoins: 20000,
-      spritePath: 'assets/images/eggs/ocean_egg.png',
+      spritePath: 'assets/images/eggs/ocean_egg_v2.png',
     ),
     Egg(
       id: 'arctic',
@@ -606,7 +606,7 @@ class GameData {
       emoji: '❄️🥚',
       description: 'Frozen frontier friends',
       unlockLifetimeCoins: 75000,
-      spritePath: 'assets/images/eggs/arctic_egg.png',
+      spritePath: 'assets/images/eggs/arctic_egg_v2.png',
     ),
     Egg(
       id: 'dino',
@@ -622,7 +622,7 @@ class GameData {
       emoji: '🦖🥚',
       description: 'Prehistoric power',
       unlockLifetimeCoins: 200000,
-      spritePath: 'assets/images/eggs/dino_egg.png',
+      spritePath: 'assets/images/eggs/dino_egg_v2.png',
     ),
     Egg(
       id: 'space',
@@ -643,7 +643,7 @@ class GameData {
       emoji: '🚀🥚',
       description: 'Cosmic creatures',
       unlockLifetimeCoins: 750000,
-      spritePath: 'assets/images/eggs/space_egg.png',
+      spritePath: 'assets/images/eggs/space_egg_v2.png',
     ),
     Egg(
       id: 'ancient',
@@ -654,7 +654,7 @@ class GameData {
       emoji: '🏛️🥚',
       description: 'Ruins and relic beasts',
       unlockRebirthLevel: 1,
-      spritePath: 'assets/images/eggs/ancient_egg.png',
+      spritePath: 'assets/images/eggs/ancient_egg_v2.png',
     ),
     Egg(
       id: 'royal',
@@ -665,7 +665,7 @@ class GameData {
       emoji: '👑🥚',
       description: 'Regal hatchery treasures',
       unlockRebirthLevel: 2,
-      spritePath: 'assets/images/eggs/royal_egg.png',
+      spritePath: 'assets/images/eggs/royal_egg_v2.png',
     ),
     Egg(
       id: 'celestial',
@@ -676,7 +676,7 @@ class GameData {
       emoji: '☀️🥚',
       description: 'Heavenly hatchlings',
       unlockRebirthLevel: 3,
-      spritePath: 'assets/images/eggs/celestial_egg.png',
+      spritePath: 'assets/images/eggs/celestial_egg_v2.png',
     ),
     Egg(
       id: 'void',
@@ -687,7 +687,7 @@ class GameData {
       emoji: '🌑🥚',
       description: 'Dark dimension dwellers',
       unlockRebirthLevel: 5,
-      spritePath: 'assets/images/eggs/void_egg.png',
+      spritePath: 'assets/images/eggs/void_egg_v2.png',
     ),
     Egg(
       id: dayGullEggId,
@@ -701,7 +701,7 @@ class GameData {
       },
       emoji: '🌘🥚',
       description: 'Rule-breaking hatchlings beyond the final shell',
-      spritePath: 'assets/images/eggs/daygull_egg.png',
+      spritePath: 'assets/images/eggs/daygull_egg_v2.png',
     ),
   ];
 
@@ -715,7 +715,7 @@ class GameData {
       animalWeights: {'slime_pet': 65, 'egg_golem_pet': 30, 'night_rooster': 5},
       emoji: '⚔️🥚',
       description: 'Battle-hardened companions',
-      spritePath: 'assets/images/eggs/boss_egg.png',
+      spritePath: 'assets/images/eggs/boss_egg_v2.png',
       costCurrency: EggCostCurrency.battleTokens,
     ),
   ];
