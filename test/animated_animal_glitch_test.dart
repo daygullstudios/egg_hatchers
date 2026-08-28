@@ -1,3 +1,4 @@
+import 'package:egg_hatchers/data/game_data.dart';
 import 'package:egg_hatchers/models/animal_sprite_theme.dart';
 import 'package:egg_hatchers/widgets/animated_animal_glitch.dart';
 import 'package:egg_hatchers/widgets/animal_sprite_theme_scope.dart';
@@ -59,6 +60,30 @@ void main() {
     );
 
     expect(find.byType(AnimatedAnimalGlitch), findsNothing);
+  });
+
+  testWidgets('DayGull egg glitches in every egg art style', (tester) async {
+    final egg = GameData.eggs.firstWhere((egg) => egg.id == 'daygull');
+
+    for (final theme in AnimalSpriteThemes.all) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AnimalSpriteThemeScope(
+            theme: theme,
+            child: GameEggSprite(egg: egg, size: 140),
+          ),
+        ),
+      );
+
+      expect(
+        find.byKey(const ValueKey('daygull-egg-glitch')),
+        findsOneWidget,
+        reason: theme.name,
+      );
+      expect(find.byType(AnimatedAnimalGlitch), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(tester.takeException(), isNull, reason: theme.name);
+    }
   });
 
   testWidgets('The Hatched Egg uses a changing glitch head in every style', (

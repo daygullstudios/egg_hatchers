@@ -180,7 +180,7 @@ class GameEggSprite extends StatelessWidget {
       themeId: theme.id,
       eggId: egg.id,
     );
-    return GameSprite(
+    final sprite = GameSprite(
       spritePath: themedPath ?? egg.spritePath,
       errorSpritePath: themedPath == null ? null : egg.spritePath,
       fallbackEmoji: egg.emoji,
@@ -191,6 +191,16 @@ class GameEggSprite extends StatelessWidget {
           ? FilterQuality.high
           : FilterQuality.none,
     );
+
+    if (egg.id == 'daygull') {
+      return AnimatedAnimalGlitch(
+        key: const ValueKey('daygull-egg-glitch'),
+        size: size,
+        child: sprite,
+      );
+    }
+
+    return sprite;
   }
 }
 
