@@ -149,6 +149,16 @@ void main() {
     );
   });
 
+  test('Realistic DayGull egg uses its detailed transparent artwork', () async {
+    final path = EggThemeAssets.assetPathFor(
+      themeId: AnimalSpriteThemes.realistic.id,
+      eggId: 'daygull',
+    );
+
+    expect(path, 'assets/images/egg_themes/realistic/daygull_v2.png');
+    await _expectTransparentPng(path!, expectedSize: 512);
+  });
+
   test('Realistic theme includes generated assets for every animal', () {
     final expectedIds = GameData.animals.map((animal) => animal.id).toSet();
 
