@@ -1,17 +1,39 @@
-# egg_hatchers
+# Egg Hatchers
 
-A new Flutter project.
+Egg Hatchers is a Flutter idle collection and battle game with three art styles,
+boss fights, custom sprites and eggs, local player profiles, and live multiplayer
+battles and trading.
 
-## Getting Started
+## Run the game
 
-This project is a starting point for a Flutter application.
+```powershell
+flutter pub get
+flutter run -d chrome
+```
 
-A few resources to get you started if this is your first Flutter project:
+## Run multiplayer locally
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Start the WebSocket server in a separate terminal:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```powershell
+dart run tool/multiplayer_server.dart
+```
+
+The web build connects to the current site host on port `8080`. Native builds
+default to `ws://127.0.0.1:8080`; supply a reachable server for device builds:
+
+```powershell
+flutter run --dart-define=EGG_HATCHERS_SERVER_URL=wss://your-server.example
+```
+
+## Verify a change
+
+```powershell
+flutter analyze
+flutter test
+flutter build web --release
+```
+
+The development multiplayer server stores active rooms in memory. A public
+release still requires durable hosted accounts, authenticated sessions,
+transactional trade storage, TLS, and platform signing credentials.

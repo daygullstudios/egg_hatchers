@@ -1,4 +1,4 @@
-package com.example.egg_hatchers
+package com.egghatchers.game
 
 import io.flutter.embedding.android.FlutterActivity
 
