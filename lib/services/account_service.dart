@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/player_account.dart';
 import 'account_session_store.dart';
+import 'account_storage.dart';
 
 class AccountService extends ChangeNotifier {
   static const _idKey = 'playerAccountId';
@@ -158,6 +159,7 @@ class AccountService extends ChangeNotifier {
     }
     final preferences = await SharedPreferences.getInstance();
     await _saveAccounts(preferences);
+    await AccountStorage.deleteAccountData(id);
     notifyListeners();
   }
 

@@ -4,12 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/sprite_rating_claim.dart';
+import 'account_storage.dart';
 
 /// Persists one-time sprite rating reward claims in shared_preferences.
 class SpriteRatingService extends ChangeNotifier {
   static const _claimsKey = 'spriteRatingClaims';
 
   final Map<String, Map<String, SpriteRatingClaim>> _claimsByAnimal = {};
+  String? _accountId;
   bool _isInitialized = false;
 
   bool get isInitialized => _isInitialized;
@@ -22,10 +24,18 @@ class SpriteRatingService extends ChangeNotifier {
     return _claimsByAnimal[animalId]?[spriteHash];
   }
 
-  Future<void> initialize() async {
+  Future<void> initialize({
+    String? accountId,
+    bool migrateLegacyData = false,
+  }) async {
+    _accountId = accountId;
     _claimsByAnimal.clear();
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_claimsKey);
+    final claimsKey = AccountStorage.key(_claimsKey, accountId);
+    var raw = prefs.getString(claimsKey);
+    if (raw == null && accountId != null && migrateLegacyData) {
+      raw = prefs.getString(_claimsKey);
+    }
     if (raw != null) {
       try {
         final decoded = jsonDecode(raw);
@@ -50,6 +60,9 @@ class SpriteRatingService extends ChangeNotifier {
       } catch (_) {
         // Ignore corrupt claim data.
       }
+    }
+    if (accountId != null && !prefs.containsKey(claimsKey)) {
+      await _persist();
     }
 
     _isInitialized = true;
@@ -96,7 +109,7 @@ class SpriteRatingService extends ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_claimsKey);
+    await prefs.remove(AccountStorage.key(_claimsKey, _accountId));
   }
 
   Future<void> _persist() async {
@@ -109,6 +122,9 @@ class SpriteRatingService extends ChangeNotifier {
     }
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_claimsKey, jsonEncode(encoded));
+    await prefs.setString(
+      AccountStorage.key(_claimsKey, _accountId),
+      jsonEncode(encoded),
+    );
   }
 }

@@ -3,13 +3,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/game_data.dart';
 import '../models/custom_sprite_data.dart';
+import 'account_storage.dart';
 
 /// Persists per-animal custom pixel sprites in shared_preferences.
 class CustomSpriteService extends ChangeNotifier {
   static const _showCustomSpritesKey = 'showCustomSprites';
-  static String _keyFor(String animalId) => 'customSprite_$animalId';
+  static const _spriteKey = 'customSprite';
+  static const _migrationKey = 'customSpriteMigrationComplete';
 
   final Map<String, CustomSpriteData> _sprites = {};
+  String? _accountId;
   bool _showCustomSprites = true;
   bool _isInitialized = false;
 
@@ -20,23 +23,46 @@ class CustomSpriteService extends ChangeNotifier {
 
   bool getShowCustomSprites() => _showCustomSprites;
 
-  Future<void> initialize() async {
+  Future<void> initialize({
+    String? accountId,
+    bool migrateLegacyData = false,
+  }) async {
+    _accountId = accountId;
     final prefs = await SharedPreferences.getInstance();
     _sprites.clear();
     _showCustomSprites = prefs.getBool(_showCustomSpritesKey) ?? true;
+    final migrationKey = AccountStorage.key(_migrationKey, accountId);
+    final shouldMigrate =
+        accountId != null &&
+        migrateLegacyData &&
+        prefs.getBool(migrationKey) != true;
 
     for (final animal in GameData.animals) {
-      final saved = prefs.getString(_keyFor(animal.id));
+      final spriteKey = AccountStorage.itemKey(
+        _spriteKey,
+        animal.id,
+        accountId,
+      );
+      var saved = prefs.getString(spriteKey);
+      if (saved == null && shouldMigrate) {
+        saved = prefs.getString('${_spriteKey}_${animal.id}');
+      }
       if (saved == null) continue;
 
       try {
         final sprite = CustomSpriteData.fromJsonString(saved);
         if (sprite.hasVisiblePixels) {
           _sprites[animal.id] = sprite;
+          if (accountId != null && !prefs.containsKey(spriteKey)) {
+            await prefs.setString(spriteKey, saved);
+          }
         }
       } catch (_) {
         // Ignore corrupt entries.
       }
+    }
+    if (accountId != null) {
+      await prefs.setBool(migrationKey, true);
     }
 
     _isInitialized = true;
@@ -70,11 +96,9 @@ class CustomSpriteService extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     for (final animal in GameData.animals) {
-      await prefs.remove(_keyFor(animal.id));
-    }
-    for (final key
-        in prefs.getKeys().where((k) => k.startsWith('customSprite_'))) {
-      await prefs.remove(key);
+      await prefs.remove(
+        AccountStorage.itemKey(_spriteKey, animal.id, _accountId),
+      );
     }
   }
 
@@ -88,7 +112,10 @@ class CustomSpriteService extends ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyFor(animalId), data.toJsonString());
+    await prefs.setString(
+      AccountStorage.itemKey(_spriteKey, animalId, _accountId),
+      data.toJsonString(),
+    );
   }
 
   Future<void> resetSprite(String animalId) async {
@@ -96,6 +123,8 @@ class CustomSpriteService extends ChangeNotifier {
     notifyListeners();
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keyFor(animalId));
+    await prefs.remove(
+      AccountStorage.itemKey(_spriteKey, animalId, _accountId),
+    );
   }
 }

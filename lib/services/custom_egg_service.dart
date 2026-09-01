@@ -2,12 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/custom_egg.dart';
+import 'account_storage.dart';
 
 /// Persists player-created custom eggs in shared_preferences.
 class CustomEggService extends ChangeNotifier {
   static const _storageKey = 'customEggs';
 
   final List<CustomEgg> _eggs = [];
+  String? _accountId;
   bool _isInitialized = false;
 
   bool get isInitialized => _isInitialized;
@@ -15,10 +17,7 @@ class CustomEggService extends ChangeNotifier {
   List<CustomEgg> get allEggs => List.unmodifiable(_eggs);
 
   /// Enabled custom eggs with hatchable animals for the shop.
-  List<CustomEgg> shopEggs(
-    int lifetimeCoinsEarned, {
-    int rebirthLevel = 0,
-  }) =>
+  List<CustomEgg> shopEggs(int lifetimeCoinsEarned, {int rebirthLevel = 0}) =>
       _eggs
           .where(
             (egg) => egg.isShopValid(
@@ -28,13 +27,24 @@ class CustomEggService extends ChangeNotifier {
           )
           .toList();
 
-  Future<void> initialize() async {
+  Future<void> initialize({
+    String? accountId,
+    bool migrateLegacyData = false,
+  }) async {
+    _accountId = accountId;
     final prefs = await SharedPreferences.getInstance();
     _eggs.clear();
 
-    final saved = prefs.getString(_storageKey);
+    final storageKey = AccountStorage.key(_storageKey, accountId);
+    var saved = prefs.getString(storageKey);
+    if (saved == null && accountId != null && migrateLegacyData) {
+      saved = prefs.getString(_storageKey);
+    }
     if (saved != null) {
       _eggs.addAll(CustomEgg.listFromJsonString(saved));
+    }
+    if (accountId != null && !prefs.containsKey(storageKey)) {
+      await prefs.setString(storageKey, CustomEgg.listToJsonString(_eggs));
     }
 
     _isInitialized = true;
@@ -73,6 +83,9 @@ class CustomEggService extends ChangeNotifier {
 
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_storageKey, CustomEgg.listToJsonString(_eggs));
+    await prefs.setString(
+      AccountStorage.key(_storageKey, _accountId),
+      CustomEgg.listToJsonString(_eggs),
+    );
   }
 }

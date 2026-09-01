@@ -84,10 +84,22 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     );
     await Future.wait([
       _preferences.initialize(),
-      _customSprites.initialize(),
-      _customEggs.initialize(),
-      _spriteRating.initialize(),
-      _referenceOverlay.initialize(),
+      _customSprites.initialize(
+        accountId: _loadedAccountId,
+        migrateLegacyData: _loadedAccountId != null,
+      ),
+      _customEggs.initialize(
+        accountId: _loadedAccountId,
+        migrateLegacyData: _loadedAccountId != null,
+      ),
+      _spriteRating.initialize(
+        accountId: _loadedAccountId,
+        migrateLegacyData: _loadedAccountId != null,
+      ),
+      _referenceOverlay.initialize(
+        accountId: _loadedAccountId,
+        migrateLegacyData: _loadedAccountId != null,
+      ),
     ]);
     _syncOnlinePresence();
     if (mounted) setState(() {});
@@ -114,10 +126,26 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     _switchingAccount = true;
     await _onlineLobby.disconnect();
     if (mounted) setState(() {});
-    await _game.switchAccount(
-      accountId,
-      migrateLegacySave: _legacyMigrationPending,
-    );
+    final migrateLegacyData = _legacyMigrationPending;
+    await _game.switchAccount(accountId, migrateLegacySave: migrateLegacyData);
+    await Future.wait([
+      _customSprites.initialize(
+        accountId: accountId,
+        migrateLegacyData: migrateLegacyData,
+      ),
+      _customEggs.initialize(
+        accountId: accountId,
+        migrateLegacyData: migrateLegacyData,
+      ),
+      _spriteRating.initialize(
+        accountId: accountId,
+        migrateLegacyData: migrateLegacyData,
+      ),
+      _referenceOverlay.initialize(
+        accountId: accountId,
+        migrateLegacyData: migrateLegacyData,
+      ),
+    ]);
     _legacyMigrationPending = false;
     _loadedAccountId = accountId;
     _switchingAccount = false;
