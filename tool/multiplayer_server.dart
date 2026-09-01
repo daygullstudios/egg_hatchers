@@ -4,8 +4,11 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:egg_hatchers/data/arena_ability_data.dart';
+import 'package:egg_hatchers/data/game_data.dart';
 import 'package:egg_hatchers/models/arena.dart';
+import 'package:egg_hatchers/models/owned_animal.dart';
 import 'package:egg_hatchers/utils/arena_combat_logic.dart';
+import 'package:egg_hatchers/utils/battle_power_logic.dart';
 
 const _defaultHost = '127.0.0.1';
 const _defaultPort = 53218;
@@ -240,8 +243,10 @@ class _Matchmaker {
   }
 
   void _registerPresence(WebSocket socket, Map<String, dynamic> data) {
-    final account = data['account'];
-    if (account is! Map || account['id'] is! String) {
+    final account = _validatedAccount(data['account']);
+    final team = _validatedTeam(data['team'], requireFullTeam: false);
+    final animals = _validatedInventory(data['animals']);
+    if (account == null || team == null || animals == null) {
       _send(socket, {
         'type': 'lobbyError',
         'message': 'Invalid player profile.',
@@ -249,14 +254,10 @@ class _Matchmaker {
       return;
     }
     final player = <String, dynamic>{
-      'account': Map<String, dynamic>.from(account),
-      'rating': (data['rating'] as num?)?.toInt() ?? 1000,
-      'team': (data['team'] as List<dynamic>? ?? const [])
-          .map((item) => Map<String, dynamic>.from(item as Map))
-          .toList(growable: false),
-      'animals': (data['animals'] as List<dynamic>? ?? const [])
-          .map((item) => Map<String, dynamic>.from(item as Map))
-          .toList(growable: false),
+      'account': account,
+      'rating': _validatedRating(data['rating']),
+      'team': team,
+      'animals': animals,
     };
     _presenceBySocket[socket] = _PresenceClient(socket, player);
     _broadcastPresence();
@@ -404,7 +405,8 @@ class _Matchmaker {
     Map<String, dynamic> player,
   ) {
     final room = _directRooms[roomId];
-    final playerId = player['playerId'] as String?;
+    final validatedPlayer = _validatedBattlePlayer(player);
+    final playerId = validatedPlayer?['playerId'] as String?;
     if (room == null ||
         room.kind != 'battle' ||
         !room.playerIds.contains(playerId)) {
@@ -414,13 +416,9 @@ class _Matchmaker {
       });
       return;
     }
-    if ((player['team'] as List?)?.length != 3) {
-      _send(socket, {'type': 'error', 'message': 'A full team is required.'});
-      return;
-    }
     room.battlePlayers[playerId!] = _QueuedPlayer(
       socket: socket,
-      player: player,
+      player: validatedPlayer!,
       queuedAt: DateTime.now(),
     );
     _send(socket, {'type': 'queued', 'message': 'Joining invited battle...'});
@@ -438,8 +436,10 @@ class _Matchmaker {
     List<Map<String, dynamic>> inventory,
   ) {
     final room = _directRooms[roomId];
-    final playerId = player['id'] as String?;
-    final eligibleInventory = inventory
+    final validatedPlayer = _validatedAccount(player);
+    final validatedInventory = _validatedInventory(inventory);
+    final playerId = validatedPlayer?['id'] as String?;
+    final eligibleInventory = (validatedInventory ?? const [])
         .where(_isTradableAnimal)
         .toList(growable: false);
     if (room == null ||
@@ -460,7 +460,7 @@ class _Matchmaker {
     }
     room.tradePlayers[playerId!] = _QueuedTrader(
       socket: socket,
-      player: player,
+      player: validatedPlayer!,
       inventory: eligibleInventory,
     );
     _send(socket, {'type': 'tradeQueued'});
@@ -496,8 +496,13 @@ class _Matchmaker {
       });
       return;
     }
-    final playerId = player['id'] as String?;
-    if (playerId == null || inventory.where(_isTradableAnimal).isEmpty) {
+    final validatedPlayer = _validatedAccount(player);
+    final validatedInventory = _validatedInventory(inventory);
+    final playerId = validatedPlayer?['id'] as String?;
+    final eligibleInventory = (validatedInventory ?? const [])
+        .where(_isTradableAnimal)
+        .toList(growable: false);
+    if (playerId == null || eligibleInventory.isEmpty) {
       _send(socket, {
         'type': 'error',
         'message': 'You need a tradable animal to enter.',
@@ -509,8 +514,8 @@ class _Matchmaker {
     );
     final trader = _QueuedTrader(
       socket: socket,
-      player: player,
-      inventory: inventory.where(_isTradableAnimal).toList(growable: false),
+      player: validatedPlayer!,
+      inventory: eligibleInventory,
     );
     if (opponentIndex < 0) {
       _tradeWaiting.add(trader);
@@ -542,16 +547,20 @@ class _Matchmaker {
       _send(socket, {'type': 'error', 'message': 'Finish the current match.'});
       return;
     }
-    final playerId = player['playerId'] as String?;
-    if (playerId == null || (player['team'] as List?)?.length != 3) {
+    final validatedPlayer = _validatedBattlePlayer(player);
+    final playerId = validatedPlayer?['playerId'] as String?;
+    if (playerId == null) {
       _send(socket, {'type': 'error', 'message': 'A full team is required.'});
       return;
     }
 
-    final rating = (player['rating'] as num?)?.toInt() ?? 1000;
-    player['rating'] = rating;
+    final rating = validatedPlayer!['rating'] as int;
     _waiting.add(
-      _QueuedPlayer(socket: socket, player: player, queuedAt: DateTime.now()),
+      _QueuedPlayer(
+        socket: socket,
+        player: validatedPlayer,
+        queuedAt: DateTime.now(),
+      ),
     );
     _send(socket, {
       'type': 'queued',
@@ -700,9 +709,152 @@ class _DirectRoom {
   final Map<String, _QueuedTrader> tradePlayers = {};
 }
 
+const _maxOnlineLevel = 1000000;
+const _maxOnlineInventoryEntries = 512;
+
+Map<String, dynamic>? _validatedAccount(dynamic raw) {
+  if (raw is! Map) return null;
+  final account = Map<String, dynamic>.from(raw);
+  final id = account['id'];
+  final displayName = account['displayName'];
+  final username = account['username'];
+  final avatarColorValue = account['avatarColorValue'];
+  final createdAt = account['createdAt'];
+  if (id is! String || id.isEmpty || id.length > 128) return null;
+  if (displayName is! String ||
+      displayName.trim().length < 2 ||
+      displayName.trim().length > 20) {
+    return null;
+  }
+  if (username is! String || !RegExp(r'^[a-z0-9_]{3,16}$').hasMatch(username)) {
+    return null;
+  }
+  if (avatarColorValue is! num ||
+      createdAt is! String ||
+      DateTime.tryParse(createdAt) == null) {
+    return null;
+  }
+  return {
+    'id': id,
+    'displayName': displayName.trim(),
+    'username': username,
+    'avatarColorValue': avatarColorValue.toInt(),
+    'createdAt': createdAt,
+  };
+}
+
+int _validatedRating(dynamic raw) =>
+    ((raw as num?)?.toInt() ?? 1000).clamp(0, 100000);
+
+Map<String, dynamic>? _validatedBattlePlayer(Map<String, dynamic> raw) {
+  final playerId = raw['playerId'];
+  final displayName = raw['displayName'];
+  final username = raw['username'];
+  final avatarColorValue = raw['avatarColorValue'];
+  final team = _validatedTeam(raw['team'], requireFullTeam: true);
+  if (playerId is! String || playerId.isEmpty || playerId.length > 128) {
+    return null;
+  }
+  if (displayName is! String ||
+      displayName.trim().length < 2 ||
+      displayName.trim().length > 20) {
+    return null;
+  }
+  if (username is! String || !RegExp(r'^[a-z0-9_]{3,16}$').hasMatch(username)) {
+    return null;
+  }
+  if (avatarColorValue is! num || team == null) return null;
+  return {
+    'playerId': playerId,
+    'displayName': displayName.trim(),
+    'username': username,
+    'avatarColorValue': avatarColorValue.toInt(),
+    'rating': _validatedRating(raw['rating']),
+    'team': team,
+  };
+}
+
+List<Map<String, dynamic>>? _validatedTeam(
+  dynamic raw, {
+  required bool requireFullTeam,
+}) {
+  if (raw is! List || raw.length > 3) return null;
+  if (requireFullTeam && raw.length != 3) return null;
+  final team = <Map<String, dynamic>>[];
+  for (final item in raw) {
+    if (item is! Map) return null;
+    final fighter = Map<String, dynamic>.from(item);
+    final animalId = fighter['animalId'];
+    final mutationId = fighter['mutationId'];
+    final level = (fighter['level'] as num?)?.toInt();
+    if (animalId is! String ||
+        GameData.animalById(animalId) == null ||
+        mutationId is! String ||
+        GameData.mutationById(mutationId) == null ||
+        level == null ||
+        level < 1 ||
+        level > _maxOnlineLevel) {
+      return null;
+    }
+    final owned = OwnedAnimal(
+      animalId: animalId,
+      quantity: 1,
+      level: level,
+      mutationId: mutationId,
+    );
+    team.add({
+      'animalId': animalId,
+      'mutationId': mutationId,
+      'level': level,
+      'power': BattlePowerLogic.battlePowerForOwnedAnimal(owned),
+    });
+  }
+  return team;
+}
+
+List<Map<String, dynamic>>? _validatedInventory(dynamic raw) {
+  if (raw is! List || raw.length > _maxOnlineInventoryEntries) return null;
+  final inventory = <Map<String, dynamic>>[];
+  for (final item in raw) {
+    if (item is! Map) return null;
+    final animal = Map<String, dynamic>.from(item);
+    final animalId = animal['animalId'];
+    final mutationId = animal['mutationId'] ?? 'none';
+    final quantity = (animal['quantity'] as num?)?.toInt();
+    final level = (animal['level'] as num?)?.toInt() ?? 1;
+    final sourceEggId = animal['sourceEggId'];
+    if (animalId is! String ||
+        GameData.animalById(animalId) == null ||
+        mutationId is! String ||
+        GameData.mutationById(mutationId) == null ||
+        quantity == null ||
+        quantity < 1 ||
+        level < 1 ||
+        level > _maxOnlineLevel ||
+        (sourceEggId != null &&
+            (sourceEggId is! String || sourceEggId.length > 128))) {
+      return null;
+    }
+    inventory.add({
+      'animalId': animalId,
+      'quantity': quantity,
+      'level': level,
+      'mutationId': mutationId,
+      'isProtected': animal['isProtected'] == true,
+      'isSecretReward': animal['isSecretReward'] == true,
+      'isEliteReward':
+          animal['isEliteReward'] == true ||
+          GameData.bossVictoryRewardAnimalIds.contains(animalId),
+      'sourceEggId': ?sourceEggId,
+    });
+  }
+  return inventory;
+}
+
 bool _isTradableAnimal(Map<String, dynamic> animal) {
   final quantity = (animal['quantity'] as num?)?.toInt() ?? 0;
   return quantity > 0 &&
+      !GameData.bossVictoryRewardAnimalIds.contains(animal['animalId']) &&
       animal['isProtected'] != true &&
       animal['isSecretReward'] != true &&
       animal['isEliteReward'] != true;

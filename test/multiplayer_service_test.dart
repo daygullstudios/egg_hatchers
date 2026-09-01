@@ -6,6 +6,8 @@ import 'package:egg_hatchers/models/arena.dart';
 import 'package:egg_hatchers/models/multiplayer.dart';
 import 'package:egg_hatchers/models/player_account.dart';
 import 'package:egg_hatchers/services/multiplayer_service.dart';
+import 'package:egg_hatchers/utils/battle_power_logic.dart';
+import 'package:egg_hatchers/models/owned_animal.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../tool/multiplayer_server.dart';
@@ -45,6 +47,12 @@ void main() {
     expect(first.matchId, second.matchId);
     expect(first.opponent!.username, 'second');
     expect(second.opponent!.username, 'first');
+    expect(
+      second.opponent!.team.first.power,
+      BattlePowerLogic.battlePowerForOwnedAnimal(
+        const OwnedAnimal(animalId: 'chicken', quantity: 1),
+      ),
+    );
 
     first.enterBattle();
     second.enterBattle();
@@ -100,6 +108,57 @@ void main() {
     expect(nearbyFirst.opponent!.rating, 950);
     expect(nearbySecond.opponent!.rating, 900);
     expect(far.state, MultiplayerConnectionState.searching);
+  });
+
+  test('match server rejects teams containing unknown animals', () async {
+    final webRoot = await Directory.systemTemp.createTemp('egg_hatchers_web_');
+    await File(
+      '${webRoot.path}${Platform.pathSeparator}index.html',
+    ).writeAsString('<!doctype html><title>Egg Hatchers</title>');
+    addTearDown(() => webRoot.delete(recursive: true));
+    final server = await LocalMultiplayerServer.start(
+      port: 0,
+      webRoot: webRoot.path,
+    );
+    addTearDown(server.close);
+    final service = MultiplayerService(
+      serverUri: Uri.parse('ws://127.0.0.1:${server.port}/ws'),
+    );
+    addTearDown(service.dispose);
+    await service.connect();
+
+    service.findMatch(
+      MultiplayerPlayerSnapshot(
+        playerId: 'invalid_player',
+        displayName: 'Invalid Player',
+        username: 'invalid_player',
+        avatarColorValue: 0xFF5271FF,
+        rating: 1000,
+        team: const [
+          MultiplayerFighterSnapshot(
+            animalId: 'not_a_real_animal',
+            mutationId: 'none',
+            level: 1,
+            power: 999999999,
+          ),
+          MultiplayerFighterSnapshot(
+            animalId: 'fox',
+            mutationId: 'none',
+            level: 1,
+            power: 2,
+          ),
+          MultiplayerFighterSnapshot(
+            animalId: 'dragon',
+            mutationId: 'none',
+            level: 1,
+            power: 3,
+          ),
+        ],
+      ),
+    );
+
+    await _waitFor(() => service.state == MultiplayerConnectionState.ready);
+    expect(service.message, 'A full team is required.');
   });
 }
 

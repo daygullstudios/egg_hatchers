@@ -40,6 +40,13 @@ class MultiplayerService extends ChangeNotifier {
       _state != MultiplayerConnectionState.offline;
 
   static Uri defaultServerUri() {
+    const configuredUrl = String.fromEnvironment('EGG_HATCHERS_SERVER_URL');
+    if (configuredUrl.isNotEmpty) {
+      final configured = Uri.parse(configuredUrl);
+      if (configured.scheme == 'ws' || configured.scheme == 'wss') {
+        return configured;
+      }
+    }
     if (kIsWeb) {
       final host = Uri.base.host.isEmpty ? '127.0.0.1' : Uri.base.host;
       final localHost =
