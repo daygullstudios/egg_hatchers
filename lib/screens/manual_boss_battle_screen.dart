@@ -26,6 +26,7 @@ import '../utils/egg_shard_logic.dart';
 import '../utils/format_utils.dart';
 import '../utils/rotten_shell_final_battle_logic.dart';
 import '../widgets/audio_scope.dart';
+import '../widgets/battle_impact_overlay.dart';
 import '../widgets/boss_battle_background.dart';
 import '../widgets/boss_defeat_animation.dart';
 import '../widgets/boss_fight_intro_animation.dart';
@@ -109,6 +110,11 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   var _eggCooldownRemaining = 0.0;
   var _spawnAccumulator = 0.0;
   var _shieldFlash = 0.0;
+  var _impactRemaining = 0.0;
+  var _impactDuration = 0.28;
+  var _impactIntensity = 0.0;
+  var _impactPosition = Offset.zero;
+  var _impactColor = Colors.white;
   var _bossSpeedBannerRemaining = 0.0;
   var _bossSpeedBannerIsRage = false;
   var _rageModeActive = false;
@@ -205,6 +211,20 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
 
   double get _bossSpawnY => _bossTop + _bossSize - 4;
 
+  double get _impactProgress => _impactRemaining <= 0
+      ? 1
+      : (1 - _impactRemaining / _impactDuration).clamp(0, 1);
+
+  Offset get _arenaShakeOffset {
+    if (_impactRemaining <= 0 || widget.preferences.reducedBattleEffects) {
+      return Offset.zero;
+    }
+    final fade = 1 - _impactProgress;
+    final amplitude = 5.5 * _impactIntensity * fade;
+    final phase = _impactProgress * pi * 9;
+    return Offset(sin(phase) * amplitude, cos(phase * 1.35) * amplitude * 0.55);
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -270,6 +290,10 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _eggCooldownRemaining = 0;
     _spawnAccumulator = 0;
     _shieldFlash = 0;
+    _impactRemaining = 0;
+    _impactIntensity = 0;
+    _impactPosition = Offset.zero;
+    _impactColor = Colors.white;
     _bossSpeedBannerRemaining = 0;
     _bossSpeedBannerIsRage = false;
     _rageModeActive = false;
@@ -449,6 +473,9 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     if (_shieldFlash > 0) {
       _shieldFlash = max(0, _shieldFlash - dt);
     }
+    if (_impactRemaining > 0) {
+      _impactRemaining = max(0, _impactRemaining - dt);
+    }
 
     if (_bossSpeedBannerRemaining > 0) {
       _bossSpeedBannerRemaining = max(0, _bossSpeedBannerRemaining - dt);
@@ -566,6 +593,11 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     if (_missCount >= _requiredMisses) {
       _shieldActive = false;
       _shieldFlash = 0.35;
+      _triggerImpact(
+        position: Offset(_bossX, _bossCenterY),
+        color: const Color(0xFF80D8FF),
+        intensity: 0.72,
+      );
       _audio.playSfx(Sfx.shieldBreak);
     }
   }
@@ -579,6 +611,11 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
 
   void _loseLife() {
     if (_gameOver) return;
+    _triggerImpact(
+      position: Offset(_playerX, _arenaHeight - _playerSize / 2 - 12),
+      color: const Color(0xFFFF5252),
+      intensity: 0.9,
+    );
     _livesLostThisBattle++;
     _lives = max(0, _lives - 1);
     _floatingDamages.add(
@@ -597,6 +634,11 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
 
   void _hitBoss() {
     if (_gameOver) return;
+    _triggerImpact(
+      position: Offset(_bossX, _bossCenterY),
+      color: const Color(0xFFFFD54F),
+      intensity: 1,
+    );
     _bossLives = max(0, _bossLives - 1);
     _bossHitsLanded++;
     _audio.playSfx(Sfx.bossHit);
@@ -639,6 +681,18 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
       _bossSpeedBannerIsRage = false;
       _bossSpeedBannerRemaining = 1.8;
     }
+  }
+
+  void _triggerImpact({
+    required Offset position,
+    required Color color,
+    required double intensity,
+  }) {
+    _impactDuration = widget.preferences.reducedBattleEffects ? 0.18 : 0.3;
+    _impactRemaining = _impactDuration;
+    _impactPosition = position;
+    _impactColor = color;
+    _impactIntensity = intensity.clamp(0, 1);
   }
 
   void _enterFinalBattle() {
@@ -1007,39 +1061,50 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
                                   if (_bossX == 0 || _bossX > _arenaWidth) {
                                     _bossX = _arenaWidth / 2;
                                   }
-                                  return _Arena(
-                                    theme: currentTheme,
-                                    boss: boss,
-                                    showBattleBackgrounds: widget
-                                        .preferences
-                                        .showBattleBackgrounds,
-                                    arenaWidth: _arenaWidth,
-                                    arenaHeight: _arenaHeight,
-                                    playerX: _playerX,
-                                    bossX: _bossX,
-                                    bossTop: _bossTop,
-                                    bossLives: _bossLives,
-                                    bossMaxLives: _bossMaxLives,
-                                    bossSpeedBannerRemaining:
-                                        _bossSpeedBannerRemaining,
-                                    bossSpeedBannerIsRage:
-                                        _bossSpeedBannerIsRage,
-                                    playerSize: _playerSize,
-                                    bossSize: _bossSize,
-                                    fighterCustomSprite: _fighterCustomSprite,
-                                    fighterAnimalId: _fighterAnimalId,
-                                    fighterSpritePath: _fighterSpritePath,
-                                    fighterEmoji: _fighterEmoji,
-                                    fighterMutation: _fighterMutation,
-                                    fighterName: _fighterName,
-                                    bossProjectiles: _bossProjectiles,
-                                    activeEgg: _activeEgg,
-                                    floatingDamages: _floatingDamages,
-                                    shieldActive: _shieldActive,
-                                    shieldFlash: _shieldFlash,
-                                    onPointerDown: _onArenaPointerDown,
-                                    onPointerMove: _onArenaPointerMove,
-                                    onPointerRelease: _onArenaPointerRelease,
+                                  return Transform.translate(
+                                    offset: _arenaShakeOffset,
+                                    child: _Arena(
+                                      theme: currentTheme,
+                                      boss: boss,
+                                      showBattleBackgrounds: widget
+                                          .preferences
+                                          .showBattleBackgrounds,
+                                      arenaWidth: _arenaWidth,
+                                      arenaHeight: _arenaHeight,
+                                      playerX: _playerX,
+                                      bossX: _bossX,
+                                      bossTop: _bossTop,
+                                      bossLives: _bossLives,
+                                      bossMaxLives: _bossMaxLives,
+                                      bossSpeedBannerRemaining:
+                                          _bossSpeedBannerRemaining,
+                                      bossSpeedBannerIsRage:
+                                          _bossSpeedBannerIsRage,
+                                      playerSize: _playerSize,
+                                      bossSize: _bossSize,
+                                      fighterCustomSprite: _fighterCustomSprite,
+                                      fighterAnimalId: _fighterAnimalId,
+                                      fighterSpritePath: _fighterSpritePath,
+                                      fighterEmoji: _fighterEmoji,
+                                      fighterMutation: _fighterMutation,
+                                      fighterName: _fighterName,
+                                      bossProjectiles: _bossProjectiles,
+                                      activeEgg: _activeEgg,
+                                      floatingDamages: _floatingDamages,
+                                      shieldActive: _shieldActive,
+                                      shieldFlash: _shieldFlash,
+                                      impactRemaining: _impactRemaining,
+                                      impactProgress: _impactProgress,
+                                      impactPosition: _impactPosition,
+                                      impactColor: _impactColor,
+                                      impactIntensity: _impactIntensity,
+                                      reducedEffects: widget
+                                          .preferences
+                                          .reducedBattleEffects,
+                                      onPointerDown: _onArenaPointerDown,
+                                      onPointerMove: _onArenaPointerMove,
+                                      onPointerRelease: _onArenaPointerRelease,
+                                    ),
                                   );
                                 },
                               ),
@@ -1481,6 +1546,12 @@ class _Arena extends StatelessWidget {
     required this.floatingDamages,
     required this.shieldActive,
     required this.shieldFlash,
+    required this.impactRemaining,
+    required this.impactProgress,
+    required this.impactPosition,
+    required this.impactColor,
+    required this.impactIntensity,
+    required this.reducedEffects,
     required this.onPointerDown,
     required this.onPointerMove,
     required this.onPointerRelease,
@@ -1511,6 +1582,12 @@ class _Arena extends StatelessWidget {
   final List<_FloatingDamage> floatingDamages;
   final bool shieldActive;
   final double shieldFlash;
+  final double impactRemaining;
+  final double impactProgress;
+  final Offset impactPosition;
+  final Color impactColor;
+  final double impactIntensity;
+  final bool reducedEffects;
   final ValueChanged<double> onPointerDown;
   final ValueChanged<double> onPointerMove;
   final VoidCallback onPointerRelease;
@@ -1696,6 +1773,16 @@ class _Arena extends StatelessWidget {
                       ],
                     ),
                   ),
+                ),
+              ),
+            if (impactRemaining > 0)
+              Positioned.fill(
+                child: BattleImpactOverlay(
+                  position: impactPosition,
+                  progress: impactProgress,
+                  color: impactColor,
+                  intensity: impactIntensity,
+                  reducedEffects: reducedEffects,
                 ),
               ),
           ],

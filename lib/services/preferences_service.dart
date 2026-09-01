@@ -9,15 +9,18 @@ class PreferencesService extends ChangeNotifier {
   static const _backgroundKey = 'selectedBackgroundThemeId';
   static const _animalSpriteThemeKey = 'animalSpriteTheme';
   static const _showBattleBackgroundsKey = 'showBattleBackgrounds';
+  static const _reducedBattleEffectsKey = 'reducedBattleEffects';
 
   BackgroundTheme _selectedTheme = BackgroundThemes.defaultTheme;
   AnimalSpriteTheme _animalSpriteTheme = AnimalSpriteThemes.defaultTheme;
   var _showBattleBackgrounds = true;
+  var _reducedBattleEffects = false;
   bool _isInitialized = false;
 
   BackgroundTheme get selectedTheme => _selectedTheme;
   AnimalSpriteTheme get animalSpriteTheme => _animalSpriteTheme;
   bool get showBattleBackgrounds => _showBattleBackgrounds;
+  bool get reducedBattleEffects => _reducedBattleEffects;
   bool get isInitialized => _isInitialized;
 
   Future<void> initialize() async {
@@ -26,9 +29,11 @@ class PreferencesService extends ChangeNotifier {
     _selectedTheme = savedId != null
         ? BackgroundThemes.byId(savedId)
         : BackgroundThemes.defaultTheme;
-    _animalSpriteTheme =
-        AnimalSpriteThemes.byId(prefs.getString(_animalSpriteThemeKey));
+    _animalSpriteTheme = AnimalSpriteThemes.byId(
+      prefs.getString(_animalSpriteThemeKey),
+    );
     _showBattleBackgrounds = prefs.getBool(_showBattleBackgroundsKey) ?? true;
+    _reducedBattleEffects = prefs.getBool(_reducedBattleEffectsKey) ?? false;
     _isInitialized = true;
     notifyListeners();
   }
@@ -61,5 +66,15 @@ class PreferencesService extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_showBattleBackgroundsKey, value);
+  }
+
+  Future<void> setReducedBattleEffects(bool value) async {
+    if (_reducedBattleEffects == value) return;
+
+    _reducedBattleEffects = value;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_reducedBattleEffectsKey, value);
   }
 }

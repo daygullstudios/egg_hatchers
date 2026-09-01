@@ -187,6 +187,35 @@ class SettingsScreen extends StatelessWidget {
                     const SizedBox(height: 14),
                     _SettingsSection(
                       theme: selected,
+                      title: 'Visual Effects',
+                      child: Material(
+                        color: Colors.transparent,
+                        child: SwitchListTile.adaptive(
+                          key: const ValueKey(
+                            'settings-reduced-battle-effects',
+                          ),
+                          contentPadding: EdgeInsets.zero,
+                          value: preferences.reducedBattleEffects,
+                          onChanged: preferences.setReducedBattleEffects,
+                          title: Text(
+                            'Reduced Battle Effects',
+                            style: TextStyle(
+                              color: selected.cardTextPrimaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Removes screen shake and softens bright flashes',
+                            style: TextStyle(
+                              color: selected.cardTextSecondaryColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _SettingsSection(
+                      theme: selected,
                       title: 'Backgrounds',
                       child: Column(
                         children: [
