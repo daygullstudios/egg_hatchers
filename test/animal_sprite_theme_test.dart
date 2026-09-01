@@ -19,6 +19,7 @@ import 'package:egg_hatchers/models/retro_pixel_sprite_definition.dart';
 import 'package:egg_hatchers/models/retro_pixel_sprite_source.dart';
 import 'package:egg_hatchers/utils/boss_visual_config.dart';
 import 'package:egg_hatchers/widgets/hatched_egg_glitch_sprite.dart';
+import 'package:egg_hatchers/widgets/rotten_egg_projectile.dart';
 
 bool _isPureUpscale(
   RetroPixelSpriteDefinition small,
@@ -107,6 +108,17 @@ void main() {
     await _expectTransparentPng(
       'assets/images/animal_themes/retro_pixel/crossword_beast.png',
       expectedSize: 128,
+    );
+  });
+
+  test('Rotten Egg projectile has optimized transparent artwork', () async {
+    final file = File(RottenEggProjectile.assetPath);
+
+    expect(file.existsSync(), isTrue);
+    expect(file.lengthSync(), lessThan(150 * 1024));
+    await _expectTransparentPng(
+      RottenEggProjectile.assetPath,
+      expectedSize: 256,
     );
   });
 
