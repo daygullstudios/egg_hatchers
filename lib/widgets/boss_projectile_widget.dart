@@ -20,11 +20,37 @@ class BossProjectileWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final type = BossVisualConfig.projectileTypeForBossId(bossId);
+    final animalTheme = AnimalSpriteThemeScope.of(context);
+    final isRetroPixel = animalTheme.id == AnimalSpriteThemes.retroPixel.id;
+    final projectile = _buildProjectile(type: type, animalTheme: animalTheme);
+
+    return RepaintBoundary(
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          CustomPaint(
+            key: ValueKey('boss-projectile-trail-$bossId'),
+            size: Size(size, size * 1.12),
+            painter: _ProjectileTrailPainter(
+              type: type,
+              pixelated: isRetroPixel,
+            ),
+          ),
+          projectile,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProjectile({
+    required BossProjectileVisualType type,
+    required AnimalSpriteTheme animalTheme,
+  }) {
     if (type == BossProjectileVisualType.rottenEgg) {
       return RottenEggProjectile(size: size);
     }
 
-    final animalTheme = AnimalSpriteThemeScope.of(context);
     if (animalTheme.id == AnimalSpriteThemes.realistic.id) {
       return RealisticBossProjectile(type: type, size: size);
     }
@@ -44,6 +70,101 @@ class BossProjectileWidget extends StatelessWidget {
         painter: _BossProjectilePainter(type: type),
       ),
     );
+  }
+}
+
+class _ProjectileTrailPainter extends CustomPainter {
+  const _ProjectileTrailPainter({required this.type, required this.pixelated});
+
+  final BossProjectileVisualType type;
+  final bool pixelated;
+
+  Color get _color => switch (type) {
+    BossProjectileVisualType.slimeGlob => const Color(0xFF69F0AE),
+    BossProjectileVisualType.rockEgg => const Color(0xFFFFCC80),
+    BossProjectileVisualType.shadowFeather => const Color(0xFFB388FF),
+    BossProjectileVisualType.royalSlime => const Color(0xFF64FFDA),
+    BossProjectileVisualType.guardianShard => const Color(0xFF80D8FF),
+    BossProjectileVisualType.phoenixFlame => const Color(0xFFFFAB40),
+    BossProjectileVisualType.rottenEgg => const Color(0xFF76FF03),
+    BossProjectileVisualType.rottenShell => const Color(0xFFCE93D8),
+  };
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (pixelated) {
+      _paintPixelTrail(canvas, size);
+      return;
+    }
+
+    final centerX = size.width / 2;
+    final trailLength = size.height * 1.7;
+    final glowPath = Path()
+      ..moveTo(centerX, size.height * 0.48)
+      ..cubicTo(
+        centerX - size.width * 0.34,
+        -trailLength * 0.2,
+        centerX + size.width * 0.24,
+        -trailLength * 0.62,
+        centerX,
+        -trailLength,
+      );
+    canvas.drawPath(
+      glowPath,
+      Paint()
+        ..color = _color.withValues(alpha: 0.3)
+        ..strokeWidth = size.width * 0.5
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, size.width * 0.3),
+    );
+    canvas.drawPath(
+      glowPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [_color.withValues(alpha: 0.8), _color.withValues(alpha: 0)],
+        ).createShader(Rect.fromLTRB(0, -trailLength, size.width, size.height))
+        ..strokeWidth = size.width * 0.16
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke,
+    );
+
+    final particlePaint = Paint()..color = _color.withValues(alpha: 0.65);
+    canvas.drawCircle(
+      Offset(centerX - size.width * 0.34, -size.height * 0.34),
+      size.width * 0.09,
+      particlePaint,
+    );
+    canvas.drawCircle(
+      Offset(centerX + size.width * 0.28, -size.height * 0.72),
+      size.width * 0.055,
+      particlePaint..color = _color.withValues(alpha: 0.4),
+    );
+  }
+
+  void _paintPixelTrail(Canvas canvas, Size size) {
+    final unit = math.max(2.0, (size.width / 7).floorToDouble());
+    final centerX = (size.width / 2 / unit).round() * unit;
+    final paint = Paint()..color = _color.withValues(alpha: 0.78);
+    final blocks = <(double, double, double)>[
+      (centerX - unit, -unit, unit * 2),
+      (centerX, -unit * 3, unit),
+      (centerX - unit * 2, -unit * 5, unit),
+      (centerX + unit, -unit * 7, unit),
+      (centerX, -unit * 9, unit),
+    ];
+    for (var i = 0; i < blocks.length; i++) {
+      final (x, y, width) = blocks[i];
+      paint.color = _color.withValues(alpha: 0.78 - i * 0.13);
+      canvas.drawRect(Rect.fromLTWH(x, y, width, unit), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ProjectileTrailPainter oldDelegate) {
+    return oldDelegate.type != type || oldDelegate.pixelated != pixelated;
   }
 }
 
