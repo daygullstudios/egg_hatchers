@@ -20,6 +20,7 @@ import '../utils/battle_power_logic.dart';
 import '../utils/format_utils.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
+import '../widgets/battle_hit_feedback.dart';
 import '../widgets/game_background.dart';
 import '../widgets/game_sprite.dart';
 import '../widgets/phone_width_layout.dart';
@@ -374,6 +375,9 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
   var _circlesMissed = 0;
   var _playerAttacking = false;
   var _botAttacking = false;
+  var _impactRevision = 0;
+  var _impactDamage = 0;
+  var _impactPlayerTarget = false;
   var _battleMessage = 'Collect energy!';
   var _finished = false;
   var _rewardApplied = false;
@@ -487,6 +491,9 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
       _playerEnergy -= ability.energyCost;
       final dealt = _damageAfterShield(damage, playerTarget: false);
       _botHealth[_botActiveIndex] = max(0, _botHealth[_botActiveIndex] - dealt);
+      _impactRevision++;
+      _impactDamage = dealt;
+      _impactPlayerTarget = false;
       _applyPlayerEffect(attacker, ability);
       _playerAttacking = true;
       _botAttacking = false;
@@ -514,6 +521,9 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
         0,
         _playerHealth[_playerActiveIndex] - dealt,
       );
+      _impactRevision++;
+      _impactDamage = dealt;
+      _impactPlayerTarget = true;
       _applyBotEffect(attacker, ability);
       _botAttacking = true;
       _playerAttacking = false;
@@ -742,6 +752,21 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
                                   onTap: _collectEnergy,
                                 ),
                               ),
+                            Positioned.fill(
+                              child: BattleHitFeedback(
+                                trigger: _impactRevision,
+                                alignment: Alignment(
+                                  0,
+                                  _impactPlayerTarget ? 0.55 : -0.55,
+                                ),
+                                damage: _impactDamage,
+                                color: _impactPlayerTarget
+                                    ? const Color(0xFFFF7043)
+                                    : const Color(0xFF4DD0E1),
+                                reducedEffects:
+                                    widget.preferences.reducedBattleEffects,
+                              ),
+                            ),
                           ],
                         );
                       },

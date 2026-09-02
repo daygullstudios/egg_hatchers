@@ -11,11 +11,13 @@ import '../models/multiplayer.dart';
 import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
 import '../services/multiplayer_service.dart';
+import '../services/preferences_service.dart';
 import '../utils/arena_combat_logic.dart';
 import '../utils/arena_logic.dart';
 import '../utils/format_utils.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
+import '../widgets/battle_hit_feedback.dart';
 import '../widgets/game_sprite.dart';
 
 class MultiplayerBattleScreen extends StatefulWidget {
@@ -26,6 +28,7 @@ class MultiplayerBattleScreen extends StatefulWidget {
     required this.player,
     required this.opponent,
     required this.customSprites,
+    required this.preferences,
   });
 
   final MultiplayerService multiplayer;
@@ -33,6 +36,7 @@ class MultiplayerBattleScreen extends StatefulWidget {
   final MultiplayerPlayerSnapshot player;
   final MultiplayerPlayerSnapshot opponent;
   final CustomSpriteService customSprites;
+  final PreferencesService preferences;
 
   @override
   State<MultiplayerBattleScreen> createState() =>
@@ -45,6 +49,11 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
   var _opponentAttacking = false;
   var _lastRevision = -1;
   var _resultSoundPlayed = false;
+  int? _lastSelfHealthTotal;
+  int? _lastOpponentHealthTotal;
+  var _impactRevision = 0;
+  var _impactDamage = 0;
+  var _impactPlayerTarget = false;
   ArenaReward? _reward;
   var _rewardApplied = false;
 
@@ -58,6 +67,18 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
   @override
   void initState() {
     super.initState();
+    final initialState = widget.multiplayer.battleState;
+    if (initialState != null) {
+      _lastRevision = initialState.revision;
+      _lastSelfHealthTotal = initialState.self.health.fold<int>(
+        0,
+        (sum, hp) => sum + hp,
+      );
+      _lastOpponentHealthTotal = initialState.opponent.health.fold<int>(
+        0,
+        (sum, hp) => sum + hp,
+      );
+    }
     widget.multiplayer.addListener(_onMultiplayerChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -72,6 +93,25 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
     if (state != null && state.revision != _lastRevision) {
       _lastRevision = state.revision;
       final actorId = state.lastActorId;
+      final selfHealthTotal = state.self.health.fold(0, (sum, hp) => sum + hp);
+      final opponentHealthTotal = state.opponent.health.fold(
+        0,
+        (sum, hp) => sum + hp,
+      );
+      final playerWasTarget = actorId == widget.opponent.playerId;
+      final previousTargetHealth = playerWasTarget
+          ? _lastSelfHealthTotal
+          : _lastOpponentHealthTotal;
+      if (actorId != null && previousTargetHealth != null && !state.finished) {
+        final currentTargetHealth = playerWasTarget
+            ? selfHealthTotal
+            : opponentHealthTotal;
+        _impactRevision++;
+        _impactDamage = max(0, previousTargetHealth - currentTargetHealth);
+        _impactPlayerTarget = playerWasTarget;
+      }
+      _lastSelfHealthTotal = selfHealthTotal;
+      _lastOpponentHealthTotal = opponentHealthTotal;
       _attackTimer?.cancel();
       _playerAttacking = actorId == widget.player.playerId;
       _opponentAttacking = actorId == widget.opponent.playerId;
@@ -241,6 +281,21 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                                   onTap: _collectEnergy,
                                 ),
                               ),
+                            Positioned.fill(
+                              child: BattleHitFeedback(
+                                trigger: _impactRevision,
+                                alignment: Alignment(
+                                  0,
+                                  _impactPlayerTarget ? 0.55 : -0.55,
+                                ),
+                                damage: _impactDamage,
+                                color: _impactPlayerTarget
+                                    ? const Color(0xFFFF7043)
+                                    : const Color(0xFF4DD0E1),
+                                reducedEffects:
+                                    widget.preferences.reducedBattleEffects,
+                              ),
+                            ),
                           ],
                         );
                       },

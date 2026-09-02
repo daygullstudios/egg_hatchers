@@ -7,6 +7,7 @@ import 'package:egg_hatchers/screens/multiplayer_battle_screen.dart';
 import 'package:egg_hatchers/services/custom_sprite_service.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/multiplayer_service.dart';
+import 'package:egg_hatchers/services/preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -27,6 +28,7 @@ void main() {
     late MultiplayerPlayerSnapshot secondPlayer;
     late CustomSpriteService sprites;
     late GameService game;
+    late PreferencesService preferences;
     await tester.runAsync(() async {
       server = await LocalMultiplayerServer.start(port: 0);
       final uri = Uri.parse('ws://127.0.0.1:${server.port}/ws');
@@ -44,8 +46,13 @@ void main() {
 
       SharedPreferences.setMockInitialValues({});
       game = GameService();
+      preferences = PreferencesService();
       sprites = CustomSpriteService();
-      await Future.wait([game.initialize(), sprites.initialize()]);
+      await Future.wait([
+        game.initialize(),
+        preferences.initialize(),
+        sprites.initialize(),
+      ]);
     });
     addTearDown(server.close);
     addTearDown(first.dispose);
@@ -60,6 +67,7 @@ void main() {
           player: firstPlayer,
           opponent: secondPlayer,
           customSprites: sprites,
+          preferences: preferences,
         ),
       ),
     );

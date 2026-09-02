@@ -204,6 +204,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
         player: player,
         opponent: opponent,
         customSprites: widget.customSprites,
+        preferences: widget.preferences,
       ),
     );
     if (mounted) {
