@@ -13,12 +13,14 @@ import '../services/game_service.dart';
 import '../services/multiplayer_service.dart';
 import '../services/preferences_service.dart';
 import '../utils/arena_combat_logic.dart';
+import '../utils/arena_ability_visuals.dart';
 import '../utils/arena_logic.dart';
 import '../utils/format_utils.dart';
 import '../utils/game_haptics.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
 import '../widgets/battle_ability_button.dart';
+import '../widgets/battle_ability_effect.dart';
 import '../widgets/battle_combo_badge.dart';
 import '../widgets/battle_hit_feedback.dart';
 import '../widgets/battle_health_bar.dart';
@@ -59,6 +61,12 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
   var _impactRevision = 0;
   var _impactDamage = 0;
   var _impactPlayerTarget = false;
+  var _impactColor = const Color(0xFF4DD0E1);
+  var _abilityEffectRevision = 0;
+  ArenaAbility? _lastAbility;
+  var _abilityAnimalId = '';
+  var _abilityMutationId = 'none';
+  var _abilityPlayerAttacks = true;
   ArenaReward? _reward;
   var _rewardApplied = false;
 
@@ -103,41 +111,64 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
         0,
         (sum, hp) => sum + hp,
       );
-      final playerWasTarget = actorId == widget.opponent.playerId;
+      final actorIsPlayer = actorId == widget.player.playerId;
+      final actorIsOpponent = actorId == widget.opponent.playerId;
+      ArenaFighter? attacker;
+      if (actorIsPlayer) {
+        attacker = _playerTeam[state.self.activeIndex];
+      } else if (actorIsOpponent) {
+        attacker = _opponentTeam[state.opponent.activeIndex];
+      }
+      final ability = attacker == null
+          ? null
+          : _abilityFromMessage(attacker, state.message);
+      final isAbility = ability != null;
+      final playerWasTarget = actorIsOpponent;
       final previousTargetHealth = playerWasTarget
           ? _lastSelfHealthTotal
           : _lastOpponentHealthTotal;
-      if (actorId != null && previousTargetHealth != null && !state.finished) {
+      if (isAbility && previousTargetHealth != null && !state.finished) {
+        final attackingFighter = attacker!;
         final currentTargetHealth = playerWasTarget
             ? selfHealthTotal
             : opponentHealthTotal;
+        final identity = ArenaAbilityVisuals.forAnimal(
+          animalId: attackingFighter.animalId,
+          mutationId: attackingFighter.mutationId,
+        );
         _impactRevision++;
         _impactDamage = max(0, previousTargetHealth - currentTargetHealth);
         _impactPlayerTarget = playerWasTarget;
+        _impactColor = identity.primary;
+        _abilityEffectRevision++;
+        _lastAbility = ability;
+        _abilityAnimalId = attackingFighter.animalId;
+        _abilityMutationId = attackingFighter.mutationId;
+        _abilityPlayerAttacks = actorIsPlayer;
       }
       _lastSelfHealthTotal = selfHealthTotal;
       _lastOpponentHealthTotal = opponentHealthTotal;
       _attackTimer?.cancel();
-      _playerAttacking = actorId == widget.player.playerId;
-      _opponentAttacking = actorId == widget.opponent.playerId;
-      if (actorId != null && !state.finished) {
+      _playerAttacking = isAbility && actorIsPlayer;
+      _opponentAttacking = isAbility && actorIsOpponent;
+      if (isAbility && !state.finished) {
         AudioScope.maybeOf(context)?.playSfx(
-          actorId == widget.player.playerId ? Sfx.bossHit : Sfx.playerHit,
+          actorIsPlayer ? Sfx.bossHit : Sfx.playerHit,
           volumeScale: 0.58,
         );
-        if (actorId == widget.player.playerId) {
+        if (actorIsPlayer) {
           GameHaptics.attack(enabled: widget.preferences.hapticsEnabled);
         } else {
           GameHaptics.damage(enabled: widget.preferences.hapticsEnabled);
         }
-      }
-      _attackTimer = Timer(const Duration(milliseconds: 240), () {
-        if (!mounted) return;
-        setState(() {
-          _playerAttacking = false;
-          _opponentAttacking = false;
+        _attackTimer = Timer(const Duration(milliseconds: 240), () {
+          if (!mounted) return;
+          setState(() {
+            _playerAttacking = false;
+            _opponentAttacking = false;
+          });
         });
-      });
+      }
       if (state.finished && !_resultSoundPlayed) {
         _resultSoundPlayed = true;
         final won = state.winnerId == widget.player.playerId;
@@ -152,6 +183,13 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
       }
     }
     setState(() {});
+  }
+
+  ArenaAbility? _abilityFromMessage(ArenaFighter fighter, String message) {
+    for (final ability in ArenaAbilityData.forAnimal(fighter.animalId)) {
+      if (message.contains(ability.name)) return ability;
+    }
+    return null;
   }
 
   void _applyReward(MultiplayerBattleState state) {
@@ -324,6 +362,17 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                                 ),
                               ),
                             Positioned.fill(
+                              child: BattleAbilityEffect(
+                                trigger: _abilityEffectRevision,
+                                animalId: _abilityAnimalId,
+                                mutationId: _abilityMutationId,
+                                ability: _lastAbility,
+                                playerAttacks: _abilityPlayerAttacks,
+                                reducedEffects:
+                                    widget.preferences.reducedBattleEffects,
+                              ),
+                            ),
+                            Positioned.fill(
                               child: BattleHitFeedback(
                                 trigger: _impactRevision,
                                 alignment: Alignment(
@@ -331,9 +380,7 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                                   _impactPlayerTarget ? 0.55 : -0.55,
                                 ),
                                 damage: _impactDamage,
-                                color: _impactPlayerTarget
-                                    ? const Color(0xFFFF7043)
-                                    : const Color(0xFF4DD0E1),
+                                color: _impactColor,
                                 reducedEffects:
                                     widget.preferences.reducedBattleEffects,
                               ),
@@ -345,6 +392,10 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                   ),
                   _OnlineAbilityPanel(
                     abilities: abilities,
+                    accentColor: ArenaAbilityVisuals.forAnimal(
+                      animalId: playerFighter.animalId,
+                      mutationId: playerFighter.mutationId,
+                    ).primary,
                     energy: state.self.energy,
                     hits: state.self.energyHits,
                     misses: state.self.energyMisses,
@@ -714,6 +765,7 @@ class _OnlineCombatMessage extends StatelessWidget {
 class _OnlineAbilityPanel extends StatelessWidget {
   const _OnlineAbilityPanel({
     required this.abilities,
+    required this.accentColor,
     required this.energy,
     required this.hits,
     required this.misses,
@@ -723,6 +775,7 @@ class _OnlineAbilityPanel extends StatelessWidget {
   });
 
   final List<ArenaAbility> abilities;
+  final Color accentColor;
   final int energy;
   final int hits;
   final int misses;
@@ -781,6 +834,7 @@ class _OnlineAbilityPanel extends StatelessWidget {
                   child: BattleAbilityButton(
                     key: ValueKey('online-ability-$index'),
                     ability: ability,
+                    accentColor: accentColor,
                     available: available,
                     reducedEffects: reducedEffects,
                     compact: true,

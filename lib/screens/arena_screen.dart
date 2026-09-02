@@ -16,12 +16,14 @@ import '../services/preferences_service.dart';
 import '../theme/game_theme.dart';
 import '../utils/arena_logic.dart';
 import '../utils/arena_combat_logic.dart';
+import '../utils/arena_ability_visuals.dart';
 import '../utils/battle_power_logic.dart';
 import '../utils/format_utils.dart';
 import '../utils/game_haptics.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
 import '../widgets/battle_ability_button.dart';
+import '../widgets/battle_ability_effect.dart';
 import '../widgets/battle_combo_badge.dart';
 import '../widgets/battle_hit_feedback.dart';
 import '../widgets/battle_health_bar.dart';
@@ -383,6 +385,12 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
   var _impactRevision = 0;
   var _impactDamage = 0;
   var _impactPlayerTarget = false;
+  var _impactColor = const Color(0xFF4DD0E1);
+  var _abilityEffectRevision = 0;
+  ArenaAbility? _lastAbility;
+  var _abilityAnimalId = '';
+  var _abilityMutationId = 'none';
+  var _abilityPlayerAttacks = true;
   var _battleMessage = 'Collect energy!';
   var _finished = false;
   var _rewardApplied = false;
@@ -500,6 +508,15 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
       _impactRevision++;
       _impactDamage = dealt;
       _impactPlayerTarget = false;
+      _impactColor = ArenaAbilityVisuals.forAnimal(
+        animalId: attacker.animalId,
+        mutationId: attacker.mutationId,
+      ).primary;
+      _abilityEffectRevision++;
+      _lastAbility = ability;
+      _abilityAnimalId = attacker.animalId;
+      _abilityMutationId = attacker.mutationId;
+      _abilityPlayerAttacks = true;
       _applyPlayerEffect(attacker, ability);
       _playerAttacking = true;
       _botAttacking = false;
@@ -531,6 +548,15 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
       _impactRevision++;
       _impactDamage = dealt;
       _impactPlayerTarget = true;
+      _impactColor = ArenaAbilityVisuals.forAnimal(
+        animalId: attacker.animalId,
+        mutationId: attacker.mutationId,
+      ).primary;
+      _abilityEffectRevision++;
+      _lastAbility = ability;
+      _abilityAnimalId = attacker.animalId;
+      _abilityMutationId = attacker.mutationId;
+      _abilityPlayerAttacks = false;
       _applyBotEffect(attacker, ability);
       _botAttacking = true;
       _playerAttacking = false;
@@ -787,6 +813,17 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
                                 ),
                               ),
                             Positioned.fill(
+                              child: BattleAbilityEffect(
+                                trigger: _abilityEffectRevision,
+                                animalId: _abilityAnimalId,
+                                mutationId: _abilityMutationId,
+                                ability: _lastAbility,
+                                playerAttacks: _abilityPlayerAttacks,
+                                reducedEffects:
+                                    widget.preferences.reducedBattleEffects,
+                              ),
+                            ),
+                            Positioned.fill(
                               child: BattleHitFeedback(
                                 trigger: _impactRevision,
                                 alignment: Alignment(
@@ -794,9 +831,7 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
                                   _impactPlayerTarget ? 0.55 : -0.55,
                                 ),
                                 damage: _impactDamage,
-                                color: _impactPlayerTarget
-                                    ? const Color(0xFFFF7043)
-                                    : const Color(0xFF4DD0E1),
+                                color: _impactColor,
                                 reducedEffects:
                                     widget.preferences.reducedBattleEffects,
                               ),
@@ -808,6 +843,10 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
                   ),
                   _ArenaAbilityPanel(
                     abilities: abilities,
+                    accentColor: ArenaAbilityVisuals.forAnimal(
+                      animalId: playerFighter.animalId,
+                      mutationId: playerFighter.mutationId,
+                    ).primary,
                     energy: _playerEnergy,
                     maxEnergy: ArenaCombatLogic.maxEnergy,
                     circlesHit: _circlesHit,
@@ -1611,6 +1650,7 @@ class _CombatPulse extends StatelessWidget {
 class _ArenaAbilityPanel extends StatelessWidget {
   const _ArenaAbilityPanel({
     required this.abilities,
+    required this.accentColor,
     required this.energy,
     required this.maxEnergy,
     required this.circlesHit,
@@ -1620,6 +1660,7 @@ class _ArenaAbilityPanel extends StatelessWidget {
     required this.onAbility,
   });
   final List<ArenaAbility> abilities;
+  final Color accentColor;
   final int energy;
   final int maxEnergy;
   final int circlesHit;
@@ -1679,6 +1720,7 @@ class _ArenaAbilityPanel extends StatelessWidget {
               Expanded(
                 child: BattleAbilityButton(
                   ability: abilities[i],
+                  accentColor: accentColor,
                   available: enabled && energy >= abilities[i].energyCost,
                   reducedEffects: reducedEffects,
                   onPressed: () => onAbility(abilities[i]),

@@ -12,6 +12,7 @@ class BattleAbilityButton extends StatefulWidget {
     required this.reducedEffects,
     required this.onPressed,
     this.compact = false,
+    this.accentColor,
   });
 
   final ArenaAbility ability;
@@ -19,6 +20,7 @@ class BattleAbilityButton extends StatefulWidget {
   final bool reducedEffects;
   final VoidCallback onPressed;
   final bool compact;
+  final Color? accentColor;
 
   @override
   State<BattleAbilityButton> createState() => _BattleAbilityButtonState();
@@ -70,6 +72,7 @@ class _BattleAbilityButtonState extends State<BattleAbilityButton>
 
   @override
   Widget build(BuildContext context) {
+    final accent = widget.accentColor ?? const Color(0xFFFFD54F);
     return Semantics(
       button: true,
       enabled: widget.available,
@@ -91,9 +94,7 @@ class _BattleAbilityButtonState extends State<BattleAbilityButton>
                       ? null
                       : [
                           BoxShadow(
-                            color: const Color(
-                              0xFFFFD54F,
-                            ).withValues(alpha: pulse * 0.6),
+                            color: accent.withValues(alpha: pulse * 0.6),
                             blurRadius: 10,
                             spreadRadius: 1,
                           ),
@@ -112,13 +113,15 @@ class _BattleAbilityButtonState extends State<BattleAbilityButton>
                   horizontal: widget.compact ? 4 : 5,
                   vertical: 4,
                 ),
-                backgroundColor: widget.ability.energyCost >= 7
-                    ? const Color(0xFFE65100)
-                    : const Color(0xFF00796B),
+                backgroundColor: Color.lerp(
+                  const Color(0xFF10252A),
+                  accent,
+                  widget.ability.energyCost >= 7 ? 0.5 : 0.34,
+                ),
                 disabledBackgroundColor: Colors.white10,
                 side: BorderSide(
                   color: widget.available
-                      ? const Color(0x66FFD54F)
+                      ? accent.withValues(alpha: 0.62)
                       : Colors.transparent,
                 ),
                 shape: RoundedRectangleBorder(
@@ -145,17 +148,13 @@ class _BattleAbilityButtonState extends State<BattleAbilityButton>
                       Icon(
                         _effectIcon,
                         size: widget.compact ? 8 : 9,
-                        color: widget.available
-                            ? const Color(0xFFFFD54F)
-                            : Colors.white24,
+                        color: widget.available ? accent : Colors.white24,
                       ),
                       const SizedBox(width: 2),
                       Text(
                         '${widget.ability.energyCost} ENERGY',
                         style: TextStyle(
-                          color: widget.available
-                              ? const Color(0xFFFFD54F)
-                              : Colors.white24,
+                          color: widget.available ? accent : Colors.white24,
                           fontSize: widget.compact ? 7 : 8,
                           fontWeight: FontWeight.w900,
                         ),
