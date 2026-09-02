@@ -84,6 +84,80 @@ class _BossBattleBackgroundPainter extends CustomPainter {
       case BossBattleBackgroundType.genericArena:
         _paintGenericArena(canvas, size);
     }
+    _paintClassicFinish(canvas, size);
+  }
+
+  void _paintClassicFinish(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+
+    // A soft stage light keeps the combat lane readable and grounds both sprites.
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.5, size.height * 0.84),
+        width: size.width * 0.72,
+        height: size.height * 0.18,
+      ),
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.13),
+            Colors.white.withValues(alpha: 0),
+          ],
+        ).createShader(rect),
+    );
+
+    final horizon = Paint()
+      ..color = Colors.white.withValues(alpha: 0.1)
+      ..strokeWidth = 1.5;
+    canvas.drawLine(
+      Offset(0, size.height * 0.66),
+      Offset(size.width, size.height * 0.66),
+      horizon,
+    );
+
+    // Gentle edge shading adds depth without making Classic look realistic.
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [
+            Colors.black.withValues(alpha: 0.18),
+            Colors.transparent,
+            Colors.transparent,
+            Colors.black.withValues(alpha: 0.18),
+          ],
+          stops: const [0, 0.18, 0.82, 1],
+        ).createShader(rect),
+    );
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.black.withValues(alpha: 0.12),
+            Colors.transparent,
+            Colors.black.withValues(alpha: 0.16),
+          ],
+          stops: const [0, 0.5, 1],
+        ).createShader(rect),
+    );
+
+    final speck = Paint()..color = Colors.white.withValues(alpha: 0.12);
+    final random = math.Random(type.index * 37 + 11);
+    for (var i = 0; i < 10; i++) {
+      canvas.drawCircle(
+        Offset(
+          size.width * (0.08 + random.nextDouble() * 0.84),
+          size.height * (0.15 + random.nextDouble() * 0.48),
+        ),
+        1.2 + random.nextDouble() * 1.8,
+        speck,
+      );
+    }
   }
 
   void _paintSlimeSwamp(Canvas canvas, Size size) {
@@ -97,6 +171,22 @@ class _BossBattleBackgroundPainter extends CustomPainter {
           colors: [Color(0xFF1B5E20), Color(0xFF33691E), Color(0xFF2E4F1C)],
         ).createShader(rect),
     );
+
+    final distant = Paint()
+      ..color = const Color(0xFF123F25).withValues(alpha: 0.72);
+    for (var i = 0; i < 6; i++) {
+      final x = size.width * (-0.04 + i * 0.21);
+      final crownY = size.height * (0.4 + (i % 2) * 0.035);
+      canvas.drawCircle(Offset(x, crownY), 42 + (i % 3) * 8, distant);
+      canvas.drawRect(
+        Rect.fromCenter(
+          center: Offset(x, size.height * 0.57),
+          width: 13,
+          height: size.height * 0.28,
+        ),
+        distant,
+      );
+    }
 
     final puddle = Paint()
       ..color = const Color(0xFF66BB6A).withValues(alpha: 0.45);
@@ -124,6 +214,23 @@ class _BossBattleBackgroundPainter extends CustomPainter {
       final y = size.height * (0.18 + (i % 3) * 0.12);
       canvas.drawCircle(Offset(x, y), 4 + (i % 3) * 2.0, bubble);
     }
+
+    final reed = Paint()
+      ..color = const Color(0xFF173F23).withValues(alpha: 0.85)
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+    for (final x in [0.06, 0.11, 0.87, 0.93]) {
+      final base = Offset(size.width * x, size.height * 0.86);
+      canvas.drawLine(base, Offset(base.dx - 5, size.height * 0.68), reed);
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(base.dx - 6, size.height * 0.67),
+          width: 8,
+          height: 22,
+        ),
+        reed,
+      );
+    }
   }
 
   void _paintEggCave(Canvas canvas, Size size) {
@@ -137,6 +244,26 @@ class _BossBattleBackgroundPainter extends CustomPainter {
           colors: [Color(0xFF4E342E), Color(0xFF3E2723), Color(0xFF2C1810)],
         ).createShader(rect),
     );
+
+    final caveEdge = Paint()..color = const Color(0xFF24130E);
+    final ceiling = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height * 0.18)
+      ..quadraticBezierTo(
+        size.width * 0.72,
+        size.height * 0.08,
+        size.width * 0.55,
+        size.height * 0.2,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.25,
+        size.height * 0.06,
+        0,
+        size.height * 0.24,
+      )
+      ..close();
+    canvas.drawPath(ceiling, caveEdge);
 
     final stone = Paint()
       ..color = const Color(0xFF8D6E63).withValues(alpha: 0.55);
@@ -171,6 +298,17 @@ class _BossBattleBackgroundPainter extends CustomPainter {
       ),
       eggGlow,
     );
+
+    final crystal = Paint()
+      ..color = const Color(0xFF80DEEA).withValues(alpha: 0.5);
+    for (final x in [0.08, 0.88]) {
+      final path = Path()
+        ..moveTo(size.width * x, size.height * 0.72)
+        ..lineTo(size.width * (x + 0.035), size.height * 0.57)
+        ..lineTo(size.width * (x + 0.07), size.height * 0.72)
+        ..close();
+      canvas.drawPath(path, crystal);
+    }
   }
 
   void _paintShadowRoost(Canvas canvas, Size size) {
@@ -188,6 +326,44 @@ class _BossBattleBackgroundPainter extends CustomPainter {
     final moon = Paint()
       ..color = const Color(0xFFE8EAF6).withValues(alpha: 0.75);
     canvas.drawCircle(Offset(size.width * 0.82, size.height * 0.14), 18, moon);
+
+    final cloud = Paint()
+      ..color = const Color(0xFF7986CB).withValues(alpha: 0.16);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.32, size.height * 0.22),
+        width: size.width * 0.38,
+        height: 34,
+      ),
+      cloud,
+    );
+
+    final barn = Paint()
+      ..color = const Color(0xFF120F25).withValues(alpha: 0.72);
+    canvas.drawRect(
+      Rect.fromLTWH(
+        size.width * 0.08,
+        size.height * 0.49,
+        size.width * 0.3,
+        size.height * 0.31,
+      ),
+      barn,
+    );
+    final roof = Path()
+      ..moveTo(size.width * 0.04, size.height * 0.5)
+      ..lineTo(size.width * 0.23, size.height * 0.34)
+      ..lineTo(size.width * 0.42, size.height * 0.5)
+      ..close();
+    canvas.drawPath(roof, barn);
+    canvas.drawRect(
+      Rect.fromLTWH(
+        size.width * 0.18,
+        size.height * 0.61,
+        size.width * 0.1,
+        size.height * 0.19,
+      ),
+      Paint()..color = const Color(0xFF311B52),
+    );
 
     final fence = Paint()
       ..color = const Color(0xFF0D0D1A).withValues(alpha: 0.65);
@@ -243,24 +419,20 @@ class _BossBattleBackgroundPainter extends CustomPainter {
 
     final pillar = Paint()
       ..color = const Color(0xFF2E7D32).withValues(alpha: 0.7);
-    canvas.drawRect(
-      Rect.fromLTWH(
-        size.width * 0.08,
-        size.height * 0.22,
-        14,
-        size.height * 0.58,
-      ),
-      pillar,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(
-        size.width * 0.84,
-        size.height * 0.22,
-        14,
-        size.height * 0.58,
-      ),
-      pillar,
-    );
+    for (final x in [0.08, 0.25, 0.72, 0.89]) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            size.width * x,
+            size.height * 0.2,
+            18,
+            size.height * 0.62,
+          ),
+          const Radius.circular(7),
+        ),
+        pillar,
+      );
+    }
 
     final gold = Paint()
       ..color = const Color(0xFFFFD54F).withValues(alpha: 0.55);
@@ -297,6 +469,25 @@ class _BossBattleBackgroundPainter extends CustomPainter {
       ),
       throne,
     );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(size.width * 0.5, size.height * 0.63),
+          width: 52,
+          height: 86,
+        ),
+        const Radius.circular(10),
+      ),
+      Paint()..color = const Color(0xFF6A1B9A).withValues(alpha: 0.58),
+    );
+
+    final tile = Paint()
+      ..color = const Color(0xFFFFD54F).withValues(alpha: 0.14)
+      ..strokeWidth = 1;
+    for (var i = 0; i < 5; i++) {
+      final y = size.height * (0.68 + i * 0.07);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), tile);
+    }
 
     final sparkle = Paint()
       ..color = const Color(0xFFFFEB3B).withValues(alpha: 0.45);
@@ -333,6 +524,22 @@ class _BossBattleBackgroundPainter extends CustomPainter {
       ..close();
     canvas.drawPath(cavePath, cave);
 
+    final arch = Paint()
+      ..color = const Color(0xFF78909C).withValues(alpha: 0.22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 18;
+    canvas.drawArc(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.5, size.height * 0.48),
+        width: size.width * 0.78,
+        height: size.height * 0.72,
+      ),
+      math.pi,
+      math.pi,
+      false,
+      arch,
+    );
+
     final nest = Paint()
       ..color = const Color(0xFF8D6E63).withValues(alpha: 0.55);
     for (var i = 0; i < 3; i++) {
@@ -362,6 +569,19 @@ class _BossBattleBackgroundPainter extends CustomPainter {
     final gold = Paint()
       ..color = const Color(0xFFFFD54F).withValues(alpha: 0.25);
     canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.55), 6, gold);
+
+    final rune = Paint()
+      ..color = const Color(0xFF64B5F6).withValues(alpha: 0.33)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    for (final x in [0.12, 0.88]) {
+      canvas.drawCircle(Offset(size.width * x, size.height * 0.55), 17, rune);
+      canvas.drawLine(
+        Offset(size.width * x - 10, size.height * 0.55),
+        Offset(size.width * x + 10, size.height * 0.55),
+        rune,
+      );
+    }
   }
 
   void _paintPhoenixLair(Canvas canvas, Size size) {
@@ -374,6 +594,31 @@ class _BossBattleBackgroundPainter extends CustomPainter {
           end: Alignment.bottomCenter,
           colors: [Color(0xFF0D1B2A), Color(0xFF1B263B), Color(0xFF0A1628)],
         ).createShader(rect),
+    );
+
+    final canyon = Paint()
+      ..color = const Color(0xFF263850).withValues(alpha: 0.72);
+    final leftCliff = Path()
+      ..moveTo(0, size.height * 0.36)
+      ..lineTo(size.width * 0.17, size.height * 0.46)
+      ..lineTo(size.width * 0.24, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    final rightCliff = Path()
+      ..moveTo(size.width, size.height * 0.3)
+      ..lineTo(size.width * 0.82, size.height * 0.45)
+      ..lineTo(size.width * 0.76, size.height)
+      ..lineTo(size.width, size.height)
+      ..close();
+    canvas.drawPath(leftCliff, canyon);
+    canvas.drawPath(rightCliff, canyon);
+
+    final distantGlow = Paint()
+      ..color = const Color(0xFF7E57C2).withValues(alpha: 0.2);
+    canvas.drawCircle(
+      Offset(size.width * 0.5, size.height * 0.31),
+      size.width * 0.15,
+      distantGlow,
     );
 
     final ruin = Paint()
@@ -435,6 +680,36 @@ class _BossBattleBackgroundPainter extends CustomPainter {
         ).createShader(rect),
     );
 
+    final rib = Paint()
+      ..color = const Color(0xFF6D5A50).withValues(alpha: 0.58)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(
+      Rect.fromLTWH(
+        -size.width * 0.18,
+        size.height * 0.23,
+        size.width * 0.48,
+        size.height * 0.58,
+      ),
+      -math.pi / 2,
+      math.pi,
+      false,
+      rib,
+    );
+    canvas.drawArc(
+      Rect.fromLTWH(
+        size.width * 0.7,
+        size.height * 0.23,
+        size.width * 0.48,
+        size.height * 0.58,
+      ),
+      math.pi / 2,
+      math.pi,
+      false,
+      rib,
+    );
+
     final fog = Paint()
       ..color = const Color(0xFF66BB6A).withValues(alpha: 0.25);
     canvas.drawOval(
@@ -469,6 +744,17 @@ class _BossBattleBackgroundPainter extends CustomPainter {
         shell,
       );
     }
+
+    final crack = Paint()
+      ..color = const Color(0xFFB2FF59).withValues(alpha: 0.35)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    final crackPath = Path()
+      ..moveTo(size.width * 0.5, size.height * 0.7)
+      ..lineTo(size.width * 0.46, size.height * 0.76)
+      ..lineTo(size.width * 0.52, size.height * 0.82)
+      ..lineTo(size.width * 0.47, size.height * 0.9);
+    canvas.drawPath(crackPath, crack);
   }
 
   void _paintGenericArena(Canvas canvas, Size size) {
