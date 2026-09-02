@@ -1,0 +1,13 @@
+.codex-run/
+.dart_tool/
+.git/
+.github/
+.idea/
+.vscode/
+android/
+build/
+coverage/
+ios/
+test/
+*.iml
+*.log

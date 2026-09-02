@@ -60,3 +60,21 @@ jobs:
           path: build/egg-hatchers-linux-x64.tar.gz
           if-no-files-found: error
           retention-days: 14
+
+      - name: Verify deployment container
+        run: |
+          docker build --tag egg-hatchers:verify .
+          docker run --detach --name egg-hatchers-verify \
+            --publish 18080:10000 egg-hatchers:verify
+          trap 'docker rm --force egg-hatchers-verify' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:18080/health; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              docker logs egg-hatchers-verify
+              exit 1
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:18080/ | grep --quiet "Egg Hatchers"

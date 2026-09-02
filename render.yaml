@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: egg-hatchers
+    runtime: docker
+    plan: free
+    region: ohio
+    branch: main
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: WEB_ROOT
+        value: /app/build/web
