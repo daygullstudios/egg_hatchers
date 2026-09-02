@@ -21,6 +21,7 @@ import '../utils/format_utils.dart';
 import '../utils/game_haptics.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
+import '../widgets/battle_ability_button.dart';
 import '../widgets/battle_hit_feedback.dart';
 import '../widgets/battle_health_bar.dart';
 import '../widgets/battle_fighter_switcher.dart';
@@ -809,6 +810,7 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
                     circlesHit: _circlesHit,
                     circlesMissed: _circlesMissed,
                     enabled: !_finished,
+                    reducedEffects: widget.preferences.reducedBattleEffects,
                     onAbility: _usePlayerAbility,
                   ),
                   _BattleBenches(
@@ -1608,6 +1610,7 @@ class _ArenaAbilityPanel extends StatelessWidget {
     required this.circlesHit,
     required this.circlesMissed,
     required this.enabled,
+    required this.reducedEffects,
     required this.onAbility,
   });
   final List<ArenaAbility> abilities;
@@ -1616,6 +1619,7 @@ class _ArenaAbilityPanel extends StatelessWidget {
   final int circlesHit;
   final int circlesMissed;
   final bool enabled;
+  final bool reducedEffects;
   final ValueChanged<ArenaAbility> onAbility;
 
   @override
@@ -1667,67 +1671,17 @@ class _ArenaAbilityPanel extends StatelessWidget {
             for (var i = 0; i < abilities.length; i++) ...[
               if (i > 0) const SizedBox(width: 6),
               Expanded(
-                child: _AbilityButton(
+                child: BattleAbilityButton(
                   ability: abilities[i],
-                  enabled: enabled && energy >= abilities[i].energyCost,
-                  onTap: () => onAbility(abilities[i]),
+                  available: enabled && energy >= abilities[i].energyCost,
+                  reducedEffects: reducedEffects,
+                  onPressed: () => onAbility(abilities[i]),
                 ),
               ),
             ],
           ],
         ),
       ],
-    ),
-  );
-}
-
-class _AbilityButton extends StatelessWidget {
-  const _AbilityButton({
-    required this.ability,
-    required this.enabled,
-    required this.onTap,
-  });
-  final ArenaAbility ability;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 54,
-    child: FilledButton(
-      onPressed: enabled ? onTap : null,
-      style: FilledButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
-        backgroundColor: ability.energyCost >= 7
-            ? const Color(0xFFE65100)
-            : const Color(0xFF00796B),
-        disabledBackgroundColor: Colors.white10,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            ability.name,
-            maxLines: 2,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: enabled ? Colors.white : Colors.white38,
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          Text(
-            '${ability.energyCost} ENERGY',
-            style: TextStyle(
-              color: enabled ? const Color(0xFFFFD54F) : Colors.white24,
-              fontSize: 8,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ],
-      ),
     ),
   );
 }

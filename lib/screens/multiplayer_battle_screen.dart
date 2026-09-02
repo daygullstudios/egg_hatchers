@@ -18,6 +18,7 @@ import '../utils/format_utils.dart';
 import '../utils/game_haptics.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
+import '../widgets/battle_ability_button.dart';
 import '../widgets/battle_hit_feedback.dart';
 import '../widgets/battle_health_bar.dart';
 import '../widgets/battle_fighter_switcher.dart';
@@ -344,6 +345,7 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                     hits: state.self.energyHits,
                     misses: state.self.energyMisses,
                     enabled: !finished,
+                    reducedEffects: widget.preferences.reducedBattleEffects,
                     onAbility: widget.multiplayer.useAbility,
                   ),
                   _OnlineBenches(
@@ -683,6 +685,7 @@ class _OnlineAbilityPanel extends StatelessWidget {
     required this.hits,
     required this.misses,
     required this.enabled,
+    required this.reducedEffects,
     required this.onAbility,
   });
 
@@ -691,6 +694,7 @@ class _OnlineAbilityPanel extends StatelessWidget {
   final int hits;
   final int misses;
   final bool enabled;
+  final bool reducedEffects;
   final ValueChanged<int> onAbility;
 
   @override
@@ -741,48 +745,13 @@ class _OnlineAbilityPanel extends StatelessWidget {
               return Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(left: index == 0 ? 0 : 5),
-                  child: SizedBox(
-                    height: 50,
-                    child: FilledButton(
-                      key: ValueKey('online-ability-$index'),
-                      onPressed: available ? () => onAbility(index) : null,
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        backgroundColor: ability.energyCost >= 7
-                            ? const Color(0xFFE65100)
-                            : const Color(0xFF00796B),
-                        disabledBackgroundColor: Colors.white10,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            ability.name,
-                            maxLines: 2,
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: available ? Colors.white : Colors.white38,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          Text(
-                            '${ability.energyCost} ENERGY',
-                            style: TextStyle(
-                              color: available
-                                  ? const Color(0xFFFFD54F)
-                                  : Colors.white24,
-                              fontSize: 7,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  child: BattleAbilityButton(
+                    key: ValueKey('online-ability-$index'),
+                    ability: ability,
+                    available: available,
+                    reducedEffects: reducedEffects,
+                    compact: true,
+                    onPressed: () => onAbility(index),
                   ),
                 ),
               );
