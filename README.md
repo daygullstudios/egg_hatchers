@@ -35,6 +35,20 @@ flutter test
 flutter build web --release
 ```
 
+## Sign the Android release
+
+Local release builds use Android's debug key when no private signing setup is
+present. Before publishing, create an upload keystore, copy
+`android/key.properties.example` to `android/key.properties`, and replace every
+example value. Both the credentials file and keystore are ignored by Git.
+
+Confirm the private signing setup before uploading:
+
+```powershell
+flutter build appbundle --release
+keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab
+```
+
 The development multiplayer server stores active rooms in memory. A public
 release still requires durable hosted accounts, authenticated sessions,
 transactional trade storage, TLS, and platform signing credentials.
