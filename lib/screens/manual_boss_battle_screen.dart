@@ -28,6 +28,7 @@ import '../utils/rotten_shell_final_battle_logic.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
 import '../widgets/battle_impact_overlay.dart';
+import '../widgets/battle_resume_countdown.dart';
 import '../widgets/boss_battle_background.dart';
 import '../widgets/boss_defeat_animation.dart';
 import '../widgets/boss_fight_intro_animation.dart';
@@ -123,6 +124,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   var _gameOver = false;
   var _won = false;
   var _isPaused = false;
+  var _resumeCountdownActive = false;
   var _rewardsApplied = false;
   var _resultDialogShown = false;
   var _showVictoryAnimation = false;
@@ -301,6 +303,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _gameOver = false;
     _won = false;
     _isPaused = false;
+    _resumeCountdownActive = false;
     _rewardsApplied = false;
     _resultDialogShown = false;
     _showVictoryAnimation = false;
@@ -401,8 +404,17 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   }
 
   void _resumeBattle() {
-    if (_gameOver || !_isPaused) return;
-    setState(() => _isPaused = false);
+    if (_gameOver || !_isPaused || _resumeCountdownActive) return;
+    setState(() => _resumeCountdownActive = true);
+  }
+
+  void _finishResumeCountdown() {
+    if (!mounted || _gameOver || !_isPaused || !_resumeCountdownActive) return;
+    setState(() {
+      _resumeCountdownActive = false;
+      _isPaused = false;
+      _lastTickElapsed = null;
+    });
   }
 
   Future<void> _confirmQuitBattle() async {
@@ -1178,15 +1190,24 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
                         Positioned.fill(
                           child: Padding(
                             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                            child: _PauseOverlay(
-                              theme: currentTheme,
-                              onResume: _resumeBattle,
-                              onQuit: _confirmQuitBattle,
-                              showBattleBackgrounds:
-                                  widget.preferences.showBattleBackgrounds,
-                              onToggleBattleBackgrounds:
-                                  widget.preferences.setShowBattleBackgrounds,
-                            ),
+                            child: _resumeCountdownActive
+                                ? BattleResumeCountdown(
+                                    theme: currentTheme,
+                                    reducedEffects:
+                                        widget.preferences.reducedBattleEffects,
+                                    onComplete: _finishResumeCountdown,
+                                  )
+                                : _PauseOverlay(
+                                    theme: currentTheme,
+                                    onResume: _resumeBattle,
+                                    onQuit: _confirmQuitBattle,
+                                    showBattleBackgrounds: widget
+                                        .preferences
+                                        .showBattleBackgrounds,
+                                    onToggleBattleBackgrounds: widget
+                                        .preferences
+                                        .setShowBattleBackgrounds,
+                                  ),
                           ),
                         ),
                       if (_showFinalBattle)
