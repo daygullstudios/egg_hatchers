@@ -19,6 +19,15 @@ Start the WebSocket server in a separate terminal:
 dart run tool/multiplayer_server.dart
 ```
 
+For a hosted server, bind to every network interface and use the host's port:
+
+```powershell
+dart run tool/multiplayer_server.dart --host 0.0.0.0 --port 8080
+```
+
+The server also reads the standard `HOST`, `PORT`, and `WEB_ROOT` environment
+variables used by managed hosting services. Command-line options take priority.
+
 The server listens at `http://127.0.0.1:53218`, serves the release web build
 from `build/web`, and handles multiplayer at `/ws`. Native builds default to
 `ws://127.0.0.1:53218/ws`; supply a reachable server for device builds:

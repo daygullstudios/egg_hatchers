@@ -13,11 +13,92 @@ import 'package:egg_hatchers/utils/battle_power_logic.dart';
 const _defaultHost = '127.0.0.1';
 const _defaultPort = 53218;
 
-Future<void> main() async {
-  final server = await LocalMultiplayerServer.start();
+Future<void> main(List<String> args) async {
+  final config = MultiplayerServerConfig.fromArgs(
+    args,
+    environment: Platform.environment,
+  );
+  final server = await LocalMultiplayerServer.start(
+    host: config.host,
+    port: config.port,
+    webRoot: config.webRoot,
+  );
   stdout.writeln(
     'Egg Hatchers match server: ws://${server.host}:${server.port}/ws',
   );
+}
+
+class MultiplayerServerConfig {
+  const MultiplayerServerConfig({
+    required this.host,
+    required this.port,
+    required this.webRoot,
+  });
+
+  final String host;
+  final int port;
+  final String webRoot;
+
+  factory MultiplayerServerConfig.fromArgs(
+    List<String> args, {
+    Map<String, String> environment = const {},
+  }) {
+    final options = <String, String>{};
+    for (var index = 0; index < args.length; index++) {
+      final argument = args[index];
+      if (!argument.startsWith('--')) {
+        throw FormatException('Unexpected server argument: $argument');
+      }
+      final equalsIndex = argument.indexOf('=');
+      if (equalsIndex > 2) {
+        options[argument.substring(2, equalsIndex)] = argument.substring(
+          equalsIndex + 1,
+        );
+        continue;
+      }
+      final name = argument.substring(2);
+      if (index + 1 >= args.length || args[index + 1].startsWith('--')) {
+        throw FormatException('Missing value for --$name');
+      }
+      options[name] = args[++index];
+    }
+
+    const supportedOptions = {'host', 'port', 'web-root'};
+    final unknownOptions = options.keys.where(
+      (name) => !supportedOptions.contains(name),
+    );
+    if (unknownOptions.isNotEmpty) {
+      throw FormatException('Unknown server option: --${unknownOptions.first}');
+    }
+
+    final host =
+        options['host'] ??
+        environment['EGG_HATCHERS_HOST'] ??
+        environment['HOST'] ??
+        _defaultHost;
+    final portValue =
+        options['port'] ??
+        environment['EGG_HATCHERS_PORT'] ??
+        environment['PORT'] ??
+        '$_defaultPort';
+    final port = int.tryParse(portValue);
+    if (port == null || port < 0 || port > 65535) {
+      throw FormatException('Invalid server port: $portValue');
+    }
+    final webRoot =
+        options['web-root'] ??
+        environment['EGG_HATCHERS_WEB_ROOT'] ??
+        environment['WEB_ROOT'] ??
+        'build/web';
+    if (host.trim().isEmpty || webRoot.trim().isEmpty) {
+      throw const FormatException('Server host and web root cannot be empty.');
+    }
+    return MultiplayerServerConfig(
+      host: host.trim(),
+      port: port,
+      webRoot: webRoot.trim(),
+    );
+  }
 }
 
 class LocalMultiplayerServer {
