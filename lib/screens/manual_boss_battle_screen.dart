@@ -253,12 +253,10 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
       : MusicTrack.bossBattle;
 
   void _playBattleMusic() {
-    debugPrint('[AUDIO] ManualBattle start ${_battleMusicTrack.name}');
     _audio.playMusic(_battleMusicTrack);
   }
 
   void _restoreHatcheryMusic() {
-    debugPrint('[AUDIO] ManualBattle restore hatchery');
     _audioService?.playMusic(MusicTrack.hatchery);
   }
 
