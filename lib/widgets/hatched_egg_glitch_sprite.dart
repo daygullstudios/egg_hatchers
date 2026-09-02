@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../utils/sprite_decode_size.dart';
 import 'animated_animal_glitch.dart';
 
 /// Open glitch shell whose occupant changes between friendly animal heads.
@@ -87,6 +88,11 @@ class _HatchedEggGlitchSpriteState extends State<HatchedEggGlitchSprite> {
   Widget build(BuildContext context) {
     final headId = HatchedEggGlitchSprite.goodHeadAnimalIds[_headIndex];
     final headSize = widget.size * 0.39;
+    final headDecodeWidth = SpriteDecodeSize.forDisplay(
+      logicalSize: headSize,
+      devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+      maxSourceWidth: 256,
+    );
     final headTop = HatchedEggGlitchSprite._headTopFactors[headId] ?? 0.06;
 
     return SizedBox.square(
@@ -148,6 +154,7 @@ class _HatchedEggGlitchSpriteState extends State<HatchedEggGlitchSprite> {
                         height: headSize,
                         fit: BoxFit.contain,
                         filterQuality: FilterQuality.high,
+                        cacheWidth: headDecodeWidth,
                       ),
                     ),
                   ),

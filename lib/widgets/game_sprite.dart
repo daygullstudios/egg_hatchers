@@ -8,6 +8,7 @@ import '../models/custom_sprite_data.dart';
 import '../models/egg.dart';
 import '../models/mutation.dart';
 import '../theme/game_theme.dart';
+import '../utils/sprite_decode_size.dart';
 import 'animated_animal_glitch.dart';
 import 'animal_motion.dart';
 import 'animal_sprite_theme_scope.dart';
@@ -94,6 +95,7 @@ class GameSprite extends StatelessWidget {
       final realisticPath = RealisticAnimalSprites.assetPathFor(id);
       if (realisticPath != null) {
         return _assetImage(
+          context,
           realisticPath,
           emojiSize,
           filterQuality: FilterQuality.high,
@@ -102,7 +104,7 @@ class GameSprite extends StatelessWidget {
             if (classicPath == null || classicPath.isEmpty) {
               return _emojiFallback(emojiSize);
             }
-            return _assetImage(classicPath, emojiSize);
+            return _assetImage(context, classicPath, emojiSize);
           },
         );
       }
@@ -113,21 +115,29 @@ class GameSprite extends StatelessWidget {
     }
 
     return _assetImage(
+      context,
       spritePath!,
       emojiSize,
       filterQuality: filterQuality,
       errorFallback: errorSpritePath == null
           ? null
-          : (_) => _assetImage(errorSpritePath!, emojiSize),
+          : (_) => _assetImage(context, errorSpritePath!, emojiSize),
     );
   }
 
   Widget _assetImage(
+    BuildContext context,
     String path,
     double emojiSize, {
     FilterQuality filterQuality = FilterQuality.none,
     WidgetBuilder? errorFallback,
   }) {
+    final maxSourceWidth = path.contains('/realistic/') ? 512 : 256;
+    final decodeWidth = SpriteDecodeSize.forDisplay(
+      logicalSize: size,
+      devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+      maxSourceWidth: maxSourceWidth,
+    );
     return SizedBox(
       width: size,
       height: size,
@@ -137,6 +147,7 @@ class GameSprite extends StatelessWidget {
         height: size,
         fit: fit,
         filterQuality: filterQuality,
+        cacheWidth: decodeWidth,
         semanticLabel: semanticLabel,
         errorBuilder: (context, _, _) =>
             errorFallback?.call(context) ?? _emojiFallback(emojiSize),
