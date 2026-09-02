@@ -1197,6 +1197,8 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
                             fighter: widget.fighter,
                             fighterCustomSprite: _fighterCustomSprite,
                             boss: boss,
+                            reducedEffects:
+                                widget.preferences.reducedBattleEffects,
                             onVictory: _onFinalBattleVictory,
                             onDefeat: _onFinalBattleDefeat,
                           ),

@@ -18,6 +18,7 @@ import '../utils/format_utils.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
 import '../widgets/battle_hit_feedback.dart';
+import '../widgets/battle_health_bar.dart';
 import '../widgets/game_sprite.dart';
 
 class MultiplayerBattleScreen extends StatefulWidget {
@@ -242,6 +243,8 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                                             widget.opponent.playerId,
                                     label: widget.opponent.displayName,
                                     compact: compact,
+                                    reducedEffects:
+                                        widget.preferences.reducedBattleEffects,
                                   ),
                                   _OnlineCombatMessage(
                                     message: state.message,
@@ -263,6 +266,8 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                                             widget.player.playerId,
                                     label: widget.player.displayName,
                                     compact: compact,
+                                    reducedEffects:
+                                        widget.preferences.reducedBattleEffects,
                                   ),
                                 ],
                               ),
@@ -501,6 +506,7 @@ class _OnlineActiveFighter extends StatelessWidget {
     required this.isVictorious,
     required this.label,
     required this.compact,
+    required this.reducedEffects,
   });
 
   final ArenaFighter fighter;
@@ -513,6 +519,7 @@ class _OnlineActiveFighter extends StatelessWidget {
   final bool isVictorious;
   final String label;
   final bool compact;
+  final bool reducedEffects;
 
   @override
   Widget build(BuildContext context) {
@@ -590,18 +597,12 @@ class _OnlineActiveFighter extends StatelessWidget {
           const SizedBox(height: 3),
           SizedBox(
             width: compact ? 160 : 190,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(7),
-              child: LinearProgressIndicator(
-                value: fraction,
-                minHeight: 11,
-                backgroundColor: Colors.white12,
-                color: fraction > 0.45
-                    ? const Color(0xFF66BB6A)
-                    : fraction > 0.2
-                    ? const Color(0xFFFFB300)
-                    : const Color(0xFFEF5350),
-              ),
+            child: BattleHealthBar(
+              value: fraction,
+              identity:
+                  '${fighter.animalId}:${fighter.mutationId}:${fighter.level}:${fighter.power}',
+              height: 11,
+              reducedEffects: reducedEffects,
             ),
           ),
           const SizedBox(height: 2),

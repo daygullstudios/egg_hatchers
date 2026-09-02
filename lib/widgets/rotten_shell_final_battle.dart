@@ -16,6 +16,7 @@ import '../utils/arena_logic.dart';
 import '../utils/rotten_shell_final_battle_logic.dart';
 import 'audio_scope.dart';
 import 'animal_motion.dart';
+import 'battle_health_bar.dart';
 import 'boss_sprite.dart';
 import 'game_sprite.dart';
 
@@ -29,6 +30,7 @@ class RottenShellFinalBattle extends StatefulWidget {
     required this.boss,
     required this.onVictory,
     required this.onDefeat,
+    this.reducedEffects = false,
   });
 
   final OwnedAnimal fighter;
@@ -36,6 +38,7 @@ class RottenShellFinalBattle extends StatefulWidget {
   final BossBattleDefinition boss;
   final VoidCallback onVictory;
   final VoidCallback onDefeat;
+  final bool reducedEffects;
 
   @override
   State<RottenShellFinalBattle> createState() => _RottenShellFinalBattleState();
@@ -345,6 +348,8 @@ class _RottenShellFinalBattleState extends State<RottenShellFinalBattle>
                       maxHealth: _bossMaxHealth,
                       shield: 0,
                       accent: const Color(0xFF9C54FF),
+                      identity: widget.boss.id,
+                      reducedEffects: widget.reducedEffects,
                       attacking: _bossAttacking,
                       portrait: BossSprite(
                         spritePath: widget.boss.spritePath,
@@ -441,6 +446,9 @@ class _RottenShellFinalBattleState extends State<RottenShellFinalBattle>
                       maxHealth: _playerMaxHealth,
                       shield: _playerShield,
                       accent: _beamColor,
+                      identity:
+                          '${_fighter.animalId}:${_fighter.mutationId}:${_fighter.level}',
+                      reducedEffects: widget.reducedEffects,
                       attacking: _playerAttacking,
                       portrait: GameAnimalPortrait(
                         customSprite: widget.fighterCustomSprite,
@@ -490,6 +498,8 @@ class _FinalFighterPanel extends StatelessWidget {
     required this.maxHealth,
     required this.shield,
     required this.accent,
+    required this.identity,
+    required this.reducedEffects,
     required this.attacking,
     required this.portrait,
   });
@@ -499,6 +509,8 @@ class _FinalFighterPanel extends StatelessWidget {
   final int maxHealth;
   final int shield;
   final Color accent;
+  final Object identity;
+  final bool reducedEffects;
   final bool attacking;
   final Widget portrait;
 
@@ -525,14 +537,11 @@ class _FinalFighterPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 7),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(5),
-                child: LinearProgressIndicator(
-                  value: health / maxHealth,
-                  minHeight: 12,
-                  backgroundColor: Colors.white12,
-                  color: accent,
-                ),
+              BattleHealthBar(
+                value: health / maxHealth,
+                identity: identity,
+                height: 12,
+                reducedEffects: reducedEffects,
               ),
               const SizedBox(height: 5),
               Text(
