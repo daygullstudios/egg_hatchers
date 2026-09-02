@@ -28,6 +28,16 @@ dart run tool/multiplayer_server.dart --host 0.0.0.0 --port 8080
 The server also reads the standard `HOST`, `PORT`, and `WEB_ROOT` environment
 variables used by managed hosting services. Command-line options take priority.
 
+Every successful GitHub `main` build creates an `egg-hatchers-linux-x64`
+deployment artifact. Extract it on a Linux host and start the bundled server:
+
+```bash
+HOST=0.0.0.0 PORT=8080 ./egg-hatchers-server
+```
+
+The bundle keeps the web release in `build/web`, so the same process serves the
+game, health endpoint, matchmaking, battles, and trading.
+
 The server listens at `http://127.0.0.1:53218`, serves the release web build
 from `build/web`, and handles multiplayer at `/ws`. Native builds default to
 `ws://127.0.0.1:53218/ws`; supply a reachable server for device builds:

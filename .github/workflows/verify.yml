@@ -1,6 +1,7 @@
 name: Verify
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -41,3 +42,21 @@ jobs:
 
       - name: Build web release
         run: flutter build web --release --no-pub
+
+      - name: Build multiplayer server
+        run: dart compile exe tool/multiplayer_server.dart -o build/egg-hatchers-server
+
+      - name: Package hosted release
+        run: |
+          mkdir -p build/deploy/build
+          cp build/egg-hatchers-server build/deploy/egg-hatchers-server
+          cp -R build/web build/deploy/build/web
+          tar -C build/deploy -czf build/egg-hatchers-linux-x64.tar.gz .
+
+      - name: Upload hosted release
+        uses: actions/upload-artifact@043fb46d1a93c77aae6567c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: egg-hatchers-linux-x64
+          path: build/egg-hatchers-linux-x64.tar.gz
+          if-no-files-found: error
+          retention-days: 14
