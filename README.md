@@ -19,8 +19,9 @@ Start the WebSocket server in a separate terminal:
 dart run tool/multiplayer_server.dart
 ```
 
-The web build connects to the current site host on port `8080`. Native builds
-default to `ws://127.0.0.1:8080`; supply a reachable server for device builds:
+The server listens at `http://127.0.0.1:53218`, serves the release web build
+from `build/web`, and handles multiplayer at `/ws`. Native builds default to
+`ws://127.0.0.1:53218/ws`; supply a reachable server for device builds:
 
 ```powershell
 flutter run --dart-define=EGG_HATCHERS_SERVER_URL=wss://your-server.example
