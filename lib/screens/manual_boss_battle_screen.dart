@@ -32,6 +32,7 @@ import '../widgets/battle_impact_overlay.dart';
 import '../widgets/battle_resume_countdown.dart';
 import '../widgets/boss_battle_background.dart';
 import '../widgets/boss_attack_telegraph.dart';
+import '../widgets/boss_battle_motion.dart';
 import '../widgets/boss_defeat_animation.dart';
 import '../widgets/boss_fight_intro_animation.dart';
 import '../widgets/boss_finisher_slash_overlay.dart';
@@ -115,6 +116,8 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   var _playerAttackMotionRemaining = 0.0;
   var _spawnAccumulator = 0.0;
   var _bossAttackIndex = 0;
+  var _bossAttackReleaseRemaining = 0.0;
+  var _bossAttackReleaseIsSignature = false;
   var _shieldFlash = 0.0;
   var _impactRemaining = 0.0;
   var _impactDuration = 0.28;
@@ -297,6 +300,8 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _playerAttackMotionRemaining = 0;
     _spawnAccumulator = 0;
     _bossAttackIndex = 0;
+    _bossAttackReleaseRemaining = 0;
+    _bossAttackReleaseIsSignature = false;
     _shieldFlash = 0;
     _impactRemaining = 0;
     _impactIntensity = 0;
@@ -502,6 +507,9 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     if (_bossSpeedBannerRemaining > 0) {
       _bossSpeedBannerRemaining = max(0, _bossSpeedBannerRemaining - dt);
     }
+    if (_bossAttackReleaseRemaining > 0) {
+      _bossAttackReleaseRemaining = max(0, _bossAttackReleaseRemaining - dt);
+    }
 
     _updateBossMovement(dt);
 
@@ -553,6 +561,25 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   int get _activeBossAttackSlots =>
       _bossProjectiles.length + _pendingBossProjectiles.length;
 
+  double? get _bossAttackChargeProgress {
+    if (_pendingBossProjectiles.isEmpty) return null;
+    return _pendingBossProjectiles
+        .map((pending) => pending.progress)
+        .reduce(max);
+  }
+
+  double? get _bossAttackReleaseProgress {
+    if (_bossAttackReleaseRemaining <= 0) return null;
+    return 1 - _bossAttackReleaseRemaining / 0.32;
+  }
+
+  bool get _bossAttackIsSignature {
+    if (_bossAttackReleaseRemaining > 0) {
+      return _bossAttackReleaseIsSignature;
+    }
+    return _pendingBossProjectiles.any((pending) => pending.signature);
+  }
+
   void _queueBossAttack(int availableSlots) {
     final plan = BossAttackPatterns.forBoss(
       bossId: boss.id,
@@ -575,6 +602,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
           horizontalSpeed: lane.horizontalSpeed,
           waveAmplitude: lane.waveAmplitude,
           wavePhase: lane.wavePhase,
+          signature: plan.signature,
         ),
       );
     }
@@ -586,6 +614,8 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
       if (pending.age < pending.warningDuration) continue;
 
       _pendingBossProjectiles.removeAt(i);
+      _bossAttackReleaseRemaining = 0.32;
+      _bossAttackReleaseIsSignature = pending.signature;
       _bossProjectiles.add(
         _FallingProjectile(
           x: pending.x,
@@ -1155,6 +1185,13 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
                                           _bossSpeedBannerRemaining,
                                       bossSpeedBannerIsRage:
                                           _bossSpeedBannerIsRage,
+                                      bossIdleTime: _elapsedSeconds,
+                                      bossAttackChargeProgress:
+                                          _bossAttackChargeProgress,
+                                      bossAttackReleaseProgress:
+                                          _bossAttackReleaseProgress,
+                                      bossAttackIsSignature:
+                                          _bossAttackIsSignature,
                                       playerSize: _playerSize,
                                       bossSize: _bossSize,
                                       fighterCustomSprite: _fighterCustomSprite,
@@ -1630,6 +1667,10 @@ class _Arena extends StatelessWidget {
     required this.bossMaxLives,
     required this.bossSpeedBannerRemaining,
     required this.bossSpeedBannerIsRage,
+    required this.bossIdleTime,
+    required this.bossAttackChargeProgress,
+    required this.bossAttackReleaseProgress,
+    required this.bossAttackIsSignature,
     required this.playerSize,
     required this.bossSize,
     required this.fighterCustomSprite,
@@ -1668,6 +1709,10 @@ class _Arena extends StatelessWidget {
   final int bossMaxLives;
   final double bossSpeedBannerRemaining;
   final bool bossSpeedBannerIsRage;
+  final double bossIdleTime;
+  final double? bossAttackChargeProgress;
+  final double? bossAttackReleaseProgress;
+  final bool bossAttackIsSignature;
   final double playerSize;
   final double bossSize;
   final CustomSpriteData? fighterCustomSprite;
@@ -1747,36 +1792,44 @@ class _Arena extends StatelessWidget {
             Positioned(
               left: bossLeft,
               top: bossTop,
-              child: Stack(
-                alignment: Alignment.center,
-                clipBehavior: Clip.none,
-                children: [
-                  BossLastLifeGlow(
-                    boss: boss,
-                    bossLivesRemaining: bossLives,
-                    bossMaxLives: bossMaxLives,
-                    size: bossSize,
-                    child: BossSprite(
-                      spritePath: boss.spritePath,
-                      fallbackEmoji: boss.emoji,
-                      bossId: boss.id,
+              child: BossBattleMotion(
+                bossId: boss.id,
+                idleTime: bossIdleTime,
+                chargeProgress: bossAttackChargeProgress,
+                releaseProgress: bossAttackReleaseProgress,
+                signatureAttack: bossAttackIsSignature,
+                reducedEffects: reducedEffects,
+                child: Stack(
+                  alignment: Alignment.center,
+                  clipBehavior: Clip.none,
+                  children: [
+                    BossLastLifeGlow(
+                      boss: boss,
+                      bossLivesRemaining: bossLives,
+                      bossMaxLives: bossMaxLives,
                       size: bossSize,
-                      semanticLabel: boss.name,
-                    ),
-                  ),
-                  if (shieldActive)
-                    Container(
-                      width: bossSize + 12,
-                      height: bossSize + 12,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: theme.secondaryColor.withValues(alpha: 0.7),
-                          width: 2,
-                        ),
+                      child: BossSprite(
+                        spritePath: boss.spritePath,
+                        fallbackEmoji: boss.emoji,
+                        bossId: boss.id,
+                        size: bossSize,
+                        semanticLabel: boss.name,
                       ),
                     ),
-                ],
+                    if (shieldActive)
+                      Container(
+                        width: bossSize + 12,
+                        height: bossSize + 12,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: theme.secondaryColor.withValues(alpha: 0.7),
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
             if (bossSpeedBannerRemaining > 0)
@@ -2225,6 +2278,7 @@ class _PendingBossProjectile {
     required this.horizontalSpeed,
     required this.waveAmplitude,
     required this.wavePhase,
+    required this.signature,
   });
 
   final double x;
@@ -2233,6 +2287,7 @@ class _PendingBossProjectile {
   final double horizontalSpeed;
   final double waveAmplitude;
   final double wavePhase;
+  final bool signature;
   double age = 0;
 
   double get progress => (age / warningDuration).clamp(0.0, 1.0);
