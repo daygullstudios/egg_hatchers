@@ -239,6 +239,12 @@ void main() {
       );
       expect(assetPath, isNotNull, reason: bossId);
       expect(File(assetPath!).existsSync(), isTrue, reason: assetPath);
+      expect(assetPath, endsWith('.jpg'), reason: bossId);
+      expect(
+        File(assetPath).lengthSync(),
+        lessThan(750000),
+        reason: '$assetPath should remain optimized for release builds',
+      );
     }
 
     expect(

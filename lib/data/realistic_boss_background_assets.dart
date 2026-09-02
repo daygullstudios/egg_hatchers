@@ -20,6 +20,6 @@ class RealisticBossBackgroundAssets {
     final type = BossVisualConfig.backgroundTypeForBossId(bossId);
     final assetName = _assetNames[type];
     if (assetName == null) return null;
-    return '$assetDirectory/$assetName.png';
+    return '$assetDirectory/$assetName.jpg';
   }
 }
