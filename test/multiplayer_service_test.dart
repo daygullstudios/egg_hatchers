@@ -66,6 +66,11 @@ void main() {
       first.collectEnergy(first.energySpawn!.id);
       await _waitFor(() => first.energySpawn == null);
     }
+    await _waitFor(
+      () => second.battleState!.opponent.combo == first.battleState!.self.combo,
+    );
+    expect(first.battleState!.self.combo, greaterThan(0));
+    expect(first.battleState!.self.bestCombo, first.battleState!.self.combo);
     first.useAbility(0);
 
     await _waitFor(

@@ -1132,6 +1132,7 @@ class _BattleMatch {
         if (_finished || player.activeSpawnId != spawnId) return;
         player.activeSpawnId = null;
         player.energyMisses++;
+        player.combo = 0;
         _send(player.socket, {'type': 'energyGone', 'id': spawnId});
         _broadcastState('Energy missed');
         _scheduleEnergy(player);
@@ -1146,6 +1147,8 @@ class _BattleMatch {
     final gain = actor.activeSpawnGolden ? 2 : 1;
     actor.energy = min(ArenaCombatLogic.maxEnergy, actor.energy + gain);
     actor.energyHits++;
+    actor.combo++;
+    actor.bestCombo = max(actor.bestCombo, actor.combo);
     _send(actor.socket, {'type': 'energyGone', 'id': spawnId});
     _broadcastState(
       actor.activeSpawnGolden ? '+2 golden energy!' : '+1 energy',
@@ -1330,6 +1333,8 @@ class _BattlePlayer {
   int shield = 0;
   int energyHits = 0;
   int energyMisses = 0;
+  int combo = 0;
+  int bestCombo = 0;
   int nextSpawnId = 0;
   int? activeSpawnId;
   bool activeSpawnGolden = false;
@@ -1347,6 +1352,8 @@ class _BattlePlayer {
     'shield': shield,
     'energyHits': energyHits,
     'energyMisses': energyMisses,
+    'combo': combo,
+    'bestCombo': bestCombo,
   };
 
   void cancelTimers() {

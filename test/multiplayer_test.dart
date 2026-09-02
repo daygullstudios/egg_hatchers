@@ -34,4 +34,18 @@ void main() {
     expect(restored.team.single.animalId, 'chicken');
     expect(restored.team.single.power, 420);
   });
+
+  test('older multiplayer states default combo fields safely', () {
+    final state = MultiplayerCombatantState.fromJson({
+      'health': [100],
+      'activeIndex': 0,
+      'energy': 0,
+      'shield': 0,
+      'energyHits': 0,
+      'energyMisses': 0,
+    });
+
+    expect(state.combo, 0);
+    expect(state.bestCombo, 0);
+  });
 }

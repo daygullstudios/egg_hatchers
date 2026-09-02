@@ -19,6 +19,7 @@ import '../utils/game_haptics.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
 import '../widgets/battle_ability_button.dart';
+import '../widgets/battle_combo_badge.dart';
 import '../widgets/battle_hit_feedback.dart';
 import '../widgets/battle_health_bar.dart';
 import '../widgets/battle_fighter_switcher.dart';
@@ -275,6 +276,9 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                                   _OnlineCombatMessage(
                                     message: state.message,
                                     finished: finished,
+                                    combo: state.self.combo,
+                                    reducedEffects:
+                                        widget.preferences.reducedBattleEffects,
                                   ),
                                   BattleFighterSwitcher(
                                     identity: 'self-${state.self.activeIndex}',
@@ -653,26 +657,39 @@ class _OnlineActiveFighter extends StatelessWidget {
 }
 
 class _OnlineCombatMessage extends StatelessWidget {
-  const _OnlineCombatMessage({required this.message, required this.finished});
+  const _OnlineCombatMessage({
+    required this.message,
+    required this.finished,
+    required this.combo,
+    required this.reducedEffects,
+  });
 
   final String message;
   final bool finished;
+  final int combo;
+  final bool reducedEffects;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Text(
-        finished ? 'MATCH COMPLETE' : message,
-        textAlign: TextAlign.center,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          fontWeight: FontWeight.w900,
-          shadows: [Shadow(color: Colors.black, blurRadius: 8)],
-        ),
+      child: Column(
+        children: [
+          Text(
+            finished ? 'MATCH COMPLETE' : message,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+            ),
+          ),
+          if (!finished)
+            BattleComboBadge(combo: combo, reducedEffects: reducedEffects),
+        ],
       ),
     );
   }

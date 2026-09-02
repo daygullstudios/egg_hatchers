@@ -22,6 +22,7 @@ import '../utils/game_haptics.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
 import '../widgets/battle_ability_button.dart';
+import '../widgets/battle_combo_badge.dart';
 import '../widgets/battle_hit_feedback.dart';
 import '../widgets/battle_health_bar.dart';
 import '../widgets/battle_fighter_switcher.dart';
@@ -742,6 +743,8 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
                                     message: _battleMessage,
                                     combo: _combo,
                                     finished: _finished,
+                                    reducedEffects:
+                                        widget.preferences.reducedBattleEffects,
                                   ),
                                   BattleFighterSwitcher(
                                     identity: 'player-$_playerActiveIndex',
@@ -1566,10 +1569,12 @@ class _CombatPulse extends StatelessWidget {
     required this.message,
     required this.combo,
     required this.finished,
+    required this.reducedEffects,
   });
   final String message;
   final int combo;
   final bool finished;
+  final bool reducedEffects;
   @override
   Widget build(BuildContext context) => AnimatedSwitcher(
     duration: const Duration(milliseconds: 160),
@@ -1588,15 +1593,8 @@ class _CombatPulse extends StatelessWidget {
             shadows: [Shadow(color: Colors.black, blurRadius: 8)],
           ),
         ),
-        if (!finished && combo >= 2)
-          Text(
-            '$combo HIT COMBO',
-            style: const TextStyle(
-              color: Color(0xFFFFD54F),
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
+        if (!finished)
+          BattleComboBadge(combo: combo, reducedEffects: reducedEffects),
       ],
     ),
   );

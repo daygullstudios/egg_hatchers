@@ -109,6 +109,8 @@ class MultiplayerCombatantState {
     required this.shield,
     required this.energyHits,
     required this.energyMisses,
+    required this.combo,
+    required this.bestCombo,
   });
 
   final List<int> health;
@@ -117,6 +119,8 @@ class MultiplayerCombatantState {
   final int shield;
   final int energyHits;
   final int energyMisses;
+  final int combo;
+  final int bestCombo;
 
   factory MultiplayerCombatantState.fromJson(Map<String, dynamic> json) {
     return MultiplayerCombatantState(
@@ -128,6 +132,8 @@ class MultiplayerCombatantState {
       shield: (json['shield'] as num).toInt(),
       energyHits: (json['energyHits'] as num?)?.toInt() ?? 0,
       energyMisses: (json['energyMisses'] as num?)?.toInt() ?? 0,
+      combo: (json['combo'] as num?)?.toInt() ?? 0,
+      bestCombo: (json['bestCombo'] as num?)?.toInt() ?? 0,
     );
   }
 }
