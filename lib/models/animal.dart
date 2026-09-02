@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 /// Rarity tiers for animals, from most to least common.
 enum Rarity {
   common,
@@ -41,28 +39,6 @@ enum Rarity {
         return '???';
       case Rarity.boss:
         return 'Boss';
-    }
-  }
-
-  /// Display color for rarity badges and text.
-  Color get color {
-    switch (this) {
-      case Rarity.common:
-        return Colors.grey;
-      case Rarity.uncommon:
-        return Colors.green;
-      case Rarity.rare:
-        return Colors.blue;
-      case Rarity.epic:
-        return Colors.purple;
-      case Rarity.legendary:
-        return Colors.orange;
-      case Rarity.mythic:
-        return Colors.cyan;
-      case Rarity.unknown:
-        return Colors.black;
-      case Rarity.boss:
-        return const Color(0xFF0D47A1);
     }
   }
 
