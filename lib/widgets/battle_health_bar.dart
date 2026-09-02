@@ -9,12 +9,14 @@ class BattleHealthBar extends StatefulWidget {
     required this.identity,
     required this.height,
     required this.reducedEffects,
+    required this.semanticLabel,
   });
 
   final double value;
   final Object identity;
   final double height;
   final bool reducedEffects;
+  final String semanticLabel;
 
   @override
   State<BattleHealthBar> createState() => _BattleHealthBarState();
@@ -104,66 +106,74 @@ class _BattleHealthBarState extends State<BattleHealthBar>
         ? const Color(0xFFFFB300)
         : const Color(0xFFEF5350);
 
-    return AnimatedBuilder(
-      animation: _criticalController,
-      builder: (context, child) {
-        final glow = _isCritical
-            ? 0.18 + _criticalController.value * 0.28
-            : 0.0;
-        return DecoratedBox(
-          decoration: BoxDecoration(
+    return Semantics(
+      label: widget.semanticLabel,
+      value: '${(_value * 100).round()} percent',
+      child: ExcludeSemantics(
+        child: AnimatedBuilder(
+          animation: _criticalController,
+          builder: (context, child) {
+            final glow = _isCritical
+                ? 0.18 + _criticalController.value * 0.28
+                : 0.0;
+            return DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(widget.height),
+                boxShadow: glow <= 0
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: const Color(
+                            0xFFEF5350,
+                          ).withValues(alpha: glow),
+                          blurRadius: 7,
+                          spreadRadius: 1,
+                        ),
+                      ],
+              ),
+              child: child,
+            );
+          },
+          child: ClipRRect(
             borderRadius: BorderRadius.circular(widget.height),
-            boxShadow: glow <= 0
-                ? null
-                : [
-                    BoxShadow(
-                      color: const Color(0xFFEF5350).withValues(alpha: glow),
-                      blurRadius: 7,
-                      spreadRadius: 1,
+            child: SizedBox(
+              height: widget.height,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  const ColoredBox(color: Colors.white12),
+                  TweenAnimationBuilder<double>(
+                    key: ValueKey('battle-health-trail-${widget.identity}'),
+                    tween: Tween(end: _trailValue),
+                    duration: trailDuration,
+                    curve: Curves.easeOutCubic,
+                    builder: (context, value, _) => FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: value,
+                      child: const ColoredBox(color: Color(0xFFFFD180)),
                     ),
-                  ],
-          ),
-          child: child,
-        );
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(widget.height),
-        child: SizedBox(
-          height: widget.height,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              const ColoredBox(color: Colors.white12),
-              TweenAnimationBuilder<double>(
-                key: ValueKey('battle-health-trail-${widget.identity}'),
-                tween: Tween(end: _trailValue),
-                duration: trailDuration,
-                curve: Curves.easeOutCubic,
-                builder: (context, value, _) => FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: value,
-                  child: const ColoredBox(color: Color(0xFFFFD180)),
-                ),
+                  ),
+                  TweenAnimationBuilder<double>(
+                    key: ValueKey('battle-health-current-${widget.identity}'),
+                    tween: Tween(end: _displayValue),
+                    duration: duration,
+                    curve: Curves.easeOutCubic,
+                    builder: (context, value, _) => FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: value,
+                      child: ColoredBox(color: healthColor),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: Container(
+                      height: 1,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                  ),
+                ],
               ),
-              TweenAnimationBuilder<double>(
-                key: ValueKey('battle-health-current-${widget.identity}'),
-                tween: Tween(end: _displayValue),
-                duration: duration,
-                curve: Curves.easeOutCubic,
-                builder: (context, value, _) => FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: value,
-                  child: ColoredBox(color: healthColor),
-                ),
-              ),
-              Align(
-                alignment: Alignment.topCenter,
-                child: Container(
-                  height: 1,
-                  color: Colors.white.withValues(alpha: 0.3),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

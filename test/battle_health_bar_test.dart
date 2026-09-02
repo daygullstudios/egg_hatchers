@@ -18,6 +18,7 @@ void main() {
               identity: identity,
               height: 12,
               reducedEffects: reducedEffects,
+              semanticLabel: 'Test fighter health',
             ),
           ),
         ),
@@ -75,6 +76,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 800));
 
     expect(find.byType(BattleHealthBar), findsOneWidget);
+    expect(
+      tester.getSemantics(find.byType(BattleHealthBar)),
+      matchesSemantics(label: 'Test fighter health', value: '18 percent'),
+    );
     expect(tester.takeException(), isNull);
   });
 }

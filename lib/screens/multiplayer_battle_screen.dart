@@ -505,25 +505,33 @@ class _OnlineEnergy extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.7, end: 1),
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutBack,
-      builder: (context, scale, child) =>
-          Transform.scale(scale: scale, child: child),
-      child: Material(
-        color: golden ? const Color(0xFFFFC107) : const Color(0xFF26C6DA),
-        shape: const CircleBorder(),
-        elevation: 12,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onTap,
-          child: SizedBox.square(
-            dimension: 64,
-            child: Icon(
-              golden ? Icons.bolt : Icons.add,
-              color: const Color(0xFF07131C),
-              size: 32,
+    return Semantics(
+      button: true,
+      label: golden
+          ? 'Golden energy, grants 2 energy'
+          : 'Energy, grants 1 energy',
+      child: ExcludeSemantics(
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.7, end: 1),
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutBack,
+          builder: (context, scale, child) =>
+              Transform.scale(scale: scale, child: child),
+          child: Material(
+            color: golden ? const Color(0xFFFFC107) : const Color(0xFF26C6DA),
+            shape: const CircleBorder(),
+            elevation: 12,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onTap,
+              child: SizedBox.square(
+                dimension: 64,
+                child: Icon(
+                  golden ? Icons.bolt : Icons.add,
+                  color: const Color(0xFF07131C),
+                  size: 32,
+                ),
+              ),
             ),
           ),
         ),
@@ -641,6 +649,8 @@ class _OnlineActiveFighter extends StatelessWidget {
                   '${fighter.animalId}:${fighter.mutationId}:${fighter.level}:${fighter.power}',
               height: 11,
               reducedEffects: reducedEffects,
+              semanticLabel:
+                  '$label, ${mutation.fullName(animal)}, $health of ${fighter.maxHealth} health${shield > 0 ? ', $shield shield' : ''}',
             ),
           ),
           const SizedBox(height: 2),
@@ -675,16 +685,22 @@ class _OnlineCombatMessage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
-          Text(
-            finished ? 'MATCH COMPLETE' : message,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-              shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+          Semantics(
+            liveRegion: true,
+            label: finished ? 'Match complete' : message,
+            child: ExcludeSemantics(
+              child: Text(
+                finished ? 'MATCH COMPLETE' : message,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+                ),
+              ),
             ),
           ),
           if (!finished)

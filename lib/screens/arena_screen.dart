@@ -1549,6 +1549,8 @@ class _ActiveFighter extends StatelessWidget {
                   '${fighter.animalId}:${fighter.mutationId}:${fighter.level}:${fighter.power}',
               height: 12,
               reducedEffects: reducedEffects,
+              semanticLabel:
+                  '$label, ${mutation.fullName(animal)}, ${max(0, health)} of ${fighter.maxHealth} health${shield > 0 ? ', $shield shield' : ''}',
             ),
           ),
           const SizedBox(height: 3),
@@ -1581,16 +1583,22 @@ class _CombatPulse extends StatelessWidget {
     child: Column(
       key: ValueKey('$message-$finished'),
       children: [
-        Text(
-          finished ? 'MATCH COMPLETE' : message,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w900,
-            shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+        Semantics(
+          liveRegion: true,
+          label: finished ? 'Match complete' : message,
+          child: ExcludeSemantics(
+            child: Text(
+              finished ? 'MATCH COMPLETE' : message,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+                shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+              ),
+            ),
           ),
         ),
         if (!finished)

@@ -549,6 +549,8 @@ class _FinalFighterPanel extends StatelessWidget {
                 identity: identity,
                 height: 12,
                 reducedEffects: reducedEffects,
+                semanticLabel:
+                    '$name, $health of $maxHealth health${shield > 0 ? ', $shield shield' : ''}',
               ),
               const SizedBox(height: 5),
               Text(
