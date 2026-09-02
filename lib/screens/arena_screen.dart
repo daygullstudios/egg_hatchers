@@ -19,6 +19,7 @@ import '../utils/arena_combat_logic.dart';
 import '../utils/battle_power_logic.dart';
 import '../utils/format_utils.dart';
 import '../widgets/audio_scope.dart';
+import '../widgets/animal_motion.dart';
 import '../widgets/game_background.dart';
 import '../widgets/game_sprite.dart';
 import '../widgets/phone_width_layout.dart';
@@ -700,6 +701,9 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
                                     customSprites: widget.customSprites,
                                     isOpponent: true,
                                     isAttacking: _botAttacking && !_finished,
+                                    isHurt: _playerAttacking && !_finished,
+                                    isVictorious:
+                                        _finished && _playerWon == false,
                                     label: widget.simulation.opponent.name,
                                     compact: compact,
                                   ),
@@ -715,6 +719,9 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
                                     customSprites: widget.customSprites,
                                     isOpponent: false,
                                     isAttacking: _playerAttacking && !_finished,
+                                    isHurt: _botAttacking && !_finished,
+                                    isVictorious:
+                                        _finished && _playerWon == true,
                                     label: 'You',
                                     compact: compact,
                                   ),
@@ -1381,6 +1388,8 @@ class _ActiveFighter extends StatelessWidget {
     required this.customSprites,
     required this.isOpponent,
     required this.isAttacking,
+    required this.isHurt,
+    required this.isVictorious,
     required this.label,
     required this.compact,
   });
@@ -1390,6 +1399,8 @@ class _ActiveFighter extends StatelessWidget {
   final CustomSpriteService customSprites;
   final bool isOpponent;
   final bool isAttacking;
+  final bool isHurt;
+  final bool isVictorious;
   final String label;
   final bool compact;
   @override
@@ -1447,6 +1458,14 @@ class _ActiveFighter extends StatelessWidget {
                   fallbackEmoji: animal.emoji,
                   mutation: mutation,
                   size: portraitSize,
+                  motion: isVictorious
+                      ? AnimalMotionState.victory
+                      : isAttacking
+                      ? AnimalMotionState.attack
+                      : isHurt
+                      ? AnimalMotionState.hurt
+                      : AnimalMotionState.idle,
+                  attackDirection: Offset(0, isOpponent ? 1 : -1),
                 ),
               ),
             ),

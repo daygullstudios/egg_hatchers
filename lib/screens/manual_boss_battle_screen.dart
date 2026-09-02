@@ -26,6 +26,7 @@ import '../utils/egg_shard_logic.dart';
 import '../utils/format_utils.dart';
 import '../utils/rotten_shell_final_battle_logic.dart';
 import '../widgets/audio_scope.dart';
+import '../widgets/animal_motion.dart';
 import '../widgets/battle_impact_overlay.dart';
 import '../widgets/boss_battle_background.dart';
 import '../widgets/boss_defeat_animation.dart';
@@ -108,6 +109,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   var _moveLeft = false;
   var _moveRight = false;
   var _eggCooldownRemaining = 0.0;
+  var _playerAttackMotionRemaining = 0.0;
   var _spawnAccumulator = 0.0;
   var _shieldFlash = 0.0;
   var _impactRemaining = 0.0;
@@ -288,6 +290,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _moveLeft = false;
     _moveRight = false;
     _eggCooldownRemaining = 0;
+    _playerAttackMotionRemaining = 0;
     _spawnAccumulator = 0;
     _shieldFlash = 0;
     _impactRemaining = 0;
@@ -468,6 +471,9 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
 
     if (_eggCooldownRemaining > 0) {
       _eggCooldownRemaining = max(0, _eggCooldownRemaining - dt);
+    }
+    if (_playerAttackMotionRemaining > 0) {
+      _playerAttackMotionRemaining = max(0, _playerAttackMotionRemaining - dt);
     }
 
     if (_shieldFlash > 0) {
@@ -742,6 +748,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
       x: _playerX,
       y: _arenaHeight - _playerSize - 20,
     );
+    _playerAttackMotionRemaining = 0.24;
     _eggCooldownRemaining =
         BossBattleLogic.manualEggCooldown.inMilliseconds / 1000;
     _audio.playSfx(Sfx.playerShoot);
@@ -1088,6 +1095,14 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
                                       fighterEmoji: _fighterEmoji,
                                       fighterMutation: _fighterMutation,
                                       fighterName: _fighterName,
+                                      fighterMotion:
+                                          _impactRemaining > 0 &&
+                                              _impactColor ==
+                                                  const Color(0xFFFF5252)
+                                          ? AnimalMotionState.hurt
+                                          : _playerAttackMotionRemaining > 0
+                                          ? AnimalMotionState.attack
+                                          : AnimalMotionState.idle,
                                       bossProjectiles: _bossProjectiles,
                                       activeEgg: _activeEgg,
                                       floatingDamages: _floatingDamages,
@@ -1541,6 +1556,7 @@ class _Arena extends StatelessWidget {
     required this.fighterEmoji,
     required this.fighterMutation,
     required this.fighterName,
+    required this.fighterMotion,
     required this.bossProjectiles,
     required this.activeEgg,
     required this.floatingDamages,
@@ -1577,6 +1593,7 @@ class _Arena extends StatelessWidget {
   final String fighterEmoji;
   final Mutation fighterMutation;
   final String fighterName;
+  final AnimalMotionState fighterMotion;
   final List<_FallingProjectile> bossProjectiles;
   final _EggProjectile? activeEgg;
   final List<_FloatingDamage> floatingDamages;
@@ -1754,6 +1771,8 @@ class _Arena extends StatelessWidget {
                 size: playerSize,
                 mutation: fighterMutation,
                 semanticLabel: fighterName,
+                motion: fighterMotion,
+                attackDirection: const Offset(0, -1),
               ),
             ),
             for (final d in floatingDamages)

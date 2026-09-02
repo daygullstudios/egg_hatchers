@@ -9,6 +9,7 @@ import '../models/egg.dart';
 import '../models/mutation.dart';
 import '../theme/game_theme.dart';
 import 'animated_animal_glitch.dart';
+import 'animal_motion.dart';
 import 'animal_sprite_theme_scope.dart';
 import 'hatched_egg_glitch_sprite.dart';
 import 'pixel_sprite.dart';
@@ -216,6 +217,8 @@ class GameAnimalPortrait extends StatelessWidget {
     this.mutation,
     this.semanticLabel,
     this.emojiFontSize,
+    this.motion,
+    this.attackDirection = const Offset(0, -1),
   });
 
   final CustomSpriteData? customSprite;
@@ -226,6 +229,8 @@ class GameAnimalPortrait extends StatelessWidget {
   final Mutation? mutation;
   final String? semanticLabel;
   final double? emojiFontSize;
+  final AnimalMotionState? motion;
+  final Offset attackDirection;
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +242,7 @@ class GameAnimalPortrait extends StatelessWidget {
     final portraitScale = activeMutation?.displayScale ?? 1.0;
     final innerSize = size * 0.82 * portraitScale;
 
-    return Container(
+    final portrait = Container(
       width: size,
       height: size,
       clipBehavior: Clip.hardEdge,
@@ -291,6 +296,15 @@ class GameAnimalPortrait extends StatelessWidget {
             ),
         ],
       ),
+    );
+    final activeMotion = motion;
+    if (activeMotion == null) return portrait;
+    return AnimalMotion(
+      key: ValueKey('animal-motion-${animalId ?? semanticLabel ?? 'animal'}'),
+      state: activeMotion,
+      attackDirection: attackDirection,
+      pixelated: customSprite?.hasVisiblePixels ?? false,
+      child: portrait,
     );
   }
 }

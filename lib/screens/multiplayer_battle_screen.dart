@@ -15,6 +15,7 @@ import '../utils/arena_combat_logic.dart';
 import '../utils/arena_logic.dart';
 import '../utils/format_utils.dart';
 import '../widgets/audio_scope.dart';
+import '../widgets/animal_motion.dart';
 import '../widgets/game_sprite.dart';
 
 class MultiplayerBattleScreen extends StatefulWidget {
@@ -194,6 +195,11 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                                     customSprites: widget.customSprites,
                                     isOpponent: true,
                                     isAttacking: _opponentAttacking,
+                                    isHurt: _playerAttacking,
+                                    isVictorious:
+                                        finished &&
+                                        state.winnerId ==
+                                            widget.opponent.playerId,
                                     label: widget.opponent.displayName,
                                     compact: compact,
                                   ),
@@ -210,6 +216,11 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                                     customSprites: widget.customSprites,
                                     isOpponent: false,
                                     isAttacking: _playerAttacking,
+                                    isHurt: _opponentAttacking,
+                                    isVictorious:
+                                        finished &&
+                                        state.winnerId ==
+                                            widget.player.playerId,
                                     label: widget.player.displayName,
                                     compact: compact,
                                   ),
@@ -431,6 +442,8 @@ class _OnlineActiveFighter extends StatelessWidget {
     required this.customSprites,
     required this.isOpponent,
     required this.isAttacking,
+    required this.isHurt,
+    required this.isVictorious,
     required this.label,
     required this.compact,
   });
@@ -441,6 +454,8 @@ class _OnlineActiveFighter extends StatelessWidget {
   final CustomSpriteService customSprites;
   final bool isOpponent;
   final bool isAttacking;
+  final bool isHurt;
+  final bool isVictorious;
   final String label;
   final bool compact;
 
@@ -494,6 +509,14 @@ class _OnlineActiveFighter extends StatelessWidget {
                   fallbackEmoji: animal.emoji,
                   mutation: mutation,
                   size: portraitSize,
+                  motion: isVictorious
+                      ? AnimalMotionState.victory
+                      : isAttacking
+                      ? AnimalMotionState.attack
+                      : isHurt
+                      ? AnimalMotionState.hurt
+                      : AnimalMotionState.idle,
+                  attackDirection: Offset(0, isOpponent ? 1 : -1),
                 ),
               ),
             ),

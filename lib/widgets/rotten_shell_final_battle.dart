@@ -15,6 +15,7 @@ import '../utils/arena_combat_logic.dart';
 import '../utils/arena_logic.dart';
 import '../utils/rotten_shell_final_battle_logic.dart';
 import 'audio_scope.dart';
+import 'animal_motion.dart';
 import 'boss_sprite.dart';
 import 'game_sprite.dart';
 
@@ -449,6 +450,12 @@ class _RottenShellFinalBattleState extends State<RottenShellFinalBattle>
                         mutation: mutation,
                         size: 96,
                         semanticLabel: mutation.fullName(animal),
+                        motion: _playerAttacking
+                            ? AnimalMotionState.attack
+                            : _bossAttacking
+                            ? AnimalMotionState.hurt
+                            : AnimalMotionState.idle,
+                        attackDirection: const Offset(0, -1),
                       ),
                     ),
                     const SizedBox(height: 10),
