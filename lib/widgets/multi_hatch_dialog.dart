@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/background_theme.dart';
@@ -74,6 +76,7 @@ class _MultiHatchDialogState extends State<MultiHatchDialog>
   late final Animation<double> _popScale;
   late final AnimationController _revealController;
   late final Animation<double> _revealScale;
+  var _sequenceGeneration = 0;
 
   @override
   void initState() {
@@ -112,8 +115,10 @@ class _MultiHatchDialogState extends State<MultiHatchDialog>
   }
 
   Future<void> _runHatchSequence() async {
+    final generation = ++_sequenceGeneration;
+
     await Future<void>.delayed(widget.initialDelay);
-    if (!mounted) return;
+    if (!mounted || generation != _sequenceGeneration) return;
 
     setState(() {
       _stage = _HatchStage.cracking;
@@ -121,16 +126,16 @@ class _MultiHatchDialogState extends State<MultiHatchDialog>
     });
     AudioScope.maybeOf(context)?.playEggCrack();
     await Future<void>.delayed(const Duration(milliseconds: 650));
-    if (!mounted) return;
+    if (!mounted || generation != _sequenceGeneration) return;
     AudioScope.maybeOf(context)?.playEggCrack();
     await Future<void>.delayed(const Duration(milliseconds: 650));
-    if (!mounted) return;
+    if (!mounted || generation != _sequenceGeneration) return;
 
     setState(() => _stage = _HatchStage.pop);
     _shakeController.stop();
     AudioScope.maybeOf(context)?.playEggCrack();
     await _popController.forward();
-    if (!mounted) return;
+    if (!mounted || generation != _sequenceGeneration) return;
 
     setState(() => _stage = _HatchStage.revealed);
     final audio = AudioScope.maybeOf(context);
@@ -139,6 +144,23 @@ class _MultiHatchDialogState extends State<MultiHatchDialog>
     );
     await audio?.playHatchReveal(bigReward: hasBigReward);
     await _revealController.forward();
+  }
+
+  void _skipHatchAnimation() {
+    if (_stage == _HatchStage.revealed) return;
+
+    _sequenceGeneration++;
+    _shakeController.stop();
+    _popController.stop();
+    setState(() => _stage = _HatchStage.revealed);
+    final hasBigReward = widget.results.any(
+      (result) => result.animal.rarity.sortOrder >= 4,
+    );
+    unawaited(
+      AudioScope.maybeOf(context)?.playHatchReveal(bigReward: hasBigReward) ??
+          Future<void>.value(),
+    );
+    unawaited(_revealController.forward(from: 0));
   }
 
   @override
@@ -211,20 +233,41 @@ class _MultiHatchDialogState extends State<MultiHatchDialog>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: Text(
-                  _stageTitle,
-                  key: ValueKey(_stageTitle),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: revealed && _hasMutation ? 26 : 22,
-                    fontWeight: FontWeight.bold,
-                    color: revealed && _hasMutation
-                        ? accent
-                        : widget.theme.cardTextPrimaryColor,
+              Row(
+                children: [
+                  const SizedBox(width: 40),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 250),
+                      child: Text(
+                        _stageTitle,
+                        key: ValueKey(_stageTitle),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: revealed && _hasMutation ? 26 : 22,
+                          fontWeight: FontWeight.bold,
+                          color: revealed && _hasMutation
+                              ? accent
+                              : widget.theme.cardTextPrimaryColor,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: revealed
+                        ? null
+                        : IconButton(
+                            key: const ValueKey('skip-triple-hatch-animation'),
+                            onPressed: _skipHatchAnimation,
+                            tooltip: 'Skip hatch animation',
+                            icon: const Icon(Icons.fast_forward_rounded),
+                            color: widget.theme.cardTextSecondaryColor,
+                            padding: EdgeInsets.zero,
+                          ),
+                  ),
+                ],
               ),
               if (revealed) ...[
                 const SizedBox(height: 8),
