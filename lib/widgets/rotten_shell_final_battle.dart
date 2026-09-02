@@ -14,6 +14,7 @@ import '../models/owned_animal.dart';
 import '../utils/arena_combat_logic.dart';
 import '../utils/arena_logic.dart';
 import '../utils/rotten_shell_final_battle_logic.dart';
+import '../utils/game_haptics.dart';
 import 'audio_scope.dart';
 import 'animal_motion.dart';
 import 'battle_health_bar.dart';
@@ -31,6 +32,7 @@ class RottenShellFinalBattle extends StatefulWidget {
     required this.onVictory,
     required this.onDefeat,
     this.reducedEffects = false,
+    this.hapticsEnabled = true,
   });
 
   final OwnedAnimal fighter;
@@ -39,6 +41,7 @@ class RottenShellFinalBattle extends StatefulWidget {
   final VoidCallback onVictory;
   final VoidCallback onDefeat;
   final bool reducedEffects;
+  final bool hapticsEnabled;
 
   @override
   State<RottenShellFinalBattle> createState() => _RottenShellFinalBattleState();
@@ -187,6 +190,7 @@ class _RottenShellFinalBattleState extends State<RottenShellFinalBattle>
       _message = _goldenEnergy ? '+2 energy!' : '+1 energy';
     });
     AudioScope.of(context).playSfx(Sfx.uiTap, volumeScale: 0.45);
+    GameHaptics.selection(enabled: widget.hapticsEnabled);
     _moveEnergy();
   }
 
@@ -205,6 +209,7 @@ class _RottenShellFinalBattleState extends State<RottenShellFinalBattle>
           : 'Rotten Pulse  -$damage';
     });
     AudioScope.of(context).playSfx(Sfx.playerHit, volumeScale: 0.65);
+    GameHaptics.damage(enabled: widget.hapticsEnabled);
     _attackFlashTimer?.cancel();
     _attackFlashTimer = Timer(const Duration(milliseconds: 260), () {
       if (mounted && !_finished) setState(() => _bossAttacking = false);
@@ -242,6 +247,7 @@ class _RottenShellFinalBattleState extends State<RottenShellFinalBattle>
       });
       _stopTimers();
       AudioScope.of(context).playSfx(Sfx.rageMode, volumeScale: 0.8);
+      GameHaptics.damage(enabled: widget.hapticsEnabled);
       _beamController.forward();
       return;
     }
@@ -258,6 +264,7 @@ class _RottenShellFinalBattleState extends State<RottenShellFinalBattle>
       _message = '${ability.name}  -$damage';
     });
     AudioScope.of(context).playSfx(Sfx.bossHit, volumeScale: 0.62);
+    GameHaptics.attack(enabled: widget.hapticsEnabled);
     if (completesTutorial) _completeTutorial();
     _attackFlashTimer?.cancel();
     _attackFlashTimer = Timer(const Duration(milliseconds: 260), () {

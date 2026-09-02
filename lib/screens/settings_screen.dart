@@ -188,29 +188,56 @@ class SettingsScreen extends StatelessWidget {
                     _SettingsSection(
                       theme: selected,
                       title: 'Visual Effects',
-                      child: Material(
-                        color: Colors.transparent,
-                        child: SwitchListTile.adaptive(
-                          key: const ValueKey(
-                            'settings-reduced-battle-effects',
-                          ),
-                          contentPadding: EdgeInsets.zero,
-                          value: preferences.reducedBattleEffects,
-                          onChanged: preferences.setReducedBattleEffects,
-                          title: Text(
-                            'Reduced Battle Effects',
-                            style: TextStyle(
-                              color: selected.cardTextPrimaryColor,
-                              fontWeight: FontWeight.bold,
+                      child: Column(
+                        children: [
+                          Material(
+                            color: Colors.transparent,
+                            child: SwitchListTile.adaptive(
+                              key: const ValueKey(
+                                'settings-reduced-battle-effects',
+                              ),
+                              contentPadding: EdgeInsets.zero,
+                              value: preferences.reducedBattleEffects,
+                              onChanged: preferences.setReducedBattleEffects,
+                              title: Text(
+                                'Reduced Battle Effects',
+                                style: TextStyle(
+                                  color: selected.cardTextPrimaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Removes screen shake and softens bright flashes',
+                                style: TextStyle(
+                                  color: selected.cardTextSecondaryColor,
+                                ),
+                              ),
                             ),
                           ),
-                          subtitle: Text(
-                            'Removes screen shake and softens bright flashes',
-                            style: TextStyle(
-                              color: selected.cardTextSecondaryColor,
+                          Divider(color: selected.cardBorderColor),
+                          Material(
+                            color: Colors.transparent,
+                            child: SwitchListTile.adaptive(
+                              key: const ValueKey('settings-haptics-enabled'),
+                              contentPadding: EdgeInsets.zero,
+                              value: preferences.hapticsEnabled,
+                              onChanged: preferences.setHapticsEnabled,
+                              title: Text(
+                                'Haptic Feedback',
+                                style: TextStyle(
+                                  color: selected.cardTextPrimaryColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Adds vibration feedback to battle actions',
+                                style: TextStyle(
+                                  color: selected.cardTextSecondaryColor,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 14),

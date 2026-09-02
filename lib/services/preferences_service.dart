@@ -10,17 +10,20 @@ class PreferencesService extends ChangeNotifier {
   static const _animalSpriteThemeKey = 'animalSpriteTheme';
   static const _showBattleBackgroundsKey = 'showBattleBackgrounds';
   static const _reducedBattleEffectsKey = 'reducedBattleEffects';
+  static const _hapticsEnabledKey = 'hapticsEnabled';
 
   BackgroundTheme _selectedTheme = BackgroundThemes.defaultTheme;
   AnimalSpriteTheme _animalSpriteTheme = AnimalSpriteThemes.defaultTheme;
   var _showBattleBackgrounds = true;
   var _reducedBattleEffects = false;
+  var _hapticsEnabled = true;
   bool _isInitialized = false;
 
   BackgroundTheme get selectedTheme => _selectedTheme;
   AnimalSpriteTheme get animalSpriteTheme => _animalSpriteTheme;
   bool get showBattleBackgrounds => _showBattleBackgrounds;
   bool get reducedBattleEffects => _reducedBattleEffects;
+  bool get hapticsEnabled => _hapticsEnabled;
   bool get isInitialized => _isInitialized;
 
   Future<void> initialize() async {
@@ -34,6 +37,7 @@ class PreferencesService extends ChangeNotifier {
     );
     _showBattleBackgrounds = prefs.getBool(_showBattleBackgroundsKey) ?? true;
     _reducedBattleEffects = prefs.getBool(_reducedBattleEffectsKey) ?? false;
+    _hapticsEnabled = prefs.getBool(_hapticsEnabledKey) ?? true;
     _isInitialized = true;
     notifyListeners();
   }
@@ -76,5 +80,15 @@ class PreferencesService extends ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_reducedBattleEffectsKey, value);
+  }
+
+  Future<void> setHapticsEnabled(bool value) async {
+    if (_hapticsEnabled == value) return;
+
+    _hapticsEnabled = value;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_hapticsEnabledKey, value);
   }
 }

@@ -1199,6 +1199,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
                             boss: boss,
                             reducedEffects:
                                 widget.preferences.reducedBattleEffects,
+                            hapticsEnabled: widget.preferences.hapticsEnabled,
                             onVictory: _onFinalBattleVictory,
                             onDefeat: _onFinalBattleDefeat,
                           ),

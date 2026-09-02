@@ -18,6 +18,7 @@ import '../utils/arena_logic.dart';
 import '../utils/arena_combat_logic.dart';
 import '../utils/battle_power_logic.dart';
 import '../utils/format_utils.dart';
+import '../utils/game_haptics.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
 import '../widgets/battle_hit_feedback.dart';
@@ -449,6 +450,7 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
           : '+1 energy  |  $_combo combo';
     });
     AudioScope.of(context).playSfx(Sfx.uiTap, volumeScale: 0.42);
+    GameHaptics.selection(enabled: widget.preferences.hapticsEnabled);
     _scheduleCircle();
   }
 
@@ -502,6 +504,7 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
       _battleMessage = '${ability.name}  -$dealt';
     });
     AudioScope.of(context).playSfx(Sfx.bossHit, volumeScale: 0.58);
+    GameHaptics.attack(enabled: widget.preferences.hapticsEnabled);
     _resetAttackFlash();
     _resolveDefeat(playerTarget: false);
   }
@@ -533,6 +536,7 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
           '${widget.simulation.opponent.name}: ${ability.name}  -$dealt';
     });
     AudioScope.of(context).playSfx(Sfx.playerHit, volumeScale: 0.58);
+    GameHaptics.damage(enabled: widget.preferences.hapticsEnabled);
     _resetAttackFlash();
     _resolveDefeat(playerTarget: true);
   }
@@ -636,6 +640,7 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
       _playerShield = 0;
       _battleMessage = 'Switched fighters  |  -1 energy';
     });
+    GameHaptics.selection(enabled: widget.preferences.hapticsEnabled);
   }
 
   void _finish({required bool playerWon}) {
@@ -661,6 +666,10 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
       _rewardApplied = true;
       widget.game.applyArenaResult(won: playerWon, reward: reward);
       AudioScope.of(context).playSfx(playerWon ? Sfx.victory : Sfx.defeat);
+      GameHaptics.result(
+        enabled: widget.preferences.hapticsEnabled,
+        won: playerWon,
+      );
     }
   }
 

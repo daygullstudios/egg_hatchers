@@ -15,6 +15,7 @@ import '../services/preferences_service.dart';
 import '../utils/arena_combat_logic.dart';
 import '../utils/arena_logic.dart';
 import '../utils/format_utils.dart';
+import '../utils/game_haptics.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
 import '../widgets/battle_hit_feedback.dart';
@@ -122,6 +123,11 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
           actorId == widget.player.playerId ? Sfx.bossHit : Sfx.playerHit,
           volumeScale: 0.58,
         );
+        if (actorId == widget.player.playerId) {
+          GameHaptics.attack(enabled: widget.preferences.hapticsEnabled);
+        } else {
+          GameHaptics.damage(enabled: widget.preferences.hapticsEnabled);
+        }
       }
       _attackTimer = Timer(const Duration(milliseconds: 240), () {
         if (!mounted) return;
@@ -134,6 +140,10 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
         _resultSoundPlayed = true;
         final won = state.winnerId == widget.player.playerId;
         AudioScope.maybeOf(context)?.playSfx(won ? Sfx.victory : Sfx.defeat);
+        GameHaptics.result(
+          enabled: widget.preferences.hapticsEnabled,
+          won: won,
+        );
       }
       if (state.finished && !_rewardApplied) {
         _applyReward(state);
@@ -164,6 +174,12 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
     if (spawn == null) return;
     widget.multiplayer.collectEnergy(spawn.id);
     AudioScope.maybeOf(context)?.playSfx(Sfx.uiTap, volumeScale: 0.42);
+    GameHaptics.selection(enabled: widget.preferences.hapticsEnabled);
+  }
+
+  void _switchFighter(int index) {
+    GameHaptics.selection(enabled: widget.preferences.hapticsEnabled);
+    widget.multiplayer.switchFighter(index);
   }
 
   void _continue() {
@@ -338,7 +354,7 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                     playerActiveIndex: state.self.activeIndex,
                     opponentActiveIndex: state.opponent.activeIndex,
                     customSprites: widget.customSprites,
-                    onPlayerTap: widget.multiplayer.switchFighter,
+                    onPlayerTap: _switchFighter,
                   ),
                   const SizedBox(height: 10),
                 ],

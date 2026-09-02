@@ -15,4 +15,17 @@ void main() {
     await reloaded.initialize();
     expect(reloaded.reducedBattleEffects, isTrue);
   });
+
+  test('haptics default on and can be disabled', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = PreferencesService();
+    await preferences.initialize();
+
+    expect(preferences.hapticsEnabled, isTrue);
+    await preferences.setHapticsEnabled(false);
+
+    final reloaded = PreferencesService();
+    await reloaded.initialize();
+    expect(reloaded.hapticsEnabled, isFalse);
+  });
 }
