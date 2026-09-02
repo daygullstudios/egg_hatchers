@@ -19,6 +19,7 @@ import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
 import '../widgets/battle_hit_feedback.dart';
 import '../widgets/battle_health_bar.dart';
+import '../widgets/battle_fighter_switcher.dart';
 import '../widgets/game_sprite.dart';
 
 class MultiplayerBattleScreen extends StatefulWidget {
@@ -227,47 +228,62 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceAround,
                                 children: [
-                                  _OnlineActiveFighter(
-                                    fighter: opponentFighter,
-                                    health: state
-                                        .opponent
-                                        .health[state.opponent.activeIndex],
-                                    shield: state.opponent.shield,
-                                    customSprites: widget.customSprites,
+                                  BattleFighterSwitcher(
+                                    identity:
+                                        'opponent-${state.opponent.activeIndex}',
                                     isOpponent: true,
-                                    isAttacking: _opponentAttacking,
-                                    isHurt: _playerAttacking,
-                                    isVictorious:
-                                        finished &&
-                                        state.winnerId ==
-                                            widget.opponent.playerId,
-                                    label: widget.opponent.displayName,
-                                    compact: compact,
                                     reducedEffects:
                                         widget.preferences.reducedBattleEffects,
+                                    child: _OnlineActiveFighter(
+                                      fighter: opponentFighter,
+                                      health: state
+                                          .opponent
+                                          .health[state.opponent.activeIndex],
+                                      shield: state.opponent.shield,
+                                      customSprites: widget.customSprites,
+                                      isOpponent: true,
+                                      isAttacking: _opponentAttacking,
+                                      isHurt: _playerAttacking,
+                                      isVictorious:
+                                          finished &&
+                                          state.winnerId ==
+                                              widget.opponent.playerId,
+                                      label: widget.opponent.displayName,
+                                      compact: compact,
+                                      reducedEffects: widget
+                                          .preferences
+                                          .reducedBattleEffects,
+                                    ),
                                   ),
                                   _OnlineCombatMessage(
                                     message: state.message,
                                     finished: finished,
                                   ),
-                                  _OnlineActiveFighter(
-                                    fighter: playerFighter,
-                                    health: state
-                                        .self
-                                        .health[state.self.activeIndex],
-                                    shield: state.self.shield,
-                                    customSprites: widget.customSprites,
+                                  BattleFighterSwitcher(
+                                    identity: 'self-${state.self.activeIndex}',
                                     isOpponent: false,
-                                    isAttacking: _playerAttacking,
-                                    isHurt: _opponentAttacking,
-                                    isVictorious:
-                                        finished &&
-                                        state.winnerId ==
-                                            widget.player.playerId,
-                                    label: widget.player.displayName,
-                                    compact: compact,
                                     reducedEffects:
                                         widget.preferences.reducedBattleEffects,
+                                    child: _OnlineActiveFighter(
+                                      fighter: playerFighter,
+                                      health: state
+                                          .self
+                                          .health[state.self.activeIndex],
+                                      shield: state.self.shield,
+                                      customSprites: widget.customSprites,
+                                      isOpponent: false,
+                                      isAttacking: _playerAttacking,
+                                      isHurt: _opponentAttacking,
+                                      isVictorious:
+                                          finished &&
+                                          state.winnerId ==
+                                              widget.player.playerId,
+                                      label: widget.player.displayName,
+                                      compact: compact,
+                                      reducedEffects: widget
+                                          .preferences
+                                          .reducedBattleEffects,
+                                    ),
                                   ),
                                 ],
                               ),

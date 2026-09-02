@@ -22,6 +22,7 @@ import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
 import '../widgets/battle_hit_feedback.dart';
 import '../widgets/battle_health_bar.dart';
+import '../widgets/battle_fighter_switcher.dart';
 import '../widgets/game_background.dart';
 import '../widgets/game_sprite.dart';
 import '../widgets/phone_width_layout.dart';
@@ -705,40 +706,55 @@ class _ArenaBattleScreenState extends State<ArenaBattleScreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceAround,
                                 children: [
-                                  _ActiveFighter(
-                                    fighter: botFighter,
-                                    health: _botHealth[_botActiveIndex],
-                                    shield: _botShield,
-                                    customSprites: widget.customSprites,
+                                  BattleFighterSwitcher(
+                                    identity: 'bot-$_botActiveIndex',
                                     isOpponent: true,
-                                    isAttacking: _botAttacking && !_finished,
-                                    isHurt: _playerAttacking && !_finished,
-                                    isVictorious:
-                                        _finished && _playerWon == false,
-                                    label: widget.simulation.opponent.name,
-                                    compact: compact,
                                     reducedEffects:
                                         widget.preferences.reducedBattleEffects,
+                                    child: _ActiveFighter(
+                                      fighter: botFighter,
+                                      health: _botHealth[_botActiveIndex],
+                                      shield: _botShield,
+                                      customSprites: widget.customSprites,
+                                      isOpponent: true,
+                                      isAttacking: _botAttacking && !_finished,
+                                      isHurt: _playerAttacking && !_finished,
+                                      isVictorious:
+                                          _finished && _playerWon == false,
+                                      label: widget.simulation.opponent.name,
+                                      compact: compact,
+                                      reducedEffects: widget
+                                          .preferences
+                                          .reducedBattleEffects,
+                                    ),
                                   ),
                                   _CombatPulse(
                                     message: _battleMessage,
                                     combo: _combo,
                                     finished: _finished,
                                   ),
-                                  _ActiveFighter(
-                                    fighter: playerFighter,
-                                    health: _playerHealth[_playerActiveIndex],
-                                    shield: _playerShield,
-                                    customSprites: widget.customSprites,
+                                  BattleFighterSwitcher(
+                                    identity: 'player-$_playerActiveIndex',
                                     isOpponent: false,
-                                    isAttacking: _playerAttacking && !_finished,
-                                    isHurt: _botAttacking && !_finished,
-                                    isVictorious:
-                                        _finished && _playerWon == true,
-                                    label: 'You',
-                                    compact: compact,
                                     reducedEffects:
                                         widget.preferences.reducedBattleEffects,
+                                    child: _ActiveFighter(
+                                      fighter: playerFighter,
+                                      health: _playerHealth[_playerActiveIndex],
+                                      shield: _playerShield,
+                                      customSprites: widget.customSprites,
+                                      isOpponent: false,
+                                      isAttacking:
+                                          _playerAttacking && !_finished,
+                                      isHurt: _botAttacking && !_finished,
+                                      isVictorious:
+                                          _finished && _playerWon == true,
+                                      label: 'You',
+                                      compact: compact,
+                                      reducedEffects: widget
+                                          .preferences
+                                          .reducedBattleEffects,
+                                    ),
                                   ),
                                 ],
                               ),
