@@ -21,6 +21,7 @@ import '../services/preferences_service.dart';
 import '../theme/game_theme.dart';
 import '../utils/battle_power_logic.dart';
 import '../utils/battle_upgrade_logic.dart';
+import '../utils/boss_attack_patterns.dart';
 import '../utils/boss_battle_logic.dart';
 import '../utils/egg_shard_logic.dart';
 import '../utils/format_utils.dart';
@@ -30,6 +31,7 @@ import '../widgets/animal_motion.dart';
 import '../widgets/battle_impact_overlay.dart';
 import '../widgets/battle_resume_countdown.dart';
 import '../widgets/boss_battle_background.dart';
+import '../widgets/boss_attack_telegraph.dart';
 import '../widgets/boss_defeat_animation.dart';
 import '../widgets/boss_fight_intro_animation.dart';
 import '../widgets/boss_finisher_slash_overlay.dart';
@@ -112,6 +114,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   var _eggCooldownRemaining = 0.0;
   var _playerAttackMotionRemaining = 0.0;
   var _spawnAccumulator = 0.0;
+  var _bossAttackIndex = 0;
   var _shieldFlash = 0.0;
   var _impactRemaining = 0.0;
   var _impactDuration = 0.28;
@@ -147,6 +150,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   AudioService? _audioService;
 
   final List<_FallingProjectile> _bossProjectiles = [];
+  final List<_PendingBossProjectile> _pendingBossProjectiles = [];
   _EggProjectile? _activeEgg;
   final List<_FloatingDamage> _floatingDamages = [];
 
@@ -292,6 +296,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _eggCooldownRemaining = 0;
     _playerAttackMotionRemaining = 0;
     _spawnAccumulator = 0;
+    _bossAttackIndex = 0;
     _shieldFlash = 0;
     _impactRemaining = 0;
     _impactIntensity = 0;
@@ -323,6 +328,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _phase = _ManualBattlePhase.intro;
     _ticker.stop();
     _bossProjectiles.clear();
+    _pendingBossProjectiles.clear();
     _activeEgg = null;
     _floatingDamages.clear();
     _playerX = _arenaWidth / 2;
@@ -502,11 +508,14 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _spawnAccumulator += dt * 1000;
     final interval = _currentProjectileIntervalMs;
     while (_spawnAccumulator >= interval &&
-        _bossProjectiles.length < BossBattleLogic.manualMaxBossProjectiles) {
+        _activeBossAttackSlots < BossBattleLogic.manualMaxBossProjectiles) {
       _spawnAccumulator -= interval;
-      _spawnBossProjectile();
+      _queueBossAttack(
+        BossBattleLogic.manualMaxBossProjectiles - _activeBossAttackSlots,
+      );
     }
 
+    _updatePendingBossProjectiles(dt);
     _updateBossProjectiles(dt);
     _updateEgg(dt);
     if (_mobileAssistEnabled) {
@@ -541,10 +550,52 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _bossX = _bossX.clamp(minBx, maxBx);
   }
 
-  void _spawnBossProjectile() {
-    final spread = 24.0 * (_random.nextDouble() * 2 - 1);
-    final x = (_bossX + spread).clamp(16.0, _arenaWidth - 16.0).toDouble();
-    _bossProjectiles.add(_FallingProjectile(x: x, y: _bossSpawnY));
+  int get _activeBossAttackSlots =>
+      _bossProjectiles.length + _pendingBossProjectiles.length;
+
+  void _queueBossAttack(int availableSlots) {
+    final plan = BossAttackPatterns.forBoss(
+      bossId: boss.id,
+      attackIndex: _bossAttackIndex,
+    );
+    _bossAttackIndex += 1;
+
+    final lanes = plan.lanes.length <= availableSlots
+        ? plan.lanes
+        : const [BossAttackLane()];
+    for (final lane in lanes) {
+      final x = (_bossX + lane.xOffset)
+          .clamp(16.0, _arenaWidth - 16.0)
+          .toDouble();
+      _pendingBossProjectiles.add(
+        _PendingBossProjectile(
+          x: x,
+          warningDuration: plan.warningDuration,
+          laneHalfWidth: plan.laneHalfWidth,
+          horizontalSpeed: lane.horizontalSpeed,
+          waveAmplitude: lane.waveAmplitude,
+          wavePhase: lane.wavePhase,
+        ),
+      );
+    }
+  }
+
+  void _updatePendingBossProjectiles(double dt) {
+    for (var i = _pendingBossProjectiles.length - 1; i >= 0; i--) {
+      final pending = _pendingBossProjectiles[i]..age += dt;
+      if (pending.age < pending.warningDuration) continue;
+
+      _pendingBossProjectiles.removeAt(i);
+      _bossProjectiles.add(
+        _FallingProjectile(
+          x: pending.x,
+          y: _bossSpawnY,
+          horizontalSpeed: pending.horizontalSpeed,
+          waveAmplitude: pending.waveAmplitude,
+          wavePhase: pending.wavePhase,
+        ),
+      );
+    }
   }
 
   void _updateBossProjectiles(double dt) {
@@ -553,6 +604,11 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
 
     for (var i = _bossProjectiles.length - 1; i >= 0; i--) {
       final p = _bossProjectiles[i];
+      p.elapsed += dt;
+      p.centerX += p.horizontalSpeed * dt;
+      p.x = (p.centerX + sin(p.elapsed * 5.2 + p.wavePhase) * p.waveAmplitude)
+          .clamp(12.0, _arenaWidth - 12.0)
+          .toDouble();
       p.y += boss.projectileSpeed * _projectileSpeedMultiplier * dt;
 
       final hitPlayer =
@@ -714,6 +770,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   void _enterFinalBattle() {
     _ticker.stop();
     _bossProjectiles.clear();
+    _pendingBossProjectiles.clear();
     _activeEgg = null;
     _floatingDamages.clear();
     _pointerActive = false;
@@ -770,6 +827,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
     _won = won;
     _ticker.stop();
     _bossProjectiles.clear();
+    _pendingBossProjectiles.clear();
     _activeEgg = null;
     _floatingDamages.clear();
     _applyRewardsOnce();
@@ -1114,6 +1172,8 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
                                           ? AnimalMotionState.attack
                                           : AnimalMotionState.idle,
                                       bossProjectiles: _bossProjectiles,
+                                      pendingBossProjectiles:
+                                          _pendingBossProjectiles,
                                       activeEgg: _activeEgg,
                                       floatingDamages: _floatingDamages,
                                       shieldActive: _shieldActive,
@@ -1580,6 +1640,7 @@ class _Arena extends StatelessWidget {
     required this.fighterName,
     required this.fighterMotion,
     required this.bossProjectiles,
+    required this.pendingBossProjectiles,
     required this.activeEgg,
     required this.floatingDamages,
     required this.shieldActive,
@@ -1617,6 +1678,7 @@ class _Arena extends StatelessWidget {
   final String fighterName;
   final AnimalMotionState fighterMotion;
   final List<_FallingProjectile> bossProjectiles;
+  final List<_PendingBossProjectile> pendingBossProjectiles;
   final _EggProjectile? activeEgg;
   final List<_FloatingDamage> floatingDamages;
   final bool shieldActive;
@@ -1757,6 +1819,18 @@ class _Arena extends StatelessWidget {
                         ),
                     ],
                   ),
+                ),
+              ),
+            for (final pending in pendingBossProjectiles)
+              Positioned(
+                left: pending.x - pending.laneHalfWidth,
+                top: bossTop + bossSize - 4,
+                child: BossAttackTelegraph(
+                  bossId: boss.id,
+                  progress: pending.progress,
+                  width: pending.laneHalfWidth * 2,
+                  height: max(0, arenaHeight - bossTop - bossSize + 4),
+                  reducedEffects: reducedEffects,
                 ),
               ),
             for (final p in bossProjectiles)
@@ -2126,10 +2200,42 @@ class _ManualBattleResultDialog extends StatelessWidget {
 }
 
 class _FallingProjectile {
-  _FallingProjectile({required this.x, required this.y});
+  _FallingProjectile({
+    required this.x,
+    required this.y,
+    this.horizontalSpeed = 0,
+    this.waveAmplitude = 0,
+    this.wavePhase = 0,
+  }) : centerX = x;
 
   double x;
   double y;
+  double centerX;
+  double elapsed = 0;
+  final double horizontalSpeed;
+  final double waveAmplitude;
+  final double wavePhase;
+}
+
+class _PendingBossProjectile {
+  _PendingBossProjectile({
+    required this.x,
+    required this.warningDuration,
+    required this.laneHalfWidth,
+    required this.horizontalSpeed,
+    required this.waveAmplitude,
+    required this.wavePhase,
+  });
+
+  final double x;
+  final double warningDuration;
+  final double laneHalfWidth;
+  final double horizontalSpeed;
+  final double waveAmplitude;
+  final double wavePhase;
+  double age = 0;
+
+  double get progress => (age / warningDuration).clamp(0.0, 1.0);
 }
 
 class _EggProjectile {
