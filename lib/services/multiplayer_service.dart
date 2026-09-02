@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/multiplayer.dart';
+import '../utils/web_socket_message.dart';
 
 enum MultiplayerConnectionState {
   connecting,
@@ -80,7 +81,12 @@ class MultiplayerService extends ChangeNotifier {
       _message = null;
       _setState(MultiplayerConnectionState.ready);
     } catch (_) {
+      final failedChannel = _channel;
       _channel = null;
+      try {
+        await failedChannel?.sink.close();
+      } catch (_) {}
+      if (_disposed) return;
       _message = 'The local match server is not running.';
       _setState(MultiplayerConnectionState.offline);
     }
@@ -166,8 +172,8 @@ class MultiplayerService extends ChangeNotifier {
   }
 
   void _handleMessage(dynamic raw) {
-    if (raw is! String) return;
-    final data = jsonDecode(raw) as Map<String, dynamic>;
+    final data = decodeWebSocketMessage(raw);
+    if (data == null) return;
     switch (data['type']) {
       case 'queued':
         _message =

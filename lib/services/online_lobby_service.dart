@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/online_lobby.dart';
+import '../utils/web_socket_message.dart';
 import 'multiplayer_service.dart';
 
 enum OnlineLobbyConnectionState { disconnected, connecting, online }
@@ -50,6 +51,11 @@ class OnlineLobbyService extends ChangeNotifier {
       final channel = WebSocketChannel.connect(serverUri);
       _channel = channel;
       await channel.ready.timeout(const Duration(seconds: 4));
+      if (_disposed) {
+        _channel = null;
+        await channel.sink.close();
+        return;
+      }
       _subscription = channel.stream.listen(
         _handleMessage,
         onDone: _handleDisconnect,
@@ -63,7 +69,12 @@ class OnlineLobbyService extends ChangeNotifier {
       _statusMessage = null;
       notifyListeners();
     } catch (_) {
+      final failedChannel = _channel;
       _channel = null;
+      try {
+        await failedChannel?.sink.close();
+      } catch (_) {}
+      if (_disposed) return;
       _state = OnlineLobbyConnectionState.disconnected;
       _statusMessage = 'Online lobby is unavailable.';
       notifyListeners();
@@ -163,8 +174,8 @@ class OnlineLobbyService extends ChangeNotifier {
   }
 
   void _handleMessage(dynamic raw) {
-    if (raw is! String) return;
-    final data = jsonDecode(raw) as Map<String, dynamic>;
+    final data = decodeWebSocketMessage(raw);
+    if (data == null) return;
     switch (data['type']) {
       case 'presenceList':
         _players = (data['players'] as List<dynamic>? ?? const [])

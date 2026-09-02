@@ -6,6 +6,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/online_trade.dart';
 import '../models/owned_animal.dart';
+import '../utils/web_socket_message.dart';
 import 'multiplayer_service.dart';
 
 enum TradingConnectionState {
@@ -47,6 +48,11 @@ class TradingService extends ChangeNotifier {
       final channel = WebSocketChannel.connect(serverUri);
       _channel = channel;
       await channel.ready.timeout(const Duration(seconds: 3));
+      if (_disposed) {
+        _channel = null;
+        await channel.sink.close();
+        return;
+      }
       _subscription = channel.stream.listen(
         _handleMessage,
         onDone: _handleDisconnect,
@@ -55,7 +61,12 @@ class TradingService extends ChangeNotifier {
       _message = null;
       _setState(TradingConnectionState.ready);
     } catch (_) {
+      final failedChannel = _channel;
       _channel = null;
+      try {
+        await failedChannel?.sink.close();
+      } catch (_) {}
+      if (_disposed) return;
       _message = 'The trading server is not available.';
       _setState(TradingConnectionState.offline);
     }
@@ -136,8 +147,8 @@ class TradingService extends ChangeNotifier {
   }
 
   void _handleMessage(dynamic raw) {
-    if (raw is! String) return;
-    final data = jsonDecode(raw) as Map<String, dynamic>;
+    final data = decodeWebSocketMessage(raw);
+    if (data == null) return;
     switch (data['type']) {
       case 'tradeQueued':
         _message = 'Waiting for another trader...';
