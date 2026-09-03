@@ -1,9 +1,11 @@
+import 'dart:math';
+
 /// Rebirth unlock requirement and income multiplier helpers.
 class RebirthLogic {
   RebirthLogic._();
 
   static const int baseRequirement = 1000000;
-  static const double bonusPerLevel = 0.25;
+  static const double multiplierGrowth = 2;
 
   /// Lifetime coins required to rebirth from [rebirthLevel] to the next level.
   static int rebirthRequirementForLevel(int rebirthLevel) {
@@ -19,11 +21,13 @@ class RebirthLogic {
   static bool canRebirth({
     required int lifetimeCoinsEarned,
     required int rebirthLevel,
-  }) =>
-      lifetimeCoinsEarned >= nextRebirthRequirement(rebirthLevel);
+  }) => lifetimeCoinsEarned >= nextRebirthRequirement(rebirthLevel);
 
-  static double incomeMultiplier(int rebirthLevel) =>
-      1 + rebirthLevel * bonusPerLevel;
+  /// Income doubles with every rebirth: 1x, 2x, 4x, 8x, and so on.
+  static double incomeMultiplier(int rebirthLevel) {
+    final level = rebirthLevel < 0 ? 0 : rebirthLevel;
+    return pow(multiplierGrowth, level).toDouble();
+  }
 
   static double nextIncomeMultiplier(int rebirthLevel) =>
       incomeMultiplier(rebirthLevel + 1);

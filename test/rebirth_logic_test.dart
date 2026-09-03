@@ -31,40 +31,28 @@ void main() {
   group('canRebirth', () {
     test('false below requirement at level 0', () {
       expect(
-        RebirthLogic.canRebirth(
-          lifetimeCoinsEarned: 999999,
-          rebirthLevel: 0,
-        ),
+        RebirthLogic.canRebirth(lifetimeCoinsEarned: 999999, rebirthLevel: 0),
         isFalse,
       );
     });
 
     test('true at requirement at level 0', () {
       expect(
-        RebirthLogic.canRebirth(
-          lifetimeCoinsEarned: 1000000,
-          rebirthLevel: 0,
-        ),
+        RebirthLogic.canRebirth(lifetimeCoinsEarned: 1000000, rebirthLevel: 0),
         isTrue,
       );
     });
 
     test('false below requirement at level 1', () {
       expect(
-        RebirthLogic.canRebirth(
-          lifetimeCoinsEarned: 3999999,
-          rebirthLevel: 1,
-        ),
+        RebirthLogic.canRebirth(lifetimeCoinsEarned: 3999999, rebirthLevel: 1),
         isFalse,
       );
     });
 
     test('true at requirement at level 1', () {
       expect(
-        RebirthLogic.canRebirth(
-          lifetimeCoinsEarned: 4000000,
-          rebirthLevel: 1,
-        ),
+        RebirthLogic.canRebirth(lifetimeCoinsEarned: 4000000, rebirthLevel: 1),
         isTrue,
       );
     });
@@ -72,5 +60,18 @@ void main() {
 
   test('nextRebirthRequirement matches rebirthRequirementForLevel', () {
     expect(RebirthLogic.nextRebirthRequirement(2), 9000000);
+  });
+
+  test('income multiplier doubles with every rebirth', () {
+    expect(RebirthLogic.incomeMultiplier(0), 1);
+    expect(RebirthLogic.incomeMultiplier(1), 2);
+    expect(RebirthLogic.incomeMultiplier(2), 4);
+    expect(RebirthLogic.incomeMultiplier(3), 8);
+    expect(RebirthLogic.incomeMultiplier(10), 1024);
+    expect(RebirthLogic.nextIncomeMultiplier(3), 16);
+  });
+
+  test('negative rebirth levels safely use the base multiplier', () {
+    expect(RebirthLogic.incomeMultiplier(-3), 1);
   });
 }

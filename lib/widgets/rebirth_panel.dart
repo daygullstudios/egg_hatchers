@@ -10,11 +10,7 @@ import '../utils/ui_sound.dart';
 
 /// Hatchery panel for rebirth status and confirmation.
 class RebirthPanel extends StatefulWidget {
-  const RebirthPanel({
-    super.key,
-    required this.game,
-    required this.theme,
-  });
+  const RebirthPanel({super.key, required this.game, required this.theme});
 
   final GameService game;
   final BackgroundTheme theme;
@@ -58,10 +54,8 @@ class _RebirthPanelState extends State<RebirthPanel> {
       final confirmed = await showDialog<bool>(
         context: context,
         barrierDismissible: true,
-        builder: (dialogContext) => _RebirthConfirmDialog(
-          game: game,
-          theme: theme,
-        ),
+        builder: (dialogContext) =>
+            _RebirthConfirmDialog(game: game, theme: theme),
       );
 
       if (!context.mounted) return;
@@ -152,11 +146,7 @@ class _RebirthPanelState extends State<RebirthPanel> {
               if (stackChips) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    chips[0],
-                    const SizedBox(height: 8),
-                    chips[1],
-                  ],
+                  children: [chips[0], const SizedBox(height: 8), chips[1]],
                 );
               }
 
@@ -187,11 +177,10 @@ class _RebirthPanelState extends State<RebirthPanel> {
               height: 48,
             ),
             child: Text(
-              canRebirth ? 'Rebirth · +25% Income' : 'Rebirth Locked',
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
+              canRebirth
+                  ? 'Rebirth · Next ${RebirthLogic.formatMultiplier(nextMultiplier)}'
+                  : 'Rebirth Locked',
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -201,10 +190,7 @@ class _RebirthPanelState extends State<RebirthPanel> {
 }
 
 class _RebirthConfirmDialog extends StatelessWidget {
-  const _RebirthConfirmDialog({
-    required this.game,
-    required this.theme,
-  });
+  const _RebirthConfirmDialog({required this.game, required this.theme});
 
   final GameService game;
   final BackgroundTheme theme;
@@ -239,7 +225,7 @@ class _RebirthConfirmDialog extends StatelessWidget {
               children: [
                 Text(
                   'Rebirth resets your coins, animals, upgrades, Luck, and quest '
-                  'progress, but gives a permanent +25% income boost. Secret '
+                  'progress, but permanently doubles your total income. Secret '
                   'reward animals are kept.',
                   style: TextStyle(
                     height: 1.4,
@@ -368,10 +354,7 @@ class _InfoChip extends StatelessWidget {
         children: [
           Text(
             label,
-            style: TextStyle(
-              fontSize: 11,
-              color: theme.cardTextSecondaryColor,
-            ),
+            style: TextStyle(fontSize: 11, color: theme.cardTextSecondaryColor),
           ),
           const SizedBox(height: 2),
           Text(
