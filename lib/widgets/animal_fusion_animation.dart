@@ -26,6 +26,7 @@ class AnimalFusionAnimation extends StatefulWidget {
   final AnimalFusionOutcome outcome;
 
   static const duration = Duration(milliseconds: 3400);
+  static const skipButtonKey = Key('fusion-animation-skip');
 
   static Future<void> show(
     BuildContext context, {
@@ -61,9 +62,13 @@ class _AnimalFusionAnimationState extends State<AnimalFusionAnimation>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: AnimalFusionAnimation.duration)
-      ..addListener(_onTick)
-      ..forward();
+    _controller =
+        AnimationController(
+            vsync: this,
+            duration: AnimalFusionAnimation.duration,
+          )
+          ..addListener(_onTick)
+          ..forward();
   }
 
   void _onTick() {
@@ -87,6 +92,11 @@ class _AnimalFusionAnimationState extends State<AnimalFusionAnimation>
     Navigator.of(context).pop();
   }
 
+  void _skipAnimation() {
+    if (_controller.value >= 1) return;
+    _controller.value = 1;
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -102,11 +112,11 @@ class _AnimalFusionAnimationState extends State<AnimalFusionAnimation>
 
     final inputMutation =
         GameData.mutationById(widget.outcome.inputMutationId) ??
-            GameData.mutations.first;
+        GameData.mutations.first;
     final outputMutation = widget.outcome.resultMutationId == null
         ? null
         : GameData.mutationById(widget.outcome.resultMutationId!) ??
-            GameData.mutations.first;
+              GameData.mutations.first;
     final customSprite = widget.customSprites.getDisplaySprite(animal.id);
     final flashColor = FusionVisuals.flashColor(widget.outcome.inputMutationId);
 
@@ -143,84 +153,115 @@ class _AnimalFusionAnimationState extends State<AnimalFusionAnimation>
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: Stack(
                 children: [
-                  SizedBox(
-                    height: 260,
-                    width: double.infinity,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final center = Offset(
-                          constraints.maxWidth / 2,
-                          constraints.maxHeight / 2,
-                        );
-                        return Stack(
-                          alignment: Alignment.center,
-                          clipBehavior: Clip.none,
-                          children: [
-                            _MagicCircle(
-                              color: flashColor,
-                              pulse: 0.4 + orbitT * 0.6,
-                              opacity: 0.12 + startT * 0.18,
-                            ),
-                            if (orbitT > 0 && showOrbit)
-                              ..._orbitParticles(
-                                center: center,
-                                flashColor: flashColor,
-                                orbitT: orbitT,
-                                t: t,
-                              ),
-                            if (showOrbit)
-                              ..._orbitingSprites(
-                                center: center,
-                                animal: animal,
-                                inputMutation: inputMutation,
-                                customSprite: customSprite,
-                                startT: startT,
-                                orbitT: orbitT,
-                                t: t,
-                              ),
-                            if (flashT > 0)
-                              _FusionFlash(
-                                color: flashColor,
-                                intensity: flashT,
-                                inputMutationId: widget.outcome.inputMutationId,
-                              ),
-                            if (revealT > 0)
-                              _RevealLayer(
-                                animal: animal,
-                                inputMutation: inputMutation,
-                                outputMutation: outputMutation,
-                                customSprite: customSprite,
-                                outcome: widget.outcome,
-                                revealT: revealT,
-                              ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  if (revealT > 0.35) ...[
-                    Opacity(
-                      opacity: ((revealT - 0.35) / 0.65).clamp(0.0, 1.0),
-                      child: _RevealText(outcome: widget.outcome),
-                    ),
-                  ],
-                  if (done) ...[
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: _finishOnce,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: widget.outcome.succeeded
-                            ? widget.theme.primaryColor
-                            : Colors.grey.shade700,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 44),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        height: 260,
+                        width: double.infinity,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final center = Offset(
+                              constraints.maxWidth / 2,
+                              constraints.maxHeight / 2,
+                            );
+                            return Stack(
+                              alignment: Alignment.center,
+                              clipBehavior: Clip.none,
+                              children: [
+                                _MagicCircle(
+                                  color: flashColor,
+                                  pulse: 0.4 + orbitT * 0.6,
+                                  opacity: 0.12 + startT * 0.18,
+                                ),
+                                if (orbitT > 0 && showOrbit)
+                                  ..._orbitParticles(
+                                    center: center,
+                                    flashColor: flashColor,
+                                    orbitT: orbitT,
+                                    t: t,
+                                  ),
+                                if (showOrbit)
+                                  ..._orbitingSprites(
+                                    center: center,
+                                    animal: animal,
+                                    inputMutation: inputMutation,
+                                    customSprite: customSprite,
+                                    startT: startT,
+                                    orbitT: orbitT,
+                                    t: t,
+                                  ),
+                                if (flashT > 0)
+                                  _FusionFlash(
+                                    color: flashColor,
+                                    intensity: flashT,
+                                    inputMutationId:
+                                        widget.outcome.inputMutationId,
+                                  ),
+                                if (revealT > 0)
+                                  _RevealLayer(
+                                    animal: animal,
+                                    inputMutation: inputMutation,
+                                    outputMutation: outputMutation,
+                                    customSprite: customSprite,
+                                    outcome: widget.outcome,
+                                    revealT: revealT,
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
                       ),
-                      child: const Text('Continue'),
+                      if (revealT > 0.35) ...[
+                        Opacity(
+                          opacity: ((revealT - 0.35) / 0.65).clamp(0.0, 1.0),
+                          child: _RevealText(outcome: widget.outcome),
+                        ),
+                      ],
+                      if (done) ...[
+                        const SizedBox(height: 16),
+                        FilledButton(
+                          onPressed: _finishOnce,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: widget.outcome.succeeded
+                                ? widget.theme.primaryColor
+                                : Colors.grey.shade700,
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 44),
+                          ),
+                          child: const Text('Continue'),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (!done)
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: TextButton.icon(
+                        key: AnimalFusionAnimation.skipButtonKey,
+                        onPressed: _skipAnimation,
+                        style: TextButton.styleFrom(
+                          foregroundColor: widget.theme.cardTextSecondaryColor,
+                          backgroundColor: widget.theme.cardColor.withValues(
+                            alpha: 0.88,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          minimumSize: const Size(0, 40),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        icon: const Icon(Icons.fast_forward_rounded, size: 20),
+                        label: const Text(
+                          'Skip',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
                     ),
-                  ],
                 ],
               ),
             );
@@ -295,7 +336,8 @@ class _AnimalFusionAnimationState extends State<AnimalFusionAnimation>
       final baseAngle = angles[index];
       final angle = baseAngle + turns * 2 * pi * orbitT;
       final bob = sin(t * pi * 6 + index) * (4 * (1 - orbitT));
-      final pos = center +
+      final pos =
+          center +
           Offset(cos(angle), sin(angle)) * radius +
           Offset(0, bob * startT);
 
@@ -359,10 +401,7 @@ class _MagicCircle extends StatelessWidget {
         height: 180 * pulse,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(
-            color: color.withValues(alpha: opacity),
-            width: 2,
-          ),
+          border: Border.all(color: color.withValues(alpha: opacity), width: 2),
           boxShadow: [
             BoxShadow(
               color: color.withValues(alpha: opacity * 0.8),
@@ -403,12 +442,16 @@ class _FusionFlash extends StatelessWidget {
                   ? RadialGradient(
                       colors: [
                         Colors.pinkAccent.withValues(alpha: flashOpacity),
-                        Colors.cyanAccent.withValues(alpha: flashOpacity * 0.85),
+                        Colors.cyanAccent.withValues(
+                          alpha: flashOpacity * 0.85,
+                        ),
                         Colors.transparent,
                       ],
                     )
                   : null,
-              color: rainbow ? null : color.withValues(alpha: flashOpacity * 0.92),
+              color: rainbow
+                  ? null
+                  : color.withValues(alpha: flashOpacity * 0.92),
               boxShadow: [
                 BoxShadow(
                   color: color.withValues(alpha: flashOpacity * 0.75),
@@ -457,11 +500,7 @@ class _RevealLayer extends StatelessWidget {
                 color: Colors.grey.shade500.withValues(alpha: 0.9),
               ),
               const SizedBox(height: 8),
-              Icon(
-                Icons.close_rounded,
-                size: 36,
-                color: Colors.red.shade400,
-              ),
+              Icon(Icons.close_rounded, size: 36, color: Colors.red.shade400),
             ],
           ),
         ),
@@ -534,10 +573,7 @@ class _RevealText extends StatelessWidget {
           Text(
             'Created ${outcome.displayName}!',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 15,
-            ),
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
           ),
         ],
       );
