@@ -261,8 +261,19 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
       ? MusicTrack.finalBoss
       : MusicTrack.bossBattle;
 
-  void _playBattleMusic() {
-    _audio.playMusic(_battleMusicTrack);
+  void _playBattleMusic({bool restart = false}) {
+    _audio.playMusic(_battleMusicTrack, restart: restart);
+  }
+
+  void _advanceBattleMusic() {
+    _audio.seekMusicStage(
+      _battleMusicTrack,
+      completedStages: BossBattleLogic.manualMusicStage(
+        livesRemaining: _bossLives,
+        maxLives: _bossMaxLives,
+      ),
+      totalStages: _bossMaxLives,
+    );
   }
 
   void _restoreHatcheryMusic() {
@@ -751,6 +762,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
       _endBattle(won: true);
       return;
     }
+    _advanceBattleMusic();
     if (RottenShellFinalBattleLogic.shouldEnter(
       bossId: boss.id,
       livesRemaining: _bossLives,
@@ -1024,7 +1036,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
             _resetBattleState();
             _resultDialogShown = false;
           });
-          _playBattleMusic();
+          _playBattleMusic(restart: true);
         },
       ),
     );

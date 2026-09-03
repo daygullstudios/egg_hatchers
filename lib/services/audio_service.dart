@@ -115,7 +115,7 @@ class AudioService extends ChangeNotifier {
     await _persistDouble(_sfxVolumeKey, clamped);
   }
 
-  Future<void> playMusic(MusicTrack track) async {
+  Future<void> playMusic(MusicTrack track, {bool restart = false}) async {
     _pendingTrack = track;
     if (!_musicEnabled) {
       _debugLog('playMusic ${track.name} skipped (music disabled)');
@@ -126,7 +126,7 @@ class AudioService extends ChangeNotifier {
       return;
     }
 
-    if (_currentTrack == track) {
+    if (_currentTrack == track && !restart) {
       try {
         if (_musicPlayer.state == PlayerState.playing) {
           _debugLog('playMusic ${track.name} already playing');
@@ -161,6 +161,36 @@ class AudioService extends ChangeNotifier {
 
     _debugLog('playMusic ${track.name} failed');
     _currentTrack = null;
+  }
+
+  /// Moves a looping track forward to match completed gameplay stages.
+  ///
+  /// The track remains continuous until a stage changes, then seeks to the
+  /// equivalent point in its more intense later section.
+  Future<void> seekMusicStage(
+    MusicTrack track, {
+    required int completedStages,
+    required int totalStages,
+  }) async {
+    if (!_musicEnabled || !_userUnlocked || totalStages <= 0) return;
+    if (_currentTrack != track) await playMusic(track);
+    if (_currentTrack != track) return;
+
+    try {
+      final duration = await _musicPlayer.getDuration();
+      if (duration == null || duration.inMilliseconds <= 0) return;
+      final progress = (completedStages / totalStages).clamp(0.0, 0.95);
+      final position = Duration(
+        milliseconds: (duration.inMilliseconds * progress).round(),
+      );
+      await _musicPlayer.seek(position);
+      _debugLog(
+        'seek ${track.name} to stage $completedStages/$totalStages '
+        '(${position.inMilliseconds}ms)',
+      );
+    } catch (e) {
+      debugPrint('Music stage seek failed (${track.name}): $e');
+    }
   }
 
   void _debugLog(String message) {

@@ -139,6 +139,15 @@ class BossBattleLogic {
     }
   }
 
+  /// Number of completed music stages after the boss loses lives.
+  static int manualMusicStage({
+    required int livesRemaining,
+    required int maxLives,
+  }) {
+    if (maxLives <= 0) return 0;
+    return (maxLives - livesRemaining).clamp(0, maxLives);
+  }
+
   /// True when a multi-life boss (not Slime Boss) is on its final life.
   static bool showManualLastLifeGlow(
     BossBattleDefinition boss, {

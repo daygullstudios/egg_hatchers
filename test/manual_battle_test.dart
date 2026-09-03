@@ -119,6 +119,21 @@ void main() {
     );
   });
 
+  test('boss music advances once for every lost boss life', () {
+    expect(BossBattleLogic.manualMusicStage(livesRemaining: 5, maxLives: 5), 0);
+    expect(BossBattleLogic.manualMusicStage(livesRemaining: 4, maxLives: 5), 1);
+    expect(BossBattleLogic.manualMusicStage(livesRemaining: 1, maxLives: 5), 4);
+  });
+
+  test('boss music stage safely clamps old or invalid battle state', () {
+    expect(BossBattleLogic.manualMusicStage(livesRemaining: 9, maxLives: 5), 0);
+    expect(
+      BossBattleLogic.manualMusicStage(livesRemaining: -2, maxLives: 5),
+      5,
+    );
+    expect(BossBattleLogic.manualMusicStage(livesRemaining: 0, maxLives: 0), 0);
+  });
+
   test('rage mode applies only to multi-life bosses on last life', () {
     final slime = BossData.bossById('slime_boss')!;
     final golem = BossData.bossById('egg_golem')!;
