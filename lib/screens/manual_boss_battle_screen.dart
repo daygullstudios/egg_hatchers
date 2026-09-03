@@ -266,7 +266,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
   }
 
   void _advanceBattleMusic() {
-    _audio.seekMusicStage(
+    _audio.setBattleMusicStage(
       _battleMusicTrack,
       completedStages: BossBattleLogic.manualMusicStage(
         livesRemaining: _bossLives,

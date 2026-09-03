@@ -21,6 +21,10 @@ class AudioService extends ChangeNotifier {
   static const rewardRecentGapMs = 2000;
 
   final AudioPlayer _musicPlayer = AudioPlayer(playerId: 'music');
+  final List<AudioPlayer> _musicLayerPlayers = List.generate(
+    AudioAssets.musicBossLayers.length,
+    (i) => AudioPlayer(playerId: 'music_layer_$i'),
+  );
   final List<AudioPlayer> _sfxPlayers = List.generate(
     4,
     (i) => AudioPlayer(playerId: 'sfx_$i'),
@@ -35,6 +39,15 @@ class AudioService extends ChangeNotifier {
   var _userUnlocked = false;
   MusicTrack? _currentTrack;
   MusicTrack? _pendingTrack;
+  List<double> _battleLayerMix = List.filled(
+    AudioAssets.musicBossLayers.length,
+    0,
+  );
+  List<double> _battleLayerVolumes = List.filled(
+    AudioAssets.musicBossLayers.length,
+    0,
+  );
+  var _battleLayerFadeGeneration = 0;
   var _sfxRoundRobin = 0;
   final Map<Sfx, DateTime> _lastSfxPlayed = {};
   final Map<String, DateTime> _lastAssetPathPlayed = {};
@@ -104,6 +117,7 @@ class AudioService extends ChangeNotifier {
     await _persistDouble(_musicVolumeKey, clamped);
     try {
       await _musicPlayer.setVolume(clamped);
+      await _setBattleLayerVolumes(_targetBattleLayerVolumes());
     } catch (_) {}
   }
 
@@ -143,6 +157,7 @@ class AudioService extends ChangeNotifier {
     final played = await _tryPlayMusicAsset(track.assetPath);
     if (played) {
       _currentTrack = track;
+      await _startBattleMusicLayers(track);
       return;
     }
 
@@ -153,6 +168,7 @@ class AudioService extends ChangeNotifier {
       );
       if (fallbackPlayed) {
         _currentTrack = MusicTrack.bossBattle;
+        await _startBattleMusicLayers(MusicTrack.bossBattle);
       } else {
         _currentTrack = null;
       }
@@ -163,11 +179,8 @@ class AudioService extends ChangeNotifier {
     _currentTrack = null;
   }
 
-  /// Moves a looping track forward to match completed gameplay stages.
-  ///
-  /// The track remains continuous until a stage changes, then seeks to the
-  /// equivalent point in its more intense later section.
-  Future<void> seekMusicStage(
+  /// Fades in continuous background layers as a boss loses lives.
+  Future<void> setBattleMusicStage(
     MusicTrack track, {
     required int completedStages,
     required int totalStages,
@@ -176,22 +189,30 @@ class AudioService extends ChangeNotifier {
     if (_currentTrack != track) await playMusic(track);
     if (_currentTrack != track) return;
 
-    try {
-      final duration = await _musicPlayer.getDuration();
-      if (duration == null || duration.inMilliseconds <= 0) return;
-      final progress = (completedStages / totalStages).clamp(0.0, 0.95);
-      final position = Duration(
-        milliseconds: (duration.inMilliseconds * progress).round(),
-      );
-      await _musicPlayer.seek(position);
-      _debugLog(
-        'seek ${track.name} to stage $completedStages/$totalStages '
-        '(${position.inMilliseconds}ms)',
-      );
-    } catch (e) {
-      debugPrint('Music stage seek failed (${track.name}): $e');
-    }
+    _battleLayerMix = battleLayerMix(
+      completedStages: completedStages,
+      totalStages: totalStages,
+    );
+    await _fadeBattleLayersTo(_targetBattleLayerVolumes());
+    _debugLog('layer ${track.name} to stage $completedStages/$totalStages');
   }
+
+  @visibleForTesting
+  static List<double> battleLayerMix({
+    required int completedStages,
+    required int totalStages,
+  }) {
+    if (totalStages <= 0) return const [0, 0, 0];
+    final progress = (completedStages / totalStages).clamp(0.0, 1.0);
+    return [
+      _layerProgress(progress, 0.05, 0.30),
+      _layerProgress(progress, 0.20, 0.62),
+      _layerProgress(progress, 0.46, 1.00),
+    ];
+  }
+
+  static double _layerProgress(double progress, double start, double end) =>
+      ((progress - start) / (end - start)).clamp(0.0, 1.0);
 
   void _debugLog(String message) {
     if (kDebugMode) debugPrint('[AUDIO] $message');
@@ -314,10 +335,67 @@ class AudioService extends ChangeNotifier {
     }
   }
 
+  Future<void> _startBattleMusicLayers(MusicTrack track) async {
+    if (track != MusicTrack.bossBattle && track != MusicTrack.finalBoss) return;
+    for (var i = 0; i < _musicLayerPlayers.length; i++) {
+      final player = _musicLayerPlayers[i];
+      try {
+        await player.setReleaseMode(ReleaseMode.loop);
+        await player.setVolume(0);
+        await player.play(AssetSource(AudioAssets.musicBossLayers[i]));
+      } catch (e) {
+        debugPrint('Battle music layer ${i + 1} failed: $e');
+      }
+    }
+    await _setBattleLayerVolumes(_targetBattleLayerVolumes());
+  }
+
+  List<double> _targetBattleLayerVolumes() {
+    const volumeCaps = [0.30, 0.24, 0.18];
+    return List.generate(
+      _musicLayerPlayers.length,
+      (i) => _musicVolume * volumeCaps[i] * _battleLayerMix[i],
+    );
+  }
+
+  Future<void> _fadeBattleLayersTo(List<double> target) async {
+    final generation = ++_battleLayerFadeGeneration;
+    final start = List<double>.from(_battleLayerVolumes);
+    const steps = 8;
+    for (var step = 1; step <= steps; step++) {
+      await Future<void>.delayed(const Duration(milliseconds: 45));
+      if (generation != _battleLayerFadeGeneration) return;
+      final t = step / steps;
+      await _setBattleLayerVolumes(
+        List.generate(
+          start.length,
+          (i) => start[i] + (target[i] - start[i]) * t,
+        ),
+      );
+    }
+  }
+
+  Future<void> _setBattleLayerVolumes(List<double> volumes) async {
+    _battleLayerVolumes = List<double>.from(volumes);
+    for (var i = 0; i < _musicLayerPlayers.length; i++) {
+      try {
+        await _musicLayerPlayers[i].setVolume(volumes[i].clamp(0.0, 1.0));
+      } catch (_) {}
+    }
+  }
+
   Future<void> _stopMusic() async {
+    _battleLayerFadeGeneration++;
+    _battleLayerMix = List.filled(_musicLayerPlayers.length, 0);
+    _battleLayerVolumes = List.filled(_musicLayerPlayers.length, 0);
     try {
       await _musicPlayer.stop();
     } catch (_) {}
+    for (final player in _musicLayerPlayers) {
+      try {
+        await player.stop();
+      } catch (_) {}
+    }
   }
 
   Future<void> _persistBool(String key, bool value) async {
@@ -337,6 +415,9 @@ class AudioService extends ChangeNotifier {
   @override
   void dispose() {
     _musicPlayer.dispose();
+    for (final player in _musicLayerPlayers) {
+      player.dispose();
+    }
     for (final player in _sfxPlayers) {
       player.dispose();
     }

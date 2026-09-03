@@ -2,6 +2,7 @@ import 'package:egg_hatchers/data/boss_data.dart';
 import 'package:egg_hatchers/models/boss_battle.dart';
 import 'package:egg_hatchers/models/player_state.dart';
 import 'package:egg_hatchers/utils/boss_battle_logic.dart';
+import 'package:egg_hatchers/services/audio_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -132,6 +133,34 @@ void main() {
       5,
     );
     expect(BossBattleLogic.manualMusicStage(livesRemaining: 0, maxLives: 0), 0);
+  });
+
+  test('boss music layers build without restarting the base track', () {
+    expect(AudioService.battleLayerMix(completedStages: 0, totalStages: 7), [
+      0,
+      0,
+      0,
+    ]);
+
+    final early = AudioService.battleLayerMix(
+      completedStages: 1,
+      totalStages: 7,
+    );
+    final middle = AudioService.battleLayerMix(
+      completedStages: 4,
+      totalStages: 7,
+    );
+    final finalStage = AudioService.battleLayerMix(
+      completedStages: 7,
+      totalStages: 7,
+    );
+
+    expect(early[0], greaterThan(0));
+    expect(early[1], 0);
+    expect(middle[0], 1);
+    expect(middle[1], greaterThan(early[1]));
+    expect(middle[2], greaterThan(0));
+    expect(finalStage, [1, 1, 1]);
   });
 
   test('rage mode applies only to multi-life bosses on last life', () {
