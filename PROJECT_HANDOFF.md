@@ -30,6 +30,11 @@ Import replaces all Egg Hatchers local data on the destination browser. Keep the
 - Bot Arena remains intentionally available until multiplayer is finished.
 - Continue checking remaining Retro Pixel assets for consistency as new art is added.
 
+The staged cross-platform, account, cloud-save, Cloudflare, and multiplayer
+architecture plan is maintained in `docs/PLATFORM_ARCHITECTURE_WORKPLAN.md`.
+Phase 1 has begun by versioning local progress without changing existing save
+keys or the JSON transfer format.
+
 ## Art rules
 
 Every new animal needs Classic, Retro Pixel, and Realistic versions. Classic should be cartoony, Retro Pixel should be intentionally pixel-built, and Realistic should match the detailed transparent sprite set. DayGull animals may also need the established animated side-slice glitch treatment.
