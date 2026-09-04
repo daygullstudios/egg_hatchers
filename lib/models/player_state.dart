@@ -27,6 +27,7 @@ class PlayerState {
     this.tutorialCompleted = false,
     this.tutorialSkipped = false,
     this.tutorialVersionCompleted = 0,
+    this.rottenShellFinalBattleTutorialCompleted = false,
     this.battleHomingLevel = 0,
     this.battleShotSpeedLevel = 0,
     this.battleExtraLifeLevel = 0,
@@ -68,6 +69,7 @@ class PlayerState {
   final bool tutorialCompleted;
   final bool tutorialSkipped;
   final int tutorialVersionCompleted;
+  final bool rottenShellFinalBattleTutorialCompleted;
   final int battleHomingLevel;
   final int battleShotSpeedLevel;
   final int battleExtraLifeLevel;
@@ -122,6 +124,7 @@ class PlayerState {
     bool? tutorialCompleted,
     bool? tutorialSkipped,
     int? tutorialVersionCompleted,
+    bool? rottenShellFinalBattleTutorialCompleted,
     int? battleHomingLevel,
     int? battleShotSpeedLevel,
     int? battleExtraLifeLevel,
@@ -171,6 +174,9 @@ class PlayerState {
       tutorialSkipped: tutorialSkipped ?? this.tutorialSkipped,
       tutorialVersionCompleted:
           tutorialVersionCompleted ?? this.tutorialVersionCompleted,
+      rottenShellFinalBattleTutorialCompleted:
+          rottenShellFinalBattleTutorialCompleted ??
+          this.rottenShellFinalBattleTutorialCompleted,
       battleHomingLevel: battleHomingLevel ?? this.battleHomingLevel,
       battleShotSpeedLevel: battleShotSpeedLevel ?? this.battleShotSpeedLevel,
       battleExtraLifeLevel: battleExtraLifeLevel ?? this.battleExtraLifeLevel,
@@ -228,6 +234,8 @@ class PlayerState {
     'tutorialCompleted': tutorialCompleted,
     'tutorialSkipped': tutorialSkipped,
     'tutorialVersionCompleted': tutorialVersionCompleted,
+    'rottenShellFinalBattleTutorialCompleted':
+        rottenShellFinalBattleTutorialCompleted,
     'battleHomingLevel': battleHomingLevel,
     'battleShotSpeedLevel': battleShotSpeedLevel,
     'battleExtraLifeLevel': battleExtraLifeLevel,
@@ -292,6 +300,8 @@ class PlayerState {
       tutorialCompleted: json['tutorialCompleted'] as bool? ?? false,
       tutorialSkipped: json['tutorialSkipped'] as bool? ?? false,
       tutorialVersionCompleted: json['tutorialVersionCompleted'] as int? ?? 0,
+      rottenShellFinalBattleTutorialCompleted:
+          json['rottenShellFinalBattleTutorialCompleted'] as bool? ?? false,
       battleHomingLevel: EggShardLogic.clampHomingLevel(
         json['battleHomingLevel'] as int? ?? 0,
         battleLimitBreak,

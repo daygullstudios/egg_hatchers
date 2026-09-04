@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/player_account.dart';
 import 'account_session_store.dart';
 import 'account_storage.dart';
+import 'save_service.dart';
 
 class AccountService extends ChangeNotifier {
   static const _idKey = 'playerAccountId';
@@ -82,6 +83,10 @@ class AccountService extends ChangeNotifier {
       _accounts.add(_createGuestAccount());
       await _saveAccounts(preferences);
     }
+
+    await SaveService.migrateLegacyRottenShellTutorial(
+      _accounts.map((account) => account.id),
+    );
 
     final forceAccountPicker =
         kIsWeb && Uri.base.queryParameters['account'] == 'choose';

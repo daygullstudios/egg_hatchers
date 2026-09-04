@@ -1328,6 +1328,12 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
                             reducedEffects:
                                 widget.preferences.reducedBattleEffects,
                             hapticsEnabled: widget.preferences.hapticsEnabled,
+                            tutorialCompleted: widget
+                                .game
+                                .rottenShellFinalBattleTutorialCompleted,
+                            onTutorialCompleted: widget
+                                .game
+                                .completeRottenShellFinalBattleTutorial,
                             onVictory: _onFinalBattleVictory,
                             onDefeat: _onFinalBattleDefeat,
                           ),

@@ -9,6 +9,8 @@ class SaveService {
   SaveService({this.accountId});
 
   static const _legacySaveKey = 'egg_hatchers_player_state';
+  static const _legacyRottenShellTutorialKey =
+      'rottenShellFinalBattleTutorialCompleted';
   static const progressFormat = 'egg_hatchers_player_progress';
   static const progressSchemaVersion = 1;
   final String? accountId;
@@ -87,5 +89,38 @@ class SaveService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_saveKey);
     await prefs.remove(_backupKey);
+  }
+
+  /// Moves the old device-wide final-battle tutorial choice into every
+  /// existing save before cloud sync can treat it as account-owned progress.
+  ///
+  /// Accounts without a save are intentionally left empty. The unscoped
+  /// legacy save is included because it may be claimed by the first account
+  /// immediately after this migration runs.
+  static Future<void> migrateLegacyRottenShellTutorial(
+    Iterable<String> accountIds,
+  ) async {
+    final preferences = await SharedPreferences.getInstance();
+    final completed =
+        preferences.getBool(_legacyRottenShellTutorialKey) ?? false;
+    if (!preferences.containsKey(_legacyRottenShellTutorialKey)) return;
+
+    if (completed) {
+      final saveServices = <SaveService>[
+        SaveService(),
+        ...accountIds.map((accountId) => SaveService(accountId: accountId)),
+      ];
+      for (final service in saveServices) {
+        final state = await service.load();
+        if (state == null || state.rottenShellFinalBattleTutorialCompleted) {
+          continue;
+        }
+        await service.save(
+          state.copyWith(rottenShellFinalBattleTutorialCompleted: true),
+        );
+      }
+    }
+
+    await preferences.remove(_legacyRottenShellTutorialKey);
   }
 }

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/arena_ability_data.dart';
 import '../data/audio_assets.dart';
@@ -31,6 +30,8 @@ class RottenShellFinalBattle extends StatefulWidget {
     required this.boss,
     required this.onVictory,
     required this.onDefeat,
+    required this.tutorialCompleted,
+    required this.onTutorialCompleted,
     this.reducedEffects = false,
     this.hapticsEnabled = true,
   });
@@ -40,6 +41,8 @@ class RottenShellFinalBattle extends StatefulWidget {
   final BossBattleDefinition boss;
   final VoidCallback onVictory;
   final VoidCallback onDefeat;
+  final bool tutorialCompleted;
+  final VoidCallback onTutorialCompleted;
   final bool reducedEffects;
   final bool hapticsEnabled;
 
@@ -49,8 +52,6 @@ class RottenShellFinalBattle extends StatefulWidget {
 
 class _RottenShellFinalBattleState extends State<RottenShellFinalBattle>
     with TickerProviderStateMixin {
-  static const _tutorialCompletedKey =
-      'rottenShellFinalBattleTutorialCompleted';
   late final AnimationController _introController;
   late final AnimationController _beamController;
   late final ArenaFighter _fighter;
@@ -117,9 +118,7 @@ class _RottenShellFinalBattleState extends State<RottenShellFinalBattle>
 
   Future<void> _startDuel() async {
     if (!mounted || _introComplete) return;
-    final preferences = await SharedPreferences.getInstance();
-    if (!mounted || _introComplete) return;
-    final showTutorial = !(preferences.getBool(_tutorialCompletedKey) ?? false);
+    final showTutorial = !widget.tutorialCompleted;
     setState(() {
       _introComplete = true;
       if (showTutorial) {
@@ -273,11 +272,7 @@ class _RottenShellFinalBattleState extends State<RottenShellFinalBattle>
   }
 
   void _completeTutorial() {
-    unawaited(
-      SharedPreferences.getInstance().then(
-        (preferences) => preferences.setBool(_tutorialCompletedKey, true),
-      ),
-    );
+    widget.onTutorialCompleted();
     _moveEnergy();
     _startCombatTimers();
   }

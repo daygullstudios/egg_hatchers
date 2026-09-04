@@ -112,8 +112,10 @@ are retained only for backward-compatible first-account migration.
   `selectedBackgroundThemeId`, `animalSpriteTheme`, `showBattleBackgrounds`,
   `reducedBattleEffects`, `hapticsEnabled`, and `showCustomSprites` remain
   read-only fallbacks for upgrades from the sandbox settings format.
-- `rottenShellFinalBattleTutorialCompleted` is currently device-wide. It should
-  move into account progress before cloud sync because it affects onboarding.
+- `rottenShellFinalBattleTutorialCompleted` now lives in account progress. The
+  old device-wide key is migrated once into every existing save (including the
+  unscoped legacy save) and then removed so newly created accounts do not
+  inherit another player's onboarding choice.
 
 ### Development-only device state
 

@@ -7,7 +7,6 @@ import 'package:egg_hatchers/widgets/audio_scope.dart';
 import 'package:egg_hatchers/widgets/rotten_shell_final_battle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   const fighter = ArenaFighter(
@@ -93,7 +92,7 @@ void main() {
   });
 
   testWidgets('final battle intro and duel fit a narrow phone', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    var tutorialCompleted = false;
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -115,6 +114,8 @@ void main() {
             boss: BossData.bossById('rotten_shell')!,
             onVictory: () {},
             onDefeat: () {},
+            tutorialCompleted: false,
+            onTutorialCompleted: () => tutorialCompleted = true,
           ),
         ),
       ),
@@ -152,11 +153,7 @@ void main() {
       find.text('Use an ability to attack The Rotten Shell.'),
       findsNothing,
     );
-    final preferences = await SharedPreferences.getInstance();
-    expect(
-      preferences.getBool('rottenShellFinalBattleTutorialCompleted'),
-      isTrue,
-    );
+    expect(tutorialCompleted, isTrue);
     expect(tester.takeException(), isNull);
   });
 }

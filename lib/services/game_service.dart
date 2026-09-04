@@ -257,6 +257,8 @@ class GameService extends ChangeNotifier {
   bool get tutorialCompleted => _state.tutorialCompleted;
   bool get tutorialSkipped => _state.tutorialSkipped;
   int get tutorialVersionCompleted => _state.tutorialVersionCompleted;
+  bool get rottenShellFinalBattleTutorialCompleted =>
+      _state.rottenShellFinalBattleTutorialCompleted;
 
   bool get shouldAutoStartTutorial =>
       !_state.tutorialCompleted &&
@@ -298,6 +300,13 @@ class GameService extends ChangeNotifier {
   }
 
   void devCompleteTutorial() => completeTutorial();
+
+  void completeRottenShellFinalBattleTutorial() {
+    if (_state.rottenShellFinalBattleTutorialCompleted) return;
+    _state = _state.copyWith(rottenShellFinalBattleTutorialCompleted: true);
+    notifyListeners();
+    save();
+  }
 
   bool get hasSecretRewardAnimal =>
       _state.ownedAnimals.any((owned) => owned.isSecretReward);
@@ -792,6 +801,8 @@ class GameService extends ChangeNotifier {
     final tutorialCompleted = _state.tutorialCompleted;
     final tutorialSkipped = _state.tutorialSkipped;
     final tutorialVersionCompleted = _state.tutorialVersionCompleted;
+    final rottenShellFinalBattleTutorialCompleted =
+        _state.rottenShellFinalBattleTutorialCompleted;
     final eggMastery = _state.eggMastery;
     final protectedAnimals = _state.ownedAnimals
         .where((owned) => owned.isProtected)
@@ -827,6 +838,8 @@ class GameService extends ChangeNotifier {
       tutorialCompleted: tutorialCompleted,
       tutorialSkipped: tutorialSkipped,
       tutorialVersionCompleted: tutorialVersionCompleted,
+      rottenShellFinalBattleTutorialCompleted:
+          rottenShellFinalBattleTutorialCompleted,
       eggMastery: eggMastery,
     );
     _pendingQuestNotification = null;

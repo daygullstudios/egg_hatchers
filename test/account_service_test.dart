@@ -58,6 +58,34 @@ void main() {
     game.dispose();
   });
 
+  test(
+    'legacy device tutorial choice migrates into existing account saves',
+    () async {
+      final accounts = AccountService();
+      await accounts.initialize();
+      final accountId = accounts.account!.id;
+      await SaveService(
+        accountId: accountId,
+      ).save(GameData.startingPlayerState().copyWith(coins: 987));
+      final preferences = await SharedPreferences.getInstance();
+      await preferences.setBool(
+        'rottenShellFinalBattleTutorialCompleted',
+        true,
+      );
+
+      final migratedAccounts = AccountService();
+      await migratedAccounts.initialize();
+      final migrated = await SaveService(accountId: accountId).load();
+
+      expect(migrated!.coins, 987);
+      expect(migrated.rottenShellFinalBattleTutorialCompleted, isTrue);
+      expect(
+        preferences.containsKey('rottenShellFinalBattleTutorialCompleted'),
+        isFalse,
+      );
+    },
+  );
+
   test('created accounts persist and reload', () async {
     final accounts = AccountService();
     await accounts.initialize();
