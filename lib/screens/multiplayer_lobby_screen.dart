@@ -613,7 +613,7 @@ class _PlayerBanner extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '@${account.username}',
+                  account.identityLabel,
                   style: const TextStyle(
                     color: Color(0xFF70D9FF),
                     fontWeight: FontWeight.w700,

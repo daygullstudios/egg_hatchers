@@ -990,7 +990,7 @@ class _MultiplayerEntryCard extends StatelessWidget {
                     ),
                     Text(
                       enabled
-                          ? '@${account?.username ?? 'player'} | Prepare your multiplayer team'
+                          ? '${account?.identityLabel ?? 'Guest'} | Prepare your multiplayer team'
                           : 'Hatch an animal to enter',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,

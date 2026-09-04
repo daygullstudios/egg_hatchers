@@ -176,7 +176,7 @@ class _InviteCard extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                '${invite.from.username} wants to $action you',
+                '${invite.from.displayName} wants to $action you',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
@@ -221,7 +221,7 @@ class _MessageCard extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                '${message.from.username}: ${onlineMessageTags[message.tag] ?? message.tag}',
+                '${message.from.displayName}: ${onlineMessageTags[message.tag] ?? message.tag}',
                 style: const TextStyle(color: Colors.white),
               ),
             ),

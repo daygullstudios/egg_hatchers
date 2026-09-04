@@ -1,5 +1,7 @@
+import 'package:egg_hatchers/data/game_data.dart';
 import 'package:egg_hatchers/services/account_service.dart';
 import 'package:egg_hatchers/services/game_service.dart';
+import 'package:egg_hatchers/services/save_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,11 +9,53 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  test('new players start without an account', () async {
+  test('new players enter immediately with a device guest account', () async {
     final accounts = AccountService();
     await accounts.initialize();
     expect(accounts.isInitialized, isTrue);
-    expect(accounts.hasAccount, isFalse);
+    expect(accounts.hasAccount, isTrue);
+    expect(accounts.account!.isGuest, isTrue);
+    expect(accounts.account!.displayName, 'Guest Hatcher');
+    expect(accounts.account!.identityLabel, 'Guest · saved on this device');
+
+    final restored = AccountService();
+    await restored.initialize();
+    expect(restored.account!.id, accounts.account!.id);
+    expect(restored.account!.isGuest, isTrue);
+  });
+
+  test(
+    'deleting the only guest immediately creates a fresh guest slot',
+    () async {
+      final accounts = AccountService();
+      await accounts.initialize();
+      final originalId = accounts.account!.id;
+
+      await accounts.deleteAccount(originalId);
+
+      expect(accounts.hasAccount, isTrue);
+      expect(accounts.accounts, hasLength(1));
+      expect(accounts.account!.isGuest, isTrue);
+      expect(accounts.account!.id, isNot(originalId));
+    },
+  );
+
+  test('automatic guest can safely claim a pre-account legacy save', () async {
+    await SaveService().save(
+      GameData.startingPlayerState().copyWith(coins: 4321),
+    );
+    final accounts = AccountService();
+    await accounts.initialize();
+    final game = GameService();
+
+    await game.initialize(
+      accountId: accounts.account!.id,
+      migrateLegacySave: true,
+    );
+
+    expect(accounts.account!.isGuest, isTrue);
+    expect(game.coins, 4321);
+    game.dispose();
   });
 
   test('created accounts persist and reload', () async {
@@ -58,7 +102,7 @@ void main() {
       avatarColor: AccountService.avatarColors.last,
     );
 
-    expect(accounts.accounts, hasLength(2));
+    expect(accounts.accounts, hasLength(3));
     accounts.selectAccount(firstId);
     expect(accounts.account!.username, 'first_player');
   });
@@ -117,7 +161,11 @@ void main() {
     );
 
     await accounts.deleteAccount(firstId);
-    expect(accounts.accounts, hasLength(1));
-    expect(accounts.accounts.single.username, 'second_player');
+    expect(accounts.accounts, hasLength(2));
+    expect(
+      accounts.accounts.any((account) => account.username == 'second_player'),
+      isTrue,
+    );
+    expect(accounts.accounts.any((account) => account.isGuest), isTrue);
   });
 }

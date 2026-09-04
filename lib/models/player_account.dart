@@ -7,6 +7,7 @@ class PlayerAccount {
     required this.username,
     required this.avatarColorValue,
     required this.createdAt,
+    this.isGuest = false,
   });
 
   final String id;
@@ -14,8 +15,11 @@ class PlayerAccount {
   final String username;
   final int avatarColorValue;
   final DateTime createdAt;
+  final bool isGuest;
 
   Color get avatarColor => Color(avatarColorValue);
+  String get identityLabel =>
+      isGuest ? 'Guest · saved on this device' : '@$username';
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -23,6 +27,7 @@ class PlayerAccount {
     'username': username,
     'avatarColorValue': avatarColorValue,
     'createdAt': createdAt.toIso8601String(),
+    'isGuest': isGuest,
   };
 
   factory PlayerAccount.fromJson(Map<String, dynamic> json) {
@@ -32,6 +37,7 @@ class PlayerAccount {
       username: json['username'] as String,
       avatarColorValue: json['avatarColorValue'] as int,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      isGuest: json['isGuest'] as bool? ?? false,
     );
   }
 }

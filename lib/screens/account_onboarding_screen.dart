@@ -111,7 +111,7 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
                     const SizedBox(height: 14),
                     Text(
                       _showCreateForm
-                          ? 'Create your account'
+                          ? 'Create local profile'
                           : 'Choose account',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineMedium
@@ -120,7 +120,7 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
                     const SizedBox(height: 6),
                     Text(
                       _showCreateForm
-                          ? 'Choose the identity other players will see.'
+                          ? 'Add another profile on this device.'
                           : 'Each tab can use a different player.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -144,7 +144,7 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
                         key: const ValueKey('create-another-account-button'),
                         onPressed: () => setState(() => _showCreateForm = true),
                         icon: const Icon(Icons.person_add_alt_1),
-                        label: const Text('Create another account'),
+                        label: const Text('Create another local profile'),
                       ),
                     ] else ...[
                       TextFormField(
@@ -289,7 +289,7 @@ class _AccountChoice extends StatelessWidget {
                       account.displayName,
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
-                    Text('@${account.username}'),
+                    Text(account.identityLabel),
                   ],
                 ),
               ),

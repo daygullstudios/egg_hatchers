@@ -4,6 +4,19 @@ import 'package:egg_hatchers/models/player_account.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('legacy player accounts remain named local profiles', () {
+    final restored = PlayerAccount.fromJson({
+      'id': 'legacy',
+      'displayName': 'Legacy Player',
+      'username': 'legacy_player',
+      'avatarColorValue': 0xFF5271FF,
+      'createdAt': DateTime.utc(2026, 8, 27).toIso8601String(),
+    });
+
+    expect(restored.isGuest, isFalse);
+    expect(restored.identityLabel, '@legacy_player');
+  });
+
   test('multiplayer player snapshot survives JSON serialization', () {
     final account = PlayerAccount(
       id: 'player_1',

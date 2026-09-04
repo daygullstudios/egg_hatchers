@@ -78,6 +78,11 @@ class AccountService extends ChangeNotifier {
       }
     }
 
+    if (_accounts.isEmpty) {
+      _accounts.add(_createGuestAccount());
+      await _saveAccounts(preferences);
+    }
+
     final forceAccountPicker =
         kIsWeb && Uri.base.queryParameters['account'] == 'choose';
     if (!forceAccountPicker) {
@@ -157,6 +162,12 @@ class AccountService extends ChangeNotifier {
       _account = null;
       writeActiveAccountId(null);
     }
+    if (_accounts.isEmpty) {
+      final guest = _createGuestAccount();
+      _accounts.add(guest);
+      _account = guest;
+      writeActiveAccountId(guest.id);
+    }
     final preferences = await SharedPreferences.getInstance();
     await _saveAccounts(preferences);
     await AccountStorage.deleteAccountData(id);
@@ -172,6 +183,24 @@ class AccountService extends ChangeNotifier {
     return preferences.setString(
       _accountsKey,
       jsonEncode(_accounts.map((account) => account.toJson()).toList()),
+    );
+  }
+
+  PlayerAccount _createGuestAccount() {
+    final createdAt = DateTime.now().toUtc();
+    var randomPart = math.Random.secure().nextInt(0x7FFFFFFF);
+    var username = 'guest_${randomPart.toRadixString(36)}';
+    while (_accounts.any((account) => account.username == username)) {
+      randomPart = math.Random.secure().nextInt(0x7FFFFFFF);
+      username = 'guest_${randomPart.toRadixString(36)}';
+    }
+    return PlayerAccount(
+      id: 'guest_${createdAt.microsecondsSinceEpoch}_$randomPart',
+      displayName: 'Guest Hatcher',
+      username: username,
+      avatarColorValue: avatarColors.first.toARGB32(),
+      createdAt: createdAt,
+      isGuest: true,
     );
   }
 

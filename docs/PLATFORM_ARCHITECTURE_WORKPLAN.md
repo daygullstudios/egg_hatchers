@@ -277,3 +277,10 @@ phases can ship:
 The immutable device settings value and versioned store are implemented. The
 existing services retain their public APIs while reading legacy values and
 writing the canonical namespaced format.
+
+Immediate guest entry is also implemented locally. Fresh installs receive a
+persistent `Guest Hatcher` slot without completing a form, and a pre-account
+legacy save is adopted by that slot through the existing guarded migration.
+The internal generated username remains protocol compatibility data only and is
+not presented as the guest's public identity. Existing named profiles retain
+their original identity and behavior.

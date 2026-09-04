@@ -30,7 +30,7 @@ void main() {
     lobby.showInvite();
     await tester.pump();
 
-    expect(find.text('challenger wants to battle you'), findsOneWidget);
+    expect(find.text('Challenger wants to battle you'), findsOneWidget);
     expect(find.byKey(const ValueKey('accept-online-invite')), findsOneWidget);
     expect(find.byKey(const ValueKey('decline-online-invite')), findsOneWidget);
     final cardFinder = find.byKey(const ValueKey('invite_1'));

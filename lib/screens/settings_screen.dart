@@ -594,7 +594,7 @@ class _AccountSettings extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '@${account.username}',
+                    account.identityLabel,
                     style: TextStyle(
                       color: theme.cardTextSecondaryColor,
                       fontWeight: FontWeight.w600,

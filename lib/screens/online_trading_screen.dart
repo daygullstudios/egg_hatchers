@@ -463,7 +463,7 @@ class _TraderBanner extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '@${account.username}',
+                  account.identityLabel,
                   style: const TextStyle(color: Color(0xFF83E6C1)),
                 ),
               ],

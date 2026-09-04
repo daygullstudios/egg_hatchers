@@ -45,6 +45,11 @@ versioned `DeviceSettingsStore`. Existing sandbox keys are still read as
 migration fallbacks; new changes use namespaced keys. Resetting that store is
 tested to leave accounts and progress untouched.
 
+Fresh installs now enter through an automatically created, persistent guest
+slot instead of requiring a player name and username before play. Existing
+named profiles and imports remain compatible, and legacy pre-account progress
+is safely claimed by the new guest slot.
+
 ## Art rules
 
 Every new animal needs Classic, Retro Pixel, and Realistic versions. Classic should be cartoony, Retro Pixel should be intentionally pixel-built, and Realistic should match the detailed transparent sprite set. DayGull animals may also need the established animated side-slice glitch treatment.

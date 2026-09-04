@@ -6,7 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('account onboarding fits a narrow phone', (tester) async {
+  testWidgets('account picker fits a narrow phone for the automatic guest', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(320, 568);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -23,7 +25,9 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Create your account'), findsOneWidget);
+    expect(find.text('Choose account'), findsOneWidget);
+    expect(find.text('Guest Hatcher'), findsOneWidget);
+    expect(find.text('Guest · saved on this device'), findsOneWidget);
     expect(tester.takeException(), isNull);
     game.dispose();
   });
@@ -40,6 +44,11 @@ void main() {
         home: AccountOnboardingScreen(accounts: accounts, game: game),
       ),
     );
+
+    await tester.tap(
+      find.byKey(const ValueKey('create-another-account-button')),
+    );
+    await tester.pump();
 
     await tester.enterText(
       find.byKey(const ValueKey('account-display-name')),

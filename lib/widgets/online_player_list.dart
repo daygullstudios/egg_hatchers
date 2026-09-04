@@ -120,7 +120,7 @@ class _OnlinePlayerTile extends StatelessWidget {
                       style: const TextStyle(fontWeight: FontWeight.w900),
                     ),
                     Text(
-                      '@${player.account.username} | ${player.rating} rating',
+                      '${player.account.identityLabel} | ${player.rating} rating',
                       style: const TextStyle(fontSize: 11),
                     ),
                   ],
