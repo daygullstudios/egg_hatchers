@@ -33,6 +33,7 @@ migrate_working_dir/
 /build/
 /coverage/
 .codex-run/
+.wrangler/
 
 # Symbolication related
 app.*.symbols

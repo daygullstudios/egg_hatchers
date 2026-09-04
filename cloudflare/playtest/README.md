@@ -4,11 +4,17 @@ This directory is the checked-in Cloudflare delivery boundary for the compiled
 Flutter web game. It follows the proven Railcade shape while the current Egg
 Hatchers name remains an internal migration label.
 
-The initial configuration is deliberately unreachable: `workers_dev` and
-preview URLs are disabled, and no route or custom domain is checked in. A dry
-run can validate and package the release build without publishing it. Do not
-add a route or deploy until the playtest hostname and its Cloudflare Access
-application are ready.
+The current configuration is deliberately unreachable: `workers_dev` and
+preview URLs are disabled, and no route or custom domain is checked in. The
+verified release assets have been uploaded as Worker version
+`38e9ca2e-94d3-4b68-a960-c38c76bf6dd6`, but Cloudflare reports **No targets
+deployed**, so there is no public game URL yet.
+
+The temporary private hostname is
+`egg-hatchers-playtest.daygullstudios.com`. It is intentionally beneath the
+studio domain so the final product-name decision remains independent. Do not
+attach that hostname until its Cloudflare Access application and allow policy
+exist.
 
 ## Release boundary
 
@@ -31,19 +37,18 @@ npm run build:web
 npm run deploy:dry-run
 ```
 
-The dry run does not create or update a Cloudflare Worker. The `deploy` script
-exists for the later approved playtest release, after Wrangler CLI
-authentication and the external setup gates below are complete.
+The dry run does not create or update a Cloudflare Worker. `npm run deploy`
+uploads a new version; with the checked-in no-target configuration it still
+does not expose a URL.
 
 ## External setup gates before first deployment
 
-1. Choose a private playtest hostname. This does not need to be the final
-   public product name, but it must be intentionally selected.
-2. Create a self-hosted Cloudflare Access application for that exact hostname.
-3. Add an allow policy containing the owner and approved testers only.
-4. Add the custom-domain route to `wrangler.jsonc`, keep `workers_dev` and
+1. Create a self-hosted Cloudflare Access application for
+   `egg-hatchers-playtest.daygullstudios.com`.
+2. Attach Railcade's existing reusable approved-tester allow policy.
+3. Add the custom-domain route to `wrangler.jsonc`, keep `workers_dev` and
    preview URLs disabled, then re-run the test, web build, and dry run.
-5. Deploy and verify that an unauthenticated browser is redirected to Access
+4. Deploy and verify that an unauthenticated browser is redirected to Access
    while an approved identity reaches the game.
 
 Never place Cloudflare API tokens, Firebase credentials, Access assertions, or

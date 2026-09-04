@@ -221,10 +221,13 @@ desktop/mobile web performance pass the release checklist.
 
 The private delivery boundary is now scaffolded in `cloudflare/playtest` as a
 Workers Static Assets application. It deliberately has no public preview URL or
-route until a playtest hostname and Cloudflare Access application are selected.
-The Flutter web build also ships private-cache, no-index, and baseline browser
-hardening headers. This permits local build and Wrangler dry-run verification
-without publishing the game or committing to the final product name.
+route. The first verified asset bundle is uploaded to the
+`egg-hatchers-playtest` Worker as an unreachable no-target version. The selected
+temporary hostname is `egg-hatchers-playtest.daygullstudios.com`; it stays
+detached until its Cloudflare Access application reuses Railcade's approved
+tester policy. The Flutter web build also ships private-cache, no-index, and
+baseline browser hardening headers. This permits release verification without
+publishing the game or committing to the final product name.
 
 ### 5. Make multiplayer durable and authoritative
 
