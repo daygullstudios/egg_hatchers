@@ -10,4 +10,10 @@ Future<String?> pickSaveFile() {
   );
 }
 
+Future<void> copySaveText(String contents) {
+  throw UnsupportedError(
+    'Copying save data is only available in the web game.',
+  );
+}
+
 void reloadAfterSaveImport() {}

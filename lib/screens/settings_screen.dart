@@ -150,6 +150,33 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _copySave(BuildContext context) async {
+    try {
+      await game.save();
+      if (!context.mounted) return;
+      final contents = await _saveTransfer.exportSave(
+        activeAccountId: AccountScope.of(context).account?.id,
+      );
+      await copySaveText(contents);
+      if (context.mounted) {
+        UiSound.confirm(context);
+        showGameSnackBar(
+          context,
+          message: 'Save code copied!',
+          backgroundColor: preferences.selectedTheme.primaryColor,
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        showGameSnackBar(
+          context,
+          message: 'Could not copy save: $error',
+          backgroundColor: Colors.redAccent,
+        );
+      }
+    }
+  }
+
   Future<void> _importSave(BuildContext context) async {
     try {
       final contents = await pickSaveFile();
@@ -292,6 +319,20 @@ class SettingsScreen extends StatelessWidget {
                               selected,
                               color: selected.secondaryColor,
                               height: 48,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            key: const ValueKey('settings-copy-save'),
+                            onPressed: kIsWeb ? () => _copySave(context) : null,
+                            icon: const Icon(Icons.copy_rounded),
+                            label: const Text(
+                              'Copy Save Code',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: selected.primaryColor,
+                              minimumSize: const Size.fromHeight(46),
                             ),
                           ),
                           const SizedBox(height: 8),

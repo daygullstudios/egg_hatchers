@@ -49,4 +49,8 @@ Future<String?> pickSaveFile() {
   return completer.future;
 }
 
+Future<void> copySaveText(String contents) async {
+  await web.window.navigator.clipboard.writeText(contents).toDart;
+}
+
 void reloadAfterSaveImport() => web.window.location.reload();
