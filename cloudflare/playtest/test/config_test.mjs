@@ -5,13 +5,18 @@ import test from "node:test";
 const configUrl = new URL("../wrangler.jsonc", import.meta.url);
 const headersUrl = new URL("../../../web/_headers", import.meta.url);
 
-test("playtest config cannot publish to a public preview URL", async () => {
+test("playtest publishes only to the Access-protected hostname", async () => {
   const config = JSON.parse(await readFile(configUrl, "utf8"));
 
   assert.equal(config.name, "egg-hatchers-playtest");
   assert.equal(config.workers_dev, false);
   assert.equal(config.preview_urls, false);
-  assert.equal(config.routes, undefined);
+  assert.deepEqual(config.routes, [
+    {
+      pattern: "egg-hatchers-playtest.daygullstudios.com",
+      custom_domain: true,
+    },
+  ]);
   assert.deepEqual(config.assets, {
     directory: "../../build/web",
     not_found_handling: "single-page-application",

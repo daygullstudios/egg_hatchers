@@ -4,6 +4,12 @@
   "compatibility_date": "2026-09-04",
   "workers_dev": false,
   "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "egg-hatchers-playtest.daygullstudios.com",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": "../../build/web",
     "not_found_handling": "single-page-application"

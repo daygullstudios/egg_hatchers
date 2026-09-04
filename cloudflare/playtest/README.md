@@ -4,17 +4,15 @@ This directory is the checked-in Cloudflare delivery boundary for the compiled
 Flutter web game. It follows the proven Railcade shape while the current Egg
 Hatchers name remains an internal migration label.
 
-The current configuration is deliberately unreachable: `workers_dev` and
-preview URLs are disabled, and no route or custom domain is checked in. The
-verified release assets have been uploaded as Worker version
-`38e9ca2e-94d3-4b68-a960-c38c76bf6dd6`, but Cloudflare reports **No targets
-deployed**, so there is no public game URL yet.
+The playtest publishes only to
+`egg-hatchers-playtest.daygullstudios.com`. `workers_dev` and preview URLs stay
+disabled, so Cloudflare does not create an unprotected alternate game URL.
 
-The temporary private hostname is
-`egg-hatchers-playtest.daygullstudios.com`. It is intentionally beneath the
-studio domain so the final product-name decision remains independent. Do not
-attach that hostname until its Cloudflare Access application and allow policy
-exist.
+The temporary hostname is intentionally beneath the studio domain so the final
+product-name decision remains independent. Its self-hosted Cloudflare Access
+application is `2ed23c5f-4d30-42e9-83c4-90b4e24c2135` and reuses Railcade's
+approved-tester allow policy. The policy itself remains managed in Cloudflare;
+tester email addresses and credentials are never checked into the repository.
 
 ## Release boundary
 
@@ -38,17 +36,13 @@ npm run deploy:dry-run
 ```
 
 The dry run does not create or update a Cloudflare Worker. `npm run deploy`
-uploads a new version; with the checked-in no-target configuration it still
-does not expose a URL.
+uploads a new version and updates only the protected custom-domain route.
 
-## External setup gates before first deployment
+## First-deployment verification
 
-1. Create a self-hosted Cloudflare Access application for
-   `egg-hatchers-playtest.daygullstudios.com`.
-2. Attach Railcade's existing reusable approved-tester allow policy.
-3. Add the custom-domain route to `wrangler.jsonc`, keep `workers_dev` and
-   preview URLs disabled, then re-run the test, web build, and dry run.
-4. Deploy and verify that an unauthenticated browser is redirected to Access
+1. Keep `workers_dev` and preview URLs disabled.
+2. Run the configuration test, web release build, and Wrangler dry run.
+3. Deploy and verify that an unauthenticated browser is redirected to Access
    while an approved identity reaches the game.
 
 Never place Cloudflare API tokens, Firebase credentials, Access assertions, or
