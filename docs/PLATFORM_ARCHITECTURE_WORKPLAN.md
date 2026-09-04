@@ -215,6 +215,13 @@ and interrupted writes are covered by automated and manual tests.
 Exit gate: narrow-phone controls, auth redirects, save sync, audio policy, and
 desktop/mobile web performance pass the release checklist.
 
+The private delivery boundary is now scaffolded in `cloudflare/playtest` as a
+Workers Static Assets application. It deliberately has no public preview URL or
+route until a playtest hostname and Cloudflare Access application are selected.
+The Flutter web build also ships private-cache, no-index, and baseline browser
+hardening headers. This permits local build and Wrangler dry-run verification
+without publishing the game or committing to the final product name.
+
 ### 5. Make multiplayer durable and authoritative
 
 - Replace process-memory presence and rooms with durable session state.

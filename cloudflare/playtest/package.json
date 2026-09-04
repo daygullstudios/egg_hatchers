@@ -1,0 +1,14 @@
+{
+  "name": "egg-hatchers-playtest",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "build:web": "cd ../.. && flutter build web --release",
+    "deploy:dry-run": "npx --yes wrangler@4.129.0 deploy --dry-run",
+    "deploy": "npx --yes wrangler@4.129.0 deploy"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
