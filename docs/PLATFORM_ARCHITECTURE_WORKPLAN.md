@@ -293,6 +293,12 @@ Canonical hashing ignores the local save timestamp and sorts map keys, so
 equivalent progress compares equal across devices. A fingerprint mismatch is
 treated as corruption and recovers the retained previous snapshot.
 
+Each local account also has a versioned `ProgressSyncCheckpointStore`. It holds
+only the last content fingerprint and cloud revision confirmed by both sides,
+which lets the conservative planner recognize a shared ancestor. The
+checkpoint is account-scoped device metadata, is discarded with that local
+account, and never grants authority to modify gameplay progress.
+
 Immediate guest entry is also implemented locally. Fresh installs receive a
 persistent `Guest Hatcher` slot without completing a form, and a pre-account
 legacy save is adopted by that slot through the existing guarded migration.
