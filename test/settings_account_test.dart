@@ -58,6 +58,9 @@ void main() {
     expect(find.text('Account'), findsOneWidget);
     expect(find.text('Settings Player'), findsOneWidget);
     expect(find.text('@settings_player'), findsOneWidget);
+    expect(find.text('Save Transfer'), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings-export-save')), findsOneWidget);
+    expect(find.byKey(const ValueKey('settings-import-save')), findsOneWidget);
     await tester.tap(
       find.byKey(const ValueKey('settings-switch-account-button')),
     );

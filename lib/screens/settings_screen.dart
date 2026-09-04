@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../data/realistic_animal_sprites.dart';
@@ -8,6 +9,8 @@ import '../navigation/app_page_route.dart';
 import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
 import '../services/preferences_service.dart';
+import '../services/save_transfer_file.dart';
+import '../services/save_transfer_service.dart';
 import '../services/sprite_rating_service.dart';
 import '../services/sprite_reference_overlay_service.dart';
 import '../services/tutorial_service.dart';
@@ -38,6 +41,8 @@ class SettingsScreen extends StatelessWidget {
   final GameService game;
   final SpriteRatingService spriteRating;
   final SpriteReferenceOverlayService referenceOverlay;
+
+  static final SaveTransferService _saveTransfer = SaveTransferService();
 
   Future<void> _replayBasics(
     BuildContext context,
@@ -116,6 +121,104 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _exportSave(BuildContext context) async {
+    try {
+      await game.save();
+      if (!context.mounted) return;
+      final accountId = AccountScope.of(context).account?.id;
+      final contents = await _saveTransfer.exportSave(
+        activeAccountId: accountId,
+      );
+      final date = DateTime.now().toIso8601String().split('T').first;
+      await downloadSaveFile(contents, 'egg-hatchers-save-$date.json');
+      if (context.mounted) {
+        UiSound.confirm(context);
+        showGameSnackBar(
+          context,
+          message: 'Save exported successfully!',
+          backgroundColor: preferences.selectedTheme.primaryColor,
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        showGameSnackBar(
+          context,
+          message: 'Save export failed: $error',
+          backgroundColor: Colors.redAccent,
+        );
+      }
+    }
+  }
+
+  Future<void> _importSave(BuildContext context) async {
+    try {
+      final contents = await pickSaveFile();
+      if (contents == null || !context.mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Replace local save?'),
+          content: const Text(
+            'This will replace every Egg Hatchers account, all progress, settings, custom eggs, and custom animals on this device.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('CANCEL'),
+            ),
+            FilledButton.icon(
+              key: const ValueKey('settings-confirm-import-save'),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              icon: const Icon(Icons.restore_rounded),
+              label: const Text('IMPORT'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !context.mounted) return;
+
+      final accountCount = await _saveTransfer.importSave(contents);
+      if (!context.mounted) return;
+      UiSound.confirm(context);
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Import complete'),
+          content: Text(
+            accountCount == 1
+                ? '1 account was restored. Restart the game to load it.'
+                : '$accountCount accounts were restored. Restart the game to load them.',
+          ),
+          actions: [
+            FilledButton.icon(
+              key: const ValueKey('settings-restart-after-import'),
+              onPressed: reloadAfterSaveImport,
+              icon: const Icon(Icons.restart_alt_rounded),
+              label: const Text('RESTART GAME'),
+            ),
+          ],
+        ),
+      );
+    } on SaveTransferException catch (error) {
+      if (context.mounted) {
+        showGameSnackBar(
+          context,
+          message: error.message,
+          backgroundColor: Colors.redAccent,
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        showGameSnackBar(
+          context,
+          message: 'Save import failed: $error',
+          backgroundColor: Colors.redAccent,
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -162,6 +265,65 @@ class SettingsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 14),
                     ],
+                    _SettingsSection(
+                      theme: selected,
+                      title: 'Save Transfer',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Move every local account and its progress to another computer.',
+                            style: TextStyle(
+                              color: selected.cardTextSecondaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          FilledButton.icon(
+                            key: const ValueKey('settings-export-save'),
+                            onPressed: kIsWeb
+                                ? () => _exportSave(context)
+                                : null,
+                            icon: const Icon(Icons.download_rounded),
+                            label: const Text(
+                              'Export Save',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            style: GameTheme.filledButton(
+                              selected,
+                              color: selected.secondaryColor,
+                              height: 48,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          OutlinedButton.icon(
+                            key: const ValueKey('settings-import-save'),
+                            onPressed: kIsWeb
+                                ? () => _importSave(context)
+                                : null,
+                            icon: const Icon(Icons.upload_file_rounded),
+                            label: const Text(
+                              'Import Save',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: selected.primaryColor,
+                              minimumSize: const Size.fromHeight(46),
+                            ),
+                          ),
+                          if (!kIsWeb) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Save transfer is currently available in the web game.',
+                              style: TextStyle(
+                                color: selected.cardTextSecondaryColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
                     _SettingsSection(
                       theme: selected,
                       title: 'Tutorials',
