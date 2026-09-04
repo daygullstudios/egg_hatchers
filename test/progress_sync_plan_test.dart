@@ -4,14 +4,28 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('rejects incomplete cloud metadata', () {
     expect(
-      () => ProgressSyncContext(cloudFingerprint: 'cloud-without-revision'),
+      () => ProgressSyncContext(
+        cloudState: CloudProgressState.present,
+        cloudFingerprint: 'cloud-without-revision',
+      ),
       throwsA(isA<AssertionError>()),
+    );
+  });
+
+  test('unknown cloud state never authorizes a local upload', () {
+    expect(
+      ProgressSyncPlanner.plan(
+        const ProgressSyncContext(localFingerprint: 'valuable-local-save'),
+      ),
+      ProgressSyncAction.waitForCloud,
     );
   });
 
   test('starts empty when neither side has progress', () {
     expect(
-      ProgressSyncPlanner.plan(const ProgressSyncContext()),
+      ProgressSyncPlanner.plan(
+        const ProgressSyncContext(cloudState: CloudProgressState.missing),
+      ),
       ProgressSyncAction.noData,
     );
   });
@@ -19,7 +33,10 @@ void main() {
   test('uploads an existing guest save when cloud progress is empty', () {
     expect(
       ProgressSyncPlanner.plan(
-        const ProgressSyncContext(localFingerprint: 'local-a'),
+        const ProgressSyncContext(
+          cloudState: CloudProgressState.missing,
+          localFingerprint: 'local-a',
+        ),
       ),
       ProgressSyncAction.uploadLocal,
     );
@@ -29,6 +46,7 @@ void main() {
     expect(
       ProgressSyncPlanner.plan(
         const ProgressSyncContext(
+          cloudState: CloudProgressState.present,
           cloudFingerprint: 'cloud-a',
           cloudRevision: 4,
         ),
@@ -41,6 +59,7 @@ void main() {
     expect(
       ProgressSyncPlanner.plan(
         const ProgressSyncContext(
+          cloudState: CloudProgressState.present,
           localFingerprint: 'same',
           cloudFingerprint: 'same',
           cloudRevision: 8,
@@ -54,6 +73,7 @@ void main() {
     expect(
       ProgressSyncPlanner.plan(
         const ProgressSyncContext(
+          cloudState: CloudProgressState.present,
           localFingerprint: 'guest-progress',
           cloudFingerprint: 'existing-protected-progress',
           cloudRevision: 3,
@@ -67,6 +87,7 @@ void main() {
     expect(
       ProgressSyncPlanner.plan(
         const ProgressSyncContext(
+          cloudState: CloudProgressState.present,
           localFingerprint: 'local-new',
           cloudFingerprint: 'shared-old',
           cloudRevision: 6,
@@ -84,6 +105,7 @@ void main() {
       expect(
         ProgressSyncPlanner.plan(
           const ProgressSyncContext(
+            cloudState: CloudProgressState.present,
             localFingerprint: 'shared-old',
             cloudFingerprint: 'cloud-new',
             cloudRevision: 7,
@@ -100,6 +122,7 @@ void main() {
     expect(
       ProgressSyncPlanner.plan(
         const ProgressSyncContext(
+          cloudState: CloudProgressState.present,
           localFingerprint: 'local-new',
           cloudFingerprint: 'cloud-new',
           cloudRevision: 7,

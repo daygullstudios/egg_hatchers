@@ -146,6 +146,8 @@ These keys must never be uploaded or trusted by a production backend.
 
 - Local progress with no cloud progress uploads and becomes the protected save.
 - Cloud progress with no local progress downloads to the selected local slot.
+- A failed, offline, timed-out, or permission-denied cloud read remains
+  `unknown` and defers sync. It is never interpreted as an empty cloud account.
 - Identical fingerprints are acknowledged without replacing either copy.
 - When both copies differ on first link, show a comparison and require the
   player to choose. Never infer that the newer timestamp is the desired save.
