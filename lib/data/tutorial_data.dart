@@ -26,7 +26,7 @@ class TutorialData {
   static const steps = <GuidedTutorialStep>[
     GuidedTutorialStep(
       id: 'shop',
-      text: 'Click the shop button!',
+      text: 'Click the Egg Shop button!',
       targetId: TutorialTargetIds.shopButton,
       requiresTargetTap: true,
       advanceOnRoute: kShopRouteName,

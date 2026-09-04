@@ -264,7 +264,7 @@ Future<T?> openShopWithTransition<T>(
     context,
     theme: theme,
     builder: builder,
-    label: 'Opening Shop',
+    label: 'Opening Egg Shop',
     icon: '🛒',
     duration: kShopPreNavTransitionDuration,
     settings: settings ?? const RouteSettings(name: kShopRouteName),

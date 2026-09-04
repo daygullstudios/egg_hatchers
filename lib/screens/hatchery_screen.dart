@@ -380,7 +380,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                             ),
                             _HatcheryNavItem(
                               tutorialKey: TutorialTargets.shopButton,
-                              label: '🛒 Shop',
+                              label: '🛒 Egg Shop',
                               color: bg.secondaryColor,
                               onTap: () => openShopWithTransition(
                                 context,
@@ -609,7 +609,7 @@ class _EmptyHatchery extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Visit the Shop to get started 🐣',
+              'Visit the Egg Shop to get started 🐣',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
