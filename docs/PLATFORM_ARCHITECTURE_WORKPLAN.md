@@ -301,6 +301,12 @@ which lets the conservative planner recognize a shared ancestor. The
 checkpoint is account-scoped device metadata, is discarded with that local
 account, and never grants authority to modify gameplay progress.
 
+`ProgressSyncAssessmentService` now joins the local envelope, checkpoint, and a
+provider-neutral protected-cloud read into one read-only assessment. Remote
+exceptions and invalid remote fingerprints are reduced to `unknown`, which can
+only produce `waitForCloud`. Actual upload, download, and conflict resolution
+remain separate revalidated operations for the future Firebase adapter.
+
 Immediate guest entry is also implemented locally. Fresh installs receive a
 persistent `Guest Hatcher` slot without completing a form, and a pre-account
 legacy save is adopted by that slot through the existing guarded migration.
