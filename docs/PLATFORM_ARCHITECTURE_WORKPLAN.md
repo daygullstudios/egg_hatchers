@@ -228,6 +228,12 @@ web build also ships private-cache, no-index, and baseline browser hardening
 headers. This permits private release verification without committing to the
 final product name.
 
+The first routed release is deployed. Unauthenticated checks against both the
+app shell and compiled JavaScript are redirected to Cloudflare Access, while
+Workers preview URLs remain disabled. Approved-browser gameplay verification
+follows once the newly attached custom hostname has propagated through the
+local DNS resolver.
+
 ### 5. Make multiplayer durable and authoritative
 
 - Replace process-memory presence and rooms with durable session state.

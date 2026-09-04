@@ -14,6 +14,13 @@ application is `2ed23c5f-4d30-42e9-83c4-90b4e24c2135` and reuses Railcade's
 approved-tester allow policy. The policy itself remains managed in Cloudflare;
 tester email addresses and credentials are never checked into the repository.
 
+The first routed release is Worker version
+`b95eec09-b6a8-4071-b20b-4bf4d97c9b00`. Direct unauthenticated requests to both
+`/` and `/main.dart.js` return Cloudflare Access redirects, confirming that the
+HTML shell and compiled game bundle are protected. Recursive DNS may take a few
+minutes to replace an earlier negative lookup after the custom domain is first
+attached.
+
 ## Release boundary
 
 - Flutter produces the shared web client in `build/web`.
