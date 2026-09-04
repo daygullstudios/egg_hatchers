@@ -40,6 +40,11 @@ Egg Hatchers is explicitly treated as the legacy migration source rather than
 the architecture authority; new systems follow the stronger proven Railcade or
 Grids & Aces pattern where applicable.
 
+Device settings now pass through an immutable `DeviceSettings` value and a
+versioned `DeviceSettingsStore`. Existing sandbox keys are still read as
+migration fallbacks; new changes use namespaced keys. Resetting that store is
+tested to leave accounts and progress untouched.
+
 ## Art rules
 
 Every new animal needs Classic, Retro Pixel, and Realistic versions. Classic should be cartoony, Retro Pixel should be intentionally pixel-built, and Realistic should match the detailed transparent sprite set. DayGull animals may also need the established animated side-slice glitch treatment.

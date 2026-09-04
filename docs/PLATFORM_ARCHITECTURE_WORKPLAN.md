@@ -106,9 +106,12 @@ are retained only for backward-compatible first-account migration.
 
 ### Device-owned preferences
 
-- `audioMusicEnabled`, `audioSfxEnabled`, `audioMusicVolume`, `audioSfxVolume`
-- `selectedBackgroundThemeId`, `animalSpriteTheme`, `showBattleBackgrounds`
-- `reducedBattleEffects`, `hapticsEnabled`, `showCustomSprites`
+- Canonical settings now use versioned `egg_hatchers.settings.*.v1` keys behind
+  `DeviceSettingsStore`, grouped by audio, visual, accessibility, and feedback.
+- `audioMusicEnabled`, `audioSfxEnabled`, `audioMusicVolume`, `audioSfxVolume`,
+  `selectedBackgroundThemeId`, `animalSpriteTheme`, `showBattleBackgrounds`,
+  `reducedBattleEffects`, `hapticsEnabled`, and `showCustomSprites` remain
+  read-only fallbacks for upgrades from the sandbox settings format.
 - `rottenShellFinalBattleTutorialCompleted` is currently device-wide. It should
   move into account progress before cloud sync because it affects onboarding.
 
@@ -270,3 +273,7 @@ phases can ship:
   and background choices. Add platform capability messaging when audio or
   another feature is intentionally unavailable.
 - Maintain local JSON export as recovery tooling even after cloud sync exists.
+
+The immutable device settings value and versioned store are implemented. The
+existing services retain their public APIs while reading legacy values and
+writing the canonical namespaced format.

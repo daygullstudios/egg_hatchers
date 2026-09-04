@@ -4,12 +4,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../data/game_data.dart';
 import '../models/custom_sprite_data.dart';
 import 'account_storage.dart';
+import 'device_settings_store.dart';
 
 /// Persists per-animal custom pixel sprites in shared_preferences.
 class CustomSpriteService extends ChangeNotifier {
-  static const _showCustomSpritesKey = 'showCustomSprites';
   static const _spriteKey = 'customSprite';
   static const _migrationKey = 'customSpriteMigrationComplete';
+
+  CustomSpriteService({DeviceSettingsStore? settingsStore})
+    : _settingsStore = settingsStore ?? const DeviceSettingsStore();
+
+  final DeviceSettingsStore _settingsStore;
 
   final Map<String, CustomSpriteData> _sprites = {};
   String? _accountId;
@@ -30,7 +35,7 @@ class CustomSpriteService extends ChangeNotifier {
     _accountId = accountId;
     final prefs = await SharedPreferences.getInstance();
     _sprites.clear();
-    _showCustomSprites = prefs.getBool(_showCustomSpritesKey) ?? true;
+    _showCustomSprites = (await _settingsStore.read()).showCustomSprites;
     final migrationKey = AccountStorage.key(_migrationKey, accountId);
     final shouldMigrate =
         accountId != null &&
@@ -86,8 +91,7 @@ class CustomSpriteService extends ChangeNotifier {
     _showCustomSprites = value;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_showCustomSpritesKey, value);
+    await _settingsStore.writeShowCustomSprites(value);
   }
 
   Future<void> resetAllCustomSprites() async {

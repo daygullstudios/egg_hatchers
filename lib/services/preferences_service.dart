@@ -1,16 +1,14 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../models/animal_sprite_theme.dart';
 import '../models/background_theme.dart';
+import 'device_settings_store.dart';
 
 /// Persists visual preferences separately from gameplay save data.
 class PreferencesService extends ChangeNotifier {
-  static const _backgroundKey = 'selectedBackgroundThemeId';
-  static const _animalSpriteThemeKey = 'animalSpriteTheme';
-  static const _showBattleBackgroundsKey = 'showBattleBackgrounds';
-  static const _reducedBattleEffectsKey = 'reducedBattleEffects';
-  static const _hapticsEnabledKey = 'hapticsEnabled';
+  PreferencesService({DeviceSettingsStore? store})
+    : _store = store ?? const DeviceSettingsStore();
+
+  final DeviceSettingsStore _store;
 
   BackgroundTheme _selectedTheme = BackgroundThemes.defaultTheme;
   AnimalSpriteTheme _animalSpriteTheme = AnimalSpriteThemes.defaultTheme;
@@ -27,17 +25,15 @@ class PreferencesService extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
 
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedId = prefs.getString(_backgroundKey);
+    final settings = await _store.read();
+    final savedId = settings.backgroundThemeId;
     _selectedTheme = savedId != null
         ? BackgroundThemes.byId(savedId)
         : BackgroundThemes.defaultTheme;
-    _animalSpriteTheme = AnimalSpriteThemes.byId(
-      prefs.getString(_animalSpriteThemeKey),
-    );
-    _showBattleBackgrounds = prefs.getBool(_showBattleBackgroundsKey) ?? true;
-    _reducedBattleEffects = prefs.getBool(_reducedBattleEffectsKey) ?? false;
-    _hapticsEnabled = prefs.getBool(_hapticsEnabledKey) ?? true;
+    _animalSpriteTheme = AnimalSpriteThemes.byId(settings.animalSpriteThemeId);
+    _showBattleBackgrounds = settings.showBattleBackgrounds;
+    _reducedBattleEffects = settings.reducedBattleEffects;
+    _hapticsEnabled = settings.hapticsEnabled;
     _isInitialized = true;
     notifyListeners();
   }
@@ -48,8 +44,7 @@ class PreferencesService extends ChangeNotifier {
     _selectedTheme = theme;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_backgroundKey, theme.id);
+    await _store.writeBackgroundTheme(theme.id);
   }
 
   Future<void> setAnimalSpriteTheme(AnimalSpriteTheme theme) async {
@@ -58,8 +53,7 @@ class PreferencesService extends ChangeNotifier {
     _animalSpriteTheme = theme;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_animalSpriteThemeKey, theme.id);
+    await _store.writeAnimalSpriteTheme(theme.id);
   }
 
   Future<void> setShowBattleBackgrounds(bool value) async {
@@ -68,8 +62,7 @@ class PreferencesService extends ChangeNotifier {
     _showBattleBackgrounds = value;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_showBattleBackgroundsKey, value);
+    await _store.writeShowBattleBackgrounds(value);
   }
 
   Future<void> setReducedBattleEffects(bool value) async {
@@ -78,8 +71,7 @@ class PreferencesService extends ChangeNotifier {
     _reducedBattleEffects = value;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_reducedBattleEffectsKey, value);
+    await _store.writeReducedBattleEffects(value);
   }
 
   Future<void> setHapticsEnabled(bool value) async {
@@ -88,7 +80,6 @@ class PreferencesService extends ChangeNotifier {
     _hapticsEnabled = value;
     notifyListeners();
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_hapticsEnabledKey, value);
+    await _store.writeHapticsEnabled(value);
   }
 }

@@ -2,18 +2,16 @@ import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/audio_assets.dart';
+import 'device_settings_store.dart';
 
 /// Central music/SFX controller with persisted settings and web-safe playback.
 class AudioService extends ChangeNotifier {
-  AudioService();
+  AudioService({DeviceSettingsStore? settingsStore})
+    : _settingsStore = settingsStore ?? const DeviceSettingsStore();
 
-  static const _musicEnabledKey = 'audioMusicEnabled';
-  static const _sfxEnabledKey = 'audioSfxEnabled';
-  static const _musicVolumeKey = 'audioMusicVolume';
-  static const _sfxVolumeKey = 'audioSfxVolume';
+  final DeviceSettingsStore _settingsStore;
 
   static const rewardTriumphCooldownMs = 1000;
   static const rewardBigCooldownMs = 1500;
@@ -65,11 +63,11 @@ class AudioService extends ChangeNotifier {
 
   Future<void> _initialize() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _musicEnabled = prefs.getBool(_musicEnabledKey) ?? true;
-      _sfxEnabled = prefs.getBool(_sfxEnabledKey) ?? true;
-      _musicVolume = prefs.getDouble(_musicVolumeKey) ?? 0.6;
-      _sfxVolume = prefs.getDouble(_sfxVolumeKey) ?? 0.8;
+      final settings = await _settingsStore.read();
+      _musicEnabled = settings.musicEnabled;
+      _sfxEnabled = settings.sfxEnabled;
+      _musicVolume = settings.musicVolume;
+      _sfxVolume = settings.sfxVolume;
       await _musicPlayer.setReleaseMode(ReleaseMode.loop);
     } catch (e) {
       debugPrint('AudioService initialize failed: $e');
@@ -92,7 +90,7 @@ class AudioService extends ChangeNotifier {
     if (_musicEnabled == value) return;
     _musicEnabled = value;
     notifyListeners();
-    await _persistBool(_musicEnabledKey, value);
+    await _settingsStore.writeMusicEnabled(value);
     if (!value) {
       await _stopMusic();
     } else if (_userUnlocked && _currentTrack != null) {
@@ -106,7 +104,7 @@ class AudioService extends ChangeNotifier {
     if (_sfxEnabled == value) return;
     _sfxEnabled = value;
     notifyListeners();
-    await _persistBool(_sfxEnabledKey, value);
+    await _settingsStore.writeSfxEnabled(value);
   }
 
   Future<void> setMusicVolume(double value) async {
@@ -114,7 +112,7 @@ class AudioService extends ChangeNotifier {
     if ((_musicVolume - clamped).abs() < 0.001) return;
     _musicVolume = clamped;
     notifyListeners();
-    await _persistDouble(_musicVolumeKey, clamped);
+    await _settingsStore.writeMusicVolume(clamped);
     try {
       await _musicPlayer.setVolume(clamped);
       await _setBattleLayerVolumes(_targetBattleLayerVolumes());
@@ -126,7 +124,7 @@ class AudioService extends ChangeNotifier {
     if ((_sfxVolume - clamped).abs() < 0.001) return;
     _sfxVolume = clamped;
     notifyListeners();
-    await _persistDouble(_sfxVolumeKey, clamped);
+    await _settingsStore.writeSfxVolume(clamped);
   }
 
   Future<void> playMusic(MusicTrack track, {bool restart = false}) async {
@@ -396,20 +394,6 @@ class AudioService extends ChangeNotifier {
         await player.stop();
       } catch (_) {}
     }
-  }
-
-  Future<void> _persistBool(String key, bool value) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(key, value);
-    } catch (_) {}
-  }
-
-  Future<void> _persistDouble(String key, double value) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setDouble(key, value);
-    } catch (_) {}
   }
 
   @override
