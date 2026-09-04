@@ -58,6 +58,12 @@ void main() {
     expect(find.text('Account'), findsOneWidget);
     expect(find.text('Settings Player'), findsOneWidget);
     expect(find.text('@settings_player'), findsOneWidget);
+    expect(find.text('Device only'), findsOneWidget);
+    expect(find.text('Progress is saved only on this device.'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings-account-protection-status')),
+      findsOneWidget,
+    );
     expect(find.text('Save Transfer'), findsOneWidget);
     expect(find.byKey(const ValueKey('settings-export-save')), findsOneWidget);
     expect(find.byKey(const ValueKey('settings-copy-save')), findsOneWidget);

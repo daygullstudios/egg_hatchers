@@ -289,7 +289,7 @@ class _AccountChoice extends StatelessWidget {
                       account.displayName,
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
-                    Text(account.identityLabel),
+                    Text(account.localProfileLabel),
                   ],
                 ),
               ),

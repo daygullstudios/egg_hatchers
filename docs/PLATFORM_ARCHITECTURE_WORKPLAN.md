@@ -307,6 +307,12 @@ exceptions and invalid remote fingerprints are reduced to `unknown`, which can
 only produce `waitForCloud`. Actual upload, download, and conflict resolution
 remain separate revalidated operations for the future Firebase adapter.
 
+`AccountProtectionService` now provides the app-wide state seam used by the
+mature Railcade model: starting, local-only, guest, syncing, protected, and
+error. Until a Firebase gateway is configured, Settings explicitly identifies
+every Egg Hatchers profile as **Device only**. A local display name or username
+is never presented as proof that progress is protected across devices.
+
 Immediate guest entry is also implemented locally. Fresh installs receive a
 persistent `Guest Hatcher` slot without completing a form, and a pre-account
 legacy save is adopted by that slot through the existing guarded migration.

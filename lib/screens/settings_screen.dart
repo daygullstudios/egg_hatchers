@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../data/realistic_animal_sprites.dart';
 import '../models/animal_sprite_theme.dart';
+import '../models/account_protection_state.dart';
 import '../models/background_theme.dart';
 import '../models/player_account.dart';
 import '../navigation/app_page_route.dart';
@@ -19,6 +20,7 @@ import '../utils/snackbar_utils.dart';
 import '../utils/ui_sound.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/account_scope.dart';
+import '../widgets/account_protection_scope.dart';
 import '../widgets/audio_settings_card.dart';
 import '../widgets/game_background.dart';
 import '../widgets/phone_width_layout.dart';
@@ -254,6 +256,9 @@ class SettingsScreen extends StatelessWidget {
         final selected = preferences.selectedTheme;
         final selectedAnimalTheme = preferences.animalSpriteTheme;
         final account = AccountScope.of(context).account;
+        final protection =
+            AccountProtectionScope.maybeOf(context)?.state ??
+            const AccountProtectionState.localOnly();
 
         return ReturnToHatcheryPopScope(
           theme: selected,
@@ -285,6 +290,7 @@ class SettingsScreen extends StatelessWidget {
                         title: 'Account',
                         child: _AccountSettings(
                           account: account,
+                          protection: protection,
                           theme: selected,
                           onSwitch: () => _switchAccount(context),
                           onDelete: () => _deleteAccount(context, account),
@@ -549,12 +555,14 @@ class SettingsScreen extends StatelessWidget {
 class _AccountSettings extends StatelessWidget {
   const _AccountSettings({
     required this.account,
+    required this.protection,
     required this.theme,
     required this.onSwitch,
     required this.onDelete,
   });
 
   final PlayerAccount account;
+  final AccountProtectionState protection;
   final BackgroundTheme theme;
   final VoidCallback onSwitch;
   final VoidCallback onDelete;
@@ -604,6 +612,55 @@ class _AccountSettings extends StatelessWidget {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          key: const ValueKey('settings-account-protection-status'),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: theme.scaffoldColor.withValues(alpha: 0.34),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: theme.cardBorderColor),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                protection.isProtected
+                    ? Icons.verified_user_rounded
+                    : Icons.phonelink_lock_outlined,
+                size: 20,
+                color: protection.isProtected
+                    ? Colors.greenAccent.shade400
+                    : theme.primaryColor,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      protection.label,
+                      style: TextStyle(
+                        color: theme.cardTextPrimaryColor,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      protection.message ??
+                          'Progress protection status is unavailable.',
+                      style: TextStyle(
+                        color: theme.cardTextSecondaryColor,
+                        fontSize: 12,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
         FilledButton.icon(

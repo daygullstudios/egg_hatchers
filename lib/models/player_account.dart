@@ -20,6 +20,8 @@ class PlayerAccount {
   Color get avatarColor => Color(avatarColorValue);
   String get identityLabel =>
       isGuest ? 'Guest · saved on this device' : '@$username';
+  String get localProfileLabel =>
+      isGuest ? identityLabel : 'Local profile · @$username';
 
   Map<String, dynamic> toJson() => {
     'id': id,

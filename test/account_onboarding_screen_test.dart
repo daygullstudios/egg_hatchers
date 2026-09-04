@@ -92,6 +92,8 @@ void main() {
     expect(find.text('Choose account'), findsOneWidget);
     expect(find.text('First Player'), findsOneWidget);
     expect(find.text('Second Player'), findsOneWidget);
+    expect(find.text('Local profile · @first_player'), findsOneWidget);
+    expect(find.text('Local profile · @second_player'), findsOneWidget);
     await tester.tap(find.text('First Player'));
     expect(accounts.account!.username, 'first_player');
     game.dispose();

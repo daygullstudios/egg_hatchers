@@ -10,6 +10,7 @@ import 'screens/hatchery_screen.dart';
 import 'screens/multiplayer_lobby_screen.dart';
 import 'screens/online_trading_screen.dart';
 import 'services/account_service.dart';
+import 'services/account_protection_service.dart';
 import 'services/audio_service.dart';
 import 'services/custom_egg_service.dart';
 import 'services/custom_sprite_service.dart';
@@ -20,6 +21,7 @@ import 'services/sprite_rating_service.dart';
 import 'services/sprite_reference_overlay_service.dart';
 import 'widgets/animal_sprite_theme_scope.dart';
 import 'widgets/account_scope.dart';
+import 'widgets/account_protection_scope.dart';
 import 'widgets/app_theme_background.dart';
 import 'widgets/audio_scope.dart';
 import 'widgets/online_lobby_host.dart';
@@ -44,6 +46,8 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     with WidgetsBindingObserver {
   final GameService _game = GameService();
   final AccountService _accounts = AccountService();
+  final AccountProtectionService _accountProtection =
+      AccountProtectionService();
   final PreferencesService _preferences = PreferencesService();
   final CustomSpriteService _customSprites = CustomSpriteService();
   final CustomEggService _customEggs = CustomEggService();
@@ -74,7 +78,10 @@ class _EggHatchersAppState extends State<EggHatchersApp>
 
   Future<void> _initialize() async {
     unawaited(_audio.initialize());
-    await _accounts.initialize();
+    await Future.wait([
+      _accounts.initialize(),
+      _accountProtection.initialize(),
+    ]);
     _loadedAccountId = _accounts.account?.id;
     _legacyMigrationPending =
         _loadedAccountId == null && _accounts.accounts.isNotEmpty;
@@ -226,6 +233,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     _referenceOverlay.removeListener(_onGameChanged);
     _audio.removeListener(_onGameChanged);
     _audio.dispose();
+    _accountProtection.dispose();
     _onlineLobby.dispose();
     _game.dispose();
     super.dispose();
@@ -234,6 +242,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   bool get _isReady =>
       _game.isInitialized &&
       _accounts.isInitialized &&
+      _accountProtection.isInitialized &&
       _preferences.isInitialized &&
       _customSprites.isInitialized &&
       _customEggs.isInitialized &&
@@ -275,17 +284,20 @@ class _EggHatchersAppState extends State<EggHatchersApp>
               audio: _audio,
               child: AccountScope(
                 accounts: _accounts,
-                child: OnlineLobbyScope(
-                  lobby: _onlineLobby,
-                  child: OnlineLobbyHost(
+                child: AccountProtectionScope(
+                  protection: _accountProtection,
+                  child: OnlineLobbyScope(
                     lobby: _onlineLobby,
-                    onSessionReady: _openOnlineSession,
-                    child: AnimalSpriteThemeScope(
-                      theme: _preferences.animalSpriteTheme,
-                      child: TutorialHost(
-                        game: _game,
-                        theme: theme,
-                        child: content,
+                    child: OnlineLobbyHost(
+                      lobby: _onlineLobby,
+                      onSessionReady: _openOnlineSession,
+                      child: AnimalSpriteThemeScope(
+                        theme: _preferences.animalSpriteTheme,
+                        child: TutorialHost(
+                          game: _game,
+                          theme: theme,
+                          child: content,
+                        ),
                       ),
                     ),
                   ),
