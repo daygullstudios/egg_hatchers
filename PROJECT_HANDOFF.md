@@ -33,7 +33,12 @@ Import replaces all Egg Hatchers local data on the destination browser. Keep the
 The staged cross-platform, account, cloud-save, Cloudflare, and multiplayer
 architecture plan is maintained in `docs/PLATFORM_ARCHITECTURE_WORKPLAN.md`.
 Phase 1 has begun by versioning local progress without changing existing save
-keys or the JSON transfer format.
+keys or the JSON transfer format. The persistence inventory, proposed protected
+cloud contract, and conservative guest-link conflict policy are documented in
+that plan and represented by Firebase-independent sync-planning tests.
+Egg Hatchers is explicitly treated as the legacy migration source rather than
+the architecture authority; new systems follow the stronger proven Railcade or
+Grids & Aces pattern where applicable.
 
 ## Art rules
 

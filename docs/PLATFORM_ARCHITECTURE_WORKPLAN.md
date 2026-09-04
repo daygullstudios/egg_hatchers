@@ -10,6 +10,26 @@ for account linking, offline-first saves, web delivery, diagnostics, and mobile
 web policy. Use Grids & Aces as the model for durable multiplayer identity,
 sessions, reconnects, transactions, and preset-only player communication.
 
+## Design authority
+
+Egg Hatchers is the migration source and gameplay sandbox, not the reference
+architecture. Its existing behavior is authoritative only where compatibility
+or game-specific product rules require preservation. For new systems:
+
+- Railcade is the primary reference for guest-to-protected accounts,
+  offline-first progress, account recovery, settings presentation, mobile-web
+  capability messaging, diagnostics, and Cloudflare delivery.
+- Grids & Aces is the primary reference for identity separation, namespaced
+  preferences, guest-slot handoff, multiplayer lifecycle, reconnects,
+  transactions, player codes, and preset communication.
+- When both have a relevant implementation, choose the safer and more mature
+  behavior rather than reproducing Egg Hatchers' current structure.
+- Adapt concepts and contracts to Egg Hatchers; do not blindly copy project
+  branding, game-specific fields, or unnecessary complexity.
+
+The old local keys and account slots are compatibility inputs. They do not
+dictate the eventual service boundaries, settings model, or user experience.
+
 ## Non-negotiable migration rules
 
 - Existing browser/device accounts and imported JSON saves must keep working.
@@ -57,6 +77,80 @@ sessions, reconnects, transactions, and preset-only player communication.
 - Match outcomes, ratings, rewards, and anti-replay identifiers
 - Audit records for sensitive economy changes
 
+## Current persistence inventory
+
+The existing keys remain unchanged during migration. Legacy unscoped variants
+are retained only for backward-compatible first-account migration.
+
+### Account directory and device session
+
+- `playerAccounts`: device-local account-picker directory. It must eventually
+  contain links to protected IDs but is not itself the authoritative profile.
+- `playerAccountId`, `playerAccountDisplayName`, `playerAccountUsername`,
+  `playerAccountAvatarColor`, `playerAccountCreatedAt`: legacy local profile
+  fields; read for migration and do not upload as independent truth.
+- `eggHatchersActiveAccountId`: web session storage only; selects the account
+  for the current browser tab/session.
+
+### Account-owned data to protect and sync
+
+- `egg_hatchers_player_state_account_<id>` and `_backup`: versioned progress
+  and its previous valid snapshot.
+- `customEggs.account.<id>`: player-created eggs.
+- `customSprite.account.<id>.<animalId>`: player-created sprites.
+- `spriteRatingClaims.account.<id>`: claimed sprite-rating rewards. Reward
+  grants become server-owned before competitive/public release.
+- `spriteReferenceOverlayUnlocks.account.<id>`: purchased/unlocked overlays.
+- `customSpriteMigrationComplete.account.<id>`: local migration marker only;
+  never uploaded as player progress.
+
+### Device-owned preferences
+
+- `audioMusicEnabled`, `audioSfxEnabled`, `audioMusicVolume`, `audioSfxVolume`
+- `selectedBackgroundThemeId`, `animalSpriteTheme`, `showBattleBackgrounds`
+- `reducedBattleEffects`, `hapticsEnabled`, `showCustomSprites`
+- `rottenShellFinalBattleTutorialCompleted` is currently device-wide. It should
+  move into account progress before cloud sync because it affects onboarding.
+
+### Development-only device state
+
+- `devForceSlot1AnimalId`, `devForceSlot1MutationId`
+- `devForceSlot2AnimalId`, `devForceSlot2MutationId`
+- `devForceSlot3AnimalId`, `devForceSlot3MutationId`
+
+These keys must never be uploaded or trusted by a production backend.
+
+## Proposed protected cloud contract
+
+- `players/<authUid>`: private account metadata, schema version, creation time,
+  provider summary, and active progress pointer.
+- `players/<authUid>/progress/current`: canonical progress content, monotonic
+  server revision, content fingerprint, client revision, server timestamp, and
+  last accepted operation ID.
+- `players/<authUid>/customEggs/<eggId>` and
+  `players/<authUid>/customSprites/<animalId>`: player-created content with
+  independent revisions so large sprites do not rewrite the core save.
+- `publicPlayers/<publicPlayerId>`: intentionally public display name, lookup
+  code, avatar, and explicitly shareable collection summary. It contains no
+  email, provider identifier, local account ID, or private inventory.
+- Trusted economy mutations use callable server operations with idempotency
+  keys. Clients do not write balances, trade results, rewards, or ratings
+  directly.
+
+## Guest-link and sync conflict policy
+
+- Local progress with no cloud progress uploads and becomes the protected save.
+- Cloud progress with no local progress downloads to the selected local slot.
+- Identical fingerprints are acknowledged without replacing either copy.
+- When both copies differ on first link, show a comparison and require the
+  player to choose. Never infer that the newer timestamp is the desired save.
+- After a common revision is recorded, a change on only one side can sync
+  automatically. Changes on both sides require explicit conflict resolution.
+- Keep the unchosen snapshot as a recoverable backup until the chosen result is
+  confirmed by both local storage and the server.
+- Linking one local profile cannot absorb, rename, or delete another local
+  profile on the same device.
+
 ## Delivery architecture
 
 - Flutter remains the shared client for iOS, Android, and web.
@@ -78,6 +172,7 @@ sessions, reconnects, transactions, and preset-only player communication.
 - Add monotonic revisions and timestamps for later sync conflict handling.
 - Keep backup recovery and JSON save transfer compatible.
 - Document ownership, invariants, and migration tests.
+- Define and test conservative sync/link decisions independently of Firebase.
 
 Exit gate: legacy, current, backup, account-switch, and transfer tests pass.
 
@@ -158,3 +253,20 @@ phases can ship:
 6. Add cloud sync status and conflict-safe progress synchronization.
 7. Establish Cloudflare preview deployment and mobile-web qualification.
 8. Migrate live multiplayer only after identity and durable progress are stable.
+
+## Adopted improvements over the sandbox
+
+- Replace the mandatory local “player name + username before play” concept with
+  immediate guest play, an editable display name, and a server-issued immutable
+  public player code once the account is protected.
+- Present account state as `Guest`, `Syncing`, `Protected`, or `Sync issue`, with
+  “Protect progress” as the primary guest action.
+- Keep account/progress management distinct from ordinary presentation and
+  gameplay settings.
+- Move toward immutable settings values plus a dedicated persistence store,
+  clamped numeric inputs, versioned namespaced keys, a safe reset-to-defaults,
+  and explicit ownership of identity-adjacent preferences.
+- Preserve separate music and SFX levels, reduced effects, haptics, art style,
+  and background choices. Add platform capability messaging when audio or
+  another feature is intentionally unavailable.
+- Maintain local JSON export as recovery tooling even after cloud sync exists.
