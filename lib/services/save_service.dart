@@ -1,8 +1,25 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/player_state.dart';
+
+class ProgressSaveSnapshot {
+  const ProgressSaveSnapshot({
+    required this.state,
+    required this.revision,
+    required this.savedAt,
+    required this.contentFingerprint,
+    required this.isLegacyFormat,
+  });
+
+  final PlayerState state;
+  final int revision;
+  final DateTime savedAt;
+  final String contentFingerprint;
+  final bool isLegacyFormat;
+}
 
 /// Persists and restores player progress using shared_preferences.
 class SaveService {
@@ -22,19 +39,23 @@ class SaveService {
   String get _backupKey => '${_saveKey}_backup';
 
   Future<PlayerState?> load() async {
+    return (await loadSnapshot())?.state;
+  }
+
+  Future<ProgressSaveSnapshot?> loadSnapshot() async {
     final prefs = await SharedPreferences.getInstance();
-    final primary = _decode(prefs.getString(_saveKey));
+    final primary = _decodeSnapshot(prefs.getString(_saveKey));
     if (primary != null) return primary;
 
     final backupJson = prefs.getString(_backupKey);
-    final backup = _decode(backupJson);
+    final backup = _decodeSnapshot(backupJson);
     if (backup != null && backupJson != null) {
       await prefs.setString(_saveKey, backupJson);
     }
     return backup;
   }
 
-  static PlayerState? _decode(String? jsonString) {
+  static ProgressSaveSnapshot? _decodeSnapshot(String? jsonString) {
     if (jsonString == null) return null;
     try {
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
@@ -43,43 +64,80 @@ class SaveService {
             json['playerState'] is! Map<String, dynamic>) {
           return null;
         }
-        return PlayerState.fromJson(
+        final state = PlayerState.fromJson(
           json['playerState'] as Map<String, dynamic>,
+        );
+        final revision = (json['revision'] as num?)?.toInt() ?? 0;
+        if (revision < 0) return null;
+        final fingerprint = contentFingerprint(state);
+        if (json.containsKey('contentFingerprint') &&
+            json['contentFingerprint'] != fingerprint) {
+          return null;
+        }
+        return ProgressSaveSnapshot(
+          state: state,
+          revision: revision,
+          savedAt:
+              DateTime.tryParse(json['savedAt'] as String? ?? '')?.toUtc() ??
+              state.lastSavedTime.toUtc(),
+          contentFingerprint: fingerprint,
+          isLegacyFormat: false,
         );
       }
 
       // Saves written before the progress envelope are the PlayerState JSON.
-      return PlayerState.fromJson(json);
+      final state = PlayerState.fromJson(json);
+      return ProgressSaveSnapshot(
+        state: state,
+        revision: 0,
+        savedAt: state.lastSavedTime.toUtc(),
+        contentFingerprint: contentFingerprint(state),
+        isLegacyFormat: true,
+      );
     } catch (_) {
       return null;
     }
   }
 
-  static int _revision(String? jsonString) {
-    if (jsonString == null) return 0;
-    try {
-      final json = jsonDecode(jsonString) as Map<String, dynamic>;
-      if (json['format'] != progressFormat ||
-          json['schemaVersion'] != progressSchemaVersion) {
-        return 0;
-      }
-      return (json['revision'] as num?)?.toInt() ?? 0;
-    } catch (_) {
-      return 0;
+  /// Stable identity for gameplay content. Save timestamps are excluded so an
+  /// otherwise unchanged local save remains equal to its cloud ancestor.
+  static String contentFingerprint(PlayerState state) {
+    final content = Map<String, dynamic>.from(state.toJson())
+      ..remove('lastSavedTime');
+    final canonicalJson = jsonEncode(_canonicalize(content));
+    return sha256.convert(utf8.encode(canonicalJson)).toString();
+  }
+
+  static Object? _canonicalize(Object? value) {
+    if (value is Map) {
+      final entries = value.entries.toList()
+        ..sort(
+          (left, right) => left.key.toString().compareTo(right.key.toString()),
+        );
+      return <String, Object?>{
+        for (final entry in entries)
+          entry.key.toString(): _canonicalize(entry.value),
+      };
     }
+    if (value is List) {
+      return value.map(_canonicalize).toList(growable: false);
+    }
+    return value;
   }
 
   Future<void> save(PlayerState state) async {
     final prefs = await SharedPreferences.getInstance();
     final currentJson = prefs.getString(_saveKey);
-    if (_decode(currentJson) != null) {
+    final current = _decodeSnapshot(currentJson);
+    if (current != null) {
       await prefs.setString(_backupKey, currentJson!);
     }
     final jsonString = jsonEncode({
       'format': progressFormat,
       'schemaVersion': progressSchemaVersion,
-      'revision': _revision(currentJson) + 1,
+      'revision': (current?.revision ?? 0) + 1,
       'savedAt': DateTime.now().toUtc().toIso8601String(),
+      'contentFingerprint': contentFingerprint(state),
       'playerState': state.toJson(),
     });
     await prefs.setString(_saveKey, jsonString);

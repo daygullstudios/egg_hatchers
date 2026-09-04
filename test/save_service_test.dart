@@ -40,6 +40,7 @@ void main() {
       expect(first['schemaVersion'], SaveService.progressSchemaVersion);
       expect(first['revision'], 1);
       expect(first['savedAt'], isA<String>());
+      expect(first['contentFingerprint'], matches(RegExp(r'^[a-f0-9]{64}$')));
       expect(first['playerState']['coins'], 123);
 
       await saves.save(GameData.startingPlayerState().copyWith(coins: 456));
@@ -47,8 +48,28 @@ void main() {
       expect(second['revision'], 2);
       expect(second['playerState']['coins'], 456);
       expect((await saves.load())!.coins, 456);
+      final snapshot = await saves.loadSnapshot();
+      expect(snapshot!.revision, 2);
+      expect(snapshot.contentFingerprint, second['contentFingerprint']);
+      expect(snapshot.isLegacyFormat, isFalse);
     },
   );
+
+  test('fingerprint ignores save time and canonicalizes map order', () {
+    final first = GameData.startingPlayerState().copyWith(
+      lastSavedTime: DateTime.utc(2025),
+      bossWins: const {'rotten_shell': 2, 'egg_guardian': 1},
+    );
+    final second = GameData.startingPlayerState().copyWith(
+      lastSavedTime: DateTime.utc(2026),
+      bossWins: const {'egg_guardian': 1, 'rotten_shell': 2},
+    );
+
+    expect(
+      SaveService.contentFingerprint(first),
+      SaveService.contentFingerprint(second),
+    );
+  });
 
   test('upgrades a legacy save on the next normal save', () async {
     final legacyState = GameData.startingPlayerState().copyWith(coins: 12);
@@ -81,6 +102,24 @@ void main() {
 
     expect(recovered, isNotNull);
     expect(recovered!.coins, 321);
+    expect(preferences.getString(primaryKey), preferences.getString(backupKey));
+  });
+
+  test('fingerprint mismatch recovers the previous valid snapshot', () async {
+    final saves = SaveService(accountId: accountId);
+    await saves.save(GameData.startingPlayerState().copyWith(coins: 321));
+    await saves.save(GameData.startingPlayerState().copyWith(coins: 654));
+
+    final preferences = await SharedPreferences.getInstance();
+    final primary =
+        jsonDecode(preferences.getString(primaryKey)!) as Map<String, dynamic>;
+    primary['playerState']['coins'] = 999999;
+    await preferences.setString(primaryKey, jsonEncode(primary));
+
+    final recovered = await saves.loadSnapshot();
+
+    expect(recovered, isNotNull);
+    expect(recovered!.state.coins, 321);
     expect(preferences.getString(primaryKey), preferences.getString(backupKey));
   });
 

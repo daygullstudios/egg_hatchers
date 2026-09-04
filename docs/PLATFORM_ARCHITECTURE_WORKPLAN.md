@@ -287,6 +287,12 @@ The immutable device settings value and versioned store are implemented. The
 existing services retain their public APIs while reading legacy values and
 writing the canonical namespaced format.
 
+The versioned progress envelope now records a deterministic SHA-256 content
+fingerprint and exposes revision/save metadata through `ProgressSaveSnapshot`.
+Canonical hashing ignores the local save timestamp and sorts map keys, so
+equivalent progress compares equal across devices. A fingerprint mismatch is
+treated as corruption and recovers the retained previous snapshot.
+
 Immediate guest entry is also implemented locally. Fresh installs receive a
 persistent `Guest Hatcher` slot without completing a form, and a pre-account
 legacy save is adopted by that slot through the existing guarded migration.
