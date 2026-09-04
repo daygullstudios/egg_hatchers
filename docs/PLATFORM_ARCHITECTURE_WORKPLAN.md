@@ -234,6 +234,11 @@ Workers preview URLs remain disabled. Approved-browser gameplay verification
 follows once the newly attached custom hostname has propagated through the
 local DNS resolver.
 
+The private web client also distinguishes its expected missing multiplayer
+backend from a missing local development server. Until the durable multiplayer
+service ships, hosted players are directed to the retained Bot Arena instead of
+being told to start a server on their own device.
+
 ### 5. Make multiplayer durable and authoritative
 
 - Replace process-memory presence and rooms with durable session state.

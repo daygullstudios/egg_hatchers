@@ -62,6 +62,15 @@ class MultiplayerService extends ChangeNotifier {
     return Uri.parse('ws://127.0.0.1:53218/ws');
   }
 
+  static bool isLocalServerUri(Uri uri) =>
+      uri.host == '127.0.0.1' || uri.host == 'localhost' || uri.host == '::1';
+
+  static String unavailableMessageFor(Uri uri) {
+    return isLocalServerUri(uri)
+        ? 'The local match server is not running.'
+        : 'Online multiplayer is not available in this web playtest yet. Bot Arena is still available.';
+  }
+
   Future<void> connect() async {
     if (_channel != null || _disposed) return;
     _setState(MultiplayerConnectionState.connecting);
@@ -87,7 +96,7 @@ class MultiplayerService extends ChangeNotifier {
         await failedChannel?.sink.close();
       } catch (_) {}
       if (_disposed) return;
-      _message = 'The local match server is not running.';
+      _message = unavailableMessageFor(serverUri);
       _setState(MultiplayerConnectionState.offline);
     }
   }

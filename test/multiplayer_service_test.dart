@@ -13,6 +13,28 @@ import 'package:flutter_test/flutter_test.dart';
 import '../tool/multiplayer_server.dart';
 
 void main() {
+  test('hosted playtest failure keeps Bot Arena as the clear fallback', () {
+    expect(
+      MultiplayerService.unavailableMessageFor(
+        Uri.parse('wss://egg-hatchers-playtest.daygullstudios.com/ws'),
+      ),
+      'Online multiplayer is not available in this web playtest yet. '
+      'Bot Arena is still available.',
+    );
+  });
+
+  test(
+    'local failure still explains that the development server is absent',
+    () {
+      expect(
+        MultiplayerService.unavailableMessageFor(
+          Uri.parse('ws://127.0.0.1:53218/ws'),
+        ),
+        'The local match server is not running.',
+      );
+    },
+  );
+
   test('two matched players share a server-authoritative battle', () async {
     final webRoot = await Directory.systemTemp.createTemp('egg_hatchers_web_');
     await File(
