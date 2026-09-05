@@ -243,6 +243,8 @@ class GameService extends ChangeNotifier {
   int get rebirthRequirement =>
       RebirthLogic.nextRebirthRequirement(_state.rebirthLevel);
   bool get secretSpaceEggClaimed => _state.secretSpaceEggClaimed;
+  bool get secretHatcheryDiscovered => _state.secretHatcheryDiscovered;
+  bool get collectorsVaultUnlocked => _state.collectorsVaultUnlocked;
 
   /// True when the one-time Secret Reward Badge has been applied or legacy void egg claimed.
   bool get secretRewardBadgeClaimed => _state.secretSpaceEggClaimed;
@@ -312,7 +314,17 @@ class GameService extends ChangeNotifier {
       _state.ownedAnimals.any((owned) => owned.isSecretReward);
 
   bool get canUseSecretRewardBadge =>
-      !_state.secretSpaceEggClaimed && _state.ownedAnimals.isNotEmpty;
+      _state.collectorsVaultUnlocked &&
+      !_state.secretSpaceEggClaimed &&
+      _state.ownedAnimals.isNotEmpty;
+
+  void discoverSecretHatchery() {
+    if (_state.secretHatcheryDiscovered) return;
+    _state = _state.copyWith(secretHatcheryDiscovered: true);
+    notifyListeners();
+    save();
+  }
+
   int get battleTokens => _state.battleTokens;
   int get arenaRating => _state.arenaRating;
   int get arenaWins => _state.arenaWins;
@@ -778,6 +790,8 @@ class GameService extends ChangeNotifier {
 
     final newRebirthLevel = _state.rebirthLevel + 1;
     final secretClaimed = _state.secretSpaceEggClaimed;
+    final secretDiscovered = _state.secretHatcheryDiscovered;
+    final collectorsVaultUnlocked = _state.collectorsVaultUnlocked;
     final devToolsUnlocked = _state.fullDeveloperToolsUnlocked;
     final battleTokens = _state.battleTokens;
     final bossWins = _state.bossWins;
@@ -816,6 +830,8 @@ class GameService extends ChangeNotifier {
       rebirthLevel: newRebirthLevel,
       questProgress: QuestProgress.initial(),
       secretSpaceEggClaimed: secretClaimed,
+      secretHatcheryDiscovered: secretDiscovered,
+      collectorsVaultUnlocked: collectorsVaultUnlocked,
       fullDeveloperToolsUnlocked: devToolsUnlocked,
       battleTokens: battleTokens,
       bossWins: bossWins,
@@ -877,6 +893,7 @@ class GameService extends ChangeNotifier {
 
     if (quest.showsSecretHintOnClaim) {
       _state = _state.copyWith(
+        collectorsVaultUnlocked: true,
         questProgress: _state.questProgress.copyWith(
           claimedQuestIds: [..._state.questProgress.claimedQuestIds, questId],
         ),
@@ -884,7 +901,7 @@ class GameService extends ChangeNotifier {
       _incrementDailyQuest(DailySystemLogic.claimQuestRewardType);
       notifyListeners();
       save();
-      return const QuestClaimResult();
+      return const QuestClaimResult(collectorsVaultUnlocked: true);
     }
 
     _state = _state.copyWith(
@@ -2251,7 +2268,9 @@ class GameService extends ChangeNotifier {
     required String mutationId,
     required bool isProtected,
   }) {
-    if (_state.secretSpaceEggClaimed) return null;
+    if (!_state.collectorsVaultUnlocked || _state.secretSpaceEggClaimed) {
+      return null;
+    }
 
     final animal = GameData.animalById(animalId);
     if (animal == null) return null;
@@ -2300,8 +2319,15 @@ class GameService extends ChangeNotifier {
     save();
   }
 
-  /// Debug: mark badge as unclaimed so it can be applied again in testing.
-  void devGrantSecretRewardBadge() => devResetSecretRewardBadgeClaim();
+  /// Debug: unlock the vault and mark its badge unclaimed for testing.
+  void devGrantSecretRewardBadge() {
+    _state = _state.copyWith(
+      collectorsVaultUnlocked: true,
+      secretSpaceEggClaimed: false,
+    );
+    notifyListeners();
+    save();
+  }
 
   /// Test helper for injecting owned animals without changing hatch odds.
   @visibleForTesting

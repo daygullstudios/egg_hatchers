@@ -33,9 +33,45 @@ class CoinStatsStrip extends StatelessWidget {
           if (lifetimeCoinsEarned != null)
             _StatChip(
               icon: '🏆',
-              label: '${formatCoins(lifetimeCoinsEarned!)} lifetime',
+              label: '${formatCoins(lifetimeCoinsEarned!)} earned',
               color: theme.secondaryColor,
+              tooltip: 'Animal income earned this Rebirth.',
+              showInfoIcon: true,
+              onTap: () => _showAnimalIncomeExplanation(context),
             ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAnimalIncomeExplanation(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: theme.cardColor,
+        title: Text(
+          'Total animal income',
+          style: TextStyle(
+            color: theme.cardTextPrimaryColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Coins earned by your animals since you started—or since your last '
+          'Rebirth. Spending coins doesn’t reduce this total. It unlocks eggs '
+          'and counts toward your next Rebirth.',
+          style: TextStyle(
+            color: theme.cardTextSecondaryColor,
+            fontSize: 14,
+            height: 1.4,
+          ),
+        ),
+        actions: [
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(dialogContext),
+            icon: const Icon(Icons.check_rounded),
+            label: const Text('Got it'),
+          ),
         ],
       ),
     );
@@ -47,36 +83,59 @@ class _StatChip extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.color,
+    this.tooltip,
+    this.showInfoIcon = false,
+    this.onTap,
   });
 
   final String icon;
   final String label;
   final Color color;
+  final String? tooltip;
+  final bool showInfoIcon;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+    final chip = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.35)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(icon, style: const TextStyle(fontSize: 14)),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withValues(alpha: 0.35)),
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 14)),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
+              if (showInfoIcon) ...[
+                const SizedBox(width: 4),
+                Icon(Icons.info_outline_rounded, size: 15, color: color),
+              ],
+            ],
+          ),
+        ),
       ),
+    );
+
+    if (tooltip == null) return chip;
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(button: onTap != null, label: tooltip, child: chip),
     );
   }
 }

@@ -151,7 +151,7 @@ class QuestData {
     Quest(
       id: 'advanced_lifetime_100k',
       category: QuestCategory.advanced,
-      title: 'Earn 100,000 Lifetime Coins',
+      title: 'Earn 100,000 Animal Income',
       description: 'Reach 100K total coins earned from animal income.',
       rewardCoins: 50000,
       metric: QuestMetric.lifetimeCoinsEarned,
@@ -189,7 +189,7 @@ class QuestData {
     Quest(
       id: 'late_lifetime_1m',
       category: QuestCategory.lateGame,
-      title: 'Earn 1,000,000 Lifetime Coins',
+      title: 'Earn 1,000,000 Animal Income',
       description: 'Join the million-coin club from idle income.',
       rewardCoins: 1000000,
       metric: QuestMetric.lifetimeCoinsEarned,
@@ -211,7 +211,7 @@ class QuestData {
       description:
           'Collect every base animal at least once. Mutations do not matter.',
       rewardCoins: 0,
-      rewardDisplayLabel: '???',
+      rewardDisplayLabel: '🔐 Secret Hatchery reward',
       showsSecretHintOnClaim: true,
       metric: QuestMetric.collectedBaseAnimals,
       target: 48,

@@ -311,9 +311,9 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
                         onPressed: _resetCoins,
                       ),
                       const SizedBox(height: 32),
-                      _SectionTitle('Lifetime Coins (Unlock Testing)'),
+                      _SectionTitle('Animal Income (Unlock Testing)'),
                       Text(
-                        'Current: ${game.lifetimeCoinsEarned} lifetime coins',
+                        'Current: ${game.lifetimeCoinsEarned} earned this Rebirth',
                         style: DevToolsTheme.bodyText(),
                       ),
                       const SizedBox(height: 12),
@@ -326,12 +326,12 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
                         style: DevToolsTheme.bodyText(),
                         cursorColor: DevToolsTheme.primary,
                         decoration: DevToolsTheme.inputDecoration(
-                          'Lifetime coins earned',
+                          'Animal income this Rebirth',
                         ),
                       ),
                       const SizedBox(height: 12),
                       _BigButton(
-                        label: 'Set Lifetime Coins Earned',
+                        label: 'Set Animal Income',
                         onPressed: () {
                           final value = int.tryParse(
                             _lifetimeController.text.trim(),
@@ -341,7 +341,7 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
                             return;
                           }
                           game.setLifetimeCoinsEarned(value);
-                          _showMessage('Lifetime coins set to $value.');
+                          _showMessage('Animal income set to $value.');
                         },
                       ),
                       const SizedBox(height: 12),
@@ -350,46 +350,46 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
                         runSpacing: 8,
                         children: [
                           _QuickButton(
-                            label: '+500 lifetime',
+                            label: '+500 earned',
                             onPressed: () {
                               game.addLifetimeCoinsEarned(500);
                               _lifetimeController.text =
                                   '${game.lifetimeCoinsEarned}';
-                              _showMessage('Added 500 lifetime coins.');
+                              _showMessage('Added 500 animal income.');
                             },
                           ),
                           _QuickButton(
-                            label: '+5,000 lifetime',
+                            label: '+5,000 earned',
                             onPressed: () {
                               game.addLifetimeCoinsEarned(5000);
                               _lifetimeController.text =
                                   '${game.lifetimeCoinsEarned}';
-                              _showMessage('Added 5,000 lifetime coins.');
+                              _showMessage('Added 5,000 animal income.');
                             },
                           ),
                           _QuickButton(
-                            label: '+50,000 lifetime',
+                            label: '+50,000 earned',
                             onPressed: () {
                               game.addLifetimeCoinsEarned(50000);
                               _lifetimeController.text =
                                   '${game.lifetimeCoinsEarned}';
-                              _showMessage('Added 50,000 lifetime coins.');
+                              _showMessage('Added 50,000 animal income.');
                             },
                           ),
                           _QuickButton(
-                            label: '+1M lifetime',
+                            label: '+1M earned',
                             onPressed: () {
                               game.addLifetimeCoinsEarned(1000000);
                               _lifetimeController.text =
                                   '${game.lifetimeCoinsEarned}';
-                              _showMessage('Added 1,000,000 lifetime coins.');
+                              _showMessage('Added 1,000,000 animal income.');
                             },
                           ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       _BigButton(
-                        label: 'Unlock all eggs (750K lifetime)',
+                        label: 'Unlock all eggs (750K earned)',
                         onPressed: () {
                           game.setLifetimeCoinsEarned(750000);
                           _lifetimeController.text =
@@ -399,12 +399,12 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
                       ),
                       const SizedBox(height: 12),
                       _BigButton(
-                        label: 'Reset lifetime coins to 0',
+                        label: 'Reset animal income to 0',
                         color: DevToolsTheme.warning,
                         onPressed: () {
                           game.resetLifetimeCoinsEarned();
                           _lifetimeController.text = '0';
-                          _showMessage('Lifetime coins reset to 0.');
+                          _showMessage('Animal income reset to 0.');
                         },
                       ),
                       const SizedBox(height: 32),
@@ -486,7 +486,7 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
                       Text(
                         'Current: Rebirth Level ${game.rebirthLevel} · '
                         '${RebirthLogic.formatMultiplier(game.incomeMultiplier)} income · '
-                        'Next rebirth: ${formatCoins(game.rebirthRequirement)} lifetime',
+                        'Next Rebirth: ${formatCoins(game.rebirthRequirement)} animal income',
                         style: DevToolsTheme.bodyText(),
                       ),
                       const SizedBox(height: 12),
@@ -544,14 +544,14 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
                             },
                           ),
                           _QuickButton(
-                            label: 'Next rebirth lifetime',
+                            label: 'Meet next Rebirth requirement',
                             onPressed: () {
                               final requirement = game.rebirthRequirement;
                               game.setLifetimeCoinsEarned(requirement);
                               _lifetimeController.text =
                                   '${game.lifetimeCoinsEarned}';
                               _showMessage(
-                                'Lifetime coins set to ${formatCoins(requirement)}.',
+                                'Animal income set to ${formatCoins(requirement)}.',
                               );
                             },
                           ),
@@ -563,7 +563,7 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
                         onPressed: () {
                           if (!game.canRebirth) {
                             _showMessage(
-                              'Need ${formatCoins(game.rebirthRequirement)} lifetime coins to rebirth.',
+                              'Need ${formatCoins(game.rebirthRequirement)} animal income to Rebirth.',
                             );
                             return;
                           }

@@ -17,6 +17,8 @@ class PlayerState {
     this.rebirthLevel = 0,
     this.questProgress = const QuestProgress(),
     this.secretSpaceEggClaimed = false,
+    this.secretHatcheryDiscovered = false,
+    this.collectorsVaultUnlocked = false,
     this.fullDeveloperToolsUnlocked = false,
     this.battleTokens = 0,
     this.bossWins = const {},
@@ -59,6 +61,8 @@ class PlayerState {
   final int rebirthLevel;
   final QuestProgress questProgress;
   final bool secretSpaceEggClaimed;
+  final bool secretHatcheryDiscovered;
+  final bool collectorsVaultUnlocked;
   final bool fullDeveloperToolsUnlocked;
   final int battleTokens;
   final Map<String, int> bossWins;
@@ -113,6 +117,8 @@ class PlayerState {
     int? rebirthLevel,
     QuestProgress? questProgress,
     bool? secretSpaceEggClaimed,
+    bool? secretHatcheryDiscovered,
+    bool? collectorsVaultUnlocked,
     bool? fullDeveloperToolsUnlocked,
     int? battleTokens,
     Map<String, int>? bossWins,
@@ -160,6 +166,10 @@ class PlayerState {
       questProgress: questProgress ?? this.questProgress,
       secretSpaceEggClaimed:
           secretSpaceEggClaimed ?? this.secretSpaceEggClaimed,
+      secretHatcheryDiscovered:
+          secretHatcheryDiscovered ?? this.secretHatcheryDiscovered,
+      collectorsVaultUnlocked:
+          collectorsVaultUnlocked ?? this.collectorsVaultUnlocked,
       fullDeveloperToolsUnlocked:
           fullDeveloperToolsUnlocked ?? this.fullDeveloperToolsUnlocked,
       battleTokens: battleTokens ?? this.battleTokens,
@@ -223,6 +233,8 @@ class PlayerState {
     'rebirthLevel': rebirthLevel,
     'questProgress': questProgress.toJson(),
     'secretSpaceEggClaimed': secretSpaceEggClaimed,
+    'secretHatcheryDiscovered': secretHatcheryDiscovered,
+    'collectorsVaultUnlocked': collectorsVaultUnlocked,
     'fullDeveloperToolsUnlocked': fullDeveloperToolsUnlocked,
     'battleTokens': battleTokens,
     'bossWins': bossWins,
@@ -265,6 +277,10 @@ class PlayerState {
 
   factory PlayerState.fromJson(Map<String, dynamic> json) {
     final coins = json['coins'] as int;
+    final questProgress = QuestProgress.fromJson(
+      json['questProgress'] as Map<String, dynamic>?,
+    );
+    final secretRewardClaimed = json['secretSpaceEggClaimed'] as bool? ?? false;
     final battleLimitBreak = EggShardLogic.clampBattleLimitBreak(
       json['battleLimitBreakLevel'] as int? ?? 0,
     );
@@ -281,10 +297,14 @@ class PlayerState {
       lifetimeCoinsEarned: json['lifetimeCoinsEarned'] as int? ?? coins,
       luckLevel: json['luckLevel'] as int? ?? 1,
       rebirthLevel: json['rebirthLevel'] as int? ?? 0,
-      questProgress: QuestProgress.fromJson(
-        json['questProgress'] as Map<String, dynamic>?,
-      ),
-      secretSpaceEggClaimed: json['secretSpaceEggClaimed'] as bool? ?? false,
+      questProgress: questProgress,
+      secretSpaceEggClaimed: secretRewardClaimed,
+      secretHatcheryDiscovered:
+          json['secretHatcheryDiscovered'] as bool? ?? secretRewardClaimed,
+      collectorsVaultUnlocked:
+          json['collectorsVaultUnlocked'] as bool? ??
+          (secretRewardClaimed ||
+              questProgress.isQuestClaimed('late_complete_collection')),
       fullDeveloperToolsUnlocked:
           json['fullDeveloperToolsUnlocked'] as bool? ?? false,
       battleTokens: json['battleTokens'] as int? ?? 0,

@@ -7,7 +7,7 @@ class RebirthLogic {
   static const int baseRequirement = 1000000;
   static const double multiplierGrowth = 2;
 
-  /// Lifetime coins required to rebirth from [rebirthLevel] to the next level.
+  /// Animal income required to rebirth from [rebirthLevel] to the next level.
   static int rebirthRequirementForLevel(int rebirthLevel) {
     final level = rebirthLevel < 0 ? 0 : rebirthLevel;
     final nextLevel = level + 1;

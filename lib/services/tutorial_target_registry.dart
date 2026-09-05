@@ -8,7 +8,11 @@ class TutorialTargetRegistry {
     _handlers[targetId] = handler;
   }
 
-  static void unregister(String targetId) {
+  static void unregister(String targetId, {void Function()? onlyIfHandler}) {
+    if (onlyIfHandler != null &&
+        !identical(_handlers[targetId], onlyIfHandler)) {
+      return;
+    }
     _handlers.remove(targetId);
   }
 

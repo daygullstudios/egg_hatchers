@@ -163,7 +163,7 @@ class TutorialData {
       id: 'rebirth',
       text: 'Later, Rebirth gives a permanent income boost!',
       targetId: TutorialTargetIds.rebirthPanel,
-      fallbackText: 'Rebirth unlocks after earning enough lifetime coins.',
+      fallbackText: 'Rebirth unlocks after earning enough animal income.',
       manualNext: true,
       requiredRoute: kHatcheryRouteName,
     ),

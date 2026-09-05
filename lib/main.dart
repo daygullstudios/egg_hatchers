@@ -6,7 +6,7 @@ import 'models/background_theme.dart';
 import 'models/multiplayer.dart';
 import 'models/online_lobby.dart';
 import 'screens/account_onboarding_screen.dart';
-import 'screens/hatchery_screen.dart';
+import 'screens/main_game_shell.dart';
 import 'screens/multiplayer_lobby_screen.dart';
 import 'screens/online_trading_screen.dart';
 import 'services/account_service.dart';
@@ -315,7 +315,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
           ? const _LoadingScreen()
           : !_accounts.hasAccount
           ? AccountOnboardingScreen(accounts: _accounts, game: _game)
-          : HatcheryScreen(
+          : MainGameShell(
               game: _game,
               preferences: _preferences,
               customSprites: _customSprites,

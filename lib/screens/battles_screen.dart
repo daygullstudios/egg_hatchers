@@ -22,6 +22,7 @@ import '../widgets/tutorial_screen_bindings.dart';
 import '../widgets/tutorial_targets.dart';
 import '../widgets/egg_shard_upgrades_card.dart';
 import '../widgets/game_background.dart';
+import '../widgets/game_primary_navigation.dart';
 import '../widgets/boss_sprite.dart';
 import '../widgets/game_sprite.dart';
 import '../widgets/phone_width_layout.dart';
@@ -630,12 +631,16 @@ class BattlesScreen extends StatelessWidget {
       listenable: Listenable.merge([game, preferences, customSprites]),
       builder: (context, _) {
         final theme = preferences.selectedTheme;
+        final shell = MainGameShellScope.maybeOf(context);
 
         return TutorialScreenBindings(
+          enabled:
+              shell == null || shell.current == MainGameDestination.battles,
           onReturnToHatchery: () =>
               returnToHatcheryWithTransition(context, theme: theme),
           child: ReturnToHatcheryPopScope(
             theme: theme,
+            enabled: shell == null,
             child: Scaffold(
               backgroundColor: Colors.transparent,
               appBar: PhoneWidthAppBar(
@@ -647,11 +652,19 @@ class BattlesScreen extends StatelessWidget {
                 backgroundColor: theme.appBarColor,
                 foregroundColor: Colors.white,
                 automaticallyImplyLeading: false,
-                leading: ReturnToHatcheryBackButton(
-                  theme: theme,
-                  color: Colors.white,
-                  tutorialKey: TutorialTargets.screenBackButton,
-                ),
+                leading: shell == null
+                    ? ReturnToHatcheryBackButton(
+                        theme: theme,
+                        color: Colors.white,
+                        tutorialKey: TutorialTargets.screenBackButton,
+                      )
+                    : null,
+                bottom: shell == null
+                    ? null
+                    : GamePrimaryNavigation(
+                        theme: theme,
+                        hostDestination: MainGameDestination.battles,
+                      ),
               ),
               body: GameBackground(
                 theme: theme,

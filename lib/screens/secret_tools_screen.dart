@@ -207,6 +207,7 @@ class SecretToolsScreen extends StatelessWidget {
         );
         final total = CollectionQuestLogic.totalBaseAnimalCount;
         final claimed = game.secretRewardBadgeClaimed;
+        final vaultUnlocked = game.collectorsVaultUnlocked;
         final hasAnimals = game.ownedAnimals.isNotEmpty;
         final rottenPrerequisites = EggShardLogic.defeatedPrerequisiteCount(
           game.state,
@@ -312,7 +313,7 @@ class SecretToolsScreen extends StatelessWidget {
                           _StatRow(
                             theme: theme,
                             icon: 'R',
-                            label: 'Next rebirth',
+                            label: 'Animal income this Rebirth',
                             value:
                                 '${formatCoins(game.lifetimeCoinsEarned)} / ${formatCoins(game.rebirthRequirement)}',
                           ),
@@ -375,43 +376,63 @@ class SecretToolsScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            'Secret reward',
+                            vaultUnlocked
+                                ? "Collector's Vault"
+                                : "🔒 Collector's Vault",
                             style: GameTheme.sectionTitle(theme, size: 16),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Secret Reward Badge\n'
-                            'Choose one animal to protect forever.',
+                            vaultUnlocked
+                                ? 'Secret Reward Badge\n'
+                                      'Choose one treasured animal to protect forever.'
+                                : 'Complete the base-animal collection to open '
+                                      'this vault and earn its treasure.\n\n'
+                                      'Collection progress: $collected / $total',
                             style: TextStyle(
                               color: theme.cardTextSecondaryColor,
                               fontSize: 14,
                               height: 1.4,
                             ),
                           ),
-                          const SizedBox(height: 14),
-                          FilledButton.icon(
-                            onPressed: claimed
-                                ? null
-                                : () => _useSecretRewardBadge(context),
-                            icon: Text(claimed ? '✅' : '🏅'),
-                            label: Text(
-                              claimed
-                                  ? 'Secret Reward Badge used'
-                                  : hasAnimals
-                                  ? 'Use Badge'
-                                  : 'Choose Animal',
+                          if (!vaultUnlocked) ...[
+                            const SizedBox(height: 12),
+                            LinearProgressIndicator(
+                              value: total == 0 ? 0 : collected / total,
+                              minHeight: 8,
+                              borderRadius: BorderRadius.circular(8),
+                              color: theme.secondaryColor,
+                              backgroundColor: theme.panelAccentColor
+                                  .withValues(alpha: 0.18),
                             ),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: theme.secondaryColor,
-                              foregroundColor: Colors.white,
-                              disabledBackgroundColor: theme.panelAccentColor
-                                  .withValues(alpha: 0.35),
-                              disabledForegroundColor:
-                                  theme.cardTextSecondaryColor,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                          ] else ...[
+                            const SizedBox(height: 14),
+                            FilledButton.icon(
+                              onPressed: claimed
+                                  ? null
+                                  : () => _useSecretRewardBadge(context),
+                              icon: Text(claimed ? '✅' : '🏅'),
+                              label: Text(
+                                claimed
+                                    ? 'Secret Reward Badge used'
+                                    : hasAnimals
+                                    ? 'Use Badge'
+                                    : 'Choose Animal',
+                              ),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: theme.secondaryColor,
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor: theme.panelAccentColor
+                                    .withValues(alpha: 0.35),
+                                disabledForegroundColor:
+                                    theme.cardTextSecondaryColor,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                              ),
                             ),
-                          ),
-                          if (!claimed && !hasAnimals) ...[
+                          ],
+                          if (vaultUnlocked && !claimed && !hasAnimals) ...[
                             const SizedBox(height: 8),
                             Text(
                               'Hatch an animal first.',

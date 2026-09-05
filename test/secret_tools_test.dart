@@ -20,6 +20,9 @@ void main() {
     game.devSetOwnedAnimalsForTesting([
       const OwnedAnimal(animalId: 'chicken', quantity: 1),
     ]);
+    expect(game.canUseSecretRewardBadge, isFalse);
+
+    game.devGrantSecretRewardBadge();
     expect(game.canUseSecretRewardBadge, isTrue);
 
     final name = game.applySecretRewardBadge(
@@ -99,17 +102,45 @@ void main() {
     expect(restored.secretSpaceEggClaimed, isTrue);
   });
 
-  test('fullDeveloperToolsUnlocked is ignored but loads safely from old saves', () {
+  test('secret discovery and Collector’s Vault round-trip through json', () {
+    final state = PlayerState.initial().copyWith(
+      secretHatcheryDiscovered: true,
+      collectorsVaultUnlocked: true,
+    );
+    final restored = PlayerState.fromJson(state.toJson());
+
+    expect(restored.secretHatcheryDiscovered, isTrue);
+    expect(restored.collectorsVaultUnlocked, isTrue);
+  });
+
+  test('older completed collection saves unlock the Collector’s Vault', () {
     final restored = PlayerState.fromJson({
       'coins': 100,
       'ownedAnimals': <dynamic>[],
       'lastSavedTime': '2025-01-01T00:00:00.000',
       'lifetimeCoinsEarned': 100,
-      'fullDeveloperToolsUnlocked': true,
+      'questProgress': {
+        'claimedQuestIds': ['late_complete_collection'],
+      },
     });
 
-    expect(restored.fullDeveloperToolsUnlocked, isTrue);
-    final roundTrip = PlayerState.fromJson(restored.toJson());
-    expect(roundTrip.fullDeveloperToolsUnlocked, isTrue);
+    expect(restored.collectorsVaultUnlocked, isTrue);
   });
+
+  test(
+    'fullDeveloperToolsUnlocked is ignored but loads safely from old saves',
+    () {
+      final restored = PlayerState.fromJson({
+        'coins': 100,
+        'ownedAnimals': <dynamic>[],
+        'lastSavedTime': '2025-01-01T00:00:00.000',
+        'lifetimeCoinsEarned': 100,
+        'fullDeveloperToolsUnlocked': true,
+      });
+
+      expect(restored.fullDeveloperToolsUnlocked, isTrue);
+      final roundTrip = PlayerState.fromJson(restored.toJson());
+      expect(roundTrip.fullDeveloperToolsUnlocked, isTrue);
+    },
+  );
 }

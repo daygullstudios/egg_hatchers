@@ -10,17 +10,21 @@ class TutorialScreenBindings extends StatefulWidget {
     required this.onReturnToHatchery,
     required this.child,
     this.handlers = const {},
+    this.enabled = true,
   });
 
   final VoidCallback onReturnToHatchery;
   final Map<String, VoidCallback> handlers;
   final Widget child;
+  final bool enabled;
 
   @override
   State<TutorialScreenBindings> createState() => _TutorialScreenBindingsState();
 }
 
 class _TutorialScreenBindingsState extends State<TutorialScreenBindings> {
+  final Map<String, VoidCallback> _registeredHandlers = {};
+
   @override
   void initState() {
     super.initState();
@@ -30,26 +34,35 @@ class _TutorialScreenBindingsState extends State<TutorialScreenBindings> {
   @override
   void didUpdateWidget(covariant TutorialScreenBindings oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.enabled && !widget.enabled) {
+      _unregister();
+      return;
+    }
     _register();
   }
 
   void _register() {
-    TutorialTargetRegistry.register(
-      TutorialTargetIds.screenBackButton,
-      widget.onReturnToHatchery,
-    );
-    for (final entry in widget.handlers.entries) {
+    if (!widget.enabled) return;
+    _unregister();
+    _registeredHandlers[TutorialTargetIds.screenBackButton] =
+        widget.onReturnToHatchery;
+    _registeredHandlers.addAll(widget.handlers);
+    for (final entry in _registeredHandlers.entries) {
       TutorialTargetRegistry.register(entry.key, entry.value);
     }
   }
 
   @override
   void dispose() {
-    TutorialTargetRegistry.unregister(TutorialTargetIds.screenBackButton);
-    for (final id in widget.handlers.keys) {
-      TutorialTargetRegistry.unregister(id);
-    }
+    _unregister();
     super.dispose();
+  }
+
+  void _unregister() {
+    for (final entry in _registeredHandlers.entries) {
+      TutorialTargetRegistry.unregister(entry.key, onlyIfHandler: entry.value);
+    }
+    _registeredHandlers.clear();
   }
 
   @override

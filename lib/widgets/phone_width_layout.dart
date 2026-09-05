@@ -28,6 +28,7 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.title,
     this.titleStyle,
     this.onCoinBalanceTap,
+    this.bottom,
   }) : titleWidget = null;
 
   const PhoneWidthAppBar.widget({
@@ -42,8 +43,9 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.toolbarHeight = kToolbarHeight,
     this.horizontalPadding = 16,
     this.onCoinBalanceTap,
-  })  : title = null,
-        titleStyle = null;
+    this.bottom,
+  }) : title = null,
+       titleStyle = null;
 
   final String? title;
   final Widget? titleWidget;
@@ -57,15 +59,19 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double toolbarHeight;
   final double horizontalPadding;
   final VoidCallback? onCoinBalanceTap;
+  final PreferredSizeWidget? bottom;
 
   @override
-  Size get preferredSize => Size.fromHeight(toolbarHeight);
+  Size get preferredSize =>
+      Size.fromHeight(toolbarHeight + (bottom?.preferredSize.height ?? 0));
 
   TextStyle? _resolvedTitleStyle(BuildContext context) {
-    final base = titleStyle ??
+    final base =
+        titleStyle ??
         Theme.of(context).appBarTheme.titleTextStyle ??
         Theme.of(context).textTheme.titleLarge;
-    final color = foregroundColor ?? Theme.of(context).appBarTheme.foregroundColor;
+    final color =
+        foregroundColor ?? Theme.of(context).appBarTheme.foregroundColor;
     return base?.copyWith(color: color ?? base.color);
   }
 
@@ -96,7 +102,8 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   Widget _ellipsisTitle(Widget title, BuildContext context) {
     if (title is Text) {
-      final color = foregroundColor ?? Theme.of(context).appBarTheme.foregroundColor;
+      final color =
+          foregroundColor ?? Theme.of(context).appBarTheme.foregroundColor;
       return Text(
         title.data ?? '',
         style: (title.style ?? const TextStyle()).copyWith(
@@ -113,8 +120,8 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canPop = automaticallyImplyLeading &&
-        (ModalRoute.of(context)?.canPop ?? false);
+    final canPop =
+        automaticallyImplyLeading && (ModalRoute.of(context)?.canPop ?? false);
     final actionWidgets = actions ?? const <Widget>[];
     final trailingWidth = math.max(
       _kPhoneAppBarSideSlotWidth,
@@ -123,7 +130,10 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     final Widget leadingWidget;
     if (leading != null) {
-      leadingWidget = SizedBox(width: _kPhoneAppBarSideSlotWidth, child: leading);
+      leadingWidget = SizedBox(
+        width: _kPhoneAppBarSideSlotWidth,
+        child: leading,
+      );
     } else if (canPop) {
       leadingWidget = SizedBox(
         width: _kPhoneAppBarSideSlotWidth,
@@ -140,6 +150,7 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       titleSpacing: 0,
       toolbarHeight: toolbarHeight,
+      bottom: bottom,
       title: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: kPhoneMaxContentWidth),
@@ -148,9 +159,7 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
             child: Row(
               children: [
                 leadingWidget,
-                Expanded(
-                  child: Center(child: _buildTitle(context)),
-                ),
+                Expanded(child: Center(child: _buildTitle(context))),
                 SizedBox(
                   width: trailingWidth,
                   child: Row(
@@ -263,10 +272,7 @@ class PhoneWidthLayout extends StatelessWidget {
     final content = Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: kPhoneMaxContentWidth),
-        child: Padding(
-          padding: padding,
-          child: child,
-        ),
+        child: Padding(padding: padding, child: child),
       ),
     );
 

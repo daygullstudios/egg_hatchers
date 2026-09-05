@@ -13,6 +13,7 @@ import '../widgets/tutorial_screen_bindings.dart';
 import '../widgets/tutorial_targets.dart';
 import '../widgets/animal_fusion_panel.dart';
 import '../widgets/game_background.dart';
+import '../widgets/game_primary_navigation.dart';
 import '../widgets/owned_animal_list.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/quest_notification_listener.dart';
@@ -72,8 +73,8 @@ class CollectionScreen extends StatelessWidget {
       final message = isEliteReward
           ? 'Elite animals cannot be sold.'
           : isSecretReward
-              ? 'Secret reward animals cannot be sold.'
-              : 'Protected animals cannot be sold.';
+          ? 'Secret reward animals cannot be sold.'
+          : 'Protected animals cannot be sold.';
       UiSound.locked(context);
       showGameSnackBar(
         context,
@@ -114,8 +115,8 @@ class CollectionScreen extends StatelessWidget {
       final message = isEliteReward
           ? 'Elite animals cannot be sold.'
           : isSecretReward
-              ? 'Secret reward animals cannot be sold.'
-              : 'Protected animals cannot be sold.';
+          ? 'Secret reward animals cannot be sold.'
+          : 'Protected animals cannot be sold.';
       UiSound.locked(context);
       showGameSnackBar(
         context,
@@ -194,85 +195,117 @@ class CollectionScreen extends StatelessWidget {
       listenable: Listenable.merge([game, preferences, customSprites]),
       builder: (context, _) {
         final bg = preferences.selectedTheme;
+        final shell = MainGameShellScope.maybeOf(context);
 
         return TutorialScreenBindings(
+          enabled:
+              shell == null || shell.current == MainGameDestination.collection,
           onReturnToHatchery: () =>
               returnToHatcheryWithTransition(context, theme: bg),
           child: ReturnToHatcheryPopScope(
-          theme: bg,
-          child: QuestNotificationListener(
-          game: game,
-          preferences: preferences,
-          child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: PhoneWidthAppBar(
-            title: '📚 Collection',
-            titleStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-            backgroundColor: bg.appBarColor,
-            foregroundColor: Colors.white,
-            automaticallyImplyLeading: false,
-            leading: ReturnToHatcheryBackButton(
-              theme: bg,
-              color: Colors.white,
-              tutorialKey: TutorialTargets.screenBackButton,
-            ),
-          ),
-          body: GameBackground(
             theme: bg,
-            child: PhoneWidthLayout(
-              child: Column(
-                children: [
-                  AnimalFusionPanel(
-                    game: game,
-                    theme: bg,
-                    customSprites: customSprites,
-                    tutorialSectionKey: TutorialTargets.fusionSection,
+            enabled: shell == null,
+            child: QuestNotificationListener(
+              game: game,
+              preferences: preferences,
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                appBar: PhoneWidthAppBar(
+                  title: '📚 Collection',
+                  titleStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
                   ),
-                  Expanded(
-                    child: game.ownedAnimals.isEmpty
-                        ? _EmptyCollection(theme: bg)
-                        : OwnedAnimalList(
-                            game: game,
-                            theme: bg,
-                            separatorHeight: 12,
-                            customSprites: customSprites,
-                            showSellButtons: true,
-                            onUpgrade: (animalId, mutationId, name, isProtected) =>
-                                _handleUpgrade(
-                              context,
-                              animalId,
-                              mutationId,
-                              name,
-                              isProtected,
-                            ),
-                            onSellOne: (animalId, mutationId, name, _, isProtected) =>
-                                _handleSellOne(
-                              context,
-                              animalId,
-                              mutationId,
-                              name,
-                              isProtected,
-                            ),
-                            onSellAll:
-                                (animalId, mutationId, name, qty, total, isProtected) =>
-                                    _handleSellAll(
-                              context,
-                              animalId,
-                              mutationId,
-                              name,
-                              qty,
-                              total,
-                              isProtected,
-                            ),
-                          ),
+                  backgroundColor: bg.appBarColor,
+                  foregroundColor: Colors.white,
+                  automaticallyImplyLeading: false,
+                  leading: shell == null
+                      ? ReturnToHatcheryBackButton(
+                          theme: bg,
+                          color: Colors.white,
+                          tutorialKey: TutorialTargets.screenBackButton,
+                        )
+                      : null,
+                  bottom: shell == null
+                      ? null
+                      : GamePrimaryNavigation(
+                          theme: bg,
+                          hostDestination: MainGameDestination.collection,
+                        ),
+                ),
+                body: GameBackground(
+                  theme: bg,
+                  child: PhoneWidthLayout(
+                    child: Column(
+                      children: [
+                        AnimalFusionPanel(
+                          game: game,
+                          theme: bg,
+                          customSprites: customSprites,
+                          tutorialSectionKey: TutorialTargets.fusionSection,
+                        ),
+                        Expanded(
+                          child: game.ownedAnimals.isEmpty
+                              ? _EmptyCollection(theme: bg)
+                              : OwnedAnimalList(
+                                  game: game,
+                                  theme: bg,
+                                  separatorHeight: 12,
+                                  customSprites: customSprites,
+                                  showSellButtons: true,
+                                  onUpgrade:
+                                      (
+                                        animalId,
+                                        mutationId,
+                                        name,
+                                        isProtected,
+                                      ) => _handleUpgrade(
+                                        context,
+                                        animalId,
+                                        mutationId,
+                                        name,
+                                        isProtected,
+                                      ),
+                                  onSellOne:
+                                      (
+                                        animalId,
+                                        mutationId,
+                                        name,
+                                        _,
+                                        isProtected,
+                                      ) => _handleSellOne(
+                                        context,
+                                        animalId,
+                                        mutationId,
+                                        name,
+                                        isProtected,
+                                      ),
+                                  onSellAll:
+                                      (
+                                        animalId,
+                                        mutationId,
+                                        name,
+                                        qty,
+                                        total,
+                                        isProtected,
+                                      ) => _handleSellAll(
+                                        context,
+                                        animalId,
+                                        mutationId,
+                                        name,
+                                        qty,
+                                        total,
+                                        isProtected,
+                                      ),
+                                ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-        ),
-        ),
         );
       },
     );

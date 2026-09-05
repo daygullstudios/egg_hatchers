@@ -20,6 +20,7 @@ import '../widgets/daily_reward_popup.dart';
 import '../widgets/daily_system_cards.dart';
 import '../widgets/coin_header.dart';
 import '../widgets/game_background.dart';
+import '../widgets/game_primary_navigation.dart';
 import '../widgets/luck_panel.dart';
 import '../widgets/owned_animal_list.dart';
 import '../widgets/phone_width_layout.dart';
@@ -30,7 +31,6 @@ import '../services/tutorial_target_registry.dart';
 import '../widgets/tutorial_targets.dart';
 import 'battles_screen.dart';
 import 'collection_screen.dart';
-import 'custom_sprites_screen.dart';
 import 'quests_screen.dart';
 import 'secret_tools_screen.dart';
 import 'settings_screen.dart';
@@ -134,6 +134,11 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
 
     TutorialTargetRegistry.register(TutorialTargetIds.shopButton, () {
       if (!mounted) return;
+      final shell = MainGameShellScope.maybeOf(context);
+      if (shell != null) {
+        shell.onSelect(MainGameDestination.shop);
+        return;
+      }
       final bg = preferences.selectedTheme;
       openShopWithTransition(
         context,
@@ -149,6 +154,11 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
 
     TutorialTargetRegistry.register(TutorialTargetIds.collectionButton, () {
       if (!mounted) return;
+      final shell = MainGameShellScope.maybeOf(context);
+      if (shell != null) {
+        shell.onSelect(MainGameDestination.collection);
+        return;
+      }
       final bg = preferences.selectedTheme;
       openWithThemedTransition(
         context,
@@ -166,6 +176,11 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
 
     TutorialTargetRegistry.register(TutorialTargetIds.questsButton, () {
       if (!mounted) return;
+      final shell = MainGameShellScope.maybeOf(context);
+      if (shell != null) {
+        shell.onSelect(MainGameDestination.quests);
+        return;
+      }
       final bg = preferences.selectedTheme;
       openWithThemedTransition(
         context,
@@ -179,6 +194,11 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
 
     TutorialTargetRegistry.register(TutorialTargetIds.battlesButton, () {
       if (!mounted) return;
+      final shell = MainGameShellScope.maybeOf(context);
+      if (shell != null) {
+        shell.onSelect(MainGameDestination.battles);
+        return;
+      }
       final bg = preferences.selectedTheme;
       openBattlesWithTransition(
         context,
@@ -230,6 +250,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
     _coinTapCount++;
     if (_coinTapCount >= 3) {
       _coinTapCount = 0;
+      game.discoverSecretHatchery();
       final bg = preferences.selectedTheme;
       openSecretToolsWithTransition(
         context,
@@ -279,6 +300,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
       listenable: Listenable.merge([game, preferences, customSprites]),
       builder: (context, _) {
         final bg = preferences.selectedTheme;
+        final shell = MainGameShellScope.maybeOf(context);
 
         return AutoBattleNotificationListener(
           game: game,
@@ -298,8 +320,15 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                 backgroundColor: bg.appBarColor,
                 foregroundColor: Colors.white,
                 onCoinBalanceTap: _onCoinTap,
+                bottom: shell == null
+                    ? null
+                    : GamePrimaryNavigation(
+                        theme: bg,
+                        hostDestination: MainGameDestination.hatchery,
+                      ),
                 actions: [
-                  IconButton(
+                  if (shell == null)
+                    IconButton(
                     tooltip: 'Settings',
                     onPressed: () => openWithThemedTransition(
                       context,
@@ -337,19 +366,25 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                         DailyQuestsSummaryCard(
                           game: game,
                           theme: bg,
-                          onOpenQuests: () => openWithThemedTransition(
-                            context,
-                            theme: bg,
-                            icon: '⭐',
-                            label: 'Opening Quests',
-                            settings: const RouteSettings(
-                              name: kQuestsRouteName,
-                            ),
-                            builder: (_) => QuestsScreen(
-                              game: game,
-                              preferences: preferences,
-                            ),
-                          ),
+                          onOpenQuests: () {
+                            if (shell != null) {
+                              shell.onSelect(MainGameDestination.quests);
+                              return;
+                            }
+                            openWithThemedTransition(
+                              context,
+                              theme: bg,
+                              icon: '⭐',
+                              label: 'Opening Quests',
+                              settings: const RouteSettings(
+                                name: kQuestsRouteName,
+                              ),
+                              builder: (_) => QuestsScreen(
+                                game: game,
+                                preferences: preferences,
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(height: 14),
                         LuckPanel(game: game, theme: bg),
@@ -360,99 +395,6 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                           theme: bg,
                         ),
                         const SizedBox(height: 18),
-                        _HatcheryNavGrid(
-                          theme: bg,
-                          items: [
-                            _HatcheryNavItem(
-                              tutorialKey: TutorialTargets.battlesButton,
-                              label: '⚔️ Battles',
-                              color: bg.panelAccentColor.withValues(alpha: 0.9),
-                              onTap: () => openBattlesWithTransition(
-                                context,
-                                theme: bg,
-                                builder: (_) => BattlesScreen(
-                                  game: game,
-                                  preferences: preferences,
-                                  customSprites: customSprites,
-                                ),
-                              ),
-                            ),
-                            _HatcheryNavItem(
-                              tutorialKey: TutorialTargets.shopButton,
-                              label: '🛒 Egg Shop',
-                              color: bg.secondaryColor,
-                              onTap: () => openShopWithTransition(
-                                context,
-                                theme: bg,
-                                builder: (_) => ShopScreen(
-                                  game: game,
-                                  preferences: preferences,
-                                  customSprites: customSprites,
-                                  customEggs: customEggs,
-                                ),
-                              ),
-                            ),
-                            _HatcheryNavItem(
-                              tutorialKey: TutorialTargets.questsButton,
-                              label: '🎯 Quests',
-                              color: bg.panelAccentColor,
-                              onTap: () => openWithThemedTransition(
-                                context,
-                                theme: bg,
-                                icon: '⭐',
-                                label: 'Opening Quests',
-                                settings: const RouteSettings(
-                                  name: kQuestsRouteName,
-                                ),
-                                builder: (_) => QuestsScreen(
-                                  game: game,
-                                  preferences: preferences,
-                                ),
-                              ),
-                            ),
-                            _HatcheryNavItem(
-                              tutorialKey: TutorialTargets.collectionButton,
-                              label: '📚 Collection',
-                              color: bg.primaryColor,
-                              onTap: () => openWithThemedTransition(
-                                context,
-                                theme: bg,
-                                icon: '🐾',
-                                label: 'Opening Collection',
-                                settings: const RouteSettings(
-                                  name: kCollectionRouteName,
-                                ),
-                                builder: (_) => CollectionScreen(
-                                  game: game,
-                                  preferences: preferences,
-                                  customSprites: customSprites,
-                                ),
-                              ),
-                            ),
-                            _HatcheryNavItem(
-                              label: '✏️ Custom Animals',
-                              color: bg.secondaryColor.withValues(alpha: 0.85),
-                              onTap: () => openWithThemedTransition(
-                                context,
-                                theme: bg,
-                                icon: '✏️',
-                                label: 'Opening Custom Animals',
-                                settings: const RouteSettings(
-                                  name: kCustomSpritesRouteName,
-                                ),
-                                builder: (_) => CustomSpritesScreen(
-                                  preferences: preferences,
-                                  customSprites: customSprites,
-                                  game: game,
-                                  spriteRating: widget.spriteRating,
-                                  referenceOverlay: widget.referenceOverlay,
-                                  returnToHatcheryOnBack: true,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 22),
                         KeyedSubtree(
                           key: TutorialTargets.animalsSection,
                           child: Text(
@@ -493,93 +435,6 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
           ),
         );
       },
-    );
-  }
-}
-
-class _HatcheryNavItem {
-  const _HatcheryNavItem({
-    this.tutorialKey,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final Key? tutorialKey;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-}
-
-class _HatcheryNavGrid extends StatelessWidget {
-  const _HatcheryNavGrid({required this.theme, required this.items});
-
-  final BackgroundTheme theme;
-  final List<_HatcheryNavItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const gap = 10.0;
-        final useTwoColumns = constraints.maxWidth >= 340;
-        final itemWidth = useTwoColumns
-            ? (constraints.maxWidth - gap) / 2
-            : constraints.maxWidth;
-
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            for (final item in items)
-              SizedBox(
-                width: itemWidth,
-                child: _NavButton(
-                  key: item.tutorialKey,
-                  label: item.label,
-                  theme: theme,
-                  color: item.color,
-                  onTap: item.onTap,
-                  compact: useTwoColumns,
-                ),
-              ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _NavButton extends StatelessWidget {
-  const _NavButton({
-    super.key,
-    required this.label,
-    required this.theme,
-    required this.color,
-    required this.onTap,
-    this.compact = false,
-  });
-
-  final String label;
-  final BackgroundTheme theme;
-  final Color color;
-  final VoidCallback onTap;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton(
-      onPressed: onTap,
-      style: GameTheme.filledButton(
-        theme,
-        color: color,
-        height: compact ? 50 : 56,
-      ),
-      child: Text(
-        label,
-        textAlign: TextAlign.center,
-        style: TextStyle(fontSize: compact ? 16 : 18),
-      ),
     );
   }
 }

@@ -41,7 +41,7 @@ class _RebirthPanelState extends State<RebirthPanel> {
       showGameSnackBar(
         context,
         message:
-            'Earn ${formatCoins(game.rebirthRequirement)} lifetime coins to rebirth.',
+            'Earn ${formatCoins(game.rebirthRequirement)} animal income to rebirth.',
         backgroundColor: Colors.orange.shade700,
       );
       return;
@@ -113,7 +113,7 @@ class _RebirthPanelState extends State<RebirthPanel> {
                     Text(
                       canRebirth
                           ? 'Ready to rebirth for a permanent income boost'
-                          : 'Earn ${formatCoins(requirement)} lifetime coins to rebirth',
+                          : 'Earn ${formatCoins(requirement)} animal income to rebirth',
                       style: TextStyle(
                         fontSize: 12,
                         color: theme.cardTextSecondaryColor,
@@ -161,7 +161,7 @@ class _RebirthPanelState extends State<RebirthPanel> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Lifetime Coins Earned: ${formatCoins(lifetime)} / ${formatCoins(requirement)}',
+            'Animal Income This Rebirth: ${formatCoins(lifetime)} / ${formatCoins(requirement)}',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -176,7 +176,9 @@ class _RebirthPanelState extends State<RebirthPanel> {
               color: canRebirth ? theme.panelAccentColor : theme.disabledColor,
               height: 48,
             ),
-            icon: Icon(canRebirth ? Icons.autorenew_rounded : Icons.lock_rounded),
+            icon: Icon(
+              canRebirth ? Icons.autorenew_rounded : Icons.lock_rounded,
+            ),
             label: Text(
               canRebirth
                   ? 'Rebirth · Next ${RebirthLogic.formatMultiplier(nextMultiplier)}'
@@ -250,7 +252,7 @@ class _RebirthConfirmDialog extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   'Requirement met: ${formatCoins(game.lifetimeCoinsEarned)} / '
-                  '${formatCoins(requirement)} lifetime coins',
+                  '${formatCoins(requirement)} animal income',
                   style: TextStyle(
                     fontSize: 13,
                     color: theme.cardTextSecondaryColor,

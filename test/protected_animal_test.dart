@@ -17,6 +17,7 @@ void main() {
     game.devSetOwnedAnimalsForTesting(const [
       OwnedAnimal(animalId: 'chicken', quantity: 1),
     ]);
+    game.devGrantSecretRewardBadge();
 
     final name = game.applySecretRewardBadge(
       animalId: 'chicken',

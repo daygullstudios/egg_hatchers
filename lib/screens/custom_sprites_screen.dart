@@ -15,6 +15,7 @@ import '../utils/snackbar_utils.dart';
 import '../widgets/builtin_sprite_preview_sheet.dart';
 import '../widgets/custom_sprite_preview.dart';
 import '../widgets/game_background.dart';
+import '../widgets/game_primary_navigation.dart';
 import '../widgets/phone_width_layout.dart';
 import 'sprite_editor_screen.dart';
 
@@ -105,6 +106,7 @@ class CustomSpritesScreen extends StatelessWidget {
       listenable: Listenable.merge([preferences, customSprites]),
       builder: (context, _) {
         final theme = preferences.selectedTheme;
+        final shell = MainGameShellScope.maybeOf(context);
         final animals = List<Animal>.from(GameData.animals)
           ..sort((a, b) {
             final rarity = b.rarity.sortOrder.compareTo(a.rarity.sortOrder);
@@ -122,10 +124,16 @@ class CustomSpritesScreen extends StatelessWidget {
             ),
             backgroundColor: theme.appBarColor,
             foregroundColor: Colors.white,
-            automaticallyImplyLeading: !returnToHatcheryOnBack,
-            leading: returnToHatcheryOnBack
+            automaticallyImplyLeading: shell == null && !returnToHatcheryOnBack,
+            leading: shell == null && returnToHatcheryOnBack
                 ? ReturnToHatcheryBackButton(theme: theme, color: Colors.white)
                 : null,
+            bottom: shell == null
+                ? null
+                : GamePrimaryNavigation(
+                    theme: theme,
+                    hostDestination: MainGameDestination.customAnimals,
+                  ),
           ),
           body: GameBackground(
             theme: theme,

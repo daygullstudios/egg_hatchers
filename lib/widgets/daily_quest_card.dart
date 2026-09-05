@@ -98,15 +98,17 @@ class DailyQuestsSection extends StatelessWidget {
     required this.game,
     required this.theme,
     required this.onClaim,
+    this.quests,
   });
 
   final GameService game;
   final BackgroundTheme theme;
   final void Function(DailyQuestProgress quest) onClaim;
+  final List<DailyQuestProgress>? quests;
 
   @override
   Widget build(BuildContext context) {
-    final quests = game.dailyQuests;
+    final visibleQuests = quests ?? game.dailyQuests;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -124,13 +126,13 @@ class DailyQuestsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        for (var i = 0; i < quests.length; i++) ...[
+        for (var i = 0; i < visibleQuests.length; i++) ...[
           if (i > 0) const SizedBox(height: 10),
           DailyQuestCard(
-            quest: quests[i],
+            quest: visibleQuests[i],
             game: game,
             theme: theme,
-            onClaim: () => onClaim(quests[i]),
+            onClaim: () => onClaim(visibleQuests[i]),
           ),
         ],
       ],

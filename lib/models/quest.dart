@@ -10,11 +10,7 @@ enum QuestCategory {
 }
 
 /// Player-facing quest state.
-enum QuestStatus {
-  inProgress,
-  readyToClaim,
-  claimed,
-}
+enum QuestStatus { inProgress, readyToClaim, claimed }
 
 /// Metric used to evaluate quest progress.
 enum QuestMetric {
@@ -86,11 +82,10 @@ class Quest {
   /// Optional reward text instead of a coin amount (e.g. "???").
   final String? rewardDisplayLabel;
 
-  /// When true, claiming shows a secret hint dialog and grants no coins.
+  /// When true, claiming unlocks the Collector's Vault and grants no coins.
   final bool showsSecretHintOnClaim;
 
-  bool get grantsCoinsOnClaim =>
-      !showsSecretHintOnClaim && rewardCoins > 0;
+  bool get grantsCoinsOnClaim => !showsSecretHintOnClaim && rewardCoins > 0;
 
   bool get grantsBattleTokensOnClaim => rewardBattleTokens > 0;
 

@@ -29,7 +29,7 @@ class CustomEggLogic {
   static Egg? sourceEggForAnimal(String animalId) =>
       findSourceEggForAnimal(animalId);
 
-  /// Lifetime coins required to use [animalId] in a custom egg.
+  /// Animal income required to use [animalId] in a custom egg.
   static int lifetimeRequiredForAnimal(String animalId) {
     final source = findSourceEggForAnimal(animalId);
     return source?.unlockLifetimeCoins ?? 0;
@@ -81,7 +81,7 @@ class CustomEggLogic {
     }
     if (source.unlockLifetimeCoins <= 0) return 'Always available.';
     return 'Unlock ${source.name} by earning '
-        '${source.unlockLifetimeCoins} lifetime coins.';
+        '${source.unlockLifetimeCoins} animal income.';
   }
 
   /// Valid animals that are also unlocked for the player's progression.
@@ -235,29 +235,26 @@ class CustomEggLogic {
     int rebirthLevel = 0,
   }) {
     var ids = List<String>.from(
-      hatchableAnimalIds(
-        egg,
-        lifetimeCoinsEarned,
-        rebirthLevel: rebirthLevel,
-      ),
+      hatchableAnimalIds(egg, lifetimeCoinsEarned, rebirthLevel: rebirthLevel),
     );
     if (ids.isEmpty) {
       ids = List<String>.from(egg.validAnimalIds);
     }
     ids.sort(
-      (a, b) => chancePercentForAnimal(
-        egg,
-        b,
-        lifetimeCoinsEarned: lifetimeCoinsEarned,
-        rebirthLevel: rebirthLevel,
-      ).compareTo(
-        chancePercentForAnimal(
-          egg,
-          a,
-          lifetimeCoinsEarned: lifetimeCoinsEarned,
-          rebirthLevel: rebirthLevel,
-        ),
-      ),
+      (a, b) =>
+          chancePercentForAnimal(
+            egg,
+            b,
+            lifetimeCoinsEarned: lifetimeCoinsEarned,
+            rebirthLevel: rebirthLevel,
+          ).compareTo(
+            chancePercentForAnimal(
+              egg,
+              a,
+              lifetimeCoinsEarned: lifetimeCoinsEarned,
+              rebirthLevel: rebirthLevel,
+            ),
+          ),
     );
 
     final parts = <String>[];

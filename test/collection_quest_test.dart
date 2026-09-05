@@ -57,8 +57,10 @@ void main() {
     final reward = game.claimQuest(quest.id);
 
     expect(reward?.coins, 0);
+    expect(reward?.collectorsVaultUnlocked, isTrue);
     expect(game.coins, beforeCoins);
     expect(game.lifetimeCoinsEarned, beforeLifetime);
+    expect(game.collectorsVaultUnlocked, isTrue);
     expect(game.questProgress.isQuestClaimed(quest.id), isTrue);
     expect(game.claimQuest(quest.id), isNull);
   });

@@ -5,6 +5,7 @@ import '../models/background_theme.dart';
 import '../theme/game_theme.dart';
 import '../utils/ui_sound.dart';
 import '../widgets/app_theme_background.dart';
+import '../widgets/game_primary_navigation.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/themed_route_transition_screen.dart';
 
@@ -161,6 +162,8 @@ class AppNavigationTracker extends NavigatorObserver {
   static final AppNavigationTracker instance = AppNavigationTracker._();
 
   String? topRouteName;
+  String? _shellRouteName;
+  VoidCallback? _selectShellHatchery;
   final List<VoidCallback> _routeListeners = [];
 
   void addRouteListener(VoidCallback listener) {
@@ -180,8 +183,34 @@ class AppNavigationTracker extends NavigatorObserver {
   }
 
   void _syncTop(Route<dynamic>? route) {
-    topRouteName = route?.settings.name;
+    topRouteName = route?.isFirst == true && _shellRouteName != null
+        ? _shellRouteName
+        : route?.settings.name;
     _notifyRouteListeners();
+  }
+
+  void setShellRouteName(String routeName) {
+    _shellRouteName = routeName;
+    topRouteName = routeName;
+    _notifyRouteListeners();
+  }
+
+  void attachShellHatcherySelector(VoidCallback selector) {
+    _selectShellHatchery = selector;
+  }
+
+  void detachShellHatcherySelector(VoidCallback selector) {
+    if (identical(_selectShellHatchery, selector)) {
+      _selectShellHatchery = null;
+      _shellRouteName = null;
+    }
+  }
+
+  bool selectShellHatchery() {
+    final selector = _selectShellHatchery;
+    if (selector == null) return false;
+    selector();
+    return true;
   }
 
   @override
@@ -309,6 +338,12 @@ Future<void> returnToHatcheryWithTransition(
   BuildContext context, {
   required BackgroundTheme theme,
 }) {
+  final shell = MainGameShellScope.maybeOf(context);
+  if (shell != null) {
+    shell.onSelect(MainGameDestination.hatchery);
+    return Future.value();
+  }
+  AppNavigationTracker.instance.selectShellHatchery();
   return returnToRouteWithTransition(
     context,
     theme: theme,
@@ -403,13 +438,16 @@ class ReturnToHatcheryPopScope extends StatelessWidget {
     super.key,
     required this.theme,
     required this.child,
+    this.enabled = true,
   });
 
   final BackgroundTheme theme;
   final Widget child;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
+    if (!enabled) return child;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {

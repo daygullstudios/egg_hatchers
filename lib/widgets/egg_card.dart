@@ -206,7 +206,7 @@ class EggCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Progress: ${formatCoins(lifetimeCoinsEarned)} / ${formatCoins(egg.unlockLifetimeCoins)} lifetime',
+                  'Progress: ${formatCoins(lifetimeCoinsEarned)} / ${formatCoins(egg.unlockLifetimeCoins)} earned',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,

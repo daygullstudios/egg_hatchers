@@ -17,6 +17,7 @@ import '../utils/ui_sound.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/egg_card.dart';
 import '../widgets/game_background.dart';
+import '../widgets/game_primary_navigation.dart';
 import '../widgets/hatch_dialog.dart';
 import '../data/tutorial_data.dart';
 import '../services/tutorial_service.dart';
@@ -207,6 +208,7 @@ class ShopScreen extends StatelessWidget {
       ]),
       builder: (context, _) {
         final bg = preferences.selectedTheme;
+        final shell = MainGameShellScope.maybeOf(context);
         final lifetime = game.lifetimeCoinsEarned;
         final builtInShopEggs = game.visibleShopEggs;
         final customShopEggs = customEggs.shopEggs(
@@ -218,6 +220,7 @@ class ShopScreen extends StatelessWidget {
             hasSavedCustomEggs && customShopEggs.isEmpty;
 
         return TutorialScreenBindings(
+          enabled: shell == null || shell.current == MainGameDestination.shop,
           onReturnToHatchery: () =>
               returnToHatcheryWithTransition(context, theme: bg),
           handlers: {
@@ -226,6 +229,7 @@ class ShopScreen extends StatelessWidget {
           },
           child: ReturnToHatcheryPopScope(
             theme: bg,
+            enabled: shell == null,
             child: QuestNotificationListener(
               game: game,
               preferences: preferences,
@@ -240,11 +244,19 @@ class ShopScreen extends StatelessWidget {
                   backgroundColor: bg.appBarColor,
                   foregroundColor: Colors.white,
                   automaticallyImplyLeading: false,
-                  leading: ReturnToHatcheryBackButton(
-                    theme: bg,
-                    color: Colors.white,
-                    tutorialKey: TutorialTargets.screenBackButton,
-                  ),
+                  leading: shell == null
+                      ? ReturnToHatcheryBackButton(
+                          theme: bg,
+                          color: Colors.white,
+                          tutorialKey: TutorialTargets.screenBackButton,
+                        )
+                      : null,
+                  bottom: shell == null
+                      ? null
+                      : GamePrimaryNavigation(
+                          theme: bg,
+                          hostDestination: MainGameDestination.shop,
+                        ),
                   actions: [
                     CompactAppBarIconAction(
                       icon: Icons.design_services_rounded,
