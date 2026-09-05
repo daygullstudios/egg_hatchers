@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../data/tutorial_data.dart';
@@ -320,6 +322,15 @@ class _FallbackCardOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final maxCardHeight = math.max(
+      120.0,
+      mediaQuery.size.height -
+          mediaQuery.padding.vertical -
+          kToolbarHeight -
+          48,
+    );
+
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -350,6 +361,7 @@ class _FallbackCardOverlay extends StatelessWidget {
                   nextLabel:
                       nextLabel ??
                       (isFinish ? service.finishButtonLabel : 'Next'),
+                  maxHeight: maxCardHeight,
                   showReturnToHatchery: showReturnToHatchery,
                   onReturnToHatchery: onReturnToHatchery,
                 ),
@@ -430,15 +442,22 @@ class _SpotlightLayer extends StatelessWidget {
           left: calloutPlacement.left,
           top: calloutPlacement.top,
           width: calloutPlacement.width,
-          child: _CalloutCard(
-            theme: theme,
-            text: text,
-            showNext: showNext,
-            isFinish: isFinish,
-            onNext: () => service.advanceNext(force: true),
-            onSkip: service.skipTutorial,
-            nextLabel: isFinish ? service.finishButtonLabel : 'Next',
-            arrowDirection: calloutPlacement.arrowDirection,
+          height: calloutPlacement.maxHeight,
+          child: Align(
+            alignment: calloutPlacement.arrowDirection == _ArrowDirection.down
+                ? Alignment.bottomCenter
+                : Alignment.topCenter,
+            child: _CalloutCard(
+              theme: theme,
+              text: text,
+              showNext: showNext,
+              isFinish: isFinish,
+              onNext: () => service.advanceNext(force: true),
+              onSkip: service.skipTutorial,
+              nextLabel: isFinish ? service.finishButtonLabel : 'Next',
+              arrowDirection: calloutPlacement.arrowDirection,
+              maxHeight: calloutPlacement.maxHeight,
+            ),
           ),
         ),
       ],
@@ -542,14 +561,14 @@ class _CalloutPlacement {
     required this.top,
     required this.width,
     required this.arrowDirection,
-    required this.estimatedHeight,
+    required this.maxHeight,
   });
 
   final double left;
   final double top;
   final double width;
   final _ArrowDirection arrowDirection;
-  final double estimatedHeight;
+  final double maxHeight;
 
   Offset? get arrowAnchor {
     final centerX = left + width / 2;
@@ -557,102 +576,81 @@ class _CalloutPlacement {
       case _ArrowDirection.up:
         return Offset(centerX, top);
       case _ArrowDirection.down:
-        return Offset(centerX, top + estimatedHeight);
+        return Offset(centerX, top + maxHeight);
       case _ArrowDirection.left:
-        return Offset(left + width, top + estimatedHeight / 2);
+        return Offset(left + width, top + maxHeight / 2);
       case _ArrowDirection.right:
-        return Offset(left, top + estimatedHeight / 2);
+        return Offset(left, top + maxHeight / 2);
     }
   }
 
   static _CalloutPlacement forTarget(Rect hole, Size layerSize) {
     const margin = 16.0;
-    const calloutWidth = 280.0;
-    const estimatedHeight = 150.0;
+    const preferredWidth = 280.0;
+    const preferredHeight = 300.0;
+    const minimumUsableHeight = 140.0;
 
-    final candidates = <_CalloutPlacement>[];
-
-    final centerX = hole.center.dx;
-    final centeredLeft = (centerX - calloutWidth / 2).clamp(
-      margin,
-      layerSize.width - calloutWidth - margin,
+    final calloutWidth = math.min(
+      preferredWidth,
+      math.max(1.0, layerSize.width - margin * 2),
     );
 
+    final centerX = hole.center.dx;
+    final centeredLeft = (centerX - calloutWidth / 2)
+        .clamp(
+          margin,
+          math.max(margin, layerSize.width - calloutWidth - margin),
+        )
+        .toDouble();
+
     final belowTop = hole.bottom + margin;
-    if (belowTop + estimatedHeight <= layerSize.height - margin) {
-      candidates.add(
-        _CalloutPlacement(
+    final belowHeight = math.max(
+      0.0,
+      math.min(preferredHeight, layerSize.height - margin - belowTop),
+    );
+    final aboveBottom = hole.top - margin;
+    final aboveHeight = math.max(
+      0.0,
+      math.min(preferredHeight, aboveBottom - margin),
+    );
+
+    if (belowHeight >= minimumUsableHeight ||
+        aboveHeight >= minimumUsableHeight) {
+      if (belowHeight >= aboveHeight) {
+        return _CalloutPlacement(
           left: centeredLeft,
           top: belowTop,
           width: calloutWidth,
           arrowDirection: _ArrowDirection.up,
-          estimatedHeight: estimatedHeight,
-        ),
-      );
-    }
-
-    final aboveTop = hole.top - estimatedHeight - margin;
-    if (aboveTop >= margin) {
-      candidates.add(
-        _CalloutPlacement(
-          left: centeredLeft,
-          top: aboveTop,
-          width: calloutWidth,
-          arrowDirection: _ArrowDirection.down,
-          estimatedHeight: estimatedHeight,
-        ),
-      );
-    }
-
-    if (hole.center.dx > layerSize.width / 2) {
-      candidates.add(
-        _CalloutPlacement(
-          left: margin,
-          top: (hole.center.dy - estimatedHeight / 2).clamp(
-            margin,
-            layerSize.height - estimatedHeight - margin,
-          ),
-          width: calloutWidth,
-          arrowDirection: _ArrowDirection.right,
-          estimatedHeight: estimatedHeight,
-        ),
-      );
-    } else {
-      candidates.add(
-        _CalloutPlacement(
-          left: layerSize.width - calloutWidth - margin,
-          top: (hole.center.dy - estimatedHeight / 2).clamp(
-            margin,
-            layerSize.height - estimatedHeight - margin,
-          ),
-          width: calloutWidth,
-          arrowDirection: _ArrowDirection.left,
-          estimatedHeight: estimatedHeight,
-        ),
-      );
-    }
-
-    for (final candidate in candidates) {
-      final calloutRect = Rect.fromLTWH(
-        candidate.left,
-        candidate.top,
-        candidate.width,
-        estimatedHeight,
-      );
-      if (!calloutRect.overlaps(hole.inflate(8))) {
-        return candidate;
+          maxHeight: belowHeight,
+        );
       }
+      return _CalloutPlacement(
+        left: centeredLeft,
+        top: aboveBottom - aboveHeight,
+        width: calloutWidth,
+        arrowDirection: _ArrowDirection.down,
+        maxHeight: aboveHeight,
+      );
     }
 
-    return candidates.isNotEmpty
-        ? candidates.first
-        : _CalloutPlacement(
-            left: centeredLeft,
-            top: margin,
-            width: calloutWidth,
-            arrowDirection: _ArrowDirection.down,
-            estimatedHeight: estimatedHeight,
-          );
+    // A very large target can leave no clean side for a readable prompt. In
+    // that case the prompt wins: keep it fully on-screen and allow it to
+    // overlap the spotlight instead of placing its controls off-screen.
+    final viewportHeight = math.max(1.0, layerSize.height - margin * 2);
+    final fallbackHeight = math.min(preferredHeight, viewportHeight);
+    final targetIsBelowCard = hole.center.dy >= layerSize.height / 2;
+    return _CalloutPlacement(
+      left: centeredLeft,
+      top: targetIsBelowCard
+          ? margin
+          : layerSize.height - margin - fallbackHeight,
+      width: calloutWidth,
+      arrowDirection: targetIsBelowCard
+          ? _ArrowDirection.down
+          : _ArrowDirection.up,
+      maxHeight: fallbackHeight,
+    );
   }
 }
 
@@ -666,6 +664,7 @@ class _CalloutCard extends StatelessWidget {
     required this.onSkip,
     required this.nextLabel,
     this.arrowDirection,
+    this.maxHeight,
     this.showReturnToHatchery = false,
     this.onReturnToHatchery,
   });
@@ -678,11 +677,19 @@ class _CalloutCard extends StatelessWidget {
   final VoidCallback onSkip;
   final String nextLabel;
   final _ArrowDirection? arrowDirection;
+  final double? maxHeight;
   final bool showReturnToHatchery;
   final VoidCallback? onReturnToHatchery;
 
   @override
   Widget build(BuildContext context) {
+    final hasVerticalPointer =
+        arrowDirection == _ArrowDirection.up ||
+        arrowDirection == _ArrowDirection.down;
+    final panelMaxHeight = maxHeight == null
+        ? null
+        : math.max(96.0, maxHeight! - (hasVerticalPointer ? 40 : 0));
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -690,6 +697,9 @@ class _CalloutCard extends StatelessWidget {
         if (arrowDirection == _ArrowDirection.up)
           _ArrowPointer(direction: arrowDirection!, theme: theme),
         Container(
+          constraints: panelMaxHeight == null
+              ? null
+              : BoxConstraints(maxHeight: panelMaxHeight),
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
           decoration: GameTheme.panelDecoration(theme).copyWith(
             boxShadow: [
@@ -704,45 +714,47 @@ class _CalloutCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      text,
-                      style: TextStyle(
+              Flexible(
+                fit: FlexFit.loose,
+                child: Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 64),
+                      child: _ScrollableTutorialText(
+                        text: text,
                         color: theme.cardTextPrimaryColor,
-                        fontSize: 15,
-                        height: 1.4,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                  TextButton.icon(
-                    onPressed: onSkip,
-                    style: TextButton.styleFrom(
-                      minimumSize: Size.zero,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                    Positioned(
+                      top: -4,
+                      right: -8,
+                      child: TextButton.icon(
+                        onPressed: onSkip,
+                        style: TextButton.styleFrom(
+                          minimumSize: Size.zero,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          size: 14,
+                          color: theme.cardTextSecondaryColor,
+                        ),
+                        label: Text(
+                          TutorialData.exitButtonLabel,
+                          style: TextStyle(
+                            color: theme.cardTextSecondaryColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    icon: Icon(
-                      Icons.close_rounded,
-                      size: 14,
-                      color: theme.cardTextSecondaryColor,
-                    ),
-                    label: Text(
-                      TutorialData.exitButtonLabel,
-                      style: TextStyle(
-                        color: theme.cardTextSecondaryColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               if (showReturnToHatchery && onReturnToHatchery != null) ...[
                 const SizedBox(height: 10),
@@ -786,6 +798,48 @@ class _CalloutCard extends StatelessWidget {
         if (arrowDirection == _ArrowDirection.down)
           _ArrowPointer(direction: arrowDirection!, theme: theme),
       ],
+    );
+  }
+}
+
+class _ScrollableTutorialText extends StatefulWidget {
+  const _ScrollableTutorialText({required this.text, required this.color});
+
+  final String text;
+  final Color color;
+
+  @override
+  State<_ScrollableTutorialText> createState() =>
+      _ScrollableTutorialTextState();
+}
+
+class _ScrollableTutorialTextState extends State<_ScrollableTutorialText> {
+  final _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scrollbar(
+      controller: _scrollController,
+      thumbVisibility: true,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.only(right: 8),
+        child: Text(
+          widget.text,
+          style: TextStyle(
+            color: widget.color,
+            fontSize: 15,
+            height: 1.4,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }
