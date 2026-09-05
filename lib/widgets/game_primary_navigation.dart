@@ -4,6 +4,7 @@ import '../models/background_theme.dart';
 import '../services/game_service.dart';
 import '../theme/game_theme.dart';
 import '../utils/quest_logic.dart';
+import 'phone_width_layout.dart';
 import 'tutorial_targets.dart';
 
 enum MainGameDestination {
@@ -42,6 +43,8 @@ class MainGameShellScope extends InheritedWidget {
 
 class GamePrimaryNavigation extends StatelessWidget
     implements PreferredSizeWidget {
+  static const contentKey = ValueKey<String>('game-primary-navigation-content');
+
   const GamePrimaryNavigation({
     super.key,
     required this.theme,
@@ -64,11 +67,14 @@ class GamePrimaryNavigation extends StatelessWidget
       child: SafeArea(
         top: false,
         bottom: false,
-        child: SizedBox(
-          height: preferredSize.height,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return ListenableBuilder(
+        child: Center(
+          child: ConstrainedBox(
+            key: contentKey,
+            constraints: const BoxConstraints(maxWidth: kPhoneMaxContentWidth),
+            child: SizedBox(
+              width: double.infinity,
+              height: preferredSize.height,
+              child: ListenableBuilder(
                 listenable: shell.game,
                 builder: (context, _) {
                   final readyCount =
@@ -76,14 +82,6 @@ class GamePrimaryNavigation extends StatelessWidget
                       shell.game.dailyQuests
                           .where((quest) => quest.isComplete && !quest.claimed)
                           .length;
-                  if (constraints.maxWidth >= 720) {
-                    return _DesktopNavigation(
-                      shell: shell,
-                      theme: theme,
-                      hostDestination: hostDestination,
-                      readyCount: readyCount,
-                    );
-                  }
                   return _MobileNavigation(
                     shell: shell,
                     theme: theme,
@@ -91,8 +89,8 @@ class GamePrimaryNavigation extends StatelessWidget
                     readyCount: readyCount,
                   );
                 },
-              );
-            },
+              ),
+            ),
           ),
         ),
       ),
@@ -226,92 +224,6 @@ class _MobileNavigation extends StatelessWidget {
       case _MoreDestination.settings:
         shell.onOpenSettings();
     }
-  }
-}
-
-class _DesktopNavigation extends StatelessWidget {
-  const _DesktopNavigation({
-    required this.shell,
-    required this.theme,
-    required this.hostDestination,
-    required this.readyCount,
-  });
-
-  final MainGameShellScope shell;
-  final BackgroundTheme theme;
-  final MainGameDestination hostDestination;
-  final int readyCount;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _destination(
-          Icons.home_rounded,
-          'Hatchery',
-          MainGameDestination.hatchery,
-        ),
-        _destination(
-          Icons.shopping_cart_rounded,
-          'Shop',
-          MainGameDestination.shop,
-        ),
-        _destination(
-          Icons.sports_martial_arts_rounded,
-          'Battles',
-          MainGameDestination.battles,
-        ),
-        _destination(
-          Icons.collections_bookmark_rounded,
-          'Collection',
-          MainGameDestination.collection,
-        ),
-        _destination(
-          Icons.flag_rounded,
-          'Quests',
-          MainGameDestination.quests,
-          badgeCount: readyCount,
-        ),
-        _destination(
-          Icons.auto_fix_high_rounded,
-          'Custom',
-          MainGameDestination.customAnimals,
-        ),
-        _NavItem(
-          icon: Icons.settings_rounded,
-          label: 'Settings',
-          selected: false,
-          theme: theme,
-          onTap: shell.onOpenSettings,
-        ),
-      ],
-    );
-  }
-
-  Widget _destination(
-    IconData icon,
-    String label,
-    MainGameDestination destination, {
-    int badgeCount = 0,
-  }) {
-    final tutorialKey = hostDestination != MainGameDestination.hatchery
-        ? null
-        : switch (destination) {
-            MainGameDestination.shop => TutorialTargets.shopButton,
-            MainGameDestination.battles => TutorialTargets.battlesButton,
-            MainGameDestination.collection => TutorialTargets.collectionButton,
-            MainGameDestination.quests => TutorialTargets.questsButton,
-            _ => null,
-          };
-    return _NavItem(
-      icon: icon,
-      label: label,
-      selected: shell.current == destination,
-      badgeCount: badgeCount,
-      theme: theme,
-      tutorialKey: tutorialKey,
-      onTap: () => shell.onSelect(destination),
-    );
   }
 }
 

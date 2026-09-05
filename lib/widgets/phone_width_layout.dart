@@ -14,6 +14,9 @@ const double _kPhoneAppBarSideSlotWidth = 48.0;
 /// AppBar whose toolbar content aligns with [PhoneWidthLayout] on wide screens.
 class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
   static const coinBalanceKey = ValueKey<String>('app-bar-coin-balance');
+  static const bottomContentKey = ValueKey<String>(
+    'phone-width-app-bar-bottom-content',
+  );
 
   const PhoneWidthAppBar({
     super.key,
@@ -150,7 +153,20 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       titleSpacing: 0,
       toolbarHeight: toolbarHeight,
-      bottom: bottom,
+      bottom: bottom == null
+          ? null
+          : PreferredSize(
+              preferredSize: bottom!.preferredSize,
+              child: Center(
+                child: ConstrainedBox(
+                  key: bottomContentKey,
+                  constraints: const BoxConstraints(
+                    maxWidth: kPhoneMaxContentWidth,
+                  ),
+                  child: SizedBox(width: double.infinity, child: bottom),
+                ),
+              ),
+            ),
       title: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: kPhoneMaxContentWidth),
