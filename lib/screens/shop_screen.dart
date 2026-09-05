@@ -30,8 +30,10 @@ import '../models/background_theme.dart';
 import 'custom_egg_editor_screen.dart';
 import 'custom_eggs_screen.dart';
 
+enum _ShopSection { hatchery, battle, custom }
+
 /// Screen where the player buys eggs to hatch.
-class ShopScreen extends StatelessWidget {
+class ShopScreen extends StatefulWidget {
   const ShopScreen({
     super.key,
     required this.game,
@@ -44,6 +46,18 @@ class ShopScreen extends StatelessWidget {
   final PreferencesService preferences;
   final CustomSpriteService customSprites;
   final CustomEggService customEggs;
+
+  @override
+  State<ShopScreen> createState() => _ShopScreenState();
+}
+
+class _ShopScreenState extends State<ShopScreen> {
+  _ShopSection _selectedSection = _ShopSection.hatchery;
+
+  GameService get game => widget.game;
+  PreferencesService get preferences => widget.preferences;
+  CustomSpriteService get customSprites => widget.customSprites;
+  CustomEggService get customEggs => widget.customEggs;
 
   Duration _hatchLeadIn(BuildContext context) {
     final audio = AudioScope.maybeOf(context);
@@ -270,51 +284,83 @@ class ShopScreen extends StatelessWidget {
                   child: PhoneWidthLayout(
                     child: Column(
                       children: [
+                        _ShopSectionSelector(
+                          theme: bg,
+                          selected: _selectedSection,
+                          hatcherySummary: _shopSectionSummary(
+                            readyCount: builtInShopEggs
+                                .where(
+                                  (egg) =>
+                                      game.isEggUnlocked(egg) &&
+                                      game.canAfford(egg),
+                                )
+                                .length,
+                            totalCount: builtInShopEggs.length,
+                          ),
+                          battleSummary: '${game.battleTokens} tokens',
+                          customSummary: customShopEggs.isEmpty
+                              ? 'Create'
+                              : '${customShopEggs.length} available',
+                          onSelected: (section) {
+                            if (_selectedSection == section) return;
+                            UiSound.click(context);
+                            setState(() => _selectedSection = section);
+                          },
+                        ),
+                        const SizedBox(height: 12),
                         Expanded(
                           child: ListView(
+                            key: PageStorageKey<String>(
+                              'shop-${_selectedSection.name}',
+                            ),
                             children: [
-                              for (
-                                var i = 0;
-                                i < builtInShopEggs.length;
-                                i++
-                              ) ...[
-                                if (i > 0) const SizedBox(height: 14),
-                                EggCard(
-                                  egg: builtInShopEggs[i],
-                                  theme: bg,
-                                  buyButtonKey: i == 0
-                                      ? TutorialTargets.basicEggBuyButton
-                                      : null,
-                                  isUnlocked: game.isEggUnlocked(
-                                    builtInShopEggs[i],
+                              if (_selectedSection == _ShopSection.hatchery)
+                                for (
+                                  var i = 0;
+                                  i < builtInShopEggs.length;
+                                  i++
+                                ) ...[
+                                  if (i > 0) const SizedBox(height: 14),
+                                  EggCard(
+                                    egg: builtInShopEggs[i],
+                                    theme: bg,
+                                    buyButtonKey: i == 0
+                                        ? TutorialTargets.basicEggBuyButton
+                                        : null,
+                                    isUnlocked: game.isEggUnlocked(
+                                      builtInShopEggs[i],
+                                    ),
+                                    unlockMessageOverride: game
+                                        .eggLockedDisplayMessage(
+                                          builtInShopEggs[i],
+                                        ),
+                                    canAfford: game.canAfford(
+                                      builtInShopEggs[i],
+                                    ),
+                                    lifetimeCoinsEarned:
+                                        game.lifetimeCoinsEarned,
+                                    tripleHatchCost:
+                                        GameService.tripleHatchCost(
+                                          builtInShopEggs[i],
+                                        ),
+                                    canAffordTripleHatch: game
+                                        .canAffordTripleHatch(
+                                          builtInShopEggs[i],
+                                        ),
+                                    onBuy: () => _buyAndHatch(
+                                      context,
+                                      builtInShopEggs[i],
+                                    ),
+                                    onTripleHatch: () => _tripleHatch(
+                                      context,
+                                      builtInShopEggs[i],
+                                    ),
+                                    masteryProgress: game.eggMasteryProgress(
+                                      builtInShopEggs[i].id,
+                                    ),
                                   ),
-                                  unlockMessageOverride: game
-                                      .eggLockedDisplayMessage(
-                                        builtInShopEggs[i],
-                                      ),
-                                  canAfford: game.canAfford(builtInShopEggs[i]),
-                                  lifetimeCoinsEarned: game.lifetimeCoinsEarned,
-                                  tripleHatchCost: GameService.tripleHatchCost(
-                                    builtInShopEggs[i],
-                                  ),
-                                  canAffordTripleHatch: game
-                                      .canAffordTripleHatch(builtInShopEggs[i]),
-                                  onBuy: () =>
-                                      _buyAndHatch(context, builtInShopEggs[i]),
-                                  onTripleHatch: () =>
-                                      _tripleHatch(context, builtInShopEggs[i]),
-                                  masteryProgress: game.eggMasteryProgress(
-                                    builtInShopEggs[i].id,
-                                  ),
-                                ),
-                              ],
-                              if (GameData.battleEggs.isNotEmpty) ...[
-                                const SizedBox(height: 24),
-                                Text(
-                                  'Battle Eggs',
-                                  style: GameTheme.sectionTitle(bg),
-                                ),
-                                const SizedBox(height: 12),
+                                ],
+                              if (_selectedSection == _ShopSection.battle)
                                 for (
                                   var i = 0;
                                   i < GameData.battleEggs.length;
@@ -354,14 +400,8 @@ class ShopScreen extends StatelessWidget {
                                     ),
                                   ),
                                 ],
-                              ],
-                              const SizedBox(height: 24),
-                              Text(
-                                'Custom Eggs',
-                                style: GameTheme.sectionTitle(bg),
-                              ),
-                              const SizedBox(height: 12),
-                              if (customShopEggs.isNotEmpty) ...[
+                              if (_selectedSection == _ShopSection.custom &&
+                                  customShopEggs.isNotEmpty) ...[
                                 for (
                                   var i = 0;
                                   i < customShopEggs.length;
@@ -412,7 +452,9 @@ class ShopScreen extends StatelessWidget {
                                     side: BorderSide(color: bg.primaryColor),
                                   ),
                                 ),
-                              ] else if (hasHiddenCustomEggs)
+                              ] else if (_selectedSection ==
+                                      _ShopSection.custom &&
+                                  hasHiddenCustomEggs)
                                 _CustomEggsShopNotice(
                                   theme: bg,
                                   message:
@@ -422,7 +464,7 @@ class ShopScreen extends StatelessWidget {
                                   onPressed: () =>
                                       _openCustomEggsScreen(context),
                                 )
-                              else
+                              else if (_selectedSection == _ShopSection.custom)
                                 _CustomEggsShopNotice(
                                   theme: bg,
                                   message:
@@ -445,6 +487,147 @@ class ShopScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  String _shopSectionSummary({
+    required int readyCount,
+    required int totalCount,
+  }) {
+    if (readyCount > 0) return '$readyCount ready';
+    return '$totalCount eggs';
+  }
+}
+
+class _ShopSectionSelector extends StatelessWidget {
+  const _ShopSectionSelector({
+    required this.theme,
+    required this.selected,
+    required this.hatcherySummary,
+    required this.battleSummary,
+    required this.customSummary,
+    required this.onSelected,
+  });
+
+  final BackgroundTheme theme;
+  final _ShopSection selected;
+  final String hatcherySummary;
+  final String battleSummary;
+  final String customSummary;
+  final ValueChanged<_ShopSection> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _ShopSectionButton(
+            key: const ValueKey('shop-section-hatchery'),
+            theme: theme,
+            icon: Icons.storefront_rounded,
+            label: 'Hatchery',
+            summary: hatcherySummary,
+            selected: selected == _ShopSection.hatchery,
+            onTap: () => onSelected(_ShopSection.hatchery),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: _ShopSectionButton(
+            key: const ValueKey('shop-section-battle'),
+            theme: theme,
+            icon: Icons.shield_rounded,
+            label: 'Battle',
+            summary: battleSummary,
+            selected: selected == _ShopSection.battle,
+            onTap: () => onSelected(_ShopSection.battle),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: _ShopSectionButton(
+            key: const ValueKey('shop-section-custom'),
+            theme: theme,
+            icon: Icons.auto_awesome_rounded,
+            label: 'Custom',
+            summary: customSummary,
+            selected: selected == _ShopSection.custom,
+            onTap: () => onSelected(_ShopSection.custom),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ShopSectionButton extends StatelessWidget {
+  const _ShopSectionButton({
+    super.key,
+    required this.theme,
+    required this.icon,
+    required this.label,
+    required this.summary,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final BackgroundTheme theme;
+  final IconData icon;
+  final String label;
+  final String summary;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected ? Colors.white : theme.cardTextPrimaryColor;
+    return Semantics(
+      selected: selected,
+      button: true,
+      label: '$label shop, $summary',
+      child: Material(
+        color: selected ? theme.primaryColor : theme.cardColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(
+            color: selected ? theme.primaryColor : theme.cardBorderColor,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 19, color: foreground),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  summary,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: foreground.withValues(alpha: 0.78),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
