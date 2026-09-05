@@ -7,13 +7,10 @@ import '../models/account_protection_state.dart';
 import '../models/background_theme.dart';
 import '../models/player_account.dart';
 import '../navigation/app_page_route.dart';
-import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
 import '../services/preferences_service.dart';
 import '../services/save_transfer_file.dart';
 import '../services/save_transfer_service.dart';
-import '../services/sprite_rating_service.dart';
-import '../services/sprite_reference_overlay_service.dart';
 import '../services/tutorial_service.dart';
 import '../theme/game_theme.dart';
 import '../utils/snackbar_utils.dart';
@@ -25,24 +22,17 @@ import '../widgets/audio_settings_card.dart';
 import '../widgets/game_background.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/retro_pixel_animal_sprite.dart';
-import 'custom_sprites_screen.dart';
 
-/// Player settings: tutorials, visuals, audio, and custom animal entry points.
+/// Player settings: accounts, tutorials, visuals, and audio.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
     required this.preferences,
-    required this.customSprites,
     required this.game,
-    required this.spriteRating,
-    required this.referenceOverlay,
   });
 
   final PreferencesService preferences;
-  final CustomSpriteService customSprites;
   final GameService game;
-  final SpriteRatingService spriteRating;
-  final SpriteReferenceOverlayService referenceOverlay;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -57,10 +47,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   var _appearancePanel = _AppearancePanel.backgrounds;
 
   PreferencesService get preferences => widget.preferences;
-  CustomSpriteService get customSprites => widget.customSprites;
   GameService get game => widget.game;
-  SpriteRatingService get spriteRating => widget.spriteRating;
-  SpriteReferenceOverlayService get referenceOverlay => widget.referenceOverlay;
 
   static final SaveTransferService _saveTransfer = SaveTransferService();
 
@@ -600,39 +587,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
                               ),
                         ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: () => pushThemedAppRoute(
-                          context,
-                          theme: selected,
-                          settings: const RouteSettings(
-                            name: kCustomSpritesRouteName,
-                          ),
-                          builder: (_) => CustomSpritesScreen(
-                            preferences: preferences,
-                            customSprites: customSprites,
-                            game: game,
-                            spriteRating: spriteRating,
-                            referenceOverlay: referenceOverlay,
-                          ),
-                        ),
-                        icon: const Icon(Icons.brush_rounded),
-                        label: const Text(
-                          'Custom Animals',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        style: GameTheme.filledButton(
-                          selected,
-                          color: selected.secondaryColor,
-                          height: 52,
-                        ),
                       ),
                     ),
                   ],

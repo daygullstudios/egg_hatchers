@@ -1,11 +1,8 @@
 import 'package:egg_hatchers/screens/settings_screen.dart';
 import 'package:egg_hatchers/services/account_service.dart';
 import 'package:egg_hatchers/services/audio_service.dart';
-import 'package:egg_hatchers/services/custom_sprite_service.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/preferences_service.dart';
-import 'package:egg_hatchers/services/sprite_rating_service.dart';
-import 'package:egg_hatchers/services/sprite_reference_overlay_service.dart';
 import 'package:egg_hatchers/widgets/account_scope.dart';
 import 'package:egg_hatchers/widgets/audio_scope.dart';
 import 'package:flutter/material.dart';
@@ -22,17 +19,11 @@ void main() {
     final accounts = AccountService();
     final game = GameService();
     final preferences = PreferencesService();
-    final sprites = CustomSpriteService();
-    final ratings = SpriteRatingService();
-    final references = SpriteReferenceOverlayService();
     final audio = AudioService();
     await Future.wait([
       accounts.initialize(),
       game.initialize(),
       preferences.initialize(),
-      sprites.initialize(),
-      ratings.initialize(),
-      references.initialize(),
     ]);
     await accounts.createAccount(
       displayName: 'Settings Player',
@@ -46,13 +37,7 @@ void main() {
         child: AudioScope(
           audio: audio,
           child: MaterialApp(
-            home: SettingsScreen(
-              preferences: preferences,
-              customSprites: sprites,
-              game: game,
-              spriteRating: ratings,
-              referenceOverlay: references,
-            ),
+            home: SettingsScreen(preferences: preferences, game: game),
           ),
         ),
       ),
@@ -62,6 +47,7 @@ void main() {
     expect(find.text('Account & Saves'), findsOneWidget);
     expect(find.text('Sound & Feedback'), findsOneWidget);
     expect(find.text('Appearance'), findsOneWidget);
+    expect(find.text('Custom Animals'), findsNothing);
     expect(find.text('Music').hitTestable(), findsNothing);
     expect(find.text('Settings Player').hitTestable(), findsNothing);
 

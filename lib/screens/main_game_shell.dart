@@ -82,13 +82,8 @@ class _MainGameShellState extends State<MainGameShell> {
       icon: '⚙️',
       label: 'Opening Settings',
       settings: const RouteSettings(name: kSettingsRouteName),
-      builder: (_) => SettingsScreen(
-        preferences: widget.preferences,
-        customSprites: widget.customSprites,
-        game: widget.game,
-        spriteRating: widget.spriteRating,
-        referenceOverlay: widget.referenceOverlay,
-      ),
+      builder: (_) =>
+          SettingsScreen(preferences: widget.preferences, game: widget.game),
     );
   }
 
@@ -100,8 +95,6 @@ class _MainGameShellState extends State<MainGameShell> {
         preferences: widget.preferences,
         customSprites: widget.customSprites,
         customEggs: widget.customEggs,
-        spriteRating: widget.spriteRating,
-        referenceOverlay: widget.referenceOverlay,
       ),
       ShopScreen(
         game: widget.game,
