@@ -76,9 +76,13 @@ Phase 2 has started with an isolated `egg-hatchers-dev` Firebase project and
 registered Web, Android, and iOS development apps. Firebase Core initializes
 fail-open on those platforms, but authentication, Firestore, cloud writes,
 provider linking, and account merging are intentionally not active yet. The
-next identity batch must first reconcile the legacy multi-profile picker with
-the proven one-durable-device-guest handoff contract; it must not associate
-multiple local profiles with one anonymous Firebase UID.
+proven one-durable-device-guest boundary is now implemented as device-owned
+metadata: exactly one unambiguous guest may later receive an anonymous Firebase
+UID, named profiles are never inferred, replacement rotates the identity
+generation and clears the old binding, and imports/exports cannot transfer this
+metadata. The next identity batch can enable anonymous authentication only for
+that designated slot; it must keep cloud writes disabled until the progress
+repository and conflict gates are ready.
 
 ## Art rules
 

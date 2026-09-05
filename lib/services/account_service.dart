@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/player_account.dart';
 import 'account_session_store.dart';
 import 'account_storage.dart';
+import 'device_guest_slot_store.dart';
 import 'save_service.dart';
 
 class AccountService extends ChangeNotifier {
@@ -83,6 +84,8 @@ class AccountService extends ChangeNotifier {
       _accounts.add(_createGuestAccount());
       await _saveAccounts(preferences);
     }
+
+    await DeviceGuestSlotStore().ensureForAccounts(_accounts);
 
     await SaveService.migrateLegacyRottenShellTutorial(
       _accounts.map((account) => account.id),
@@ -175,6 +178,7 @@ class AccountService extends ChangeNotifier {
     }
     final preferences = await SharedPreferences.getInstance();
     await _saveAccounts(preferences);
+    await DeviceGuestSlotStore().ensureForAccounts(_accounts);
     await AccountStorage.deleteAccountData(id);
     notifyListeners();
   }

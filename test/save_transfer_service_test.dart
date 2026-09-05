@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:egg_hatchers/services/save_transfer_service.dart';
+import 'package:egg_hatchers/services/device_guest_slot_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,9 +25,17 @@ void main() {
       'audioMusicVolume': 0.75,
       'testCounter': 7,
       'testList': <String>['one', 'two'],
+      '${DeviceGuestSlotStore.keyPrefix}firebase_uid': 'do-not-transfer',
     });
     final service = SaveTransferService();
     final save = await service.exportSave(activeAccountId: accountId);
+    final exportedPreferences =
+        (jsonDecode(save) as Map<String, dynamic>)['preferences']
+            as Map<String, dynamic>;
+    expect(
+      exportedPreferences.keys.where(DeviceGuestSlotStore.ownsKey),
+      isEmpty,
+    );
 
     final preferences = await SharedPreferences.getInstance();
     await preferences.clear();
@@ -40,6 +49,12 @@ void main() {
     expect(preferences.getInt('testCounter'), 7);
     expect(preferences.getStringList('testList'), ['one', 'two']);
     expect(preferences.containsKey('staleValue'), isFalse);
+    expect(
+      preferences.getString('${DeviceGuestSlotStore.keyPrefix}firebase_uid'),
+      isNull,
+    );
+    expect(await DeviceGuestSlotStore().read(), isNull);
+    expect(await DeviceGuestSlotStore().currentGeneration(), 1);
   });
 
   test('rejects a malformed save before changing local data', () async {

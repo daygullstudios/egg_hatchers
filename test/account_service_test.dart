@@ -1,5 +1,6 @@
 import 'package:egg_hatchers/data/game_data.dart';
 import 'package:egg_hatchers/services/account_service.dart';
+import 'package:egg_hatchers/services/device_guest_slot_store.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/save_service.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,10 @@ void main() {
     expect(accounts.account!.isGuest, isTrue);
     expect(accounts.account!.displayName, 'Guest Hatcher');
     expect(accounts.account!.identityLabel, 'Guest · saved on this device');
+    expect(
+      (await DeviceGuestSlotStore().read())?.accountId,
+      accounts.account!.id,
+    );
 
     final restored = AccountService();
     await restored.initialize();
@@ -30,6 +35,11 @@ void main() {
       final accounts = AccountService();
       await accounts.initialize();
       final originalId = accounts.account!.id;
+      final slots = DeviceGuestSlotStore();
+      await slots.bindFirebaseUid(
+        accountId: originalId,
+        firebaseUid: 'old-firebase-user',
+      );
 
       await accounts.deleteAccount(originalId);
 
@@ -37,6 +47,10 @@ void main() {
       expect(accounts.accounts, hasLength(1));
       expect(accounts.account!.isGuest, isTrue);
       expect(accounts.account!.id, isNot(originalId));
+      final replacementSlot = await slots.read();
+      expect(replacementSlot?.accountId, accounts.account!.id);
+      expect(replacementSlot?.generation, 2);
+      expect(replacementSlot?.firebaseUid, isNull);
     },
   );
 

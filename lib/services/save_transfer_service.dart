@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'account_session_store.dart';
+import 'device_guest_slot_store.dart';
 
 class SaveTransferException implements Exception {
   const SaveTransferException(this.message);
@@ -23,6 +24,7 @@ class SaveTransferService {
     final values = <String, Object?>{};
     final keys = preferences.getKeys().toList()..sort();
     for (final key in keys) {
+      if (DeviceGuestSlotStore.ownsKey(key)) continue;
       values[key] = _encodeValue(preferences.get(key));
     }
 
@@ -40,15 +42,21 @@ class SaveTransferService {
     final rawPreferences = decoded['preferences'] as Map<String, dynamic>;
     final restored = <String, Object>{};
     for (final entry in rawPreferences.entries) {
+      if (DeviceGuestSlotStore.ownsKey(entry.key)) continue;
       restored[entry.key] = _decodeValue(entry.key, entry.value);
     }
     _validateAccounts(restored[_accountsKey]);
 
+    final guestSlotStore = DeviceGuestSlotStore();
+    final previousGuestGeneration = await guestSlotStore.currentGeneration();
     final preferences = await SharedPreferences.getInstance();
     await preferences.clear();
     for (final entry in restored.entries) {
       await _writeValue(preferences, entry.key, entry.value);
     }
+    await guestSlotStore.invalidateForAccountReplacement(
+      previousGeneration: previousGuestGeneration,
+    );
 
     final accountIds = _accountIds(restored[_accountsKey]);
     final requestedActiveId = decoded['activeAccountId'];

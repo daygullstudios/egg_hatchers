@@ -199,9 +199,15 @@ iOS registrations for the existing development identifiers. Firebase Core is
 initialized fail-open on those three platforms; unsupported desktop targets and
 bootstrap failures continue in local-only mode. Authentication, Firestore,
 progress upload, provider linking, and account merging remain disabled at this
-checkpoint. Before anonymous auth is added, Egg Hatchers' legacy multi-profile
-picker must be reconciled with the one-durable-device-guest handoff contract so
-multiple local profiles can never share one anonymous Firebase UID.
+checkpoint.
+
+The one-durable-device-guest boundary is now explicit. Device-owned slot
+metadata designates at most one local guest as eligible for a future anonymous
+Firebase UID. Named legacy profiles are never inferred as that guest, ambiguous
+multi-guest imports fail closed, replacing a guest rotates its identity
+generation and clears any old UID binding, and slot metadata is excluded from
+JSON save transfer. This preserves the existing profile picker without allowing
+multiple local profiles or copied saves to share one anonymous identity.
 
 ### 3. Add offline-first cloud progress
 
