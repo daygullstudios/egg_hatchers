@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../models/background_theme.dart';
-import '../theme/game_theme.dart';
 import '../utils/format_utils.dart';
 
 /// Shows income details that complement the persistent AppBar coin balance.
@@ -19,10 +18,8 @@ class CoinStatsStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: GameTheme.panelDecoration(theme),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       child: Wrap(
         alignment: WrapAlignment.center,
         spacing: 8,
