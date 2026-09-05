@@ -25,6 +25,9 @@ class OwnedAnimalList extends StatelessWidget {
     this.onSellOne,
     this.onSellAll,
     this.firstCardUpgradeKey,
+    this.entries,
+    this.showSectionHeaders = true,
+    this.sortEntries = true,
   });
 
   final GameService game;
@@ -36,14 +39,16 @@ class OwnedAnimalList extends StatelessWidget {
     String mutationId,
     String displayName,
     bool isProtected,
-  ) onUpgrade;
+  )
+  onUpgrade;
   final void Function(
     String animalId,
     String mutationId,
     String displayName,
     int coins,
     bool isProtected,
-  )? onSellOne;
+  )?
+  onSellOne;
   final void Function(
     String animalId,
     String mutationId,
@@ -51,16 +56,25 @@ class OwnedAnimalList extends StatelessWidget {
     int quantity,
     int totalCoins,
     bool isProtected,
-  )? onSellAll;
+  )?
+  onSellAll;
   final bool showSellButtons;
   final bool compact;
   final double separatorHeight;
   final bool embedInParentScroll;
+  final List<OwnedAnimal>? entries;
+  final bool showSectionHeaders;
+  final bool sortEntries;
 
   @override
   Widget build(BuildContext context) {
-    final normal = _sorted(game.normalAnimals);
-    final mutated = _sorted(game.mutatedAnimals);
+    final source = entries ?? game.ownedAnimals;
+    final normal = _sorted(
+      source.where((owned) => owned.mutationId == 'none').toList(),
+    );
+    final mutated = _sorted(
+      source.where((owned) => owned.mutationId != 'none').toList(),
+    );
 
     if (normal.isEmpty && mutated.isEmpty) {
       return const SizedBox.shrink();
@@ -68,27 +82,28 @@ class OwnedAnimalList extends StatelessWidget {
 
     final children = <Widget>[
       if (normal.isNotEmpty) ...[
-        _SectionHeader(
-          title: '🐾 Normal Animals',
-          compact: compact,
-          theme: theme,
-        ),
-        SizedBox(height: separatorHeight),
+        if (showSectionHeaders) ...[
+          _SectionHeader(
+            title: '🐾 Normal Animals',
+            compact: compact,
+            theme: theme,
+          ),
+          SizedBox(height: separatorHeight),
+        ],
         ..._buildCards(context, normal, firstCardIndexOffset: 0),
       ],
       if (mutated.isNotEmpty) ...[
-        SizedBox(height: separatorHeight * 2),
-        _SectionHeader(
-          title: '✨ Mutated Animals',
-          compact: compact,
-          theme: theme,
-        ),
-        SizedBox(height: separatorHeight),
-        ..._buildCards(
-          context,
-          mutated,
-          firstCardIndexOffset: normal.length,
-        ),
+        if (showSectionHeaders) ...[
+          SizedBox(height: separatorHeight * 2),
+          _SectionHeader(
+            title: '✨ Mutated Animals',
+            compact: compact,
+            theme: theme,
+          ),
+          SizedBox(height: separatorHeight),
+        ] else if (normal.isNotEmpty)
+          SizedBox(height: separatorHeight),
+        ..._buildCards(context, mutated, firstCardIndexOffset: normal.length),
       ],
     ];
 
@@ -100,16 +115,14 @@ class OwnedAnimalList extends StatelessWidget {
       );
     }
 
-    return ListView(
-      children: children,
-    );
+    return ListView(children: children);
   }
 
   List<OwnedAnimal> _sorted(List<OwnedAnimal> entries) {
     final copy = List<OwnedAnimal>.from(entries);
-    copy.sort(
-      (a, b) => GameData.compareOwnedAnimals(a.animalId, b.animalId),
-    );
+    if (sortEntries) {
+      copy.sort((a, b) => GameData.compareOwnedAnimals(a.animalId, b.animalId));
+    }
     return copy;
   }
 
@@ -138,8 +151,8 @@ class OwnedAnimalList extends StatelessWidget {
     final animal = GameData.animalById(owned.animalId);
     if (animal == null) return const SizedBox.shrink();
 
-    final mutation = GameData.mutationById(owned.mutationId) ??
-        GameData.mutations.first;
+    final mutation =
+        GameData.mutationById(owned.mutationId) ?? GameData.mutations.first;
     final displayName = mutation.fullName(animal);
     final isBattling = game.isOwnedStackAutoBattling(owned);
     final activeBattle = game.activeAutoBattle;
@@ -155,11 +168,11 @@ class OwnedAnimalList extends StatelessWidget {
       mutation: mutation,
       quantity: owned.quantity,
       level: owned.level,
-      typeIncome:
-          isBattling ? 0 : game.incomeForOwned(animal, owned),
+      typeIncome: isBattling ? 0 : game.incomeForOwned(animal, owned),
       upgradeCost: GameService.upgradeCostFor(animal, owned),
       showUpgradeButton: true,
-      canAffordUpgrade: !isBattling &&
+      canAffordUpgrade:
+          !isBattling &&
           game.canAffordUpgrade(
             animal.id,
             owned.mutationId,
@@ -177,12 +190,12 @@ class OwnedAnimalList extends StatelessWidget {
       isEliteReward: owned.isEliteReward,
       isAutoBattling: isBattling,
       autoBattleBossName: isBattling ? boss?.name : null,
-      autoBattleCurrentHp:
-          isBattling ? activeBattle?.currentHp : null,
+      autoBattleCurrentHp: isBattling ? activeBattle?.currentHp : null,
       autoBattleMaxHp: isBattling ? activeBattle?.maxHp : null,
       autoBattleWins: isBattling ? activeBattle?.battlesWon : null,
-      autoBattleTimeRemaining:
-          isBattling ? game.timeUntilNextAutoBattleFight() : null,
+      autoBattleTimeRemaining: isBattling
+          ? game.timeUntilNextAutoBattleFight()
+          : null,
       onBattlingTap: isBattling
           ? () {
               showGameSnackBar(
@@ -239,10 +252,7 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: GameTheme.sectionTitle(
-        theme,
-        size: compact ? 16 : 18,
-      ),
+      style: GameTheme.sectionTitle(theme, size: compact ? 16 : 18),
     );
   }
 }

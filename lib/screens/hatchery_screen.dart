@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/game_data.dart';
 import '../models/background_theme.dart';
+import '../models/owned_animal.dart';
 import '../services/custom_egg_service.dart';
 import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
@@ -153,25 +154,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
     });
 
     TutorialTargetRegistry.register(TutorialTargetIds.collectionButton, () {
-      if (!mounted) return;
-      final shell = MainGameShellScope.maybeOf(context);
-      if (shell != null) {
-        shell.onSelect(MainGameDestination.collection);
-        return;
-      }
-      final bg = preferences.selectedTheme;
-      openWithThemedTransition(
-        context,
-        theme: bg,
-        icon: '🐾',
-        label: 'Opening Collection',
-        settings: const RouteSettings(name: kCollectionRouteName),
-        builder: (_) => CollectionScreen(
-          game: game,
-          preferences: preferences,
-          customSprites: customSprites,
-        ),
-      );
+      _openCollection();
     });
 
     TutorialTargetRegistry.register(TutorialTargetIds.questsButton, () {
@@ -213,11 +196,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
 
     TutorialTargetRegistry.register(TutorialTargetIds.upgradeButton, () {
       if (!mounted) return;
-      final owned = game.normalAnimals.isNotEmpty
-          ? game.normalAnimals.first
-          : game.mutatedAnimals.isEmpty
-          ? null
-          : game.mutatedAnimals.first;
+      final owned = _primaryOwnedAnimal();
       if (owned == null) return;
       final animal = GameData.animalById(owned.animalId);
       if (animal == null) return;
@@ -231,6 +210,28 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
         owned.isProtected,
       );
     });
+  }
+
+  void _openCollection() {
+    if (!mounted) return;
+    final shell = MainGameShellScope.maybeOf(context);
+    if (shell != null) {
+      shell.onSelect(MainGameDestination.collection);
+      return;
+    }
+    final bg = preferences.selectedTheme;
+    openWithThemedTransition(
+      context,
+      theme: bg,
+      icon: '🐾',
+      label: 'Opening Collection',
+      settings: const RouteSettings(name: kCollectionRouteName),
+      builder: (_) => CollectionScreen(
+        game: game,
+        preferences: preferences,
+        customSprites: customSprites,
+      ),
+    );
   }
 
   void _maybeAutoStartTutorial() {
@@ -294,6 +295,34 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
     }
   }
 
+  OwnedAnimal? _primaryOwnedAnimal() {
+    final candidates = game.normalAnimals.isNotEmpty
+        ? game.normalAnimals
+        : game.mutatedAnimals;
+    if (candidates.isEmpty) return null;
+    candidates.sort(
+      (a, b) => GameData.compareOwnedAnimals(a.animalId, b.animalId),
+    );
+    return candidates.first;
+  }
+
+  List<OwnedAnimal> _hatcherySnapshot() {
+    final primary = _primaryOwnedAnimal();
+    if (primary == null) return const [];
+    final result = <OwnedAnimal>[primary];
+    for (final owned in game.ownedAnimals) {
+      final alreadyAdded = result.any(
+        (entry) =>
+            entry.animalId == owned.animalId &&
+            entry.mutationId == owned.mutationId &&
+            entry.isProtected == owned.isProtected,
+      );
+      if (!alreadyAdded) result.add(owned);
+      if (result.length == 3) break;
+    }
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -301,6 +330,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
       builder: (context, _) {
         final bg = preferences.selectedTheme;
         final shell = MainGameShellScope.maybeOf(context);
+        final hatcheryAnimals = _hatcherySnapshot();
 
         return AutoBattleNotificationListener(
           game: game,
@@ -329,23 +359,23 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                 actions: [
                   if (shell == null)
                     IconButton(
-                    tooltip: 'Settings',
-                    onPressed: () => openWithThemedTransition(
-                      context,
-                      theme: bg,
-                      icon: '⚙️',
-                      label: 'Opening Settings',
-                      settings: const RouteSettings(name: kSettingsRouteName),
-                      builder: (_) => SettingsScreen(
-                        preferences: preferences,
-                        customSprites: customSprites,
-                        game: game,
-                        spriteRating: widget.spriteRating,
-                        referenceOverlay: widget.referenceOverlay,
+                      tooltip: 'Settings',
+                      onPressed: () => openWithThemedTransition(
+                        context,
+                        theme: bg,
+                        icon: '⚙️',
+                        label: 'Opening Settings',
+                        settings: const RouteSettings(name: kSettingsRouteName),
+                        builder: (_) => SettingsScreen(
+                          preferences: preferences,
+                          customSprites: customSprites,
+                          game: game,
+                          spriteRating: widget.spriteRating,
+                          referenceOverlay: widget.referenceOverlay,
+                        ),
                       ),
+                      icon: const Icon(Icons.settings_rounded),
                     ),
-                    icon: const Icon(Icons.settings_rounded),
-                  ),
                 ],
               ),
               body: GameBackground(
@@ -398,7 +428,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                         KeyedSubtree(
                           key: TutorialTargets.animalsSection,
                           child: Text(
-                            'Your Animals',
+                            'Production Snapshot',
                             style: GameTheme.sectionTitle(bg),
                           ),
                         ),
@@ -413,6 +443,8 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                             embedInParentScroll: true,
                             customSprites: customSprites,
                             firstCardUpgradeKey: TutorialTargets.upgradeButton,
+                            entries: hatcheryAnimals,
+                            showSectionHeaders: false,
                             onUpgrade:
                                 (animalId, mutationId, name, isProtected) =>
                                     _handleUpgrade(
@@ -423,6 +455,26 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                                       isProtected,
                                     ),
                           ),
+                        if (game.ownedAnimals.isNotEmpty) ...[
+                          const SizedBox(height: 10),
+                          OutlinedButton.icon(
+                            key: const ValueKey('manage-collection-button'),
+                            onPressed: _openCollection,
+                            icon: const Icon(
+                              Icons.collections_bookmark_rounded,
+                            ),
+                            label: Text(
+                              game.ownedAnimals.length > hatcheryAnimals.length
+                                  ? 'Manage All ${game.ownedAnimals.length} Stacks'
+                                  : 'Manage Collection',
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: bg.cardTextPrimaryColor,
+                              side: BorderSide(color: bg.primaryColor),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ],
                         SizedBox(
                           height: MediaQuery.paddingOf(context).bottom + 24,
                         ),
