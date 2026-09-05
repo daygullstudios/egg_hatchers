@@ -275,31 +275,35 @@ class _EggHatchersAppState extends State<EggHatchersApp>
       builder: (context, child) {
         final content = child ?? const SizedBox.shrink();
         if (!_isReady || _switchingAccount) {
-          return AppThemeBackground(theme: theme, child: content);
+          return PortraitAppShell(
+            child: AppThemeBackground(theme: theme, child: content),
+          );
         }
-        return AppThemeBackground(
-          theme: theme,
-          child: AudioScope(
-            audio: _audio,
-            child: AudioUnlockListener(
+        return PortraitAppShell(
+          child: AppThemeBackground(
+            theme: theme,
+            child: AudioScope(
               audio: _audio,
-              child: AccountScope(
-                accounts: _accounts,
-                child: AccountProtectionScope(
-                  protection: _accountProtection,
-                  child: OnlineLobbyScope(
-                    lobby: _onlineLobby,
-                    child: OnlineLobbyHost(
+              child: AudioUnlockListener(
+                audio: _audio,
+                child: AccountScope(
+                  accounts: _accounts,
+                  child: AccountProtectionScope(
+                    protection: _accountProtection,
+                    child: OnlineLobbyScope(
                       lobby: _onlineLobby,
-                      onSessionReady: _openOnlineSession,
-                      child: CoinBalanceScope(
-                        coins: _game.coins,
-                        child: AnimalSpriteThemeScope(
-                          theme: _preferences.animalSpriteTheme,
-                          child: TutorialHost(
-                            game: _game,
-                            theme: theme,
-                            child: content,
+                      child: OnlineLobbyHost(
+                        lobby: _onlineLobby,
+                        onSessionReady: _openOnlineSession,
+                        child: CoinBalanceScope(
+                          coins: _game.coins,
+                          child: AnimalSpriteThemeScope(
+                            theme: _preferences.animalSpriteTheme,
+                            child: TutorialHost(
+                              game: _game,
+                              theme: theme,
+                              child: content,
+                            ),
                           ),
                         ),
                       ),
