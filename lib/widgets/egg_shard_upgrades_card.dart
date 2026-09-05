@@ -15,58 +15,61 @@ class EggShardUpgradesCard extends StatelessWidget {
     super.key,
     required this.theme,
     required this.game,
+    this.embedded = false,
+    this.showHeader = true,
   });
 
   final BackgroundTheme theme;
   final GameService game;
+  final bool embedded;
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: GameTheme.cardDecoration(theme),
-      padding: const EdgeInsets.all(16),
+      decoration: embedded ? null : GameTheme.cardDecoration(theme),
+      padding: EdgeInsets.fromLTRB(16, embedded ? 12 : 16, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Text(
-                '🥚',
-                style: TextStyle(fontSize: 24, color: theme.primaryColor),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Egg Shard Upgrades',
-                  style: GameTheme.sectionTitle(theme, size: 18),
+          if (showHeader) ...[
+            Row(
+              children: [
+                Text(
+                  '🥚',
+                  style: TextStyle(fontSize: 24, color: theme.primaryColor),
                 ),
-              ),
-              Text(
-                '${game.eggShards} Shards',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: theme.secondaryColor,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Egg Shard Upgrades',
+                    style: GameTheme.sectionTitle(theme, size: 18),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+                Text(
+                  '${game.eggShards} Shards',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: theme.secondaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
           _EggShardUpgradeTile(
             theme: theme,
             title: 'Battle Limit Break',
-            description:
-                'Raises Homing and Shot Speed max levels by +2 each.',
+            description: 'Raises Homing and Shot Speed max levels by +2 each.',
             level: game.battleLimitBreakLevel,
             maxLevel: EggShardLogic.battleLimitBreakMaxLevel,
             nextCost: EggShardLogic.battleLimitBreakCost(
               game.battleLimitBreakLevel,
             ),
-            canAfford: game.eggShards >=
-                EggShardLogic.battleLimitBreakCost(
-                  game.battleLimitBreakLevel,
-                ),
-            statusLine:
-                'Homing/Speed max: ${game.battleHomingMaxLevel}',
+            canAfford:
+                game.eggShards >=
+                EggShardLogic.battleLimitBreakCost(game.battleLimitBreakLevel),
+            statusLine: 'Homing/Speed max: ${game.battleHomingMaxLevel}',
             onUpgrade: () => _purchase(
               context,
               game.purchaseBattleLimitBreak(),
@@ -81,8 +84,7 @@ class EggShardUpgradesCard extends StatelessWidget {
             level: game.extraLifeLimitBreakLevel,
             maxLevel: EggShardLogic.extraLifeLimitBreakMaxLevel,
             nextCost: EggShardLogic.extraLifeLimitBreakCost,
-            canAfford:
-                game.eggShards >= EggShardLogic.extraLifeLimitBreakCost,
+            canAfford: game.eggShards >= EggShardLogic.extraLifeLimitBreakCost,
             statusLine: 'Extra Life max: ${game.battleExtraLifeMaxLevel}',
             onUpgrade: () => _purchase(
               context,
@@ -101,12 +103,12 @@ class EggShardUpgradesCard extends StatelessWidget {
             nextCost: EggShardLogic.eggRebirthReductionCost(
               game.eggRebirthReductionLevel,
             ),
-            canAfford: game.eggShards >=
+            canAfford:
+                game.eggShards >=
                 EggShardLogic.eggRebirthReductionCost(
                   game.eggRebirthReductionLevel,
                 ),
-            statusLine:
-                'Rebirth reduction: -${game.eggRebirthReductionLevel}',
+            statusLine: 'Rebirth reduction: -${game.eggRebirthReductionLevel}',
             onUpgrade: () => _purchase(
               context,
               game.purchaseEggRebirthReduction(),
@@ -117,8 +119,7 @@ class EggShardUpgradesCard extends StatelessWidget {
           _EggShardUpgradeTile(
             theme: theme,
             title: 'Sprite Canvas Plus',
-            description:
-                'Unlock 24×24 custom sprite canvas for new sprites.',
+            description: 'Unlock 24×24 custom sprite canvas for new sprites.',
             level: game.customSpriteCanvasTier,
             maxLevel: EggShardLogic.customSpriteCanvasMaxLevel,
             nextCost: EggShardLogic.customSpriteCanvasCost,
@@ -215,20 +216,14 @@ class _EggShardUpgradeTile extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             statusLine!,
-            style: TextStyle(
-              fontSize: 13,
-              color: theme.cardTextSecondaryColor,
-            ),
+            style: TextStyle(fontSize: 13, color: theme.cardTextSecondaryColor),
           ),
         ],
         if (!atMax) ...[
           const SizedBox(height: 4),
           Text(
             'Cost: $nextCost Egg Shards',
-            style: TextStyle(
-              fontSize: 13,
-              color: theme.cardTextSecondaryColor,
-            ),
+            style: TextStyle(fontSize: 13, color: theme.cardTextSecondaryColor),
           ),
         ],
         const SizedBox(height: 10),

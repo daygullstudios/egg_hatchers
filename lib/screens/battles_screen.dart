@@ -748,9 +748,10 @@ class BattlesScreen extends StatelessWidget {
                               onTap: () => _openOnlineTrading(context, theme),
                             ),
                             const SizedBox(height: 14),
-                            _BattleUpgradesCard(
+                            _BattleAccordionSections(
                               theme: theme,
                               game: game,
+                              customSprites: customSprites,
                               onUpgradeBattleHoming: () =>
                                   _upgradeBattleHoming(context),
                               onUpgradeBattleShotSpeed: () =>
@@ -761,69 +762,16 @@ class BattlesScreen extends StatelessWidget {
                                   _unlockBossMutation(context),
                               onApplyBossMutation: () =>
                                   _applyBossMutation(context, theme),
+                              onAutoBattle: (boss) =>
+                                  _startAutoBattle(context, boss, theme),
+                              onManualBattle: (boss, mode) =>
+                                  _startManualBattle(
+                                    context,
+                                    boss,
+                                    theme,
+                                    mode: mode,
+                                  ),
                             ),
-                            const SizedBox(height: 18),
-                            for (
-                              var i = 0;
-                              i < BossData.bosses.length;
-                              i++
-                            ) ...[
-                              if (i > 0) const SizedBox(height: 14),
-                              KeyedSubtree(
-                                key: i == 0
-                                    ? TutorialTargets.battlesExplainSection
-                                    : null,
-                                child: _BossCard(
-                                  boss: BossData.bosses[i],
-                                  theme: theme,
-                                  game: game,
-                                  isUnlocked: BossBattleLogic.isBossUnlocked(
-                                    BossData.bosses[i],
-                                    game.state,
-                                  ),
-                                  winCount: game.bossWinCount(
-                                    BossData.bosses[i].id,
-                                  ),
-                                  hardPhaseWinCount: game.hardPhaseWinCount(
-                                    BossData.bosses[i].id,
-                                  ),
-                                  eliteUnlockProgress: game
-                                      .eliteBossUnlockProgress(
-                                        BossData.bosses[i].id,
-                                      ),
-                                  hardPhaseUnlocked: game.isHardPhaseUnlocked(
-                                    BossData.bosses[i].id,
-                                  ),
-                                  nightmareUnlocked: game.isNightmareUnlocked(
-                                    BossData.bosses[i].id,
-                                  ),
-                                  onAutoBattle: () => _startAutoBattle(
-                                    context,
-                                    BossData.bosses[i],
-                                    theme,
-                                  ),
-                                  onManualBattle: () => _startManualBattle(
-                                    context,
-                                    BossData.bosses[i],
-                                    theme,
-                                  ),
-                                  onHardPhaseBattle: () => _startManualBattle(
-                                    context,
-                                    BossData.bosses[i],
-                                    theme,
-                                    mode: ManualBattleMode.hard,
-                                  ),
-                                  onNightmareBattle: () => _startManualBattle(
-                                    context,
-                                    BossData.bosses[i],
-                                    theme,
-                                    mode: ManualBattleMode.nightmare,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            const SizedBox(height: 14),
-                            EggShardUpgradesCard(theme: theme, game: game),
                             const SizedBox(height: 16),
                           ],
                         ),
@@ -837,6 +785,337 @@ class BattlesScreen extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+class _BattleAccordionSections extends StatefulWidget {
+  const _BattleAccordionSections({
+    required this.theme,
+    required this.game,
+    required this.customSprites,
+    required this.onUpgradeBattleHoming,
+    required this.onUpgradeBattleShotSpeed,
+    required this.onUpgradeBattleExtraLife,
+    required this.onUnlockBossMutation,
+    required this.onApplyBossMutation,
+    required this.onAutoBattle,
+    required this.onManualBattle,
+  });
+
+  final BackgroundTheme theme;
+  final GameService game;
+  final CustomSpriteService customSprites;
+  final VoidCallback onUpgradeBattleHoming;
+  final VoidCallback onUpgradeBattleShotSpeed;
+  final VoidCallback onUpgradeBattleExtraLife;
+  final VoidCallback onUnlockBossMutation;
+  final VoidCallback onApplyBossMutation;
+  final ValueChanged<BossBattleDefinition> onAutoBattle;
+  final void Function(BossBattleDefinition boss, ManualBattleMode mode)
+  onManualBattle;
+
+  @override
+  State<_BattleAccordionSections> createState() =>
+      _BattleAccordionSectionsState();
+}
+
+class _BattleAccordionSectionsState extends State<_BattleAccordionSections> {
+  static const _battleUpgradesId = 'battle-upgrades';
+  static const _shardUpgradesId = 'shard-upgrades';
+
+  String? _expandedId = 'boss:slime_boss';
+
+  void _toggle(String id) {
+    setState(() => _expandedId = _expandedId == id ? null : id);
+  }
+
+  int get _battleUpgradeReadyCount {
+    final game = widget.game;
+    var count = 0;
+    if (game.battleHomingLevel < game.battleHomingMaxLevel &&
+        game.battleTokens >= game.battleHomingUpgradeCost()) {
+      count++;
+    }
+    if (game.battleShotSpeedLevel < game.battleShotSpeedMaxLevel &&
+        game.battleTokens >= game.battleShotSpeedUpgradeCost()) {
+      count++;
+    }
+    if (game.battleExtraLifeLevel < game.battleExtraLifeMaxLevel &&
+        game.battleTokens >= game.battleExtraLifeUpgradeCost()) {
+      count++;
+    }
+    if (!game.bossMutationUnlocked && game.canUnlockBossMutation()) count++;
+    if (game.canApplyBossMutation()) count++;
+    return count;
+  }
+
+  int get _shardUpgradeReadyCount {
+    final game = widget.game;
+    var count = 0;
+    if (game.battleLimitBreakLevel < EggShardLogic.battleLimitBreakMaxLevel &&
+        game.eggShards >=
+            EggShardLogic.battleLimitBreakCost(game.battleLimitBreakLevel)) {
+      count++;
+    }
+    if (game.extraLifeLimitBreakLevel <
+            EggShardLogic.extraLifeLimitBreakMaxLevel &&
+        game.eggShards >= EggShardLogic.extraLifeLimitBreakCost) {
+      count++;
+    }
+    if (game.eggRebirthReductionLevel <
+            EggShardLogic.eggRebirthReductionMaxLevel &&
+        game.eggShards >=
+            EggShardLogic.eggRebirthReductionCost(
+              game.eggRebirthReductionLevel,
+            )) {
+      count++;
+    }
+    if (game.customSpriteCanvasTier <
+            EggShardLogic.customSpriteCanvasMaxLevel &&
+        game.eggShards >= EggShardLogic.customSpriteCanvasCost) {
+      count++;
+    }
+    return count;
+  }
+
+  String _readySummary(int count, String fallback) {
+    if (count == 0) return fallback;
+    return '$count upgrade${count == 1 ? '' : 's'} ready';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = widget.theme;
+    final game = widget.game;
+    final battleLevels =
+        game.battleHomingLevel +
+        game.battleShotSpeedLevel +
+        game.battleExtraLifeLevel;
+    final shardLevels =
+        game.battleLimitBreakLevel +
+        game.extraLifeLimitBreakLevel +
+        game.eggRebirthReductionLevel +
+        game.customSpriteCanvasTier;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _BattleAccordionSection(
+          headerKey: const ValueKey('battle-section-upgrades'),
+          title: 'Battle Upgrades',
+          subtitle: _readySummary(
+            _battleUpgradeReadyCount,
+            '$battleLevels total levels · ${game.battleTokens} tokens',
+          ),
+          leading: Icon(Icons.upgrade_rounded, color: theme.primaryColor),
+          expanded: _expandedId == _battleUpgradesId,
+          theme: theme,
+          onTap: () => _toggle(_battleUpgradesId),
+          child: _BattleUpgradesCard(
+            theme: theme,
+            game: game,
+            embedded: true,
+            showTitle: false,
+            onUpgradeBattleHoming: widget.onUpgradeBattleHoming,
+            onUpgradeBattleShotSpeed: widget.onUpgradeBattleShotSpeed,
+            onUpgradeBattleExtraLife: widget.onUpgradeBattleExtraLife,
+            onUnlockBossMutation: widget.onUnlockBossMutation,
+            onApplyBossMutation: widget.onApplyBossMutation,
+          ),
+        ),
+        const SizedBox(height: 10),
+        for (var i = 0; i < BossData.bosses.length; i++) ...[
+          if (i > 0) const SizedBox(height: 10),
+          _buildBossSection(BossData.bosses[i], i),
+        ],
+        const SizedBox(height: 10),
+        _BattleAccordionSection(
+          headerKey: const ValueKey('battle-section-shard-upgrades'),
+          title: 'Egg Shard Upgrades',
+          subtitle: _readySummary(
+            _shardUpgradeReadyCount,
+            '$shardLevels total levels · ${game.eggShards} shards',
+          ),
+          leading: Icon(Icons.diamond_rounded, color: theme.secondaryColor),
+          expanded: _expandedId == _shardUpgradesId,
+          theme: theme,
+          onTap: () => _toggle(_shardUpgradesId),
+          child: EggShardUpgradesCard(
+            theme: theme,
+            game: game,
+            embedded: true,
+            showHeader: false,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBossSection(BossBattleDefinition boss, int index) {
+    final game = widget.game;
+    final theme = widget.theme;
+    final id = 'boss:${boss.id}';
+    final unlocked = BossBattleLogic.isBossUnlocked(boss, game.state);
+    final winCount = game.bossWinCount(boss.id);
+    final hardWins = game.hardPhaseWinCount(boss.id);
+    final hardUnlocked = game.isHardPhaseUnlocked(boss.id);
+    final nightmareUnlocked = game.isNightmareUnlocked(boss.id);
+    final status = unlocked
+        ? '${winCount == 0 ? 'Ready' : '$winCount wins'} · '
+              '${nightmareUnlocked
+                  ? 'Nightmare available'
+                  : hardUnlocked
+                  ? 'Hard available'
+                  : 'Normal'}'
+        : boss.unlockRequirementText;
+
+    return _BattleAccordionSection(
+      headerKey: ValueKey('battle-section-boss-${boss.id}'),
+      tutorialKey: index == 0 ? TutorialTargets.battlesExplainSection : null,
+      title: boss.name,
+      subtitle: status,
+      leading: SizedBox.square(
+        dimension: 42,
+        child: unlocked || boss.isEndgameBoss
+            ? Opacity(
+                opacity: unlocked ? 1 : 0.55,
+                child: BossSprite(
+                  spritePath: boss.spritePath,
+                  fallbackEmoji: boss.emoji,
+                  bossId: boss.id,
+                  size: 40,
+                  semanticLabel: boss.name,
+                ),
+              )
+            : Icon(Icons.lock_rounded, color: theme.disabledColor),
+      ),
+      expanded: _expandedId == id,
+      theme: theme,
+      locked: !unlocked,
+      onTap: () => _toggle(id),
+      child: _BossCard(
+        boss: boss,
+        theme: theme,
+        game: game,
+        embedded: true,
+        showIdentityHeader: false,
+        isUnlocked: unlocked,
+        winCount: winCount,
+        hardPhaseWinCount: hardWins,
+        eliteUnlockProgress: game.eliteBossUnlockProgress(boss.id),
+        hardPhaseUnlocked: hardUnlocked,
+        nightmareUnlocked: nightmareUnlocked,
+        onAutoBattle: () => widget.onAutoBattle(boss),
+        onManualBattle: () =>
+            widget.onManualBattle(boss, ManualBattleMode.normal),
+        onHardPhaseBattle: () =>
+            widget.onManualBattle(boss, ManualBattleMode.hard),
+        onNightmareBattle: () =>
+            widget.onManualBattle(boss, ManualBattleMode.nightmare),
+      ),
+    );
+  }
+}
+
+class _BattleAccordionSection extends StatelessWidget {
+  const _BattleAccordionSection({
+    required this.title,
+    required this.subtitle,
+    required this.leading,
+    required this.expanded,
+    required this.theme,
+    required this.onTap,
+    required this.child,
+    this.headerKey,
+    this.tutorialKey,
+    this.locked = false,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget leading;
+  final bool expanded;
+  final BackgroundTheme theme;
+  final VoidCallback onTap;
+  final Widget child;
+  final Key? headerKey;
+  final Key? tutorialKey;
+  final bool locked;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Container(
+      decoration: GameTheme.cardDecoration(theme, locked: locked),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              key: headerKey,
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(GameTheme.cardRadius),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 11,
+                ),
+                child: Row(
+                  children: [
+                    leading,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: locked
+                                  ? theme.disabledColor
+                                  : theme.cardTextPrimaryColor,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            maxLines: expanded ? 3 : 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              height: 1.25,
+                              color: theme.cardTextSecondaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    AnimatedRotation(
+                      turns: expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 180),
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: theme.cardTextSecondaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (expanded) ...[
+            Divider(height: 1, color: theme.cardBorderColor),
+            child,
+          ],
+        ],
+      ),
+    );
+
+    if (tutorialKey == null) return content;
+    return KeyedSubtree(key: tutorialKey, child: content);
   }
 }
 
@@ -1104,6 +1383,8 @@ class _BattleUpgradesCard extends StatelessWidget {
     required this.onUpgradeBattleExtraLife,
     required this.onUnlockBossMutation,
     required this.onApplyBossMutation,
+    this.embedded = false,
+    this.showTitle = true,
   });
 
   final BackgroundTheme theme;
@@ -1113,6 +1394,8 @@ class _BattleUpgradesCard extends StatelessWidget {
   final VoidCallback onUpgradeBattleExtraLife;
   final VoidCallback onUnlockBossMutation;
   final VoidCallback onApplyBossMutation;
+  final bool embedded;
+  final bool showTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -1122,16 +1405,18 @@ class _BattleUpgradesCard extends StatelessWidget {
     );
 
     return Container(
-      decoration: GameTheme.cardDecoration(theme),
-      padding: const EdgeInsets.all(16),
+      decoration: embedded ? null : GameTheme.cardDecoration(theme),
+      padding: EdgeInsets.fromLTRB(16, embedded ? 12 : 16, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Battle Upgrades',
-            style: GameTheme.sectionTitle(theme, size: 18),
-          ),
-          const SizedBox(height: 12),
+          if (showTitle) ...[
+            Text(
+              'Battle Upgrades',
+              style: GameTheme.sectionTitle(theme, size: 18),
+            ),
+            const SizedBox(height: 12),
+          ],
           _BattleTokenUpgradeTile(
             theme: theme,
             title: 'Egg Homing',
@@ -1336,6 +1621,8 @@ class _BossCard extends StatelessWidget {
     required this.onManualBattle,
     required this.onHardPhaseBattle,
     required this.onNightmareBattle,
+    this.embedded = false,
+    this.showIdentityHeader = true,
   });
 
   final BossBattleDefinition boss;
@@ -1351,6 +1638,8 @@ class _BossCard extends StatelessWidget {
   final VoidCallback onManualBattle;
   final VoidCallback onHardPhaseBattle;
   final VoidCallback onNightmareBattle;
+  final bool embedded;
+  final bool showIdentityHeader;
 
   @override
   Widget build(BuildContext context) {
@@ -1362,7 +1651,9 @@ class _BossCard extends StatelessWidget {
     final flawlessDone = game.shadowPhoenixFlawlessWin;
 
     return Container(
-      decoration: isEndgame
+      decoration: embedded
+          ? null
+          : isEndgame
           ? GameTheme.cardDecoration(theme, locked: !isUnlocked).copyWith(
               border: Border.all(
                 color: isUnlocked
@@ -1372,72 +1663,84 @@ class _BossCard extends StatelessWidget {
               ),
             )
           : GameTheme.cardDecoration(theme, locked: !isUnlocked),
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.fromLTRB(18, embedded ? 12 : 18, 18, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 64,
-                height: 64,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isUnlocked
-                      ? theme.secondaryColor.withValues(alpha: 0.18)
-                      : theme.disabledColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: isUnlocked || isEndgame
-                    ? Opacity(
-                        opacity: isUnlocked ? 1.0 : 0.6,
-                        child: BossSprite(
-                          spritePath: boss.spritePath,
-                          fallbackEmoji: boss.emoji,
-                          bossId: boss.id,
-                          size: 52,
-                          semanticLabel: boss.name,
+          if (showIdentityHeader) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isUnlocked
+                        ? theme.secondaryColor.withValues(alpha: 0.18)
+                        : theme.disabledColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: isUnlocked || isEndgame
+                      ? Opacity(
+                          opacity: isUnlocked ? 1.0 : 0.6,
+                          child: BossSprite(
+                            spritePath: boss.spritePath,
+                            fallbackEmoji: boss.emoji,
+                            bossId: boss.id,
+                            size: 52,
+                            semanticLabel: boss.name,
+                          ),
+                        )
+                      : Text(
+                          '🔒',
+                          style: TextStyle(
+                            fontSize: 28,
+                            color: theme.disabledColor,
+                          ),
                         ),
-                      )
-                    : Text(
-                        '🔒',
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        boss.name,
                         style: TextStyle(
-                          fontSize: 28,
-                          color: theme.disabledColor,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: isUnlocked
+                              ? theme.cardTextPrimaryColor
+                              : theme.disabledColor,
                         ),
                       ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      boss.name,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: isUnlocked
-                            ? theme.cardTextPrimaryColor
-                            : theme.disabledColor,
+                      const SizedBox(height: 4),
+                      Text(
+                        boss.description,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.cardTextSecondaryColor,
+                          height: 1.3,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      boss.description,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: theme.cardTextSecondaryColor,
-                        height: 1.3,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ] else ...[
+            Text(
+              boss.description,
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.cardTextSecondaryColor,
+                height: 1.3,
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
+            ),
+            const SizedBox(height: 10),
+          ],
           Wrap(
             spacing: 8,
             runSpacing: 6,
