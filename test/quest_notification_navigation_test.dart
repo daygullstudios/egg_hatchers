@@ -22,7 +22,6 @@ void main() {
           current: MainGameDestination.hatchery,
           game: game,
           onSelect: (destination) => selected = destination,
-          onOpenSettings: () {},
           child: Builder(
             builder: (context) => TextButton(
               onPressed: () => openQuestsScreen(

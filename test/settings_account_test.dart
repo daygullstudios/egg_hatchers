@@ -5,6 +5,7 @@ import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/preferences_service.dart';
 import 'package:egg_hatchers/widgets/account_scope.dart';
 import 'package:egg_hatchers/widgets/audio_scope.dart';
+import 'package:egg_hatchers/widgets/game_primary_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,7 +38,12 @@ void main() {
         child: AudioScope(
           audio: audio,
           child: MaterialApp(
-            home: SettingsScreen(preferences: preferences, game: game),
+            home: MainGameShellScope(
+              current: MainGameDestination.settings,
+              game: game,
+              onSelect: (_) {},
+              child: SettingsScreen(preferences: preferences, game: game),
+            ),
           ),
         ),
       ),
@@ -48,6 +54,8 @@ void main() {
     expect(find.text('Sound & Feedback'), findsOneWidget);
     expect(find.text('Appearance'), findsOneWidget);
     expect(find.text('Custom Animals'), findsNothing);
+    expect(find.byType(GamePrimaryNavigation), findsOneWidget);
+    expect(find.byType(BackButton), findsNothing);
     expect(find.text('Music').hitTestable(), findsNothing);
     expect(find.text('Settings Player').hitTestable(), findsNothing);
 

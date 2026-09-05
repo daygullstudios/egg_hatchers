@@ -20,6 +20,7 @@ import '../widgets/account_scope.dart';
 import '../widgets/account_protection_scope.dart';
 import '../widgets/audio_settings_card.dart';
 import '../widgets/game_background.dart';
+import '../widgets/game_primary_navigation.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/retro_pixel_animal_sprite.dart';
 
@@ -261,6 +262,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       listenable: preferences,
       builder: (context, _) {
         final selected = preferences.selectedTheme;
+        final shell = MainGameShellScope.maybeOf(context);
         final selectedAnimalTheme = preferences.animalSpriteTheme;
         final account = AccountScope.of(context).account;
         final protection =
@@ -270,6 +272,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
         return ReturnToHatcheryPopScope(
           theme: selected,
+          enabled: shell == null,
           child: Scaffold(
             backgroundColor: Colors.transparent,
             appBar: PhoneWidthAppBar(
@@ -281,10 +284,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
               backgroundColor: selected.appBarColor,
               foregroundColor: Colors.white,
               automaticallyImplyLeading: false,
-              leading: ReturnToHatcheryBackButton(
-                theme: selected,
-                color: Colors.white,
-              ),
+              leading: shell == null
+                  ? ReturnToHatcheryBackButton(
+                      theme: selected,
+                      color: Colors.white,
+                    )
+                  : null,
+              bottom: shell == null
+                  ? null
+                  : GamePrimaryNavigation(
+                      theme: selected,
+                      hostDestination: MainGameDestination.settings,
+                    ),
             ),
             body: GameBackground(
               theme: selected,

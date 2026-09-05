@@ -35,7 +35,6 @@ void main() {
           current: MainGameDestination.hatchery,
           game: game,
           onSelect: onSelect,
-          onOpenSettings: () {},
           child: const Scaffold(
             body: GamePrimaryNavigation(
               theme: BackgroundThemes.hatcheryDefault,
@@ -84,6 +83,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(selected, MainGameDestination.quests);
     expect(find.text('Custom Animals'), findsNothing);
+
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Settings'));
+    await tester.pumpAndSettle();
+    expect(selected, MainGameDestination.settings);
   });
 
   testWidgets('wide screens retain the centered phone-width navigation', (
@@ -115,7 +120,6 @@ void main() {
           current: MainGameDestination.hatchery,
           game: game,
           onSelect: (_) {},
-          onOpenSettings: () {},
           child: const Scaffold(
             appBar: PhoneWidthAppBar(
               title: 'Hatchery',

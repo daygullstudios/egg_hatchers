@@ -13,6 +13,7 @@ enum MainGameDestination {
   collection,
   quests,
   customAnimals,
+  settings,
 }
 
 class MainGameShellScope extends InheritedWidget {
@@ -21,14 +22,12 @@ class MainGameShellScope extends InheritedWidget {
     required this.current,
     required this.game,
     required this.onSelect,
-    required this.onOpenSettings,
     required super.child,
   });
 
   final MainGameDestination current;
   final GameService game;
   final ValueChanged<MainGameDestination> onSelect;
-  final VoidCallback onOpenSettings;
 
   static MainGameShellScope? maybeOf(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<MainGameShellScope>();
@@ -114,7 +113,8 @@ class _MobileNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     final moreSelected =
         shell.current == MainGameDestination.quests ||
-        shell.current == MainGameDestination.customAnimals;
+        shell.current == MainGameDestination.customAnimals ||
+        shell.current == MainGameDestination.settings;
     return Row(
       children: [
         _NavItem(
@@ -331,9 +331,9 @@ class _MoreNavItem extends StatelessWidget {
           _MoreMenuItem(
             icon: Icons.settings_rounded,
             label: 'Settings',
-            selected: false,
+            selected: shell.current == MainGameDestination.settings,
             theme: theme,
-            onPressed: shell.onOpenSettings,
+            onPressed: () => shell.onSelect(MainGameDestination.settings),
           ),
         ],
         builder: (context, controller, child) => _NavButton(

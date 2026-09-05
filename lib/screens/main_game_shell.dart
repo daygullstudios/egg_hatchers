@@ -65,6 +65,7 @@ class _MainGameShellState extends State<MainGameShell> {
       MainGameDestination.collection => kCollectionRouteName,
       MainGameDestination.quests => kQuestsRouteName,
       MainGameDestination.customAnimals => kCustomSpritesRouteName,
+      MainGameDestination.settings => kSettingsRouteName,
     };
   }
 
@@ -72,19 +73,6 @@ class _MainGameShellState extends State<MainGameShell> {
     if (_current == destination) return;
     setState(() => _current = destination);
     AppNavigationTracker.instance.setShellRouteName(_routeName(destination));
-  }
-
-  void _openSettings() {
-    final theme = widget.preferences.selectedTheme;
-    openWithThemedTransition(
-      context,
-      theme: theme,
-      icon: '⚙️',
-      label: 'Opening Settings',
-      settings: const RouteSettings(name: kSettingsRouteName),
-      builder: (_) =>
-          SettingsScreen(preferences: widget.preferences, game: widget.game),
-    );
   }
 
   @override
@@ -120,13 +108,13 @@ class _MainGameShellState extends State<MainGameShell> {
         spriteRating: widget.spriteRating,
         referenceOverlay: widget.referenceOverlay,
       ),
+      SettingsScreen(preferences: widget.preferences, game: widget.game),
     ];
 
     return MainGameShellScope(
       current: _current,
       game: widget.game,
       onSelect: _select,
-      onOpenSettings: _openSettings,
       child: PopScope(
         canPop: _current == MainGameDestination.hatchery,
         onPopInvokedWithResult: (didPop, result) {
