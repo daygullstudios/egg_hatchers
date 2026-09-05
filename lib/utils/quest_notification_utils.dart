@@ -4,6 +4,7 @@ import '../navigation/app_page_route.dart';
 import '../screens/quests_screen.dart';
 import '../services/game_service.dart';
 import '../services/preferences_service.dart';
+import '../widgets/game_primary_navigation.dart';
 import 'snackbar_utils.dart';
 
 /// Shows a deferred or immediate pending quest completion notification.
@@ -21,11 +22,8 @@ void showPendingQuestCompletionNotification(
     context,
     message: message,
     backgroundColor: preferences.selectedTheme.secondaryColor,
-    onViewQuests: () => openQuestsScreen(
-      context,
-      game: game,
-      preferences: preferences,
-    ),
+    onViewQuests: () =>
+        openQuestsScreen(context, game: game, preferences: preferences),
   );
 }
 
@@ -69,6 +67,12 @@ void openQuestsScreen(
   required GameService game,
   required PreferencesService preferences,
 }) {
+  final shell = MainGameShellScope.maybeOf(context);
+  if (shell != null) {
+    shell.onSelect(MainGameDestination.quests);
+    return;
+  }
+
   if (isTopRouteNamed(kQuestsRouteName)) return;
 
   openWithThemedTransition(
@@ -77,9 +81,6 @@ void openQuestsScreen(
     icon: '⭐',
     label: 'Opening Quests',
     settings: const RouteSettings(name: kQuestsRouteName),
-    builder: (_) => QuestsScreen(
-      game: game,
-      preferences: preferences,
-    ),
+    builder: (_) => QuestsScreen(game: game, preferences: preferences),
   );
 }
