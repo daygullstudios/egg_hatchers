@@ -2,7 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../utils/format_utils.dart';
 import '../utils/ui_sound.dart';
+import 'coin_balance_scope.dart';
 
 /// Logical max width for centered phone-style app content on wide screens.
 const double kPhoneMaxContentWidth = 430.0;
@@ -11,6 +13,8 @@ const double _kPhoneAppBarSideSlotWidth = 48.0;
 
 /// AppBar whose toolbar content aligns with [PhoneWidthLayout] on wide screens.
 class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
+  static const coinBalanceKey = ValueKey<String>('app-bar-coin-balance');
+
   const PhoneWidthAppBar({
     super.key,
     required this.backgroundColor,
@@ -23,6 +27,7 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.horizontalPadding = 16,
     this.title,
     this.titleStyle,
+    this.onCoinBalanceTap,
   }) : titleWidget = null;
 
   const PhoneWidthAppBar.widget({
@@ -36,6 +41,7 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.automaticallyImplyLeading = true,
     this.toolbarHeight = kToolbarHeight,
     this.horizontalPadding = 16,
+    this.onCoinBalanceTap,
   })  : title = null,
         titleStyle = null;
 
@@ -50,6 +56,7 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double elevation;
   final double toolbarHeight;
   final double horizontalPadding;
+  final VoidCallback? onCoinBalanceTap;
 
   @override
   Size get preferredSize => Size.fromHeight(toolbarHeight);
@@ -63,6 +70,17 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Widget _buildTitle(BuildContext context) {
+    final balance = CoinBalanceScope.maybeOf(context);
+    if (balance != null) {
+      return _AppBarCoinBalance(
+        coins: balance.coins,
+        foregroundColor: foregroundColor,
+        screenTitle:
+            title ?? (titleWidget is Text ? (titleWidget! as Text).data : null),
+        onTap: onCoinBalanceTap,
+      );
+    }
+
     if (titleWidget != null) {
       return _ellipsisTitle(titleWidget!, context);
     }
@@ -141,6 +159,84 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppBarCoinBalance extends StatelessWidget {
+  const _AppBarCoinBalance({
+    required this.coins,
+    required this.foregroundColor,
+    required this.screenTitle,
+    required this.onTap,
+  });
+
+  final int coins;
+  final Color? foregroundColor;
+  final String? screenTitle;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final formattedCoins = formatCoins(coins);
+    final color =
+        foregroundColor ??
+        Theme.of(context).appBarTheme.foregroundColor ??
+        Colors.white;
+    final titlePrefix = screenTitle == null ? '' : '$screenTitle. ';
+
+    return Semantics(
+      label: '$titlePrefix$formattedCoins coins',
+      button: onTap != null,
+      excludeSemantics: true,
+      child: Tooltip(
+        message: '$formattedCoins coins',
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            key: PhoneWidthAppBar.coinBalanceKey,
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('🪙', style: TextStyle(fontSize: 27)),
+                    const SizedBox(width: 7),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          formattedCoins,
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 20,
+                            height: 1,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          'coins',
+                          style: TextStyle(
+                            color: color.withValues(alpha: 0.82),
+                            fontSize: 10,
+                            height: 1.1,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

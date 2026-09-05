@@ -20,7 +20,6 @@ import '../utils/snackbar_utils.dart';
 import '../utils/ui_sound.dart';
 import '../widgets/tutorial_screen_bindings.dart';
 import '../widgets/tutorial_targets.dart';
-import '../widgets/coin_header.dart';
 import '../widgets/egg_shard_upgrades_card.dart';
 import '../widgets/game_background.dart';
 import '../widgets/boss_sprite.dart';
@@ -659,12 +658,6 @@ class BattlesScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      CoinHeader(
-                        coins: game.coins,
-                        coinsPerSecond: game.coinsPerSecond,
-                        theme: theme,
-                      ),
-                      const SizedBox(height: 14),
                       Expanded(
                         child: ListView(
                           children: [

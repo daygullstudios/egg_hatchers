@@ -24,6 +24,7 @@ import 'widgets/account_scope.dart';
 import 'widgets/account_protection_scope.dart';
 import 'widgets/app_theme_background.dart';
 import 'widgets/audio_scope.dart';
+import 'widgets/coin_balance_scope.dart';
 import 'widgets/online_lobby_host.dart';
 import 'widgets/online_lobby_scope.dart';
 import 'widgets/tutorial_host.dart';
@@ -291,12 +292,15 @@ class _EggHatchersAppState extends State<EggHatchersApp>
                     child: OnlineLobbyHost(
                       lobby: _onlineLobby,
                       onSessionReady: _openOnlineSession,
-                      child: AnimalSpriteThemeScope(
-                        theme: _preferences.animalSpriteTheme,
-                        child: TutorialHost(
-                          game: _game,
-                          theme: theme,
-                          child: content,
+                      child: CoinBalanceScope(
+                        coins: _game.coins,
+                        child: AnimalSpriteThemeScope(
+                          theme: _preferences.animalSpriteTheme,
+                          child: TutorialHost(
+                            game: _game,
+                            theme: theme,
+                            child: content,
+                          ),
                         ),
                       ),
                     ),

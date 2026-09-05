@@ -14,7 +14,6 @@ import '../theme/game_theme.dart';
 import '../utils/quest_notification_utils.dart';
 import '../utils/snackbar_utils.dart';
 import '../utils/ui_sound.dart';
-import '../widgets/coin_header.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/egg_card.dart';
 import '../widgets/game_background.dart';
@@ -259,12 +258,6 @@ class ShopScreen extends StatelessWidget {
                   child: PhoneWidthLayout(
                     child: Column(
                       children: [
-                        CoinHeader(
-                          coins: game.coins,
-                          coinsPerSecond: game.coinsPerSecond,
-                          theme: bg,
-                        ),
-                        const SizedBox(height: 18),
                         Expanded(
                           child: ListView(
                             children: [

@@ -14,7 +14,6 @@ import '../utils/ui_sound.dart';
 import '../widgets/tutorial_screen_bindings.dart';
 import '../widgets/tutorial_targets.dart';
 import '../widgets/daily_quest_card.dart';
-import '../widgets/coin_header.dart';
 import '../widgets/game_background.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/quest_card.dart';
@@ -153,13 +152,6 @@ class QuestsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  CoinHeader(
-                    coins: game.coins,
-                    coinsPerSecond: game.coinsPerSecond,
-                    lifetimeCoinsEarned: game.lifetimeCoinsEarned,
-                    theme: bg,
-                  ),
-                  const SizedBox(height: 14),
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: GameTheme.cardDecoration(bg),

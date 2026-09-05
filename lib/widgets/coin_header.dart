@@ -4,90 +4,41 @@ import '../models/background_theme.dart';
 import '../theme/game_theme.dart';
 import '../utils/format_utils.dart';
 
-/// Shows the player's coin balance and income rate at the top of a screen.
-class CoinHeader extends StatelessWidget {
-  const CoinHeader({
+/// Shows income details that complement the persistent AppBar coin balance.
+class CoinStatsStrip extends StatelessWidget {
+  const CoinStatsStrip({
     super.key,
-    required this.coins,
     required this.coinsPerSecond,
     required this.theme,
     this.lifetimeCoinsEarned,
-    this.onCoinTap,
   });
 
-  final int coins;
   final int coinsPerSecond;
   final BackgroundTheme theme;
   final int? lifetimeCoinsEarned;
-  final VoidCallback? onCoinTap;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: GameTheme.panelDecoration(theme),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
         children: [
-          GestureDetector(
-            onTap: onCoinTap,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: theme.panelAccentColor.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: theme.panelAccentColor.withValues(alpha: 0.5),
-                ),
-              ),
-              child: const Text('🪙', style: TextStyle(fontSize: 40)),
-            ),
+          _StatChip(
+            icon: '⚡',
+            label: '+$coinsPerSecond / sec',
+            color: theme.primaryColor,
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  formatCoins(coins),
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: theme.cardTextPrimaryColor,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'coins',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: theme.cardTextSecondaryColor,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _StatChip(
-                      icon: '⚡',
-                      label: '+$coinsPerSecond / sec',
-                      color: theme.primaryColor,
-                    ),
-                    if (lifetimeCoinsEarned != null)
-                      _StatChip(
-                        icon: '🏆',
-                        label: '${formatCoins(lifetimeCoinsEarned!)} lifetime',
-                        color: theme.secondaryColor,
-                      ),
-                  ],
-                ),
-              ],
+          if (lifetimeCoinsEarned != null)
+            _StatChip(
+              icon: '🏆',
+              label: '${formatCoins(lifetimeCoinsEarned!)} lifetime',
+              color: theme.secondaryColor,
             ),
-          ),
         ],
       ),
     );

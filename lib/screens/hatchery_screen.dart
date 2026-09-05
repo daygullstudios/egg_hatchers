@@ -297,6 +297,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                 ),
                 backgroundColor: bg.appBarColor,
                 foregroundColor: Colors.white,
+                onCoinBalanceTap: _onCoinTap,
                 actions: [
                   IconButton(
                     tooltip: 'Settings',
@@ -325,11 +326,9 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        CoinHeader(
-                          coins: game.coins,
+                        CoinStatsStrip(
                           coinsPerSecond: game.coinsPerSecond,
                           lifetimeCoinsEarned: game.lifetimeCoinsEarned,
-                          onCoinTap: _onCoinTap,
                           theme: bg,
                         ),
                         const SizedBox(height: 14),

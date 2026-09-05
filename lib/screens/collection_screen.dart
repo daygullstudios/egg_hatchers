@@ -12,7 +12,6 @@ import '../navigation/app_page_route.dart';
 import '../widgets/tutorial_screen_bindings.dart';
 import '../widgets/tutorial_targets.dart';
 import '../widgets/animal_fusion_panel.dart';
-import '../widgets/coin_header.dart';
 import '../widgets/game_background.dart';
 import '../widgets/owned_animal_list.dart';
 import '../widgets/phone_width_layout.dart';
@@ -221,12 +220,6 @@ class CollectionScreen extends StatelessWidget {
             child: PhoneWidthLayout(
               child: Column(
                 children: [
-                  CoinHeader(
-                    coins: game.coins,
-                    coinsPerSecond: game.coinsPerSecond,
-                    theme: bg,
-                  ),
-                  const SizedBox(height: 18),
                   AnimalFusionPanel(
                     game: game,
                     theme: bg,
