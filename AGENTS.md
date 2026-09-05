@@ -9,6 +9,13 @@ These instructions are part of the project and apply on every development comput
 - Never discard unrelated user changes. Include only the intended work in each commit.
 - The canonical repository is `https://github.com/daygullstudios/egg_hatchers.git`.
 
+## Playtest deployment
+
+- Every completed, verified user-facing implementation must also be deployed to the protected Cloudflare playtest at `egg-hatchers-playtest.daygullstudios.com` unless the user explicitly says not to deploy it.
+- Build the current release with `flutter build web --release`, then from `cloudflare/playtest` run `npm test`, `npm run deploy:dry-run`, and `npm run deploy`.
+- Confirm Wrangler reports the protected custom-domain route and a new current version ID. Do not treat a local build or local server refresh as a playtest deployment.
+- Documentation-only and test-only changes do not require a playtest deployment unless they accompany a user-facing implementation.
+
 ## Animal art
 
 - Every new animal must ship with three distinct versions: Classic, Retro Pixel, and Realistic.
