@@ -19,8 +19,12 @@ import '../widgets/game_primary_navigation.dart';
 import '../widgets/phone_width_layout.dart';
 import 'sprite_editor_screen.dart';
 
+enum _CustomAnimalFilter { all, customized, original }
+
+enum _CustomAnimalSort { rarity, name, progression }
+
 /// Lists all animals so the player can create or edit custom sprites.
-class CustomSpritesScreen extends StatelessWidget {
+class CustomSpritesScreen extends StatefulWidget {
   const CustomSpritesScreen({
     super.key,
     required this.preferences,
@@ -37,6 +41,55 @@ class CustomSpritesScreen extends StatelessWidget {
   final SpriteRatingService spriteRating;
   final SpriteReferenceOverlayService referenceOverlay;
   final bool returnToHatcheryOnBack;
+
+  @override
+  State<CustomSpritesScreen> createState() => _CustomSpritesScreenState();
+}
+
+class _CustomSpritesScreenState extends State<CustomSpritesScreen> {
+  var _filter = _CustomAnimalFilter.all;
+  var _sort = _CustomAnimalSort.rarity;
+  var _searchQuery = '';
+  var _toolsExpanded = false;
+
+  PreferencesService get preferences => widget.preferences;
+  CustomSpriteService get customSprites => widget.customSprites;
+  GameService get game => widget.game;
+  SpriteRatingService get spriteRating => widget.spriteRating;
+  SpriteReferenceOverlayService get referenceOverlay => widget.referenceOverlay;
+  bool get returnToHatcheryOnBack => widget.returnToHatcheryOnBack;
+
+  List<Animal> _visibleAnimals() {
+    final query = _searchQuery.trim().toLowerCase();
+    final animals = GameData.animals.where((animal) {
+      final hasCustom = customSprites.hasCustomSprite(animal.id);
+      final matchesFilter = switch (_filter) {
+        _CustomAnimalFilter.all => true,
+        _CustomAnimalFilter.customized => hasCustom,
+        _CustomAnimalFilter.original => !hasCustom,
+      };
+      return matchesFilter &&
+          (query.isEmpty || animal.name.toLowerCase().contains(query));
+    }).toList();
+
+    switch (_sort) {
+      case _CustomAnimalSort.rarity:
+        animals.sort((a, b) {
+          final rarity = b.rarity.sortOrder.compareTo(a.rarity.sortOrder);
+          if (rarity != 0) return rarity;
+          return a.name.compareTo(b.name);
+        });
+      case _CustomAnimalSort.name:
+        animals.sort((a, b) => a.name.compareTo(b.name));
+      case _CustomAnimalSort.progression:
+        animals.sort(
+          (a, b) => GameData.progressionIndexForAnimal(
+            a.id,
+          ).compareTo(GameData.progressionIndexForAnimal(b.id)),
+        );
+    }
+    return animals;
+  }
 
   Future<void> _confirmResetAll(
     BuildContext context,
@@ -107,12 +160,10 @@ class CustomSpritesScreen extends StatelessWidget {
       builder: (context, _) {
         final theme = preferences.selectedTheme;
         final shell = MainGameShellScope.maybeOf(context);
-        final animals = List<Animal>.from(GameData.animals)
-          ..sort((a, b) {
-            final rarity = b.rarity.sortOrder.compareTo(a.rarity.sortOrder);
-            if (rarity != 0) return rarity;
-            return a.name.compareTo(b.name);
-          });
+        final animals = _visibleAnimals();
+        final customizedCount = GameData.animals
+            .where((animal) => customSprites.hasCustomSprite(animal.id))
+            .length;
 
         final scaffold = Scaffold(
           backgroundColor: Colors.transparent,
@@ -138,111 +189,79 @@ class CustomSpritesScreen extends StatelessWidget {
           body: GameBackground(
             theme: theme,
             child: PhoneWidthLayout(
-              child: ListView(
-                padding: EdgeInsets.zero,
+              child: Column(
                 children: [
-                  Text(
-                    'Draw your own 16×16 sprites for any animal!',
-                    style: GameTheme.sectionTitle(theme, size: 16),
+                  _CustomAnimalTools(
+                    theme: theme,
+                    expanded: _toolsExpanded,
+                    customizedCount: customizedCount,
+                    totalCount: GameData.animals.length,
+                    showCustomSprites: customSprites.showCustomSprites,
+                    onToggle: () =>
+                        setState(() => _toolsExpanded = !_toolsExpanded),
+                    onVisibilityChanged: customSprites.setShowCustomSprites,
+                    onResetAll: () => _confirmResetAll(context, theme),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Custom sprites are saved only on this device and are '
-                    'not shared online.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: theme.cardTextSecondaryColor,
-                      height: 1.35,
-                    ),
+                  const SizedBox(height: 10),
+                  _CustomAnimalControls(
+                    theme: theme,
+                    filter: _filter,
+                    sort: _sort,
+                    onSearchChanged: (value) =>
+                        setState(() => _searchQuery = value),
+                    onFilterChanged: (value) => setState(() => _filter = value),
+                    onSortChanged: (value) => setState(() => _sort = value),
                   ),
-                  const SizedBox(height: 14),
-                  Material(
-                    color: Colors.transparent,
-                    child: Container(
-                      decoration: GameTheme.cardDecoration(theme),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            'Show Custom Animals',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: theme.cardTextPrimaryColor,
+                  const SizedBox(height: 10),
+                  Expanded(
+                    child: animals.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No animals match these filters.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: theme.cardTextSecondaryColor,
+                                fontSize: 15,
+                              ),
                             ),
+                          )
+                        : ListView.separated(
+                            key: const PageStorageKey('custom-animal-results'),
+                            padding: EdgeInsets.zero,
+                            itemCount: animals.length,
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              final animal = animals[index];
+                              return _AnimalSpriteTile(
+                                animal: animal,
+                                theme: theme,
+                                preferences: preferences,
+                                hasCustom: customSprites.hasCustomSprite(
+                                  animal.id,
+                                ),
+                                customSprite: customSprites.getSprite(
+                                  animal.id,
+                                ),
+                                onTap: () => openWithThemedTransition(
+                                  context,
+                                  theme: theme,
+                                  icon: '✏️',
+                                  label: 'Opening Editor',
+                                  duration: kEditorThemedPreNavDuration,
+                                  builder: (_) => SpriteEditorScreen(
+                                    animal: animal,
+                                    theme: theme,
+                                    customSprites: customSprites,
+                                    game: game,
+                                    spriteRating: spriteRating,
+                                    referenceOverlay: referenceOverlay,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                          subtitle: Text(
-                            customSprites.showCustomSprites
-                                ? 'Custom art appears in the game'
-                                : 'Custom art is hidden (still saved)',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.cardTextSecondaryColor,
-                            ),
-                          ),
-                          value: customSprites.showCustomSprites,
-                          activeThumbColor: theme.primaryColor,
-                          onChanged: (value) =>
-                              customSprites.setShowCustomSprites(value),
-                        ),
-                      ),
-                    ),
                   ),
-                  const SizedBox(height: 16),
-                  for (final animal in animals) ...[
-                    _AnimalSpriteTile(
-                      animal: animal,
-                      theme: theme,
-                      preferences: preferences,
-                      hasCustom: customSprites.hasCustomSprite(animal.id),
-                      customSprite: customSprites.getSprite(animal.id),
-                      onTap: () => openWithThemedTransition(
-                        context,
-                        theme: theme,
-                        icon: '✏️',
-                        label: 'Opening Editor',
-                        duration: kEditorThemedPreNavDuration,
-                        builder: (_) => SpriteEditorScreen(
-                          animal: animal,
-                          theme: theme,
-                          customSprites: customSprites,
-                          game: game,
-                          spriteRating: spriteRating,
-                          referenceOverlay: referenceOverlay,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: () => _confirmResetAll(context, theme),
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      color: Colors.red.shade700,
-                    ),
-                    label: Text(
-                      'Reset All Custom Animals',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.red.shade700,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 48),
-                      side: BorderSide(color: Colors.red.shade300),
-                      backgroundColor: Colors.red.shade50.withValues(
-                        alpha: 0.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -254,6 +273,254 @@ class CustomSpritesScreen extends StatelessWidget {
         }
         return scaffold;
       },
+    );
+  }
+}
+
+class _CustomAnimalTools extends StatelessWidget {
+  const _CustomAnimalTools({
+    required this.theme,
+    required this.expanded,
+    required this.customizedCount,
+    required this.totalCount,
+    required this.showCustomSprites,
+    required this.onToggle,
+    required this.onVisibilityChanged,
+    required this.onResetAll,
+  });
+
+  final BackgroundTheme theme;
+  final bool expanded;
+  final int customizedCount;
+  final int totalCount;
+  final bool showCustomSprites;
+  final VoidCallback onToggle;
+  final ValueChanged<bool> onVisibilityChanged;
+  final VoidCallback onResetAll;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: GameTheme.cardDecoration(theme),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            InkWell(
+              key: const ValueKey('custom-animal-tools-toggle'),
+              onTap: onToggle,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 11,
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.tune_rounded, color: theme.primaryColor),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Custom Animal Tools',
+                            style: TextStyle(
+                              color: theme.cardTextPrimaryColor,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Text(
+                            '$customizedCount/$totalCount customized · '
+                            '${showCustomSprites ? 'shown' : 'hidden'} in game',
+                            style: TextStyle(
+                              color: theme.cardTextSecondaryColor,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      expanded
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      color: theme.cardTextSecondaryColor,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (expanded) ...[
+              Divider(height: 1, color: theme.cardBorderColor),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Draw your own 16×16 sprites for any animal. Custom art '
+                      'is saved only on this device and is not shared online.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: theme.cardTextSecondaryColor,
+                        height: 1.35,
+                      ),
+                    ),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        'Show Custom Animals',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: theme.cardTextPrimaryColor,
+                        ),
+                      ),
+                      subtitle: Text(
+                        showCustomSprites
+                            ? 'Custom art appears in the game'
+                            : 'Custom art is hidden but remains saved',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.cardTextSecondaryColor,
+                        ),
+                      ),
+                      value: showCustomSprites,
+                      activeThumbColor: theme.primaryColor,
+                      onChanged: onVisibilityChanged,
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: customizedCount == 0 ? null : onResetAll,
+                      icon: const Icon(Icons.delete_outline_rounded),
+                      label: const Text('Reset All Custom Animals'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 44),
+                        foregroundColor: Colors.red.shade700,
+                        side: BorderSide(color: Colors.red.shade300),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomAnimalControls extends StatelessWidget {
+  const _CustomAnimalControls({
+    required this.theme,
+    required this.filter,
+    required this.sort,
+    required this.onSearchChanged,
+    required this.onFilterChanged,
+    required this.onSortChanged,
+  });
+
+  final BackgroundTheme theme;
+  final _CustomAnimalFilter filter;
+  final _CustomAnimalSort sort;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<_CustomAnimalFilter> onFilterChanged;
+  final ValueChanged<_CustomAnimalSort> onSortChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('custom-animal-controls'),
+      padding: const EdgeInsets.all(10),
+      decoration: GameTheme.cardDecoration(theme),
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          children: [
+            TextField(
+              key: const ValueKey('custom-animal-search'),
+              onChanged: onSearchChanged,
+              style: TextStyle(color: theme.cardTextPrimaryColor, fontSize: 14),
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: 'Find an animal',
+                hintStyle: TextStyle(color: theme.cardTextSecondaryColor),
+                prefixIcon: const Icon(Icons.search_rounded),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<_CustomAnimalFilter>(
+                    key: const ValueKey('custom-animal-filter'),
+                    initialValue: filter,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Show',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: _CustomAnimalFilter.all,
+                        child: Text('All'),
+                      ),
+                      DropdownMenuItem(
+                        value: _CustomAnimalFilter.customized,
+                        child: Text('Customized'),
+                      ),
+                      DropdownMenuItem(
+                        value: _CustomAnimalFilter.original,
+                        child: Text('Original'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) onFilterChanged(value);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<_CustomAnimalSort>(
+                    key: const ValueKey('custom-animal-sort'),
+                    initialValue: sort,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Sort',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: _CustomAnimalSort.rarity,
+                        child: Text('Rarity'),
+                      ),
+                      DropdownMenuItem(
+                        value: _CustomAnimalSort.name,
+                        child: Text('Name'),
+                      ),
+                      DropdownMenuItem(
+                        value: _CustomAnimalSort.progression,
+                        child: Text('Progression'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) onSortChanged(value);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

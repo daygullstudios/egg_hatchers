@@ -20,6 +20,8 @@ Hatchery is now a dashboard rather than a duplicate full inventory: it shows a t
 
 Settings now opens as a compact set of four collapsed destinations: Account & Saves, Tutorial, Sound & Feedback, and Appearance. Only one can be expanded at a time. Appearance uses a Background/Animal Style switch so the two visual catalogs are never rendered as one long stack, while Custom Animals remains a direct action.
 
+Custom Animals keeps visibility guidance and Reset All in a compact tools accordion at the top instead of burying destructive management below the full catalog. Search plus All/Customized/Original filtering and Rarity/Name/Progression sorting stay above the independently scrolling results, making any of the 48 animals directly reachable without a page-length traversal.
+
 Quest-completion notification actions now select the persistent shell's Quests destination, matching More > Quests and preserving the current navigation UI and mounted quest state. The standalone Quests route remains only as a fallback for contexts outside the main shell.
 
 Secret Hatchery discovery is now persisted separately from collection mastery. Three taps on the Hatchery coin can still reveal it early, but the one-time protected-animal badge is held in the Collector's Vault until the 48-animal collection quest is claimed. Existing saves that already claimed the former clue or badge migrate to an unlocked vault.
