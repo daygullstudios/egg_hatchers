@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../models/background_theme.dart';
 import '../services/game_service.dart';
-import '../theme/game_theme.dart';
 import '../utils/quest_logic.dart';
 import 'phone_width_layout.dart';
 import 'tutorial_targets.dart';
@@ -150,13 +149,11 @@ class _MobileNavigation extends StatelessWidget {
           tutorialKey: _tutorialKey(MainGameDestination.collection),
           onTap: () => shell.onSelect(MainGameDestination.collection),
         ),
-        _NavItem(
-          icon: Icons.more_horiz_rounded,
-          label: 'More',
+        _MoreNavItem(
           selected: moreSelected,
-          badgeCount: readyCount,
+          readyCount: readyCount,
+          shell: shell,
           theme: theme,
-          onTap: () => _showMore(context),
         ),
       ],
     );
@@ -174,61 +171,43 @@ class _MobileNavigation extends StatelessWidget {
       _ => null,
     };
   }
-
-  Future<void> _showMore(BuildContext context) async {
-    final selection = await showModalBottomSheet<_MoreDestination>(
-      context: context,
-      backgroundColor: theme.cardColor,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('More', style: GameTheme.sectionTitle(theme, size: 18)),
-              const SizedBox(height: 10),
-              _MoreTile(
-                icon: Icons.flag_rounded,
-                label: 'Quests',
-                badgeCount: readyCount,
-                theme: theme,
-                onTap: () =>
-                    Navigator.pop(sheetContext, _MoreDestination.quests),
-              ),
-              _MoreTile(
-                icon: Icons.auto_fix_high_rounded,
-                label: 'Custom Animals',
-                theme: theme,
-                onTap: () =>
-                    Navigator.pop(sheetContext, _MoreDestination.customAnimals),
-              ),
-              _MoreTile(
-                icon: Icons.settings_rounded,
-                label: 'Settings',
-                theme: theme,
-                onTap: () =>
-                    Navigator.pop(sheetContext, _MoreDestination.settings),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    if (!context.mounted || selection == null) return;
-    switch (selection) {
-      case _MoreDestination.quests:
-        shell.onSelect(MainGameDestination.quests);
-      case _MoreDestination.customAnimals:
-        shell.onSelect(MainGameDestination.customAnimals);
-      case _MoreDestination.settings:
-        shell.onOpenSettings();
-    }
-  }
 }
 
 class _NavItem extends StatelessWidget {
   const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.theme,
+    required this.onTap,
+    this.tutorialKey,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final BackgroundTheme theme;
+  final VoidCallback onTap;
+  final Key? tutorialKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: _NavButton(
+        icon: icon,
+        label: label,
+        selected: selected,
+        theme: theme,
+        onTap: onTap,
+        badgeCount: 0,
+        tutorialKey: tutorialKey,
+      ),
+    );
+  }
+}
+
+class _NavButton extends StatelessWidget {
+  const _NavButton({
     required this.icon,
     required this.label,
     required this.selected,
@@ -251,7 +230,8 @@ class _NavItem extends StatelessWidget {
     final foreground = selected
         ? Colors.white
         : Colors.white.withValues(alpha: 0.72);
-    return Expanded(
+    return SizedBox(
+      height: 58,
       child: Semantics(
         selected: selected,
         button: true,
@@ -297,38 +277,130 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-enum _MoreDestination { quests, customAnimals, settings }
+class _MoreNavItem extends StatelessWidget {
+  const _MoreNavItem({
+    required this.selected,
+    required this.readyCount,
+    required this.shell,
+    required this.theme,
+  });
 
-class _MoreTile extends StatelessWidget {
-  const _MoreTile({
+  static const menuKey = ValueKey<String>('more-navigation-menu');
+
+  final bool selected;
+  final int readyCount;
+  final MainGameShellScope shell;
+  final BackgroundTheme theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: MenuAnchor(
+        key: menuKey,
+        consumeOutsideTap: true,
+        reservedPadding: const EdgeInsets.all(8),
+        style: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(
+            Color.lerp(theme.appBarColor, Colors.white, 0.12),
+          ),
+          elevation: const WidgetStatePropertyAll(10),
+          padding: const WidgetStatePropertyAll(EdgeInsets.all(6)),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.24)),
+            ),
+          ),
+        ),
+        menuChildren: [
+          _MoreMenuItem(
+            icon: Icons.flag_rounded,
+            label: 'Quests',
+            selected: shell.current == MainGameDestination.quests,
+            badgeCount: readyCount,
+            theme: theme,
+            onPressed: () => shell.onSelect(MainGameDestination.quests),
+          ),
+          _MoreMenuItem(
+            icon: Icons.auto_fix_high_rounded,
+            label: 'Custom Animals',
+            selected: shell.current == MainGameDestination.customAnimals,
+            theme: theme,
+            onPressed: () => shell.onSelect(MainGameDestination.customAnimals),
+          ),
+          _MoreMenuItem(
+            icon: Icons.settings_rounded,
+            label: 'Settings',
+            selected: false,
+            theme: theme,
+            onPressed: shell.onOpenSettings,
+          ),
+        ],
+        builder: (context, controller, child) => _NavButton(
+          icon: controller.isOpen
+              ? Icons.keyboard_arrow_up_rounded
+              : Icons.more_horiz_rounded,
+          label: 'More',
+          selected: selected || controller.isOpen,
+          badgeCount: readyCount,
+          theme: theme,
+          onTap: () =>
+              controller.isOpen ? controller.close() : controller.open(),
+        ),
+      ),
+    );
+  }
+}
+
+class _MoreMenuItem extends StatelessWidget {
+  const _MoreMenuItem({
     required this.icon,
     required this.label,
+    required this.selected,
     required this.theme,
-    required this.onTap,
+    required this.onPressed,
     this.badgeCount = 0,
   });
 
   final IconData icon;
   final String label;
+  final bool selected;
   final BackgroundTheme theme;
-  final VoidCallback onTap;
+  final VoidCallback onPressed;
   final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      onTap: onTap,
-      leading: Icon(icon, color: theme.primaryColor),
-      title: Text(
-        label,
-        style: TextStyle(
-          color: theme.cardTextPrimaryColor,
-          fontWeight: FontWeight.w700,
+    final foreground = Colors.white.withValues(alpha: selected ? 1 : 0.88);
+    return MenuItemButton(
+      onPressed: onPressed,
+      leadingIcon: Badge(
+        isLabelVisible: badgeCount > 0,
+        label: Text(badgeCount > 99 ? '99+' : '$badgeCount'),
+        child: Icon(icon, size: 20, color: foreground),
+      ),
+      style: ButtonStyle(
+        minimumSize: const WidgetStatePropertyAll(Size(190, 48)),
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        ),
+        foregroundColor: WidgetStatePropertyAll(foreground),
+        backgroundColor: WidgetStatePropertyAll(
+          selected
+              ? theme.secondaryColor.withValues(alpha: 0.9)
+              : Colors.transparent,
+        ),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       ),
-      trailing: badgeCount > 0
-          ? Badge(label: Text('$badgeCount'))
-          : const Icon(Icons.chevron_right_rounded),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+        ),
+      ),
     );
   }
 }

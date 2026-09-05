@@ -72,6 +72,18 @@ void main() {
     expect(find.text('Quests'), findsOneWidget);
     expect(find.text('Custom Animals'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
+    expect(find.byType(BottomSheet), findsNothing);
+
+    final navigation = tester.getRect(
+      find.byKey(GamePrimaryNavigation.contentKey),
+    );
+    final quests = tester.getRect(find.text('Quests'));
+    expect(quests.top, greaterThanOrEqualTo(navigation.bottom));
+
+    await tester.tap(find.text('Quests'));
+    await tester.pumpAndSettle();
+    expect(selected, MainGameDestination.quests);
+    expect(find.text('Custom Animals'), findsNothing);
   });
 
   testWidgets('wide screens retain the centered phone-width navigation', (
