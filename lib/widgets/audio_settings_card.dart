@@ -10,25 +10,33 @@ class AudioSettingsCard extends StatelessWidget {
     super.key,
     required this.theme,
     required this.audio,
+    this.embedded = false,
+    this.showTitle = true,
   });
 
   final BackgroundTheme theme;
   final AudioService audio;
+  final bool embedded;
+  final bool showTitle;
 
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: Container(
-        decoration: GameTheme.cardDecoration(theme),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: embedded ? null : GameTheme.cardDecoration(theme),
+        padding: embedded
+            ? EdgeInsets.zero
+            : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Material(
           color: Colors.transparent,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Audio', style: GameTheme.sectionTitle(theme, size: 18)),
-              const SizedBox(height: 4),
+              if (showTitle) ...[
+                Text('Audio', style: GameTheme.sectionTitle(theme, size: 18)),
+                const SizedBox(height: 4),
+              ],
               Text(
                 'Music and sound effects. Tap anywhere in the game to enable audio on web.',
                 style: TextStyle(

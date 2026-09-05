@@ -28,7 +28,7 @@ import '../widgets/retro_pixel_animal_sprite.dart';
 import 'custom_sprites_screen.dart';
 
 /// Player settings: tutorials, visuals, audio, and custom animal entry points.
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     super.key,
     required this.preferences,
@@ -43,6 +43,24 @@ class SettingsScreen extends StatelessWidget {
   final GameService game;
   final SpriteRatingService spriteRating;
   final SpriteReferenceOverlayService referenceOverlay;
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+enum _SettingsPanel { accountAndSaves, tutorial, soundAndFeedback, appearance }
+
+enum _AppearancePanel { backgrounds, animalStyle }
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  _SettingsPanel? _expandedPanel;
+  var _appearancePanel = _AppearancePanel.backgrounds;
+
+  PreferencesService get preferences => widget.preferences;
+  CustomSpriteService get customSprites => widget.customSprites;
+  GameService get game => widget.game;
+  SpriteRatingService get spriteRating => widget.spriteRating;
+  SpriteReferenceOverlayService get referenceOverlay => widget.referenceOverlay;
 
   static final SaveTransferService _saveTransfer = SaveTransferService();
 
@@ -261,6 +279,7 @@ class SettingsScreen extends StatelessWidget {
         final protection =
             AccountProtectionScope.maybeOf(context)?.state ??
             const AccountProtectionState.localOnly();
+        final audio = AudioScope.of(context);
 
         return ReturnToHatcheryPopScope(
           theme: selected,
@@ -286,26 +305,42 @@ class SettingsScreen extends StatelessWidget {
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
-                    if (account != null) ...[
-                      _SettingsSection(
-                        theme: selected,
-                        title: 'Account',
-                        child: _AccountSettings(
-                          account: account,
-                          protection: protection,
-                          theme: selected,
-                          onSwitch: () => _switchAccount(context),
-                          onDelete: () => _deleteAccount(context, account),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                    ],
-                    _SettingsSection(
+                    _SettingsAccordionSection(
+                      key: const ValueKey('settings-panel-account'),
                       theme: selected,
-                      title: 'Save Transfer',
+                      icon: Icons.manage_accounts_rounded,
+                      title: 'Account & Saves',
+                      summary: account == null
+                          ? 'Local save transfer'
+                          : '${account.displayName} · ${protection.label}',
+                      expanded:
+                          _expandedPanel == _SettingsPanel.accountAndSaves,
+                      onTap: () => setState(
+                        () => _expandedPanel =
+                            _expandedPanel == _SettingsPanel.accountAndSaves
+                            ? null
+                            : _SettingsPanel.accountAndSaves,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          if (account != null) ...[
+                            _AccountSettings(
+                              account: account,
+                              protection: protection,
+                              theme: selected,
+                              onSwitch: () => _switchAccount(context),
+                              onDelete: () => _deleteAccount(context, account),
+                            ),
+                            const SizedBox(height: 14),
+                            Divider(color: selected.cardBorderColor),
+                            const SizedBox(height: 6),
+                          ],
+                          Text(
+                            'Save Transfer',
+                            style: GameTheme.sectionTitle(selected, size: 16),
+                          ),
+                          const SizedBox(height: 6),
                           Text(
                             'Move every local account and its progress to another computer.',
                             style: TextStyle(
@@ -372,10 +407,20 @@ class SettingsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    _SettingsSection(
+                    const SizedBox(height: 10),
+                    _SettingsAccordionSection(
+                      key: const ValueKey('settings-panel-tutorial'),
                       theme: selected,
-                      title: 'Tutorials',
+                      icon: Icons.school_rounded,
+                      title: 'Tutorial',
+                      summary: 'Replay the guided introduction',
+                      expanded: _expandedPanel == _SettingsPanel.tutorial,
+                      onTap: () => setState(
+                        () => _expandedPanel =
+                            _expandedPanel == _SettingsPanel.tutorial
+                            ? null
+                            : _SettingsPanel.tutorial,
+                      ),
                       child: FilledButton.icon(
                         onPressed: () => _replayBasics(context, selected),
                         icon: const Icon(Icons.replay_rounded),
@@ -390,17 +435,36 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    AudioSettingsCard(
+                    const SizedBox(height: 10),
+                    _SettingsAccordionSection(
+                      key: const ValueKey('settings-panel-sound'),
                       theme: selected,
-                      audio: AudioScope.of(context),
-                    ),
-                    const SizedBox(height: 14),
-                    _SettingsSection(
-                      theme: selected,
-                      title: 'Visual Effects',
+                      icon: Icons.tune_rounded,
+                      title: 'Sound & Feedback',
+                      summary:
+                          'Music ${audio.musicEnabled ? 'on' : 'off'} · SFX ${audio.sfxEnabled ? 'on' : 'off'}',
+                      expanded:
+                          _expandedPanel == _SettingsPanel.soundAndFeedback,
+                      onTap: () => setState(
+                        () => _expandedPanel =
+                            _expandedPanel == _SettingsPanel.soundAndFeedback
+                            ? null
+                            : _SettingsPanel.soundAndFeedback,
+                      ),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          AudioSettingsCard(
+                            theme: selected,
+                            audio: audio,
+                            embedded: true,
+                            showTitle: false,
+                          ),
+                          Divider(color: selected.cardBorderColor),
+                          Text(
+                            'Visual & Device Feedback',
+                            style: GameTheme.sectionTitle(selected, size: 16),
+                          ),
                           Material(
                             color: Colors.transparent,
                             child: SwitchListTile.adaptive(
@@ -451,66 +515,94 @@ class SettingsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    _SettingsSection(
+                    const SizedBox(height: 10),
+                    _SettingsAccordionSection(
+                      key: const ValueKey('settings-panel-appearance'),
                       theme: selected,
-                      title: 'Backgrounds',
+                      icon: Icons.palette_rounded,
+                      title: 'Appearance',
+                      summary: '${selected.name} · ${selectedAnimalTheme.name}',
+                      expanded: _expandedPanel == _SettingsPanel.appearance,
+                      onTap: () => setState(
+                        () => _expandedPanel =
+                            _expandedPanel == _SettingsPanel.appearance
+                            ? null
+                            : _SettingsPanel.appearance,
+                      ),
                       child: Column(
                         children: [
-                          for (var i = 0; i < BackgroundThemes.all.length; i++)
-                            Padding(
-                              padding: EdgeInsets.only(
-                                bottom: i == BackgroundThemes.all.length - 1
-                                    ? 0
-                                    : 10,
+                          SegmentedButton<_AppearancePanel>(
+                            key: const ValueKey('settings-appearance-selector'),
+                            segments: const [
+                              ButtonSegment(
+                                value: _AppearancePanel.backgrounds,
+                                icon: Icon(Icons.wallpaper_rounded),
+                                label: Text('Background'),
                               ),
-                              child: _ThemeOptionCard(
-                                activeTheme: selected,
-                                theme: BackgroundThemes.all[i],
-                                isSelected:
-                                    BackgroundThemes.all[i].id == selected.id,
-                                onTap: () => _selectTheme(
-                                  context,
-                                  BackgroundThemes.all[i],
+                              ButtonSegment(
+                                value: _AppearancePanel.animalStyle,
+                                icon: Icon(Icons.pets_rounded),
+                                label: Text('Animal Style'),
+                              ),
+                            ],
+                            selected: {_appearancePanel},
+                            showSelectedIcon: false,
+                            onSelectionChanged: (selection) => setState(
+                              () => _appearancePanel = selection.first,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          if (_appearancePanel == _AppearancePanel.backgrounds)
+                            for (
+                              var i = 0;
+                              i < BackgroundThemes.all.length;
+                              i++
+                            )
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: i == BackgroundThemes.all.length - 1
+                                      ? 0
+                                      : 10,
+                                ),
+                                child: _ThemeOptionCard(
+                                  activeTheme: selected,
+                                  theme: BackgroundThemes.all[i],
+                                  isSelected:
+                                      BackgroundThemes.all[i].id == selected.id,
+                                  onTap: () => _selectTheme(
+                                    context,
+                                    BackgroundThemes.all[i],
+                                  ),
+                                ),
+                              )
+                          else
+                            for (
+                              var i = 0;
+                              i < AnimalSpriteThemes.all.length;
+                              i++
+                            )
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: i == AnimalSpriteThemes.all.length - 1
+                                      ? 0
+                                      : 10,
+                                ),
+                                child: _AnimalSpriteThemeCard(
+                                  activeTheme: selected,
+                                  animalTheme: AnimalSpriteThemes.all[i],
+                                  isSelected:
+                                      AnimalSpriteThemes.all[i].id ==
+                                      selectedAnimalTheme.id,
+                                  onTap: () => _selectAnimalSpriteTheme(
+                                    context,
+                                    AnimalSpriteThemes.all[i],
+                                  ),
                                 ),
                               ),
-                            ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 14),
-                    _SettingsSection(
-                      theme: selected,
-                      title: 'Animal Style',
-                      child: Column(
-                        children: [
-                          for (
-                            var i = 0;
-                            i < AnimalSpriteThemes.all.length;
-                            i++
-                          )
-                            Padding(
-                              padding: EdgeInsets.only(
-                                bottom: i == AnimalSpriteThemes.all.length - 1
-                                    ? 0
-                                    : 10,
-                              ),
-                              child: _AnimalSpriteThemeCard(
-                                activeTheme: selected,
-                                animalTheme: AnimalSpriteThemes.all[i],
-                                isSelected:
-                                    AnimalSpriteThemes.all[i].id ==
-                                    selectedAnimalTheme.id,
-                                onTap: () => _selectAnimalSpriteTheme(
-                                  context,
-                                  AnimalSpriteThemes.all[i],
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
@@ -698,28 +790,90 @@ class _AccountSettings extends StatelessWidget {
   }
 }
 
-class _SettingsSection extends StatelessWidget {
-  const _SettingsSection({
+class _SettingsAccordionSection extends StatelessWidget {
+  const _SettingsAccordionSection({
+    super.key,
     required this.theme,
+    required this.icon,
     required this.title,
+    required this.summary,
+    required this.expanded,
+    required this.onTap,
     required this.child,
   });
 
   final BackgroundTheme theme;
+  final IconData icon;
   final String title;
+  final String summary;
+  final bool expanded;
+  final VoidCallback onTap;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: GameTheme.cardDecoration(theme),
-      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(title, style: GameTheme.sectionTitle(theme, size: 18)),
-          const SizedBox(height: 12),
-          child,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(GameTheme.cardRadius),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    Icon(icon, color: theme.primaryColor, size: 25),
+                    const SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: GameTheme.sectionTitle(theme, size: 17),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            summary,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: theme.cardTextSecondaryColor,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    AnimatedRotation(
+                      turns: expanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 180),
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: theme.cardTextSecondaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              child: child,
+            ),
+            crossFadeState: expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 180),
+            sizeCurve: Curves.easeOut,
+          ),
         ],
       ),
     );

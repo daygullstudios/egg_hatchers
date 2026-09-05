@@ -14,6 +14,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets('settings shows and switches the active account', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues({});
     final accounts = AccountService();
     final game = GameService();
@@ -55,8 +59,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Account'), findsOneWidget);
-    expect(find.text('Settings Player'), findsOneWidget);
+    expect(find.text('Account & Saves'), findsOneWidget);
+    expect(find.text('Sound & Feedback'), findsOneWidget);
+    expect(find.text('Appearance'), findsOneWidget);
+    expect(find.text('Music').hitTestable(), findsNothing);
+    expect(find.text('Settings Player').hitTestable(), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('settings-panel-account')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Settings Player').hitTestable(), findsOneWidget);
     expect(find.text('@settings_player'), findsOneWidget);
     expect(find.text('Device only'), findsOneWidget);
     expect(find.text('Progress is saved only on this device.'), findsOneWidget);
@@ -68,6 +80,7 @@ void main() {
     expect(find.byKey(const ValueKey('settings-export-save')), findsOneWidget);
     expect(find.byKey(const ValueKey('settings-copy-save')), findsOneWidget);
     expect(find.byKey(const ValueKey('settings-import-save')), findsOneWidget);
+    expect(find.text('Music').hitTestable(), findsNothing);
     await tester.tap(
       find.byKey(const ValueKey('settings-switch-account-button')),
     );
