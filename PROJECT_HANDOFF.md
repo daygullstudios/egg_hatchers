@@ -72,6 +72,14 @@ slot instead of requiring a player name and username before play. Existing
 named profiles and imports remain compatible, and legacy pre-account progress
 is safely claimed by the new guest slot.
 
+Phase 2 has started with an isolated `egg-hatchers-dev` Firebase project and
+registered Web, Android, and iOS development apps. Firebase Core initializes
+fail-open on those platforms, but authentication, Firestore, cloud writes,
+provider linking, and account merging are intentionally not active yet. The
+next identity batch must first reconcile the legacy multi-profile picker with
+the proven one-durable-device-guest handoff contract; it must not associate
+multiple local profiles with one anonymous Firebase UID.
+
 ## Art rules
 
 Every new animal needs Classic, Retro Pixel, and Realistic versions. Classic should be cartoony, Retro Pixel should be intentionally pixel-built, and Realistic should match the detailed transparent sprite set. DayGull animals may also need the established animated side-slice glitch treatment.

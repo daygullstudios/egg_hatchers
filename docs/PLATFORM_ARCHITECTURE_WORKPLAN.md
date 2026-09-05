@@ -194,6 +194,15 @@ Exit gate: legacy, current, backup, account-switch, and transfer tests pass.
 Exit gate: guest progress survives linking, reinstall recovery works, and no
 new identity can overwrite another account without an explicit resolution.
 
+The isolated `egg-hatchers-dev` Firebase project now contains Web, Android, and
+iOS registrations for the existing development identifiers. Firebase Core is
+initialized fail-open on those three platforms; unsupported desktop targets and
+bootstrap failures continue in local-only mode. Authentication, Firestore,
+progress upload, provider linking, and account merging remain disabled at this
+checkpoint. Before anonymous auth is added, Egg Hatchers' legacy multi-profile
+picker must be reconciled with the one-durable-device-guest handoff contract so
+multiple local profiles can never share one anonymous Firebase UID.
+
 ### 3. Add offline-first cloud progress
 
 - Introduce a progress repository above local storage and Firestore sync.

@@ -14,6 +14,7 @@ import 'services/account_protection_service.dart';
 import 'services/audio_service.dart';
 import 'services/custom_egg_service.dart';
 import 'services/custom_sprite_service.dart';
+import 'services/firebase_bootstrap.dart';
 import 'services/game_service.dart';
 import 'services/online_lobby_service.dart';
 import 'services/preferences_service.dart';
@@ -31,8 +32,9 @@ import 'widgets/tutorial_host.dart';
 import 'navigation/app_page_route.dart';
 import 'utils/arena_logic.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FirebaseBootstrap.initialize();
   runApp(const EggHatchersApp());
 }
 
