@@ -2012,7 +2012,7 @@ class _ShootRow extends StatelessWidget {
           color: canShoot ? theme.secondaryColor : theme.disabledColor,
           height: 48,
         ),
-        icon: const Icon(Icons.egg_alt_rounded),
+        icon: const Icon(Icons.gps_fixed_rounded),
         label: Text(
           eggOnCooldown ? 'Egg...' : 'Shoot Egg',
           style: const TextStyle(fontWeight: FontWeight.bold),

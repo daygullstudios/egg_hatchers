@@ -138,11 +138,7 @@ class EggCard extends StatelessWidget {
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _EggArtwork(
-                      egg: egg,
-                      theme: theme,
-                      isUnlocked: isUnlocked,
-                    ),
+                    _EggArtwork(egg: egg, theme: theme, isUnlocked: isUnlocked),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
@@ -204,8 +200,7 @@ class EggCard extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: unlockProgress,
                     minHeight: 8,
-                    backgroundColor:
-                        theme.disabledColor.withValues(alpha: 0.2),
+                    backgroundColor: theme.disabledColor.withValues(alpha: 0.2),
                     color: theme.secondaryColor,
                   ),
                 ),
@@ -224,16 +219,16 @@ class EggCard extends StatelessWidget {
               const SizedBox(height: 14),
               _EggMasterySection(
                 theme: theme,
-                progress: masteryProgress ??
-                    EggMasteryProgress(eggId: egg.id),
+                progress: masteryProgress ?? EggMasteryProgress(eggId: egg.id),
               ),
             ],
             const SizedBox(height: 14),
             Text(
               'Possible animals:',
-              style: GameTheme.sectionTitle(theme, size: 14).copyWith(
-                color: theme.cardTextPrimaryColor,
-              ),
+              style: GameTheme.sectionTitle(
+                theme,
+                size: 14,
+              ).copyWith(color: theme.cardTextPrimaryColor),
             ),
             const SizedBox(height: 10),
             Wrap(
@@ -246,8 +241,9 @@ class EggCard extends StatelessWidget {
                       width: 24,
                       height: 24,
                       child: GameSprite(
-                        customSprite:
-                            customSprites?.getDisplaySprite(animal.id),
+                        customSprite: customSprites?.getDisplaySprite(
+                          animal.id,
+                        ),
                         animalId: animal.id,
                         spritePath: animal.spritePath,
                         fallbackEmoji: animal.emoji,
@@ -261,8 +257,9 @@ class EggCard extends StatelessWidget {
                     ),
                     backgroundColor: animal.rarity == Rarity.unknown
                         ? GameTheme.rarityBadgeFill(animal.rarity)
-                        : GameTheme.rarityAccent(animal.rarity)
-                            .withValues(alpha: 0.12),
+                        : GameTheme.rarityAccent(
+                            animal.rarity,
+                          ).withValues(alpha: 0.12),
                     side: BorderSide(
                       color: GameTheme.rarityBorderColor(animal.rarity, theme),
                       width: animal.rarity == Rarity.unknown ? 2 : 1.5,
@@ -281,28 +278,28 @@ class EggCard extends StatelessWidget {
             KeyedSubtree(
               key: buyButtonKey,
               child: FilledButton.icon(
-              onPressed: onBuy,
-              style: GameTheme.filledButton(
-                theme,
-                color: !isUnlocked || !canAfford
-                    ? theme.disabledColor
-                    : theme.primaryColor,
+                onPressed: onBuy,
+                style: GameTheme.filledButton(
+                  theme,
+                  color: !isUnlocked || !canAfford
+                      ? theme.disabledColor
+                      : theme.primaryColor,
+                ),
+                icon: Icon(
+                  !isUnlocked
+                      ? Icons.lock_rounded
+                      : canAfford
+                      ? Icons.auto_awesome_rounded
+                      : Icons.account_balance_wallet_rounded,
+                ),
+                label: Text(
+                  !isUnlocked
+                      ? 'Locked'
+                      : canAfford
+                      ? 'Buy & Hatch'
+                      : _notEnoughMessage,
+                ),
               ),
-              icon: Icon(
-                !isUnlocked
-                    ? Icons.lock_rounded
-                    : canAfford
-                    ? Icons.egg_alt_rounded
-                    : Icons.account_balance_wallet_rounded,
-              ),
-              label: Text(
-                !isUnlocked
-                    ? 'Locked'
-                    : canAfford
-                        ? 'Buy & Hatch'
-                        : _notEnoughMessage,
-              ),
-            ),
             ),
             if (onTripleHatch != null && tripleHatchCost != null) ...[
               const SizedBox(height: 10),
@@ -361,10 +358,7 @@ class EggCard extends StatelessWidget {
 }
 
 class _EggMasterySection extends StatelessWidget {
-  const _EggMasterySection({
-    required this.theme,
-    required this.progress,
-  });
+  const _EggMasterySection({required this.theme, required this.progress});
 
   final BackgroundTheme theme;
   final EggMasteryProgress progress;
@@ -382,18 +376,17 @@ class _EggMasterySection extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.secondaryColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: theme.secondaryColor.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: theme.secondaryColor.withValues(alpha: 0.35)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Egg Mastery',
-            style: GameTheme.sectionTitle(theme, size: 14).copyWith(
-              color: theme.cardTextPrimaryColor,
-            ),
+            style: GameTheme.sectionTitle(
+              theme,
+              size: 14,
+            ).copyWith(color: theme.cardTextPrimaryColor),
           ),
           const SizedBox(height: 6),
           Text(
@@ -406,9 +399,7 @@ class _EggMasterySection extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            atMax
-                ? 'Max Mastery'
-                : EggMasteryLogic.progressLabel(progress),
+            atMax ? 'Max Mastery' : EggMasteryLogic.progressLabel(progress),
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w500,
@@ -467,10 +458,7 @@ class _EggArtwork extends StatelessWidget {
             )
           : Text(
               '🔒',
-              style: TextStyle(
-                fontSize: 40,
-                color: theme.disabledColor,
-              ),
+              style: TextStyle(fontSize: 40, color: theme.disabledColor),
             ),
     );
   }

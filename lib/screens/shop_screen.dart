@@ -247,7 +247,7 @@ class ShopScreen extends StatelessWidget {
                   ),
                   actions: [
                     CompactAppBarIconAction(
-                      icon: Icons.egg_alt_outlined,
+                      icon: Icons.design_services_rounded,
                       tooltip: 'Custom Eggs',
                       onPressed: () => _openCustomEggsScreen(context),
                     ),
@@ -479,7 +479,7 @@ class _CustomEggsShopNotice extends StatelessWidget {
             icon: Icon(
               buttonLabel.toLowerCase().contains('unlock')
                   ? Icons.lock_open_rounded
-                  : Icons.egg_alt_rounded,
+                  : Icons.auto_awesome_rounded,
             ),
             label: Text(
               buttonLabel,
