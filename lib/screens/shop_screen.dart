@@ -271,13 +271,6 @@ class _ShopScreenState extends State<ShopScreen> {
                           theme: bg,
                           hostDestination: MainGameDestination.shop,
                         ),
-                  actions: [
-                    CompactAppBarIconAction(
-                      icon: Icons.design_services_rounded,
-                      tooltip: 'Custom Eggs',
-                      onPressed: () => _openCustomEggsScreen(context),
-                    ),
-                  ],
                 ),
                 body: GameBackground(
                   theme: bg,

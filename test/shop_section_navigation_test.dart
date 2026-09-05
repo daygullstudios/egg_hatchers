@@ -46,6 +46,7 @@ void main() {
     expect(find.text('Basic Egg'), findsOneWidget);
     expect(find.text('Boss Egg'), findsNothing);
     expect(find.text('Create Custom Egg'), findsNothing);
+    expect(find.byTooltip('Custom Eggs'), findsNothing);
 
     await tester.tap(find.byKey(const ValueKey('shop-section-battle')));
     await tester.pumpAndSettle();
