@@ -10,6 +10,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('tutorial entry language also fits manual replay', () {
+    expect(TutorialData.welcomeTitle, 'Tutorial');
+    expect(TutorialData.startButtonLabel, 'Start Tutorial');
+    expect(TutorialData.exitButtonLabel, 'Exit Tutorial');
+  });
+
   test('new player should auto-start tutorial', () async {
     SharedPreferences.setMockInitialValues({});
     final game = GameService();

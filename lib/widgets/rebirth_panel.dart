@@ -169,14 +169,15 @@ class _RebirthPanelState extends State<RebirthPanel> {
             ),
           ),
           const SizedBox(height: 14),
-          FilledButton(
+          FilledButton.icon(
             onPressed: () => _onRebirthPressed(context),
             style: GameTheme.filledButton(
               theme,
               color: canRebirth ? theme.panelAccentColor : theme.disabledColor,
               height: 48,
             ),
-            child: Text(
+            icon: Icon(canRebirth ? Icons.autorenew_rounded : Icons.lock_rounded),
+            label: Text(
               canRebirth
                   ? 'Rebirth · Next ${RebirthLogic.formatMultiplier(nextMultiplier)}'
                   : 'Rebirth Locked',
@@ -262,14 +263,15 @@ class _RebirthConfirmDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton(
+        TextButton.icon(
           onPressed: () => Navigator.of(context).pop(false),
           style: TextButton.styleFrom(
             foregroundColor: theme.cardTextSecondaryColor,
           ),
-          child: const Text('Cancel'),
+          icon: const Icon(Icons.close_rounded),
+          label: const Text('Cancel'),
         ),
-        FilledButton(
+        FilledButton.icon(
           onPressed: () => Navigator.of(context).pop(true),
           style: FilledButton.styleFrom(
             backgroundColor: theme.panelAccentColor,
@@ -277,7 +279,8 @@ class _RebirthConfirmDialog extends StatelessWidget {
             minimumSize: const Size(0, 40),
             padding: const EdgeInsets.symmetric(horizontal: 20),
           ),
-          child: const Text('Rebirth'),
+          icon: const Icon(Icons.autorenew_rounded),
+          label: const Text('Rebirth'),
         ),
       ],
     );

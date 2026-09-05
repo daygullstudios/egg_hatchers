@@ -63,9 +63,10 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
           'Delete ${account.displayName} and all progress saved for this account? This cannot be undone.',
         ),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('CANCEL'),
+            icon: const Icon(Icons.close_rounded),
+            label: const Text('CANCEL'),
           ),
           FilledButton.icon(
             key: const ValueKey('confirm-delete-account-button'),

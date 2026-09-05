@@ -82,13 +82,14 @@ class QuestsScreen extends StatelessWidget {
           ),
         ),
         actions: [
-          FilledButton(
+          FilledButton.icon(
             onPressed: () => Navigator.pop(dialogContext),
             style: FilledButton.styleFrom(
               backgroundColor: theme.secondaryColor,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Got it'),
+            icon: const Icon(Icons.check_rounded),
+            label: const Text('Got it'),
           ),
         ],
       ),

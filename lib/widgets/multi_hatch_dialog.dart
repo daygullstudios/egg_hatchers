@@ -336,10 +336,11 @@ class _MultiHatchDialogState extends State<MultiHatchDialog>
                 SizedBox(
                   width: double.infinity,
                   height: 52,
-                  child: FilledButton(
+                  child: FilledButton.icon(
                     onPressed: () => Navigator.of(context).pop(),
                     style: GameTheme.filledButton(widget.theme, color: accent),
-                    child: Text(
+                    icon: const Icon(Icons.check_circle_outline_rounded),
+                    label: Text(
                       _hasMutation ? 'Amazing!' : 'Awesome!',
                       style: const TextStyle(
                         fontSize: 18,

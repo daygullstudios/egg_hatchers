@@ -65,20 +65,22 @@ class CustomSpritesScreen extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(
+            icon: const Icon(Icons.close_rounded),
+            label: Text(
               'Cancel',
               style: TextStyle(color: theme.cardTextSecondaryColor),
             ),
           ),
-          FilledButton(
+          FilledButton.icon(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Reset All'),
+            icon: const Icon(Icons.restart_alt_rounded),
+            label: const Text('Reset All'),
           ),
         ],
       ),

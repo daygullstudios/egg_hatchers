@@ -469,14 +469,19 @@ class _CustomEggsShopNotice extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          FilledButton(
+          FilledButton.icon(
             onPressed: onPressed,
             style: GameTheme.filledButton(
               theme,
               color: theme.secondaryColor,
               height: 48,
             ),
-            child: Text(
+            icon: Icon(
+              buttonLabel.toLowerCase().contains('unlock')
+                  ? Icons.lock_open_rounded
+                  : Icons.egg_alt_rounded,
+            ),
+            label: Text(
               buttonLabel,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),

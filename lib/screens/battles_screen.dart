@@ -373,13 +373,14 @@ class BattlesScreen extends StatelessWidget {
                               color: theme.cardTextSecondaryColor,
                             ),
                           ),
-                          trailing: FilledButton(
+                          trailing: FilledButton.icon(
                             onPressed: () => Navigator.pop(sheetContext, owned),
                             style: FilledButton.styleFrom(
                               backgroundColor: theme.primaryColor,
                               foregroundColor: Colors.white,
                             ),
-                            child: const Text('Mutate'),
+                            icon: const Icon(Icons.science_rounded),
+                            label: const Text('Mutate'),
                           ),
                         );
                       },
@@ -1182,7 +1183,7 @@ class _BattleUpgradesCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            FilledButton(
+            FilledButton.icon(
               onPressed: onUnlockBossMutation,
               style: GameTheme.filledButton(
                 theme,
@@ -1190,11 +1191,12 @@ class _BattleUpgradesCard extends StatelessWidget {
                     ? theme.primaryColor
                     : theme.disabledColor,
               ),
-              child: Text('Unlock · ⚔️ ${GameData.unlockBossMutationCost}'),
+              icon: const Icon(Icons.lock_open_rounded),
+              label: Text('Unlock · ⚔️ ${GameData.unlockBossMutationCost}'),
             ),
           ],
           const SizedBox(height: 14),
-          OutlinedButton(
+          OutlinedButton.icon(
             onPressed: onApplyBossMutation,
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(double.infinity, 48),
@@ -1207,7 +1209,8 @@ class _BattleUpgradesCard extends StatelessWidget {
                     : theme.disabledColor,
               ),
             ),
-            child: Text(
+            icon: const Icon(Icons.auto_fix_high_rounded),
+            label: Text(
               'Apply Boss Mutation · ⚔️ ${GameData.applyBossMutationCost}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
@@ -1289,7 +1292,7 @@ class _BattleTokenUpgradeTile extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 10),
-        FilledButton(
+        FilledButton.icon(
           onPressed: atMax ? null : (canAfford ? onUpgrade : onUpgrade),
           style: GameTheme.filledButton(
             theme,
@@ -1297,7 +1300,8 @@ class _BattleTokenUpgradeTile extends StatelessWidget {
                 ? theme.disabledColor
                 : (canAfford ? theme.primaryColor : theme.disabledColor),
           ),
-          child: Text(atMax ? 'Max Level' : 'Upgrade'),
+          icon: Icon(atMax ? Icons.check_rounded : Icons.upgrade_rounded),
+          label: Text(atMax ? 'Max Level' : 'Upgrade'),
         ),
       ],
     );
@@ -1521,34 +1525,37 @@ class _BossCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
               ],
-              FilledButton(
+              FilledButton.icon(
                 onPressed: onManualBattle,
                 style: GameTheme.filledButton(
                   theme,
                   color: const Color(0xFF1565C0),
                 ),
-                child: const Text(
+                icon: const Icon(Icons.sports_martial_arts_rounded),
+                label: const Text(
                   'Battle',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ] else if (isEndgame) ...[
-              FilledButton(
+              FilledButton.icon(
                 onPressed: null,
                 style: GameTheme.filledButton(
                   theme,
                   color: theme.disabledColor,
                 ),
-                child: const Text('Final Boss Locked'),
+                icon: const Icon(Icons.lock_rounded),
+                label: const Text('Final Boss Locked'),
               ),
             ] else ...[
-              FilledButton(
+              FilledButton.icon(
                 onPressed: null,
                 style: GameTheme.filledButton(
                   theme,
                   color: theme.disabledColor,
                 ),
-                child: Text(boss.name),
+                icon: const Icon(Icons.lock_rounded),
+                label: Text(boss.name),
               ),
               const SizedBox(height: 6),
               Text(
@@ -1566,25 +1573,27 @@ class _BossCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: FilledButton(
+                  child: FilledButton.icon(
                     onPressed: onAutoBattle,
                     style: GameTheme.filledButton(
                       theme,
                       color: theme.primaryColor,
                     ),
-                    child: const Text('Auto Battle'),
+                    icon: const Icon(Icons.play_circle_outline_rounded),
+                    label: const Text('Auto Battle'),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: OutlinedButton(
+                  child: OutlinedButton.icon(
                     onPressed: onManualBattle,
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size(0, 48),
                       foregroundColor: theme.secondaryColor,
                       side: BorderSide(color: theme.secondaryColor),
                     ),
-                    child: const Text(
+                    icon: const Icon(Icons.sports_martial_arts_rounded),
+                    label: const Text(
                       'Battle',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
@@ -1594,25 +1603,27 @@ class _BossCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             if (hardPhaseUnlocked)
-              FilledButton(
+              FilledButton.icon(
                 onPressed: onHardPhaseBattle,
                 style: GameTheme.filledButton(
                   theme,
                   color: Colors.deepOrange.shade700,
                 ),
-                child: const Text(
+                icon: const Icon(Icons.local_fire_department_rounded),
+                label: const Text(
                   'Hard Phase',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               )
             else ...[
-              FilledButton(
+              FilledButton.icon(
                 onPressed: null,
                 style: GameTheme.filledButton(
                   theme,
                   color: theme.disabledColor,
                 ),
-                child: const Text('Hard Phase'),
+                icon: const Icon(Icons.lock_rounded),
+                label: const Text('Hard Phase'),
               ),
               const SizedBox(height: 4),
               Text(
@@ -1641,25 +1652,27 @@ class _BossCard extends StatelessWidget {
               ),
             const SizedBox(height: 10),
             if (nightmareUnlocked)
-              FilledButton(
+              FilledButton.icon(
                 onPressed: onNightmareBattle,
                 style: GameTheme.filledButton(
                   theme,
                   color: Colors.purple.shade800,
                 ),
-                child: const Text(
+                icon: const Icon(Icons.dark_mode_rounded),
+                label: const Text(
                   'Nightmare Mode',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               )
             else ...[
-              FilledButton(
+              FilledButton.icon(
                 onPressed: null,
                 style: GameTheme.filledButton(
                   theme,
                   color: theme.disabledColor,
                 ),
-                child: const Text('Nightmare'),
+                icon: const Icon(Icons.lock_rounded),
+                label: const Text('Nightmare'),
               ),
               const SizedBox(height: 4),
               Text(
@@ -1687,10 +1700,11 @@ class _BossCard extends StatelessWidget {
                 ),
               ),
           ] else
-            FilledButton(
+            FilledButton.icon(
               onPressed: null,
               style: GameTheme.filledButton(theme, color: theme.disabledColor),
-              child: const Text('Locked 🔒'),
+              icon: const Icon(Icons.lock_rounded),
+              label: const Text('Locked'),
             ),
         ],
       ),

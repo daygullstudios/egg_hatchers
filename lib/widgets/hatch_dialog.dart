@@ -329,7 +329,7 @@ class _HatchDialogState extends State<HatchDialog>
                 SizedBox(
                   width: double.infinity,
                   height: 52,
-                  child: FilledButton(
+                  child: FilledButton.icon(
                     onPressed: () => Navigator.of(context).pop(),
                     style: GameTheme.filledButton(
                       widget.theme,
@@ -337,7 +337,8 @@ class _HatchDialogState extends State<HatchDialog>
                           ? mutationColor
                           : widget.theme.primaryColor,
                     ),
-                    child: Text(
+                    icon: const Icon(Icons.check_circle_outline_rounded),
+                    label: Text(
                       isMutated ? 'Amazing!' : 'Awesome!',
                       style: const TextStyle(
                         fontSize: 18,

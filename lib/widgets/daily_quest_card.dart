@@ -77,13 +77,14 @@ class DailyQuestCard extends StatelessWidget {
               ),
             )
           else
-            FilledButton(
+            FilledButton.icon(
               onPressed: canClaim ? onClaim : null,
               style: GameTheme.filledButton(
                 theme,
                 color: canClaim ? theme.secondaryColor : theme.disabledColor,
               ),
-              child: Text(canClaim ? 'Claim' : 'In progress'),
+              icon: Icon(canClaim ? Icons.redeem_rounded : Icons.hourglass_bottom_rounded),
+              label: Text(canClaim ? 'Claim' : 'In progress'),
             ),
         ],
       ),

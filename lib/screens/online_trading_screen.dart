@@ -856,9 +856,10 @@ class _TradeChatBubble extends StatelessWidget {
               ),
             ),
             if (!message.fromSelf && message.animal != null)
-              TextButton(
+              TextButton.icon(
                 onPressed: () => onOfferRequested(message.animal!),
-                child: const Text('OFFER'),
+                icon: const Icon(Icons.add_circle_outline_rounded),
+                label: const Text('OFFER'),
               ),
           ],
         ),

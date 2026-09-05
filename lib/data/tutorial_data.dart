@@ -6,7 +6,10 @@ class TutorialData {
 
   static const currentVersion = 2;
 
-  static const welcomeTitle = 'Welcome to Egg Hatchers!';
+  static const welcomeTitle = 'Tutorial';
+
+  static const startButtonLabel = 'Start Tutorial';
+  static const exitButtonLabel = 'Exit Tutorial';
 
   static const finishText =
       "You're ready! Keep hatching, upgrading, battling, and discovering secrets.";
@@ -17,6 +20,7 @@ class TutorialData {
   static const returnToHatcheryFallbackLabel = 'Return to Hatchery';
 
   static const advancedSecretWelcomeTitle = 'Secret Hatchery Guide';
+  static const advancedSecretStartButtonLabel = 'Start Advanced Tutorial';
 
   static const advancedSecretFinishButtonLabel = 'Got It';
 

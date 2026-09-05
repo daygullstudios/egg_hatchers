@@ -149,20 +149,22 @@ class CollectionScreen extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(
+            icon: const Icon(Icons.close_rounded),
+            label: Text(
               'Cancel',
               style: TextStyle(color: theme.cardTextSecondaryColor),
             ),
           ),
-          FilledButton(
+          FilledButton.icon(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(
               backgroundColor: theme.secondaryColor,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Sell All'),
+            icon: const Icon(Icons.sell_rounded),
+            label: const Text('Sell All'),
           ),
         ],
       ),

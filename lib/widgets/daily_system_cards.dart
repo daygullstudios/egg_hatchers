@@ -96,13 +96,14 @@ class DailyRewardCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 12),
-          FilledButton(
+          FilledButton.icon(
             onPressed: claimed ? null : () => _claim(context),
             style: GameTheme.filledButton(
               theme,
               color: claimed ? theme.disabledColor : theme.primaryColor,
             ),
-            child: Text(claimed ? 'Claimed Today' : 'Claim'),
+            icon: Icon(claimed ? Icons.check_circle_rounded : Icons.redeem_rounded),
+            label: Text(claimed ? 'Claimed Today' : 'Claim'),
           ),
         ],
       ),
@@ -156,9 +157,10 @@ class DailyQuestsSummaryCard extends StatelessWidget {
               ],
             ),
           ),
-          TextButton(
+          TextButton.icon(
             onPressed: onOpenQuests,
-            child: const Text('View'),
+            icon: const Icon(Icons.visibility_rounded),
+            label: const Text('View'),
           ),
         ],
       ),

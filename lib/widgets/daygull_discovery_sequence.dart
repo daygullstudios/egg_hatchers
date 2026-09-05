@@ -222,7 +222,7 @@ class _DayGullDiscoverySequenceState extends State<DayGullDiscoverySequence>
                                           const SizedBox(height: 24),
                                           Opacity(
                                             opacity: controlsOpacity,
-                                            child: FilledButton(
+                                            child: FilledButton.icon(
                                               onPressed: controlsOpacity >= 1
                                                   ? () => Navigator.pop(context)
                                                   : null,
@@ -236,7 +236,10 @@ class _DayGullDiscoverySequenceState extends State<DayGullDiscoverySequence>
                                                   48,
                                                 ),
                                               ),
-                                              child: const Text(
+                                              icon: const Icon(
+                                                Icons.arrow_forward_rounded,
+                                              ),
+                                              label: const Text(
                                                 'Continue',
                                                 style: TextStyle(
                                                   fontWeight: FontWeight.bold,

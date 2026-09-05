@@ -146,13 +146,15 @@ class _SpriteEditorScreenState extends State<SpriteEditorScreen> {
         title: const Text('Clear sprite?'),
         content: const Text('This will erase your current drawing.'),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            icon: const Icon(Icons.close_rounded),
+            label: const Text('Cancel'),
           ),
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear'),
+            icon: const Icon(Icons.delete_sweep_rounded),
+            label: const Text('Clear'),
           ),
         ],
       ),
@@ -695,39 +697,42 @@ class _SpriteEditorScreenState extends State<SpriteEditorScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
+                    child: OutlinedButton.icon(
                       onPressed: _data.hasVisiblePixels ? _confirmClear : null,
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(0, 48),
                         foregroundColor: theme.cardTextPrimaryColor,
                         side: BorderSide(color: theme.cardBorderColor),
                       ),
-                      child: const Text('Clear'),
+                      icon: const Icon(Icons.delete_sweep_rounded),
+                      label: const Text('Clear'),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: OutlinedButton(
+                    child: OutlinedButton.icon(
                       onPressed: _reset,
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size(0, 48),
                         foregroundColor: theme.cardTextPrimaryColor,
                         side: BorderSide(color: theme.cardBorderColor),
                       ),
-                      child: const Text('Reset'),
+                      icon: const Icon(Icons.restart_alt_rounded),
+                      label: const Text('Reset'),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 10),
-              FilledButton(
+              FilledButton.icon(
                 onPressed: _save,
                 style: GameTheme.filledButton(
                   theme,
                   color: theme.primaryColor,
                   height: 52,
                 ),
-                child: const Text(
+                icon: const Icon(Icons.save_rounded),
+                label: const Text(
                   'Save Sprite',
                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                 ),
@@ -971,14 +976,15 @@ class _ReferenceToolsPanel extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              FilledButton(
+              FilledButton.icon(
                 onPressed: onUnlockOverlay,
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
                   backgroundColor: theme.primaryColor,
                   foregroundColor: Colors.white,
                 ),
-                child: Column(
+                icon: const Icon(Icons.layers_rounded),
+                label: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text(
@@ -1118,14 +1124,15 @@ class _RatingCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            FilledButton(
+            FilledButton.icon(
               onPressed: null,
               style: GameTheme.filledButton(
                 theme,
                 color: theme.disabledColor,
                 height: 48,
               ),
-              child: const Text('Rate Sprite (Beta)'),
+              icon: const Icon(Icons.auto_awesome_rounded),
+              label: const Text('Rate Sprite (Beta)'),
             ),
           ] else ...[
             if (ratedScore != null) ...[
@@ -1181,7 +1188,7 @@ class _RatingCard extends StatelessWidget {
                 style: TextStyle(fontSize: 13, color: Colors.orange.shade700),
               ),
             const SizedBox(height: 12),
-            FilledButton(
+            FilledButton.icon(
               onPressed: ratingAlreadyCounted ? null : onRate,
               style: GameTheme.filledButton(
                 theme,
@@ -1190,7 +1197,12 @@ class _RatingCard extends StatelessWidget {
                     : theme.panelAccentColor,
                 height: 48,
               ),
-              child: Text(
+              icon: Icon(
+                ratingAlreadyCounted
+                    ? Icons.check_circle_rounded
+                    : Icons.auto_awesome_rounded,
+              ),
+              label: Text(
                 ratingAlreadyCounted ? 'Rated' : 'Rate Sprite (Beta)',
               ),
             ),
@@ -1206,14 +1218,15 @@ class _RatingCard extends StatelessWidget {
             ],
             if (ratedScore != null && ratedScore! >= 1) ...[
               const SizedBox(height: 10),
-              FilledButton(
+              FilledButton.icon(
                 onPressed: canClaim ? onClaim : null,
                 style: GameTheme.filledButton(
                   theme,
                   color: canClaim ? theme.secondaryColor : theme.disabledColor,
                   height: 48,
                 ),
-                child: const Text('Claim Reward'),
+                icon: const Icon(Icons.redeem_rounded),
+                label: const Text('Claim Reward'),
               ),
             ],
           ],

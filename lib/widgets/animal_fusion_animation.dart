@@ -222,7 +222,7 @@ class _AnimalFusionAnimationState extends State<AnimalFusionAnimation>
                       ],
                       if (done) ...[
                         const SizedBox(height: 16),
-                        FilledButton(
+                        FilledButton.icon(
                           onPressed: _finishOnce,
                           style: FilledButton.styleFrom(
                             backgroundColor: widget.outcome.succeeded
@@ -231,7 +231,8 @@ class _AnimalFusionAnimationState extends State<AnimalFusionAnimation>
                             foregroundColor: Colors.white,
                             minimumSize: const Size(double.infinity, 44),
                           ),
-                          child: const Text('Continue'),
+                          icon: const Icon(Icons.arrow_forward_rounded),
+                          label: const Text('Continue'),
                         ),
                       ],
                     ],

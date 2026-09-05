@@ -174,7 +174,7 @@ class SecretToolsScreen extends StatelessWidget {
                               color: theme.cardTextSecondaryColor,
                             ),
                           ),
-                          trailing: FilledButton(
+                          trailing: FilledButton.icon(
                             onPressed: alreadyBadged
                                 ? null
                                 : () => Navigator.pop(sheetContext, owned),
@@ -182,7 +182,8 @@ class SecretToolsScreen extends StatelessWidget {
                               backgroundColor: theme.secondaryColor,
                               foregroundColor: Colors.white,
                             ),
-                            child: const Text('Choose'),
+                            icon: const Icon(Icons.check_rounded),
+                            label: const Text('Choose'),
                           ),
                         );
                       },

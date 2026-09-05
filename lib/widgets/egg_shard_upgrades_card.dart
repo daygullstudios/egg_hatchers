@@ -232,7 +232,7 @@ class _EggShardUpgradeTile extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 10),
-        FilledButton(
+        FilledButton.icon(
           onPressed: atMax ? null : onUpgrade,
           style: GameTheme.filledButton(
             theme,
@@ -240,7 +240,8 @@ class _EggShardUpgradeTile extends StatelessWidget {
                 ? theme.disabledColor
                 : (canAfford ? theme.primaryColor : theme.disabledColor),
           ),
-          child: Text(atMax ? 'Max Level' : 'Upgrade'),
+          icon: Icon(atMax ? Icons.check_rounded : Icons.upgrade_rounded),
+          label: Text(atMax ? 'Max Level' : 'Upgrade'),
         ),
       ],
     );

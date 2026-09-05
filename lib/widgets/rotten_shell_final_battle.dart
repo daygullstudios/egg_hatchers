@@ -720,16 +720,30 @@ class _FinalAbilityButtonState extends State<_FinalAbilityButton>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              widget.label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: widget.enabled ? Colors.white : Colors.white54,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.bolt_rounded,
+                  size: 10,
+                  color: widget.enabled ? Colors.white : Colors.white54,
+                ),
+                const SizedBox(width: 2),
+                Flexible(
+                  child: Text(
+                    widget.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: widget.enabled ? Colors.white : Colors.white54,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
             ),
             Text(
               '${widget.energyCost} ENERGY',

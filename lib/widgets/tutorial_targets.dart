@@ -120,6 +120,13 @@ class TutorialTargets {
     return Rect.fromPoints(topLeft, bottomRight).inflate(padding);
   }
 
+  static bool isFullyVisible(Rect target, Rect viewport) {
+    return target.left >= viewport.left &&
+        target.top >= viewport.top &&
+        target.right <= viewport.right &&
+        target.bottom <= viewport.bottom;
+  }
+
   static Future<void> scrollTargetIntoView(
     String? targetId, {
     Duration duration = const Duration(milliseconds: 320),
@@ -136,8 +143,64 @@ class TutorialTargets {
         alignment: alignment,
         alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
       );
+      if (!targetContext.mounted) return;
+      await _correctPartiallyVisibleTarget(targetContext, duration: duration);
     } catch (_) {
       // Target may not live inside a scrollable ancestor.
+    }
+  }
+
+  static Future<void> _correctPartiallyVisibleTarget(
+    BuildContext targetContext, {
+    required Duration duration,
+  }) async {
+    final scrollable = Scrollable.maybeOf(targetContext);
+    final targetBox = targetContext.findRenderObject();
+    final viewportBox = scrollable?.context.findRenderObject();
+    if (scrollable == null ||
+        targetBox is! RenderBox ||
+        viewportBox is! RenderBox ||
+        !targetBox.hasSize ||
+        !viewportBox.hasSize) {
+      return;
+    }
+
+    final targetRect = Rect.fromPoints(
+      targetBox.localToGlobal(Offset.zero),
+      targetBox.localToGlobal(targetBox.size.bottomRight(Offset.zero)),
+    );
+    final viewportRect = Rect.fromPoints(
+      viewportBox.localToGlobal(Offset.zero),
+      viewportBox.localToGlobal(viewportBox.size.bottomRight(Offset.zero)),
+    ).deflate(12);
+    if (isFullyVisible(targetRect, viewportRect)) return;
+
+    final position = scrollable.position;
+    final correction = position.axis == Axis.vertical
+        ? targetRect.top < viewportRect.top
+              ? targetRect.top - viewportRect.top
+              : targetRect.bottom - viewportRect.bottom
+        : targetRect.left < viewportRect.left
+        ? targetRect.left - viewportRect.left
+        : targetRect.right - viewportRect.right;
+    final scrollDelta = switch (position.axisDirection) {
+      AxisDirection.down || AxisDirection.right => correction,
+      AxisDirection.up || AxisDirection.left => -correction,
+    };
+    final destination = (position.pixels + scrollDelta).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    if ((destination - position.pixels).abs() < 0.5) return;
+
+    if (duration == Duration.zero) {
+      position.jumpTo(destination);
+    } else {
+      await position.animateTo(
+        destination,
+        duration: duration,
+        curve: Curves.easeInOut,
+      );
     }
   }
 

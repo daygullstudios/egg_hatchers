@@ -510,7 +510,7 @@ class _CustomEggEditorScreenState extends State<CustomEggEditorScreen> {
                                   ),
                                   _costValidationWarning(theme),
                                   const SizedBox(height: 10),
-                                  OutlinedButton(
+                                  OutlinedButton.icon(
                                     onPressed: _unlockedSelectedIds.isEmpty
                                         ? null
                                         : _applyMinimumCost,
@@ -520,7 +520,8 @@ class _CustomEggEditorScreenState extends State<CustomEggEditorScreen> {
                                         color: theme.primaryColor,
                                       ),
                                     ),
-                                    child: const Text('Use Minimum Cost'),
+                                    icon: const Icon(Icons.price_check_rounded),
+                                    label: const Text('Use Minimum Cost'),
                                   ),
                                 ],
                               ),
@@ -606,14 +607,15 @@ class _CustomEggEditorScreenState extends State<CustomEggEditorScreen> {
                       ),
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: FilledButton(
+                        child: FilledButton.icon(
                           onPressed: _save,
                           style: GameTheme.filledButton(
                             theme,
                             color: theme.primaryColor,
                             height: 52,
                           ),
-                          child: const Text(
+                          icon: const Icon(Icons.save_rounded),
+                          label: const Text(
                             'Save Custom Egg',
                             style: TextStyle(
                               fontSize: 17,

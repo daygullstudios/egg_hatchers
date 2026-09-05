@@ -59,20 +59,22 @@ class CustomEggsScreen extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(
+            icon: const Icon(Icons.close_rounded),
+            label: Text(
               'Cancel',
               style: TextStyle(color: theme.cardTextSecondaryColor),
             ),
           ),
-          FilledButton(
+          FilledButton.icon(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red.shade600,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Delete'),
+            icon: const Icon(Icons.delete_outline_rounded),
+            label: const Text('Delete'),
           ),
         ],
       ),
@@ -303,26 +305,28 @@ class _CustomEggTile extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: OutlinedButton.icon(
                   onPressed: onEdit,
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(0, 44),
                     foregroundColor: theme.cardTextPrimaryColor,
                     side: BorderSide(color: theme.cardBorderColor),
                   ),
-                  child: const Text('Edit'),
+                  icon: const Icon(Icons.edit_rounded),
+                  label: const Text('Edit'),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: OutlinedButton(
+                child: OutlinedButton.icon(
                   onPressed: onDelete,
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size(0, 44),
                     foregroundColor: Colors.red.shade700,
                     side: BorderSide(color: Colors.red.shade300),
                   ),
-                  child: const Text('Delete'),
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  label: const Text('Delete'),
                 ),
               ),
             ],

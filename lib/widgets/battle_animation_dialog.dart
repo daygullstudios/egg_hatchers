@@ -196,9 +196,13 @@ class _BattleAnimationDialogState extends State<BattleAnimationDialog> {
                     ),
                   ),
                   if (!_finished)
-                    TextButton(
+                    TextButton.icon(
                       onPressed: _skip,
-                      child: Text(
+                      icon: Icon(
+                        Icons.fast_forward_rounded,
+                        color: theme.secondaryColor,
+                      ),
+                      label: Text(
                         'Skip',
                         style: TextStyle(
                           color: theme.secondaryColor,

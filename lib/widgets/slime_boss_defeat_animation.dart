@@ -362,13 +362,14 @@ class _SlimeBossDefeatAnimationState extends State<SlimeBossDefeatAnimation>
                   Positioned(
                     right: 16,
                     bottom: 16,
-                    child: TextButton(
+                    child: TextButton.icon(
                       onPressed: _trySkip,
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.white70,
                         backgroundColor: Colors.black45,
                       ),
-                      child: const Text('Skip'),
+                      icon: const Icon(Icons.fast_forward_rounded),
+                      label: const Text('Skip'),
                     ),
                   ),
               ],

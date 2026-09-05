@@ -101,9 +101,10 @@ class SettingsScreen extends StatelessWidget {
           'Delete ${account.displayName} and all progress saved for this account? This cannot be undone.',
         ),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('CANCEL'),
+            icon: const Icon(Icons.close_rounded),
+            label: const Text('CANCEL'),
           ),
           FilledButton.icon(
             key: const ValueKey('settings-confirm-delete-account'),
@@ -191,9 +192,10 @@ class SettingsScreen extends StatelessWidget {
             'This will replace every Egg Hatchers account, all progress, settings, custom eggs, and custom animals on this device.',
           ),
           actions: [
-            TextButton(
+            TextButton.icon(
               onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('CANCEL'),
+              icon: const Icon(Icons.close_rounded),
+              label: const Text('CANCEL'),
             ),
             FilledButton.icon(
               key: const ValueKey('settings-confirm-import-save'),

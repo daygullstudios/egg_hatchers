@@ -194,7 +194,7 @@ class AutoBattleResultDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        FilledButton(
+        FilledButton.icon(
           onPressed: () => Navigator.of(context).pop(),
           style: FilledButton.styleFrom(
             backgroundColor: theme.primaryColor,
@@ -202,7 +202,8 @@ class AutoBattleResultDialog extends StatelessWidget {
             minimumSize: const Size(0, 40),
             padding: const EdgeInsets.symmetric(horizontal: 20),
           ),
-          child: const Text('Done'),
+          icon: const Icon(Icons.check_circle_outline_rounded),
+          label: const Text('Done'),
         ),
       ],
     );

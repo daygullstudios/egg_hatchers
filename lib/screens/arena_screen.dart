@@ -1955,14 +1955,15 @@ class _ArenaResultOverlay extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               height: 50,
-              child: FilledButton(
+              child: FilledButton.icon(
                 onPressed: onContinue,
                 style: FilledButton.styleFrom(
                   backgroundColor: won
                       ? const Color(0xFFE65100)
                       : const Color(0xFF455A64),
                 ),
-                child: const Text(
+                icon: const Icon(Icons.navigate_next_rounded),
+                label: const Text(
                   'NEXT OPPONENT',
                   style: TextStyle(fontWeight: FontWeight.w900),
                 ),

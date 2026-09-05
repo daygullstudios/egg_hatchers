@@ -145,14 +145,15 @@ class LuckPanel extends StatelessWidget {
               ),
             )
           else
-            FilledButton(
+            FilledButton.icon(
               onPressed: () => _upgrade(context),
               style: GameTheme.filledButton(
                 theme,
                 color: canAfford ? theme.secondaryColor : theme.disabledColor,
                 height: 48,
               ),
-              child: Text(
+              icon: const Icon(Icons.upgrade_rounded),
+              label: Text(
                 'Upgrade Luck · 🪙 ${formatCoins(cost)}',
                 style: const TextStyle(
                   fontSize: 15,

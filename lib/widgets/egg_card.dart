@@ -280,7 +280,7 @@ class EggCard extends StatelessWidget {
             const SizedBox(height: 18),
             KeyedSubtree(
               key: buyButtonKey,
-              child: FilledButton(
+              child: FilledButton.icon(
               onPressed: onBuy,
               style: GameTheme.filledButton(
                 theme,
@@ -288,18 +288,25 @@ class EggCard extends StatelessWidget {
                     ? theme.disabledColor
                     : theme.primaryColor,
               ),
-              child: Text(
+              icon: Icon(
                 !isUnlocked
-                    ? 'Locked 🔒'
+                    ? Icons.lock_rounded
                     : canAfford
-                        ? 'Buy & Hatch 🐣'
+                    ? Icons.egg_alt_rounded
+                    : Icons.account_balance_wallet_rounded,
+              ),
+              label: Text(
+                !isUnlocked
+                    ? 'Locked'
+                    : canAfford
+                        ? 'Buy & Hatch'
                         : _notEnoughMessage,
               ),
             ),
             ),
             if (onTripleHatch != null && tripleHatchCost != null) ...[
               const SizedBox(height: 10),
-              OutlinedButton(
+              OutlinedButton.icon(
                 onPressed: isUnlocked ? onTripleHatch : onBuy,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
@@ -312,7 +319,10 @@ class EggCard extends StatelessWidget {
                         : theme.disabledColor,
                   ),
                 ),
-                child: isUnlocked
+                icon: Icon(
+                  isUnlocked ? Icons.filter_3_rounded : Icons.lock_rounded,
+                ),
+                label: isUnlocked
                     ? Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [

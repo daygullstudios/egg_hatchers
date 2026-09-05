@@ -122,14 +122,15 @@ class _DayGullUnlockCinematicState extends State<DayGullUnlockCinematic>
                         const SizedBox(height: 72),
                         Opacity(
                           opacity: doneT,
-                          child: FilledButton(
+                          child: FilledButton.icon(
                             onPressed: doneT >= 1 ? _finish : null,
                             style: FilledButton.styleFrom(
                               backgroundColor: const Color(0xFF6C3BFF),
                               foregroundColor: Colors.white,
                               minimumSize: const Size(double.infinity, 48),
                             ),
-                            child: const Text(
+                            icon: const Icon(Icons.arrow_forward_rounded),
+                            label: const Text(
                               'Continue',
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),

@@ -56,13 +56,14 @@ class AnimalFusionPanel extends StatefulWidget {
           ),
         ),
         actions: [
-          FilledButton(
+          FilledButton.icon(
             onPressed: () => Navigator.pop(dialogContext),
             style: FilledButton.styleFrom(
               backgroundColor: theme.primaryColor,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Got it'),
+            icon: const Icon(Icons.check_rounded),
+            label: const Text('Got it'),
           ),
         ],
       ),
@@ -159,20 +160,22 @@ class _AnimalFusionPanelState extends State<AnimalFusionPanel> {
           ],
         ),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(
+            icon: const Icon(Icons.close_rounded),
+            label: Text(
               'Cancel',
               style: TextStyle(color: widget.theme.cardTextSecondaryColor),
             ),
           ),
-          FilledButton(
+          FilledButton.icon(
             onPressed: () => Navigator.pop(dialogContext, true),
             style: FilledButton.styleFrom(
               backgroundColor: widget.theme.primaryColor,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Fuse'),
+            icon: const Icon(Icons.merge_rounded),
+            label: const Text('Fuse'),
           ),
         ],
       ),
@@ -454,7 +457,7 @@ class _FusionRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          FilledButton(
+          FilledButton.icon(
             onPressed: canFuse ? onFuse : null,
             style: FilledButton.styleFrom(
               backgroundColor: theme.primaryColor,
@@ -462,7 +465,8 @@ class _FusionRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               minimumSize: const Size(0, 36),
             ),
-            child: const Text('Fuse 2'),
+            icon: const Icon(Icons.merge_rounded),
+            label: const Text('Fuse 2'),
           ),
         ],
       ),

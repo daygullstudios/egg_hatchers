@@ -449,13 +449,15 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
         title: const Text('Quit this battle?'),
         content: const Text('You will not receive rewards.'),
         actions: [
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Keep Fighting'),
+            icon: const Icon(Icons.sports_martial_arts_rounded),
+            label: const Text('Keep Fighting'),
           ),
-          TextButton(
+          TextButton.icon(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Quit'),
+            icon: const Icon(Icons.exit_to_app_rounded),
+            label: const Text('Quit'),
           ),
         ],
       ),
@@ -1645,20 +1647,22 @@ class _PauseOverlay extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              FilledButton(
+              FilledButton.icon(
                 onPressed: onResume,
                 style: GameTheme.filledButton(theme),
-                child: const Text('Resume'),
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: const Text('Resume'),
               ),
               const SizedBox(height: 10),
-              OutlinedButton(
+              OutlinedButton.icon(
                 onPressed: onQuit,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 48),
                   foregroundColor: theme.cardTextSecondaryColor,
                   side: BorderSide(color: theme.cardTextSecondaryColor),
                 ),
-                child: const Text(
+                icon: const Icon(Icons.exit_to_app_rounded),
+                label: const Text(
                   'Quit Battle',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
@@ -2001,15 +2005,16 @@ class _ShootRow extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      child: FilledButton(
+      child: FilledButton.icon(
         onPressed: canShoot ? onShootEgg : null,
         style: GameTheme.filledButton(
           theme,
           color: canShoot ? theme.secondaryColor : theme.disabledColor,
           height: 48,
         ),
-        child: Text(
-          eggOnCooldown ? 'Egg...' : 'Shoot Egg 🥚',
+        icon: const Icon(Icons.egg_alt_rounded),
+        label: Text(
+          eggOnCooldown ? 'Egg...' : 'Shoot Egg',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
@@ -2256,14 +2261,16 @@ class _ManualBattleResultDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton(
+        TextButton.icon(
           onPressed: onBackToBattles,
-          child: const Text('Back to Battles'),
+          icon: const Icon(Icons.arrow_back_rounded),
+          label: const Text('Back to Battles'),
         ),
-        FilledButton(
+        FilledButton.icon(
           onPressed: onBattleAgain,
           style: GameTheme.filledButton(theme),
-          child: const Text('Battle Again'),
+          icon: const Icon(Icons.replay_rounded),
+          label: const Text('Battle Again'),
         ),
       ],
     );

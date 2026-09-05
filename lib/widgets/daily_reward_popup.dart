@@ -180,24 +180,27 @@ class _DailyRewardDialog extends StatelessWidget {
                     ],
                     const SizedBox(height: 18),
                     if (claimed)
-                      FilledButton(
+                      FilledButton.icon(
                         onPressed: () => Navigator.pop(context),
                         style: GameTheme.filledButton(
                           theme,
                           color: theme.disabledColor,
                         ),
-                        child: const Text('Claimed Today'),
+                        icon: const Icon(Icons.check_circle_rounded),
+                        label: const Text('Claimed Today'),
                       )
                     else ...[
-                      FilledButton(
+                      FilledButton.icon(
                         onPressed: onClaim,
                         style: GameTheme.filledButton(theme),
-                        child: const Text('Claim'),
+                        icon: const Icon(Icons.redeem_rounded),
+                        label: const Text('Claim'),
                       ),
                       const SizedBox(height: 8),
-                      TextButton(
+                      TextButton.icon(
                         onPressed: onLater,
-                        child: Text(
+                        icon: const Icon(Icons.schedule_rounded),
+                        label: Text(
                           'Later',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,

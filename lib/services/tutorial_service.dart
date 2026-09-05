@@ -44,8 +44,8 @@ class TutorialService extends ChangeNotifier {
   };
 
   String get startButtonLabel => switch (_flow) {
-    TutorialFlow.basics => 'Tutorial',
-    TutorialFlow.advancedSecret => 'Advanced Tutorial',
+    TutorialFlow.basics => TutorialData.startButtonLabel,
+    TutorialFlow.advancedSecret => TutorialData.advancedSecretStartButtonLabel,
   };
 
   String get finishButtonLabel => switch (_flow) {

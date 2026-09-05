@@ -34,7 +34,7 @@ class _TutorialSpotlightOverlayState extends State<TutorialSpotlightOverlay> {
   Rect? _targetRect;
   String? _measuredStepId;
   var _measureGeneration = 0;
-  int? _lastAutoScrolledStepIndex;
+  String? _lastAutoScrolledStepKey;
 
   TutorialService get service => widget.service;
 
@@ -62,11 +62,13 @@ class _TutorialSpotlightOverlayState extends State<TutorialSpotlightOverlay> {
 
   void _scheduleMeasure() {
     final generation = ++_measureGeneration;
-    final stepIndex = service.stepIndex;
-    final shouldAutoScroll = _lastAutoScrolledStepIndex != stepIndex;
-    if (shouldAutoScroll) {
-      _lastAutoScrolledStepIndex = stepIndex;
-    }
+    final scheduledStep = service.currentStep;
+    final stepKey = service.isGuided && scheduledStep != null
+        ? '${service.flow.name}:${scheduledStep.id}'
+        : null;
+    final shouldAutoScroll = stepKey != null &&
+        _lastAutoScrolledStepKey != stepKey;
+    _lastAutoScrolledStepKey = stepKey;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || generation != _measureGeneration) return;
@@ -100,10 +102,20 @@ class _TutorialSpotlightOverlayState extends State<TutorialSpotlightOverlay> {
     final rect = TutorialTargets.measure(
       step.targetId,
       overlayContext: context,
+      padding: 0,
     );
 
-    final viewport = Offset.zero & MediaQuery.sizeOf(context);
-    final visibleRect = rect != null && viewport.overlaps(rect) ? rect : null;
+    final mediaQuery = MediaQuery.of(context);
+    final viewport = Rect.fromLTRB(
+      0,
+      mediaQuery.padding.top,
+      mediaQuery.size.width,
+      mediaQuery.size.height - mediaQuery.padding.bottom,
+    );
+    final visibleRect = rect != null &&
+            TutorialTargets.isFullyVisible(rect, viewport)
+        ? rect.inflate(8).intersect(viewport)
+        : null;
 
     TutorialTargets.debugLogMeasure(
       stepId: step.id,
@@ -124,9 +136,11 @@ class _TutorialSpotlightOverlayState extends State<TutorialSpotlightOverlay> {
         final retry = TutorialTargets.measure(
           step.targetId,
           overlayContext: context,
+          padding: 0,
         );
-        final retryVisible = retry != null && viewport.overlaps(retry)
-            ? retry
+        final retryVisible = retry != null &&
+                TutorialTargets.isFullyVisible(retry, viewport)
+            ? retry.inflate(8).intersect(viewport)
             : null;
         if (retryVisible != null && retryVisible != _targetRect) {
           TutorialTargets.debugLogMeasure(
@@ -236,20 +250,21 @@ class _WelcomeOverlay extends StatelessWidget {
                       style: GameTheme.sectionTitle(theme, size: 22),
                     ),
                     const SizedBox(height: 24),
-                    FilledButton(
+                    FilledButton.icon(
                       onPressed: service.startGuided,
                       style: FilledButton.styleFrom(
                         backgroundColor: theme.secondaryColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: Text(
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: Text(
                         service.startButtonLabel,
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                     const SizedBox(height: 10),
-                    OutlinedButton(
+                    OutlinedButton.icon(
                       onPressed: service.skipTutorial,
                       style: OutlinedButton.styleFrom(
                         foregroundColor: theme.cardTextPrimaryColor,
@@ -258,7 +273,8 @@ class _WelcomeOverlay extends StatelessWidget {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text('Skip'),
+                      icon: const Icon(Icons.close_rounded),
+                      label: const Text(TutorialData.exitButtonLabel),
                     ),
                   ],
                 ),
@@ -681,7 +697,7 @@ class _CalloutCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  TextButton(
+                  TextButton.icon(
                     onPressed: onSkip,
                     style: TextButton.styleFrom(
                       minimumSize: Size.zero,
@@ -691,8 +707,13 @@ class _CalloutCard extends StatelessWidget {
                       ),
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: Text(
-                      'Skip',
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: 14,
+                      color: theme.cardTextSecondaryColor,
+                    ),
+                    label: Text(
+                      TutorialData.exitButtonLabel,
                       style: TextStyle(
                         color: theme.cardTextSecondaryColor,
                         fontSize: 12,
@@ -704,14 +725,15 @@ class _CalloutCard extends StatelessWidget {
               ),
               if (showReturnToHatchery && onReturnToHatchery != null) ...[
                 const SizedBox(height: 10),
-                FilledButton(
+                FilledButton.icon(
                   onPressed: onReturnToHatchery,
                   style: FilledButton.styleFrom(
                     backgroundColor: theme.secondaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
-                  child: Text(
+                  icon: const Icon(Icons.home_rounded),
+                  label: Text(
                     TutorialData.returnToHatcheryFallbackLabel,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
@@ -719,14 +741,19 @@ class _CalloutCard extends StatelessWidget {
               ],
               if (showNext) ...[
                 const SizedBox(height: 10),
-                FilledButton(
+                FilledButton.icon(
                   onPressed: onNext,
                   style: FilledButton.styleFrom(
                     backgroundColor: theme.secondaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
-                  child: Text(
+                  icon: Icon(
+                    isFinish
+                        ? Icons.check_circle_outline_rounded
+                        : Icons.arrow_forward_rounded,
+                  ),
+                  label: Text(
                     nextLabel,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),

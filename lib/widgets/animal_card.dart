@@ -266,7 +266,7 @@ class AnimalCard extends StatelessWidget {
                             key: upgradeButtonKey,
                             child: SizedBox(
                             width: double.infinity,
-                            child: FilledButton(
+                            child: FilledButton.icon(
                               onPressed: onUpgrade,
                               style: GameTheme.filledButton(
                                 theme,
@@ -275,7 +275,8 @@ class AnimalCard extends StatelessWidget {
                                     : theme.disabledColor,
                                 height: compact ? 44 : 48,
                               ),
-                              child: const Text('Upgrade ⬆️'),
+                              icon: const Icon(Icons.upgrade_rounded),
+                              label: const Text('Upgrade'),
                             ),
                           ),
                           ),
@@ -298,7 +299,7 @@ class AnimalCard extends StatelessWidget {
                         const SizedBox(width: 10),
                         KeyedSubtree(
                           key: upgradeButtonKey,
-                          child: FilledButton(
+                          child: FilledButton.icon(
                           onPressed: onUpgrade,
                           style: GameTheme.filledButton(
                             theme,
@@ -323,7 +324,8 @@ class AnimalCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          child: const Text('Upgrade ⬆️'),
+                          icon: const Icon(Icons.upgrade_rounded),
+                          label: const Text('Upgrade'),
                         ),
                         ),
                       ],
@@ -358,7 +360,7 @@ class AnimalCard extends StatelessWidget {
                       ),
                     );
 
-                    final sellOneButton = FilledButton(
+                    final sellOneButton = FilledButton.icon(
                       onPressed: onSellOne,
                       style: GameTheme.filledButton(
                         theme,
@@ -375,18 +377,20 @@ class AnimalCard extends StatelessWidget {
                           Size(0, compact ? 40 : 44),
                         ),
                       ),
-                      child: const Text('Sell 1'),
+                      icon: const Icon(Icons.sell_rounded),
+                      label: const Text('Sell 1'),
                     );
 
                     final sellAllButton = sellAllVisible
-                        ? OutlinedButton(
+                        ? OutlinedButton.icon(
                             onPressed: onSellAll,
                             style: OutlinedButton.styleFrom(
                               minimumSize: Size(0, compact ? 40 : 44),
                               side: BorderSide(color: theme.secondaryColor),
                               foregroundColor: theme.secondaryColor,
                             ),
-                            child: const Text('Sell All'),
+                            icon: const Icon(Icons.sell_outlined),
+                            label: const Text('Sell All'),
                           )
                         : null;
 

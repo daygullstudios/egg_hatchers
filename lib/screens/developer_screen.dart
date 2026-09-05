@@ -1291,10 +1291,11 @@ class _BigButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: FilledButton(
+      child: FilledButton.icon(
         onPressed: onPressed,
         style: DevToolsTheme.filledButton(color: color),
-        child: Text(label, textAlign: TextAlign.center),
+        icon: Icon(_developerActionIcon(label)),
+        label: Text(label, textAlign: TextAlign.center),
       ),
     );
   }
@@ -1338,10 +1339,35 @@ class _QuickButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FilledButton(
+    return FilledButton.icon(
       onPressed: onPressed,
       style: DevToolsTheme.compactButton(color: DevToolsTheme.primaryDim),
-      child: Text(label),
+      icon: Icon(_developerActionIcon(label), size: 18),
+      label: Text(label),
     );
   }
+}
+
+IconData _developerActionIcon(String label) {
+  final normalized = label.toLowerCase();
+  if (normalized.contains('delete')) return Icons.delete_outline_rounded;
+  if (normalized.contains('reset') || normalized.contains('clear')) {
+    return Icons.restart_alt_rounded;
+  }
+  if (normalized.contains('unlock')) return Icons.lock_open_rounded;
+  if (normalized.contains('tutorial') || normalized.contains('start')) {
+    return Icons.play_arrow_rounded;
+  }
+  if (normalized.contains('complete') || normalized.contains('win')) {
+    return Icons.check_circle_outline_rounded;
+  }
+  if (normalized.contains('save')) return Icons.save_rounded;
+  if (normalized.contains('load')) return Icons.folder_open_rounded;
+  if (normalized.contains('remove') || normalized.contains('subtract')) {
+    return Icons.remove_circle_outline_rounded;
+  }
+  if (normalized.contains('add') || normalized.contains('grant')) {
+    return Icons.add_circle_outline_rounded;
+  }
+  return Icons.tune_rounded;
 }

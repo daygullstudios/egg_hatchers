@@ -124,14 +124,17 @@ class QuestCard extends StatelessWidget {
               ),
             )
           else
-            FilledButton(
+            FilledButton.icon(
               onPressed: isReady ? onClaim : null,
               style: GameTheme.filledButton(
                 theme,
                 color: isReady ? theme.secondaryColor : theme.disabledColor,
                 height: 44,
               ),
-              child: Text(
+              icon: Icon(
+                isReady ? Icons.redeem_rounded : Icons.hourglass_bottom_rounded,
+              ),
+              label: Text(
                 isReady ? 'Claim Reward' : 'In Progress',
                 style: const TextStyle(
                   fontSize: 15,
