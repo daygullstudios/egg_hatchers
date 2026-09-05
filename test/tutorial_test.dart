@@ -12,8 +12,9 @@ void main() {
 
   test('tutorial entry language also fits manual replay', () {
     expect(TutorialData.welcomeTitle, 'Tutorial');
-    expect(TutorialData.startButtonLabel, 'Start Tutorial');
-    expect(TutorialData.exitButtonLabel, 'Exit Tutorial');
+    expect(TutorialData.startButtonLabel, 'Start');
+    expect(TutorialData.exitButtonLabel, 'Exit');
+    expect(TutorialData.advancedSecretStartButtonLabel, 'Start');
   });
 
   test('new player should auto-start tutorial', () async {
