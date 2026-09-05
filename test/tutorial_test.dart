@@ -4,6 +4,8 @@ import 'package:egg_hatchers/data/tutorial_data.dart';
 import 'package:egg_hatchers/models/player_state.dart';
 import 'package:egg_hatchers/navigation/app_page_route.dart';
 import 'package:egg_hatchers/services/game_service.dart';
+import 'package:egg_hatchers/services/tutorial_service.dart';
+import 'package:egg_hatchers/services/tutorial_target_registry.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -15,6 +17,38 @@ void main() {
     expect(TutorialData.startButtonLabel, 'Start');
     expect(TutorialData.exitButtonLabel, 'Exit');
     expect(TutorialData.advancedSecretStartButtonLabel, 'Start');
+  });
+
+  test('missing navigation target opens its screen instead of advancing', () {
+    final service = TutorialService.instance;
+    final collectionStep = TutorialData.steps.firstWhere(
+      (step) => step.id == 'collection',
+    );
+    var openedCollection = false;
+    TutorialTargetRegistry.register(
+      TutorialTargetIds.collectionButton,
+      () => openedCollection = true,
+    );
+    service.showWelcome(isReplay: true);
+    service.startGuided();
+    for (var index = 0; index < 6; index++) {
+      service.advanceNext(force: true);
+    }
+    addTearDown(() {
+      service.skipTutorial();
+      TutorialTargetRegistry.unregister(TutorialTargetIds.collectionButton);
+    });
+
+    expect(service.currentStep, same(collectionStep));
+    expect(
+      service.showTargetFallbackButton(collectionStep, targetFound: false),
+      isTrue,
+    );
+    expect(service.showNextButton(collectionStep, targetFound: false), isFalse);
+    expect(collectionStep.fallbackActionLabel, 'Open Collection');
+
+    service.invokeTargetFallback(collectionStep);
+    expect(openedCollection, isTrue);
   });
 
   test('new player should auto-start tutorial', () async {

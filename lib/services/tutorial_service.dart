@@ -257,8 +257,30 @@ class TutorialService extends ChangeNotifier {
   bool showNextButton(GuidedTutorialStep step, {required bool targetFound}) {
     if (step.isFinish) return true;
     if (step.manualNext) return true;
+    if (_usesTargetFallback(step, targetFound: targetFound)) return false;
     if (isFallbackMode(step, targetFound: targetFound)) return true;
     return false;
+  }
+
+  bool showTargetFallbackButton(
+    GuidedTutorialStep step, {
+    required bool targetFound,
+  }) {
+    if (!_usesTargetFallback(step, targetFound: targetFound)) return false;
+    return TutorialTargetRegistry.handlerFor(step.targetId) != null;
+  }
+
+  void invokeTargetFallback(GuidedTutorialStep step) {
+    if (currentStep != step || step.targetId == null) return;
+    invokeTargetTap(step.targetId!);
+  }
+
+  bool _usesTargetFallback(
+    GuidedTutorialStep step, {
+    required bool targetFound,
+  }) {
+    if (targetFound || step.fallbackActionLabel == null) return false;
+    return !needsAffordabilityFallback(step);
   }
 
   bool showReturnToHatcheryButton(

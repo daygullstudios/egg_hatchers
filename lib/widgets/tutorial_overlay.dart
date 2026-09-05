@@ -66,8 +66,8 @@ class _TutorialSpotlightOverlayState extends State<TutorialSpotlightOverlay> {
     final stepKey = service.isGuided && scheduledStep != null
         ? '${service.flow.name}:${scheduledStep.id}'
         : null;
-    final shouldAutoScroll = stepKey != null &&
-        _lastAutoScrolledStepKey != stepKey;
+    final shouldAutoScroll =
+        stepKey != null && _lastAutoScrolledStepKey != stepKey;
     _lastAutoScrolledStepKey = stepKey;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -112,8 +112,8 @@ class _TutorialSpotlightOverlayState extends State<TutorialSpotlightOverlay> {
       mediaQuery.size.width,
       mediaQuery.size.height - mediaQuery.padding.bottom,
     );
-    final visibleRect = rect != null &&
-            TutorialTargets.isFullyVisible(rect, viewport)
+    final visibleRect =
+        rect != null && TutorialTargets.isFullyVisible(rect, viewport)
         ? rect.inflate(8).intersect(viewport)
         : null;
 
@@ -138,8 +138,8 @@ class _TutorialSpotlightOverlayState extends State<TutorialSpotlightOverlay> {
           overlayContext: context,
           padding: 0,
         );
-        final retryVisible = retry != null &&
-                TutorialTargets.isFullyVisible(retry, viewport)
+        final retryVisible =
+            retry != null && TutorialTargets.isFullyVisible(retry, viewport)
             ? retry.inflate(8).intersect(viewport)
             : null;
         if (retryVisible != null && retryVisible != _targetRect) {
@@ -178,6 +178,10 @@ class _TutorialSpotlightOverlayState extends State<TutorialSpotlightOverlay> {
     final targetRect = useFallback ? null : _targetRect;
     final text = service.displayText(step, targetFound: targetFound);
     final showNext = service.showNextButton(step, targetFound: targetFound);
+    final showTargetFallback = service.showTargetFallbackButton(
+      step,
+      targetFound: targetFound,
+    );
     final proxyTap = service.allowsProxyTargetTap(
       step,
       targetFound: targetFound,
@@ -192,8 +196,12 @@ class _TutorialSpotlightOverlayState extends State<TutorialSpotlightOverlay> {
         service: service,
         theme: widget.theme,
         text: text,
-        showNext: showNext,
+        showNext: showNext || showTargetFallback,
         isFinish: step.isFinish,
+        onNext: showTargetFallback
+            ? () => service.invokeTargetFallback(step)
+            : null,
+        nextLabel: showTargetFallback ? step.fallbackActionLabel : null,
         showReturnToHatchery: showReturn,
         onReturnToHatchery: showReturn
             ? service.invokeReturnToHatcheryFallback
@@ -294,6 +302,8 @@ class _FallbackCardOverlay extends StatelessWidget {
     required this.text,
     required this.showNext,
     required this.isFinish,
+    this.onNext,
+    this.nextLabel,
     this.showReturnToHatchery = false,
     this.onReturnToHatchery,
   });
@@ -303,6 +313,8 @@ class _FallbackCardOverlay extends StatelessWidget {
   final String text;
   final bool showNext;
   final bool isFinish;
+  final VoidCallback? onNext;
+  final String? nextLabel;
   final bool showReturnToHatchery;
   final VoidCallback? onReturnToHatchery;
 
@@ -333,9 +345,11 @@ class _FallbackCardOverlay extends StatelessWidget {
                   text: text,
                   showNext: showNext,
                   isFinish: isFinish,
-                  onNext: () => service.advanceNext(force: true),
+                  onNext: onNext ?? () => service.advanceNext(force: true),
                   onSkip: service.skipTutorial,
-                  nextLabel: isFinish ? service.finishButtonLabel : 'Next',
+                  nextLabel:
+                      nextLabel ??
+                      (isFinish ? service.finishButtonLabel : 'Next'),
                   showReturnToHatchery: showReturnToHatchery,
                   onReturnToHatchery: onReturnToHatchery,
                 ),

@@ -32,6 +32,7 @@ class TutorialData {
       id: 'shop',
       text: 'Click the Egg Shop button!',
       targetId: TutorialTargetIds.shopButton,
+      fallbackActionLabel: 'Open Shop',
       requiresTargetTap: true,
       advanceOnRoute: kShopRouteName,
       requiredRoute: kHatcheryRouteName,
@@ -83,6 +84,7 @@ class TutorialData {
       id: 'collection',
       text: "Open your Collection to see what you've found!",
       targetId: TutorialTargetIds.collectionButton,
+      fallbackActionLabel: 'Open Collection',
       requiresTargetTap: true,
       advanceOnRoute: kCollectionRouteName,
       requiredRoute: kHatcheryRouteName,
@@ -115,6 +117,7 @@ class TutorialData {
       id: 'quests',
       text: 'Open Quests for extra rewards!',
       targetId: TutorialTargetIds.questsButton,
+      fallbackActionLabel: 'Open Quests',
       requiresTargetTap: true,
       advanceOnRoute: kQuestsRouteName,
       requiredRoute: kHatcheryRouteName,
@@ -133,6 +136,7 @@ class TutorialData {
       id: 'battles',
       text: 'Open Battles to fight bosses!',
       targetId: TutorialTargetIds.battlesButton,
+      fallbackActionLabel: 'Open Battles',
       requiresTargetTap: true,
       advanceOnRoute: kBattlesRouteName,
       requiredRoute: kHatcheryRouteName,
@@ -237,6 +241,7 @@ class GuidedTutorialStep {
     required this.text,
     this.targetId,
     this.fallbackText,
+    this.fallbackActionLabel,
     this.manualNext = false,
     this.requiresTargetTap = false,
     this.advanceOnRoute,
@@ -250,6 +255,7 @@ class GuidedTutorialStep {
   final String text;
   final String? targetId;
   final String? fallbackText;
+  final String? fallbackActionLabel;
   final bool manualNext;
   final bool requiresTargetTap;
   final String? advanceOnRoute;
