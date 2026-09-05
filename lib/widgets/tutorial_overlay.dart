@@ -317,10 +317,17 @@ class _FallbackCardOverlay extends StatelessWidget {
         ),
         SafeArea(
           child: Align(
-            alignment: Alignment.center,
+            alignment: Alignment.topCenter,
             child: PhoneWidthLayout(
+              useSafeArea: false,
+              padding: EdgeInsets.zero,
               child: Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.fromLTRB(
+                  24,
+                  kToolbarHeight + 12,
+                  24,
+                  24,
+                ),
                 child: _CalloutCard(
                   theme: theme,
                   text: text,
