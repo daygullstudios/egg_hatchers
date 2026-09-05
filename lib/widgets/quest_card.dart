@@ -32,8 +32,8 @@ class QuestCard extends StatelessWidget {
     final accent = isReady
         ? theme.secondaryColor
         : isClaimed
-            ? theme.cardTextSecondaryColor
-            : theme.primaryColor;
+        ? theme.cardTextSecondaryColor
+        : theme.primaryColor;
 
     return Container(
       decoration: GameTheme.cardDecoration(
@@ -42,8 +42,8 @@ class QuestCard extends StatelessWidget {
         backgroundColor: isReady
             ? theme.secondaryColor.withValues(alpha: 0.08)
             : isClaimed
-                ? theme.panelAccentColor.withValues(alpha: 0.06)
-                : null,
+            ? theme.panelAccentColor.withValues(alpha: 0.06)
+            : null,
       ),
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -53,7 +53,11 @@ class QuestCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                isClaimed ? '✅' : isReady ? '🎉' : '📋',
+                isClaimed
+                    ? '✅'
+                    : isReady
+                    ? '🎉'
+                    : '📋',
                 style: const TextStyle(fontSize: 22),
               ),
               const SizedBox(width: 10),
@@ -128,7 +132,7 @@ class QuestCard extends StatelessWidget {
               onPressed: isReady ? onClaim : null,
               style: GameTheme.filledButton(
                 theme,
-                color: isReady ? theme.secondaryColor : theme.disabledColor,
+                color: isReady ? theme.primaryColor : theme.disabledColor,
                 height: 44,
               ),
               icon: Icon(

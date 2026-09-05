@@ -14,6 +14,8 @@ The Battles screen now keeps Battle Tokens plus the Rival Arena, Online Arena, a
 
 The Egg Shop now uses a persistent three-way Hatchery/Battle/Custom category switcher above its catalog. Only the selected catalog is rendered, each category surfaces a useful availability summary, Hatchery remains the default for tutorial continuity, and each catalog keeps its own scroll position while the shell remains mounted.
 
+Claimable quest cards use the theme's primary action color for their Claim Reward/Claim buttons. This keeps the button silhouette and white label legible inside the gold secondary-color Ready to Claim treatment; the secondary color remains the reward-card accent rather than serving as both surface and action.
+
 Hatchery is now a dashboard rather than a duplicate full inventory: it shows a three-stack Production Snapshot, keeps the tutorial's first upgrade target visible, and links directly to full Collection management. Collection separates Animals and Fusion into persistent modes; Animals provides pinned search, Normal/Mutated filtering, and rarity/name/income/level/quantity sorting, while the Fusion tutorial automatically opens and focuses the Fusion mode.
 
 Settings now opens as a compact set of four collapsed destinations: Account & Saves, Tutorial, Sound & Feedback, and Appearance. Only one can be expanded at a time. Appearance uses a Background/Animal Style switch so the two visual catalogs are never rendered as one long stack, while Custom Animals remains a direct action.

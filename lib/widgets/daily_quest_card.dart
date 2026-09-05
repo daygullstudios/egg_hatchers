@@ -60,10 +60,7 @@ class DailyQuestCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             'Reward: $reward',
-            style: TextStyle(
-              fontSize: 13,
-              color: theme.cardTextSecondaryColor,
-            ),
+            style: TextStyle(fontSize: 13, color: theme.cardTextSecondaryColor),
           ),
           const SizedBox(height: 10),
           if (quest.claimed)
@@ -81,9 +78,13 @@ class DailyQuestCard extends StatelessWidget {
               onPressed: canClaim ? onClaim : null,
               style: GameTheme.filledButton(
                 theme,
-                color: canClaim ? theme.secondaryColor : theme.disabledColor,
+                color: canClaim ? theme.primaryColor : theme.disabledColor,
               ),
-              icon: Icon(canClaim ? Icons.redeem_rounded : Icons.hourglass_bottom_rounded),
+              icon: Icon(
+                canClaim
+                    ? Icons.redeem_rounded
+                    : Icons.hourglass_bottom_rounded,
+              ),
               label: Text(canClaim ? 'Claim' : 'In progress'),
             ),
         ],
@@ -113,17 +114,11 @@ class DailyQuestsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Daily Quests',
-          style: GameTheme.sectionTitle(theme, size: 18),
-        ),
+        Text('Daily Quests', style: GameTheme.sectionTitle(theme, size: 18)),
         const SizedBox(height: 6),
         Text(
           'New random quests every day',
-          style: TextStyle(
-            fontSize: 13,
-            color: theme.cardTextSecondaryColor,
-          ),
+          style: TextStyle(fontSize: 13, color: theme.cardTextSecondaryColor),
         ),
         const SizedBox(height: 12),
         for (var i = 0; i < visibleQuests.length; i++) ...[
