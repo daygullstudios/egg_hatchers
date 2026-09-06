@@ -5,9 +5,9 @@ import '../firebase_options.dart';
 
 /// Initializes the isolated Egg Hatchers development Firebase project.
 ///
-/// This bootstrap deliberately enables no authentication, Firestore, or cloud
-/// progress behavior. Local saves remain the sole gameplay authority until the
-/// later identity and conflict-safe synchronization phases are implemented.
+/// Authentication may establish an anonymous device identity after bootstrap.
+/// Firestore and cloud progress remain disabled, so local saves are still the
+/// sole gameplay authority until conflict-safe synchronization is implemented.
 abstract final class FirebaseBootstrap {
   static const projectId = 'egg-hatchers-dev';
 

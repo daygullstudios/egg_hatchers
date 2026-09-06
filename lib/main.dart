@@ -15,6 +15,7 @@ import 'services/audio_service.dart';
 import 'services/custom_egg_service.dart';
 import 'services/custom_sprite_service.dart';
 import 'services/firebase_bootstrap.dart';
+import 'services/firebase_anonymous_auth_gateway.dart';
 import 'services/game_service.dart';
 import 'services/online_lobby_service.dart';
 import 'services/preferences_service.dart';
@@ -49,8 +50,9 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     with WidgetsBindingObserver {
   final GameService _game = GameService();
   final AccountService _accounts = AccountService();
-  final AccountProtectionService _accountProtection =
-      AccountProtectionService();
+  final AccountProtectionService _accountProtection = AccountProtectionService(
+    gateway: FirebaseAnonymousAuthGateway(),
+  );
   final PreferencesService _preferences = PreferencesService();
   final CustomSpriteService _customSprites = CustomSpriteService();
   final CustomEggService _customEggs = CustomEggService();
@@ -81,10 +83,8 @@ class _EggHatchersAppState extends State<EggHatchersApp>
 
   Future<void> _initialize() async {
     unawaited(_audio.initialize());
-    await Future.wait([
-      _accounts.initialize(),
-      _accountProtection.initialize(),
-    ]);
+    await _accounts.initialize();
+    await _accountProtection.initialize(accountId: _accounts.account?.id);
     _loadedAccountId = _accounts.account?.id;
     _legacyMigrationPending =
         _loadedAccountId == null && _accounts.accounts.isNotEmpty;
@@ -123,6 +123,9 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   void _onAccountsChanged() {
     _onGameChanged();
     final accountId = _accounts.account?.id;
+    if (_accountProtection.isInitialized) {
+      unawaited(_accountProtection.selectAccount(accountId));
+    }
     if (accountId == null) {
       _loadedAccountId = null;
       unawaited(_onlineLobby.disconnect());

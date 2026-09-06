@@ -74,15 +74,24 @@ is safely claimed by the new guest slot.
 
 Phase 2 has started with an isolated `egg-hatchers-dev` Firebase project and
 registered Web, Android, and iOS development apps. Firebase Core initializes
-fail-open on those platforms, but authentication, Firestore, cloud writes,
-provider linking, and account merging are intentionally not active yet. The
+fail-open on those platforms, and anonymous Firebase Authentication is active
+for the designated device guest. Firestore progress, cloud writes, provider
+linking, and account merging are intentionally not active yet. The
 proven one-durable-device-guest boundary is now implemented as device-owned
 metadata: exactly one unambiguous guest may later receive an anonymous Firebase
 UID, named profiles are never inferred, replacement rotates the identity
 generation and clears the old binding, and imports/exports cannot transfer this
-metadata. The next identity batch can enable anonymous authentication only for
-that designated slot; it must keep cloud writes disabled until the progress
-repository and conflict gates are ready.
+metadata. Cloud writes remain disabled until the progress repository and
+conflict gates are ready.
+
+The client-side anonymous-auth adapter is now implemented for that designated
+slot. It waits for persisted Firebase authentication to restore, creates a new
+anonymous user only when no binding exists, verifies stored UID continuity on
+later starts, and refuses to bind named profiles or mismatched identities.
+Anonymous identity is still shown as **Not protected** and no player progress is
+read from or written to Firebase. Anonymous sign-in is enabled in the isolated
+`egg-hatchers-dev` project, and a live disposable create/delete smoke test
+passed on 2026-09-05 without leaving the test identity behind.
 
 ## Art rules
 

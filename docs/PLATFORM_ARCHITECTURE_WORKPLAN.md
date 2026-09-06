@@ -209,6 +209,17 @@ generation and clears any old UID binding, and slot metadata is excluded from
 JSON save transfer. This preserves the existing profile picker without allowing
 multiple local profiles or copied saves to share one anonymous identity.
 
+Anonymous Firebase identity is now connected to that boundary in the client.
+Only the active designated device guest may restore or create an anonymous
+user. The Firebase UID is recorded in non-transferable device metadata; an
+unexpected missing or mismatched persisted identity fails closed instead of
+silently rebinding progress. Switching to a named local profile bypasses
+Firebase identity entirely. Anonymous identity remains labeled **Not
+protected** because Firestore progress synchronization and provider linking are
+still disabled. The Anonymous provider is enabled in the isolated
+`egg-hatchers-dev` Firebase project; a live disposable identity create/delete
+smoke test passed on 2026-09-05.
+
 ### 3. Add offline-first cloud progress
 
 - Introduce a progress repository above local storage and Firestore sync.

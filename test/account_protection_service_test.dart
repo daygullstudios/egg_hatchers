@@ -1,12 +1,16 @@
 import 'package:egg_hatchers/models/account_protection_state.dart';
 import 'package:egg_hatchers/services/account_protection_service.dart';
+import 'package:egg_hatchers/services/device_guest_slot_store.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
   test('unconfigured builds report device-only progress', () async {
     final service = AccountProtectionService();
 
-    await service.initialize();
+    await service.initialize(accountId: 'guest_test');
 
     expect(service.isInitialized, isTrue);
     expect(service.state.status, AccountProtectionStatus.localOnly);
@@ -14,17 +18,19 @@ void main() {
   });
 
   test('configured signed-out builds report an unprotected guest', () async {
+    await DeviceGuestSlotStore().activate('guest_test');
     final service = AccountProtectionService(gateway: _Gateway(identity: null));
 
-    await service.initialize();
+    await service.initialize(accountId: 'guest_test');
 
     expect(service.state.status, AccountProtectionStatus.guest);
     expect(service.state.canProtect, isTrue);
   });
 
   test('restored provider identity reports protected progress', () async {
+    await DeviceGuestSlotStore().activate('guest_test');
     final service = AccountProtectionService(
-      gateway: const _Gateway(
+      gateway: _Gateway(
         identity: ProtectedPlayerIdentity(
           playerId: 'player-123',
           providerIds: {'google.com'},
@@ -32,7 +38,7 @@ void main() {
       ),
     );
 
-    await service.initialize();
+    await service.initialize(accountId: 'guest_test');
 
     expect(service.state.status, AccountProtectionStatus.protected);
     expect(service.state.protectedPlayerId, 'player-123');
@@ -40,28 +46,61 @@ void main() {
   });
 
   test('identity restore failure cannot claim progress is protected', () async {
-    final service = AccountProtectionService(
-      gateway: const _Gateway(error: true),
-    );
+    await DeviceGuestSlotStore().activate('guest_test');
+    final service = AccountProtectionService(gateway: _Gateway(error: true));
 
-    await service.initialize();
+    await service.initialize(accountId: 'guest_test');
 
     expect(service.state.status, AccountProtectionStatus.error);
     expect(service.state.isProtected, isFalse);
   });
+
+  test('anonymous identity remains explicitly unprotected', () async {
+    await DeviceGuestSlotStore().activate('guest_test');
+    final service = AccountProtectionService(
+      gateway: _Gateway(
+        identity: ProtectedPlayerIdentity(playerId: 'anonymous-123'),
+      ),
+    );
+
+    await service.initialize(accountId: 'guest_test');
+
+    expect(service.state.status, AccountProtectionStatus.guest);
+    expect(service.state.isProtected, isFalse);
+    expect(service.state.protectedPlayerId, 'anonymous-123');
+    expect((await DeviceGuestSlotStore().read())?.firebaseUid, 'anonymous-123');
+  });
+
+  test('named local profiles never invoke the identity gateway', () async {
+    await DeviceGuestSlotStore().activate('guest_test');
+    final gateway = _Gateway(
+      identity: const ProtectedPlayerIdentity(playerId: 'anonymous-123'),
+    );
+    final service = AccountProtectionService(gateway: gateway);
+
+    await service.initialize(accountId: 'player_named');
+
+    expect(service.state.status, AccountProtectionStatus.localOnly);
+    expect(gateway.restoreCalls, 0);
+  });
 }
 
 final class _Gateway implements AccountProtectionGateway {
-  const _Gateway({this.identity, this.error = false});
+  _Gateway({this.identity, this.error = false});
 
   final ProtectedPlayerIdentity? identity;
   final bool error;
+  int restoreCalls = 0;
 
   @override
   bool get isConfigured => true;
 
   @override
-  Future<ProtectedPlayerIdentity?> restoreIdentity() async {
+  Future<ProtectedPlayerIdentity?> restoreIdentity({
+    required String accountId,
+    required String? expectedPlayerId,
+  }) async {
+    restoreCalls += 1;
     if (error) throw StateError('offline');
     return identity;
   }
