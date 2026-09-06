@@ -21,7 +21,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 157,
+      "line": 182,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -29,7 +29,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 338,
+      "line": 363,
       "references": [
         "egghatchers.game"
       ],
@@ -37,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 365,
+      "line": 390,
       "references": [
         "egg_hatchers"
       ],
@@ -45,23 +45,23 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 442,
-      "references": [
-        "egg-hatchers-dev"
-      ],
-      "reason": "Documented compatibility identity, origin, or migration history."
-    },
-    {
-      "path": "PROJECT_HANDOFF.md",
-      "line": 460,
-      "references": [
-        "egg-hatchers-dev"
-      ],
-      "reason": "Documented compatibility identity, origin, or migration history."
-    },
-    {
-      "path": "PROJECT_HANDOFF.md",
       "line": 467,
+      "references": [
+        "egg-hatchers-dev"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 485,
+      "references": [
+        "egg-hatchers-dev"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 492,
       "references": [
         "egg_hatchers"
       ],
@@ -295,7 +295,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 171,
+      "line": 175,
       "references": [
         "eggHatchers"
       ],
@@ -303,7 +303,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 176,
+      "line": 180,
       "references": [
         "egg_hatchers_player_state_account_"
       ],
@@ -311,7 +311,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 188,
+      "line": 192,
       "references": [
         "egg_hatchers.settings"
       ],
@@ -319,7 +319,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 209,
+      "line": 213,
       "references": [
         "egg_hatchers"
       ],
@@ -327,7 +327,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 279,
+      "line": 283,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -335,7 +335,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 302,
+      "line": 306,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -343,7 +343,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 329,
+      "line": 333,
       "references": [
         "egg_hatchers"
       ],
@@ -351,7 +351,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 370,
+      "line": 374,
       "references": [
         "egg-hatchers-playtest"
       ],

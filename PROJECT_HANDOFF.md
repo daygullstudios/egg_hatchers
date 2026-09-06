@@ -24,9 +24,34 @@ Focused picker/Settings/removal suite: 22 passing, including seven new tests for
 creation isolation and mocked local-removal preservation of another player's
 progress/artwork and device settings. Flutter 3.47.2 analysis has no issues and
 all 550 tests pass. Brand audit classifies 537 references, none unclassified.
-Release web build succeeds. Protected deployment and live receipt follows.
+Release web build succeeds. Implementation `c33df0d` and accessibility follow-up
+`1d43052` are pushed to `main`. Final analysis, all 550 tests, release build,
+playtest 3 tests and Wrangler 4.129.0 dry-run/deploy pass. The unchanged protected
+custom-domain route has 100% current version
+**`967d9911-9170-4147-b1d8-e6ce84d64c56`**, read back at
+`2026-09-06T21:52:45.672Z`; unauthenticated requests still redirect (302) to Access.
 
-**Next priority — import safety:** code inspection found `SaveTransferService`
+Live external Chrome verified the picker, correctly scoped removal dialog and
+Keep player keyboard cancellation, then creation/back without submitting a new
+player. Content fits the portrait shell. The first live check caught duplicated
+spoken avatar labels; the follow-up suppresses tooltip duplication and asserts
+exact semantic names in all six responsive scenarios. Final refreshed Chrome
+shows each of the six color names once. No real player created/removed and no
+save imported, reset, restored or chosen in the device/cloud comparison for QA.
+Actual data-removal/creation isolation was tested only with mocked local data.
+Human comprehension and native device acceptance remain separate gates.
+
+**Immediate next — player-switch startup stall:** final live QA followed Settings
+> Switch Account > Create another player > Back to players > existing guest.
+The return stayed on the logo/loading screen across repeated observations.
+Refresh restored the existing progress and the same three animals with income
+continuing. No save was selected/replaced to recover. Root cause is not yet proven;
+inspect awaited stages in `_switchGameAccount` (lobby disconnect, identity restore,
+game/custom-service initialization), failure handling and overlapping selection.
+Add app-level regression coverage; picker-only tests do not establish whole-app
+switch completion. Do not clear local data or replace identity as a workaround.
+
+**Following priority — import safety:** code inspection found `SaveTransferService`
 clears preferences and rewrites them while the existing game remains running,
 with no coordinated pause/drain of gameplay/cloud writers or checked rollback.
 Validation checks the transfer envelope, preference types and account list, but
