@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'models/background_theme.dart';
@@ -14,11 +16,13 @@ import 'services/account_protection_service.dart';
 import 'services/audio_service.dart';
 import 'services/custom_egg_service.dart';
 import 'services/custom_sprite_service.dart';
-import 'services/firebase_bootstrap.dart';
 import 'services/firebase_anonymous_auth_gateway.dart';
+import 'services/firebase_bootstrap.dart';
+import 'services/firebase_progress_repository.dart';
 import 'services/game_service.dart';
 import 'services/online_lobby_service.dart';
 import 'services/preferences_service.dart';
+import 'services/progress_sync_service.dart';
 import 'services/sprite_rating_service.dart';
 import 'services/sprite_reference_overlay_service.dart';
 import 'widgets/animal_sprite_theme_scope.dart';
@@ -29,6 +33,7 @@ import 'widgets/audio_scope.dart';
 import 'widgets/coin_balance_scope.dart';
 import 'widgets/online_lobby_host.dart';
 import 'widgets/online_lobby_scope.dart';
+import 'widgets/progress_sync_scope.dart';
 import 'widgets/tutorial_host.dart';
 import 'navigation/app_page_route.dart';
 import 'utils/arena_logic.dart';
@@ -53,6 +58,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   final AccountProtectionService _accountProtection = AccountProtectionService(
     gateway: FirebaseAnonymousAuthGateway(),
   );
+  final ProgressSyncService _progressSync = ProgressSyncService();
   final PreferencesService _preferences = PreferencesService();
   final CustomSpriteService _customSprites = CustomSpriteService();
   final CustomEggService _customEggs = CustomEggService();
@@ -70,6 +76,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _game.onProgressSaved = _progressSync.localProgressSaved;
     _initialize();
     _game.addListener(_onGameChanged);
     _accounts.addListener(_onAccountsChanged);
@@ -113,6 +120,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     ]);
     _syncOnlinePresence();
     if (mounted) setState(() {});
+    unawaited(_configureProgressSync());
   }
 
   void _onGameChanged() {
@@ -123,11 +131,12 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   void _onAccountsChanged() {
     _onGameChanged();
     final accountId = _accounts.account?.id;
-    if (_accountProtection.isInitialized) {
-      unawaited(_accountProtection.selectAccount(accountId));
-    }
     if (accountId == null) {
       _loadedAccountId = null;
+      unawaited(_accountProtection.selectAccount(null));
+      unawaited(
+        _progressSync.selectAccount(accountId: null, protectedPlayerId: null),
+      );
       unawaited(_onlineLobby.disconnect());
       return;
     }
@@ -140,6 +149,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     await _onlineLobby.disconnect();
     if (mounted) setState(() {});
     final migrateLegacyData = _legacyMigrationPending;
+    await _accountProtection.selectAccount(accountId);
     await _game.switchAccount(accountId, migrateLegacySave: migrateLegacyData);
     await Future.wait([
       _customSprites.initialize(
@@ -164,6 +174,23 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     _switchingAccount = false;
     _syncOnlinePresence();
     if (mounted) setState(() {});
+    unawaited(_configureProgressSync());
+  }
+
+  Future<void> _configureProgressSync() {
+    final accountId = _loadedAccountId;
+    final protectedPlayerId = _accountProtection.state.protectedPlayerId;
+    final cloud = Firebase.apps.isEmpty
+        ? null
+        : FirebaseProgressRepository(FirebaseFirestore.instance);
+    return _progressSync.selectAccount(
+      accountId: accountId,
+      protectedPlayerId: protectedPlayerId,
+      cloud: cloud,
+      applyCloud: accountId == null
+          ? null
+          : (state) => _game.replaceProgressFromCloud(accountId, state),
+    );
   }
 
   void _syncOnlinePresence() {
@@ -221,6 +248,13 @@ class _EggHatchersAppState extends State<EggHatchersApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(
+        _accountProtection.selectAccount(_loadedAccountId).then((_) {
+          return _configureProgressSync();
+        }),
+      );
+    }
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       _game.save();
@@ -238,8 +272,10 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     _spriteRating.removeListener(_onGameChanged);
     _referenceOverlay.removeListener(_onGameChanged);
     _audio.removeListener(_onGameChanged);
+    _game.onProgressSaved = null;
     _audio.dispose();
     _accountProtection.dispose();
+    _progressSync.dispose();
     _onlineLobby.dispose();
     _game.dispose();
     super.dispose();
@@ -295,19 +331,22 @@ class _EggHatchersAppState extends State<EggHatchersApp>
                   accounts: _accounts,
                   child: AccountProtectionScope(
                     protection: _accountProtection,
-                    child: OnlineLobbyScope(
-                      lobby: _onlineLobby,
-                      child: OnlineLobbyHost(
+                    child: ProgressSyncScope(
+                      sync: _progressSync,
+                      child: OnlineLobbyScope(
                         lobby: _onlineLobby,
-                        onSessionReady: _openOnlineSession,
-                        child: CoinBalanceScope(
-                          coins: _game.coins,
-                          child: AnimalSpriteThemeScope(
-                            theme: _preferences.animalSpriteTheme,
-                            child: TutorialHost(
-                              game: _game,
-                              theme: theme,
-                              child: content,
+                        child: OnlineLobbyHost(
+                          lobby: _onlineLobby,
+                          onSessionReady: _openOnlineSession,
+                          child: CoinBalanceScope(
+                            coins: _game.coins,
+                            child: AnimalSpriteThemeScope(
+                              theme: _preferences.animalSpriteTheme,
+                              child: TutorialHost(
+                                game: _game,
+                                theme: theme,
+                                child: content,
+                              ),
                             ),
                           ),
                         ),

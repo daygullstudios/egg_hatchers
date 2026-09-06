@@ -51,6 +51,7 @@ class GameService extends ChangeNotifier {
   SaveService _saveService;
   final Random _random;
   String? _activeAccountId;
+  void Function(String? accountId)? onProgressSaved;
 
   PlayerState _state = GameData.startingPlayerState();
   Timer? _idleTimer;
@@ -542,12 +543,29 @@ class GameService extends ChangeNotifier {
   }
 
   Future<void> _saveQuietly() async {
+    final accountId = _activeAccountId;
     await _saveService.save(_state);
+    onProgressSaved?.call(accountId);
   }
 
   Future<void> save() async {
     _state = _state.copyWith(lastSavedTime: DateTime.now());
-    await _saveService.save(_state);
+    await _saveQuietly();
+  }
+
+  /// Replaces the active in-memory save after a revalidated cloud download.
+  /// Offline earnings are applied through the same loading path as startup.
+  Future<bool> replaceProgressFromCloud(
+    String accountId,
+    PlayerState state,
+  ) async {
+    if (_activeAccountId != accountId) return false;
+    _idleTimer?.cancel();
+    _loadState(state);
+    _startIdleTimer();
+    await _saveQuietly();
+    notifyListeners();
+    return true;
   }
 
   bool isEggUnlocked(Egg egg) {

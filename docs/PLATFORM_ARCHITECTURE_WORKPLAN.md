@@ -1,6 +1,6 @@
 # Egg Hatchers Platform Architecture Workplan
 
-Updated: 2026-09-04
+Updated: 2026-09-05
 
 ## Goal
 
@@ -125,13 +125,15 @@ are retained only for backward-compatible first-account migration.
 
 These keys must never be uploaded or trusted by a production backend.
 
-## Proposed protected cloud contract
+## Protected cloud contract
 
-- `players/<authUid>`: private account metadata, schema version, creation time,
-  provider summary, and active progress pointer.
-- `players/<authUid>/progress/current`: canonical progress content, monotonic
-  server revision, content fingerprint, client revision, server timestamp, and
-  last accepted operation ID.
+- `users/<authUid>/products/egg_hatchers`: the implemented private progress
+  document, containing canonical progress, a monotonic cloud revision, local
+  revision, SHA-256 content fingerprint, schema version, owner UID, and server
+  timestamp.
+- Future protected profile metadata can live separately from the product save;
+  authentication identity is not inferred from display names or local account
+  IDs.
 - `players/<authUid>/customEggs/<eggId>` and
   `players/<authUid>/customSprites/<animalId>`: player-created content with
   independent revisions so large sprites do not rewrite the core save.
@@ -197,9 +199,9 @@ new identity can overwrite another account without an explicit resolution.
 The isolated `egg-hatchers-dev` Firebase project now contains Web, Android, and
 iOS registrations for the existing development identifiers. Firebase Core is
 initialized fail-open on those three platforms; unsupported desktop targets and
-bootstrap failures continue in local-only mode. Authentication, Firestore,
-progress upload, provider linking, and account merging remain disabled at this
-checkpoint.
+bootstrap failures continue in local-only mode. Anonymous Authentication and
+Firestore progress sync are active in development; provider linking and account
+merging remain disabled at this checkpoint.
 
 The one-durable-device-guest boundary is now explicit. Device-owned slot
 metadata designates at most one local guest as eligible for a future anonymous
@@ -215,8 +217,8 @@ user. The Firebase UID is recorded in non-transferable device metadata; an
 unexpected missing or mismatched persisted identity fails closed instead of
 silently rebinding progress. Switching to a named local profile bypasses
 Firebase identity entirely. Anonymous identity remains labeled **Not
-protected** because Firestore progress synchronization and provider linking are
-still disabled. The Anonymous provider is enabled in the isolated
+protected** because its credential cannot yet be recovered after browser-data
+clearing or uninstall. The Anonymous provider is enabled in the isolated
 `egg-hatchers-dev` Firebase project; a live disposable identity create/delete
 smoke test passed on 2026-09-05.
 
@@ -231,6 +233,29 @@ smoke test passed on 2026-09-05.
 
 Exit gate: offline play, reconnect, two-device conflicts, corrupted local data,
 and interrupted writes are covered by automated and manual tests.
+
+The development implementation is now active. The `(default)` Firestore
+database is Standard edition in `nam5`, matching Railcade and Grids & Aces.
+Authenticated users may access only
+`users/<uid>/products/egg_hatchers`. Deployed rules require the exact schema,
+matching owner UID, server write time, a 64-character SHA-256 fingerprint, and
+monotonic one-step cloud revisions; deletion and cross-user access are denied.
+The rules have dedicated emulator coverage in `firestore-rules-tests`.
+
+`ProgressSyncService` keeps gameplay local-first and coalesces frequent saves
+onto a bounded cloud-write cadence. Server-only reads fail closed to `unknown`;
+they never authorize a destructive first upload. Confirmed empty cloud saves
+receive local progress, cloud-only saves restore locally, and known one-sided
+changes use the last acknowledged fingerprint/revision as ancestry. Divergence
+surfaces an explicit Settings choice between **Use Cloud** and **Keep Device**,
+with a revalidated read/transaction before either result is accepted. Settings
+also exposes pending, syncing, current, conflict, and retry-safe error states.
+
+This checkpoint protects the guest save against ordinary local corruption and
+keeps a server copy for the current anonymous credential. It intentionally does
+not claim cross-install recovery: Google/Apple provider linking is the next
+identity milestone that makes the same UID recoverable across installations
+and platforms.
 
 ### 4. Establish web delivery and platform policy
 

@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function ownsProgress(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function validProgress(uid, data) {
+      return data.keys().hasOnly([
+          'format',
+          'schemaVersion',
+          'ownerUid',
+          'cloudRevision',
+          'localRevision',
+          'savedAt',
+          'contentFingerprint',
+          'playerState'
+        ])
+        && data.format == 'egg_hatchers_cloud_progress'
+        && data.schemaVersion == 1
+        && data.ownerUid == uid
+        && data.cloudRevision is int
+        && data.cloudRevision > 0
+        && data.localRevision is int
+        && data.localRevision >= 0
+        && data.savedAt == request.time
+        && data.contentFingerprint is string
+        && data.contentFingerprint.matches('^[a-f0-9]{64}$')
+        && data.playerState is map;
+    }
+
+    match /users/{uid}/products/egg_hatchers {
+      allow read: if ownsProgress(uid);
+      allow create: if ownsProgress(uid)
+        && validProgress(uid, request.resource.data)
+        && request.resource.data.cloudRevision == 1;
+      allow update: if ownsProgress(uid)
+        && validProgress(uid, request.resource.data)
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.cloudRevision == resource.data.cloudRevision + 1;
+      allow delete: if false;
+    }
+  }
+}

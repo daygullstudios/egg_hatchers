@@ -1,1 +1,35 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"egg-hatchers-dev","appId":"1:81511294060:android:3df1ba1f385602cae82449","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"egg-hatchers-dev","configurations":{"android":"1:81511294060:android:3df1ba1f385602cae82449","ios":"1:81511294060:ios:29f88a51064c31c9e82449","web":"1:81511294060:web:408b697964b50bf7e82449"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "egg-hatchers-dev",
+          "appId": "1:81511294060:android:3df1ba1f385602cae82449",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "egg-hatchers-dev",
+          "configurations": {
+            "android": "1:81511294060:android:3df1ba1f385602cae82449",
+            "ios": "1:81511294060:ios:29f88a51064c31c9e82449",
+            "web": "1:81511294060:web:408b697964b50bf7e82449"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": false
+    }
+  }
+}

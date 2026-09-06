@@ -75,23 +75,42 @@ is safely claimed by the new guest slot.
 Phase 2 has started with an isolated `egg-hatchers-dev` Firebase project and
 registered Web, Android, and iOS development apps. Firebase Core initializes
 fail-open on those platforms, and anonymous Firebase Authentication is active
-for the designated device guest. Firestore progress, cloud writes, provider
-linking, and account merging are intentionally not active yet. The
+for the designated device guest. Provider linking and account merging are not
+active yet. The
 proven one-durable-device-guest boundary is now implemented as device-owned
 metadata: exactly one unambiguous guest may later receive an anonymous Firebase
 UID, named profiles are never inferred, replacement rotates the identity
 generation and clears the old binding, and imports/exports cannot transfer this
-metadata. Cloud writes remain disabled until the progress repository and
-conflict gates are ready.
+metadata. Cloud writes are enabled only for that authenticated guest and are
+guarded by the revision and conflict gates described below.
 
 The client-side anonymous-auth adapter is now implemented for that designated
 slot. It waits for persisted Firebase authentication to restore, creates a new
 anonymous user only when no binding exists, verifies stored UID continuity on
 later starts, and refuses to bind named profiles or mismatched identities.
-Anonymous identity is still shown as **Not protected** and no player progress is
-read from or written to Firebase. Anonymous sign-in is enabled in the isolated
-`egg-hatchers-dev` project, and a live disposable create/delete smoke test
-passed on 2026-09-05 without leaving the test identity behind.
+Anonymous identity is still shown as **Not protected** because clearing browser
+data or uninstalling the app can lose its unlinked credential. Anonymous
+sign-in is enabled in the isolated `egg-hatchers-dev` project, and a live
+disposable create/delete smoke test passed on 2026-09-05 without leaving the
+test identity behind.
+
+Offline-first progress sync is now active for the designated anonymous guest.
+The `(default)` Firestore database uses the same `nam5` multi-region and
+Standard edition as the two reference development projects. Each UID owns one
+revisioned document at `users/<uid>/products/egg_hatchers`; deployed Security
+Rules require authentication, exact ownership, a strict document shape,
+server timestamps, valid SHA-256 fingerprints, and one-step cloud revision
+increments. Deletes and cross-user access are denied.
+
+The client keeps local progress authoritative during play, reads Firestore from
+the server, and uploads on a bounded cadence. Unknown/offline reads never count
+as an empty cloud save. Known one-sided changes sync automatically; divergent
+device and cloud saves stop for an explicit **Use Cloud** or **Keep Device**
+choice in Settings. The last mutually confirmed fingerprint and cloud revision
+remain account-scoped device metadata. JSON export remains the user-controlled
+recovery path. Rules are covered by emulator tests; sync planning, repository
+decoding, continuous-save throttling, restore, and conflict behavior are
+covered by Flutter tests.
 
 ## Art rules
 

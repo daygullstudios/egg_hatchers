@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../data/realistic_animal_sprites.dart';
 import '../models/animal_sprite_theme.dart';
 import '../models/account_protection_state.dart';
+import '../models/progress_sync_state.dart';
 import '../models/background_theme.dart';
 import '../models/player_account.dart';
 import '../navigation/app_page_route.dart';
@@ -18,6 +19,7 @@ import '../utils/ui_sound.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/account_scope.dart';
 import '../widgets/account_protection_scope.dart';
+import '../widgets/progress_sync_scope.dart';
 import '../widgets/audio_settings_card.dart';
 import '../widgets/game_background.dart';
 import '../widgets/game_primary_navigation.dart';
@@ -268,6 +270,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final protection =
             AccountProtectionScope.maybeOf(context)?.state ??
             const AccountProtectionState.localOnly();
+        final progressSync = ProgressSyncScope.maybeOf(context);
+        final syncState =
+            progressSync?.state ?? const ProgressSyncState.unavailable();
         final audio = AudioScope.of(context);
 
         return ReturnToHatcheryPopScope(
@@ -326,6 +331,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             _AccountSettings(
                               account: account,
                               protection: protection,
+                              syncState: syncState,
+                              onKeepDevice: progressSync?.keepThisDevice,
+                              onUseCloud: progressSync?.useCloud,
                               theme: selected,
                               onSwitch: () => _switchAccount(context),
                               onDelete: () => _deleteAccount(context, account),
@@ -615,6 +623,9 @@ class _AccountSettings extends StatelessWidget {
   const _AccountSettings({
     required this.account,
     required this.protection,
+    required this.syncState,
+    required this.onKeepDevice,
+    required this.onUseCloud,
     required this.theme,
     required this.onSwitch,
     required this.onDelete,
@@ -622,6 +633,9 @@ class _AccountSettings extends StatelessWidget {
 
   final PlayerAccount account;
   final AccountProtectionState protection;
+  final ProgressSyncState syncState;
+  final VoidCallback? onKeepDevice;
+  final VoidCallback? onUseCloud;
   final BackgroundTheme theme;
   final VoidCallback onSwitch;
   final VoidCallback onDelete;
@@ -721,6 +735,87 @@ class _AccountSettings extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 8),
+        Container(
+          key: const ValueKey('settings-progress-sync-status'),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: theme.scaffoldColor.withValues(alpha: 0.34),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: theme.cardBorderColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    _syncIcon(syncState.status),
+                    size: 20,
+                    color: syncState.status == ProgressSyncStatus.synced
+                        ? Colors.greenAccent.shade400
+                        : theme.primaryColor,
+                  ),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          syncState.label,
+                          style: TextStyle(
+                            color: theme.cardTextPrimaryColor,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          syncState.message,
+                          style: TextStyle(
+                            color: theme.cardTextSecondaryColor,
+                            fontSize: 12,
+                            height: 1.25,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (syncState.hasConflict &&
+                  onKeepDevice != null &&
+                  onUseCloud != null) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        key: const ValueKey('settings-use-cloud-progress'),
+                        onPressed: onUseCloud,
+                        icon: const Icon(Icons.cloud_download_rounded),
+                        label: const Text('Use Cloud'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton.icon(
+                        key: const ValueKey('settings-keep-device-progress'),
+                        onPressed: onKeepDevice,
+                        icon: const Icon(Icons.phone_android_rounded),
+                        label: const Text('Keep Device'),
+                        style: GameTheme.filledButton(
+                          theme,
+                          color: theme.secondaryColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
         const SizedBox(height: 12),
         FilledButton.icon(
           key: const ValueKey('settings-switch-account-button'),
@@ -753,6 +848,15 @@ class _AccountSettings extends StatelessWidget {
       ],
     );
   }
+
+  static IconData _syncIcon(ProgressSyncStatus status) => switch (status) {
+    ProgressSyncStatus.unavailable => Icons.phone_android_rounded,
+    ProgressSyncStatus.pending => Icons.cloud_queue_rounded,
+    ProgressSyncStatus.syncing => Icons.sync_rounded,
+    ProgressSyncStatus.synced => Icons.cloud_done_rounded,
+    ProgressSyncStatus.conflict => Icons.compare_arrows_rounded,
+    ProgressSyncStatus.error => Icons.cloud_off_rounded,
+  };
 }
 
 class _SettingsAccordionSection extends StatelessWidget {

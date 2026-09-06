@@ -67,6 +67,11 @@ void main() {
     expect(find.text('Device only'), findsOneWidget);
     expect(find.text('Progress is saved only on this device.'), findsOneWidget);
     expect(
+      find.byKey(const ValueKey('settings-progress-sync-status')),
+      findsOneWidget,
+    );
+    expect(find.text('Device progress'), findsOneWidget);
+    expect(
       find.byKey(const ValueKey('settings-account-protection-status')),
       findsOneWidget,
     );
