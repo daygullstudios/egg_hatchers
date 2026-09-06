@@ -21,7 +21,15 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 205,
+      "line": 34,
+      "references": [
+        "egg-hatchers-playtest"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 215,
       "references": [
         "egghatchers.game"
       ],
@@ -29,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 232,
+      "line": 242,
       "references": [
         "egg_hatchers"
       ],
@@ -37,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 309,
+      "line": 319,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -45,7 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 327,
+      "line": 337,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -53,7 +61,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 334,
+      "line": 344,
       "references": [
         "egg_hatchers"
       ],

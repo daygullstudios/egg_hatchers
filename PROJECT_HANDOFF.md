@@ -28,7 +28,17 @@ include 320/390/430px widths, 320x360 short height, wide desktop, 200% text,
 48px reachable decisions, keyboard-safe cancellation, and mocked other-player,
 artwork and device-setting preservation. Public-draft build and 9 tests pass;
 the legacy-brand audit classifies 518 references with none unclassified.
-Protected deployment and live browser evidence follow after publish/read-back.
+Protected release: application commit `1f800c1` is pushed to `main`. Playtest
+3 tests, Wrangler 4.129.0 dry run and deploy pass in the required sequence;
+the reported custom-domain route remains
+`egg-hatchers-playtest.daygullstudios.com`. Independent deployment listing shows
+100% current version **`6192a8be-bc9c-41dc-b19f-6f5a0caa4065`** at
+`2026-09-06T20:35:40Z`. An unauthenticated request returns 302 to Cloudflare
+Access. Browser refresh shows the new local-removal control; the live dialog
+fits the portrait shell, says "this browser", and focuses Keep player. Keyboard
+cancellation returns to Settings with the player/progress still present.
+Live QA also surfaced a device/cloud progress choice; neither copy was chosen,
+imported, reset or removed. Recovery/conflict clarity remains the next priority.
 No real player was removed for QA. No new-domain route, provider, billing,
 credential or public-site publication is part of this patch.
 
