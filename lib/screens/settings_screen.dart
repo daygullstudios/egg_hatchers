@@ -24,6 +24,7 @@ import '../widgets/progress_sync_scope.dart';
 import '../widgets/audio_settings_card.dart';
 import '../widgets/game_background.dart';
 import '../widgets/game_primary_navigation.dart';
+import '../widgets/local_player_removal_dialog.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/retro_pixel_animal_sprite.dart';
 
@@ -98,31 +99,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     accounts.chooseAnotherAccount();
   }
 
-  Future<void> _deleteAccount(
+  Future<void> _removeLocalPlayer(
     BuildContext context,
     PlayerAccount account,
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete account?'),
-        content: Text(
-          'Delete ${account.displayName} and all progress saved for this account? This cannot be undone.',
-        ),
-        actions: [
-          TextButton.icon(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            icon: const Icon(Icons.close_rounded),
-            label: const Text('CANCEL'),
-          ),
-          FilledButton.icon(
-            key: const ValueKey('settings-confirm-delete-account'),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            icon: const Icon(Icons.delete_forever),
-            label: const Text('DELETE'),
-          ),
-        ],
-      ),
+      builder: (_) => LocalPlayerRemovalDialog(account: account),
     );
     if (confirmed != true || !context.mounted) return;
     final accounts = AccountScope.of(context);
@@ -363,7 +346,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   : null,
                               theme: selected,
                               onSwitch: () => _switchAccount(context),
-                              onDelete: () => _deleteAccount(context, account),
+                              onRemove: () =>
+                                  _removeLocalPlayer(context, account),
                             ),
                             const SizedBox(height: 14),
                             Divider(color: selected.cardBorderColor),
@@ -656,7 +640,7 @@ class _AccountSettings extends StatelessWidget {
     required this.onProtectWithGoogle,
     required this.theme,
     required this.onSwitch,
-    required this.onDelete,
+    required this.onRemove,
   });
 
   final PlayerAccount account;
@@ -667,7 +651,7 @@ class _AccountSettings extends StatelessWidget {
   final VoidCallback? onProtectWithGoogle;
   final BackgroundTheme theme;
   final VoidCallback onSwitch;
-  final VoidCallback onDelete;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -891,16 +875,21 @@ class _AccountSettings extends StatelessWidget {
         const SizedBox(height: 8),
         OutlinedButton.icon(
           key: const ValueKey('settings-delete-account-button'),
-          onPressed: onDelete,
-          icon: const Icon(Icons.delete_outline),
+          onPressed: onRemove,
+          icon: const Icon(Icons.person_remove_outlined),
           label: const Text(
-            'Delete Account',
+            'Remove local player',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.redAccent,
-            minimumSize: const Size.fromHeight(46),
+            foregroundColor: Theme.of(context).colorScheme.error,
+            minimumSize: const Size.fromHeight(48),
           ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Local removal only. Cloud data is not deleted.',
+          style: TextStyle(color: theme.cardTextSecondaryColor),
         ),
       ],
     );

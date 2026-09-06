@@ -86,9 +86,10 @@ policy review remains unfinished, not that the owner's audience is unknown.
   Exports deliberately exclude device-authentication bindings.
 - `lib/services/account_service.dart`, `lib/services/account_storage.dart`,
   `lib/screens/settings_screen.dart` and `firestore.rules` establish that the
-  current Delete Account action is local removal, not Firebase Auth/Firestore
-  erasure. Full trusted cloud deletion and truthful in-app labeling remain
-  required account-release work. Do not delete a real player to test this.
+  Remove local player action is local removal, not Firebase Auth/Firestore
+  erasure. Its former misleading Delete Account label is corrected, with scope,
+  backup and recovery warnings. Full trusted cloud deletion remains required
+  account-release work. Do not delete a real player to test this.
 - `lib/services/online_lobby_service.dart` and `tool/multiplayer_server.dart`
   establish profile/presence/session sharing for available online tests.
   Custom-sprite copy and storage explicitly say artwork is device-local.

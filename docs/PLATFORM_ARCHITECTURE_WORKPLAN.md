@@ -5,7 +5,7 @@ The 2026-09-06 product rebrand is recorded in `NESTARIUM_MIGRATION.md`.
 unrouted until provider branding and origin-recovery acceptance. Technical
 save/project/bundle identities below remain compatibility contracts.
 
-Updated: 2026-09-05
+Updated: 2026-09-06
 
 ## Goal
 
@@ -15,7 +15,68 @@ for account linking, offline-first saves, web delivery, diagnostics, and mobile
 web policy. Use Grids & Aces as the model for durable multiplayer identity,
 sessions, reconnects, transactions, and preset-only player communication.
 
-## Design authority
+## Standing priority: usability and player trust
+
+The owner explicitly identifies usability as a major personal and project pain
+point. It is a first-class roadmap workstream and release criterion, not polish
+deferred until after features. Confirmed intended players include ages 8–12,
+teens and adults; advanced child testers are not representative acceptance.
+Keep the approachable core loop and gradually introduce deeper systems.
+
+Every touched player flow must make clear: where am I, what can I do next,
+what will it cost/change, can I cancel, and where is my progress saved?
+Automated passes are necessary but are not proof of player comprehension.
+
+### Next priorities, in order
+
+1. **Save/account trust:** first patch corrects the misleading local Delete
+   Account action to Remove local player with exact scope, backup and
+   guest-recovery warnings. Follow with an audit of account startup, cloud
+   recovery, import/conflict
+   comparisons and trusted cloud deletion. Do not erase real players for QA.
+2. **Child-compatible account release:** use the confirmed family audience to
+   review startup collection and SDK eligibility before enabling provider links.
+   Design minimal age handling, parent access/consent where needed, retention,
+   deletion and a complete non-Google experience. No automatic Crashlytics,
+   analytics, public profiles or social release before that review. See
+   `PUBLIC_SITE.md`; owner intent is recorded, legal classification remains open.
+3. **First-session comprehension:** walk through first hatch, income, quests,
+   Collection, upgrades, fusion and rebirth. Keep tutorial steps continuous and
+   tied to visible controls; introduce unfamiliar terms at their point of use.
+   Verify replay, exit and resume, not just first launch.
+4. **Whole-app navigation and accessibility:** audit remaining long pages,
+   search/filter discoverability, notification routes, focus, keyboard access,
+   text scaling and empty/locked/error states. Preserve the shared portrait
+   shell, coin strip, navigation selection and per-destination scroll position.
+5. **Consequential actions:** preview what fusion, rebirth, imports, trades and
+   resets consume, preserve and may lose. Explain probabilities plainly; do
+   not rely on color, icons or hover-only help. Review streak/time pressure and
+   any future monetization for the intended ages before adding it.
+6. **Finish external rebrand:** approve truthful public-site policies/support,
+   complete provider/identity/recovery acceptance, then coordinate the protected
+   hostname cutover. Display-name mail polish follows data safety. Keep store
+   actions at the authorized release boundary and legacy save/infra IDs intact.
+7. **Durable multiplayer:** proceed after identity, child-safety and progress
+   boundaries are sound. Retain Bot Arena and preset-only communication.
+
+### Usability acceptance for each relevant implementation
+
+- Test 320px/390px/430px widths, short-height windows and the wide-desktop
+  portrait surround; include normal and 200% text. Do not shrink text to hide
+  overflows. Long dialog content must scroll while decisions remain reachable.
+- Use at least 48 logical-pixel action targets for newly touched controls,
+  visible keyboard focus, readable labels, and a safe cancel path for loss.
+- Check that the player can reach the task without traversing an entire catalog
+  and can return without losing navigation/scroll state.
+- For destructive/account changes, test cancel, exact target/scope, other-player
+  preservation and truthful recovery claims using disposable mocked data.
+- Record automated versus browser/device versus human-comprehension evidence
+  separately. Family usability testing needs deliberate parent-approved setup;
+  this roadmap does not authorize recruiting or collecting child data.
+- Deploy completed verified user-facing work to the existing protected
+  playtest, then verify the live control without performing a destructive action.
+
+## Architecture reference authority
 
 Nestarium is the migration source and gameplay sandbox, not the reference
 architecture. Its existing behavior is authoritative only where compatibility
@@ -28,7 +89,7 @@ or game-specific product rules require preservation. For new systems:
   preferences, guest-slot handoff, multiplayer lifecycle, reconnects,
   transactions, player codes, and preset communication.
 - When both have a relevant implementation, choose the safer and more mature
-  behavior rather than reproducing Nestarium' current structure.
+  behavior rather than reproducing Nestarium's current structure.
 - Adapt concepts and contracts to Nestarium; do not blindly copy project
   branding, game-specific fields, or unnecessary complexity.
 
@@ -171,7 +232,8 @@ These keys must never be uploaded or trusted by a production backend.
 - Cloudflare serves the web build and can protect early playtests with Access.
 - Firebase Authentication supplies guest/anonymous identity and Google/Apple
   linking. Firestore stores durable player data; Functions enforce sensitive
-  mutations. App Check and Crashlytics are enabled before public testing.
+  mutations. App Check, diagnostics and any Crashlytics adoption require the
+  mixed-audience data/SDK review before public testing; they are not auto-enabled.
 - Firestore is the durable system of record, not a high-frequency game loop.
   The live battle transport will be selected after measuring the current
   protocol. Cloudflare Durable Objects with WebSockets are the leading option
@@ -341,7 +403,7 @@ phases can ship:
 - Cloudflare zone/project access, DNS choice, and Access policy decisions
 - Final public product name and domains before production-facing identifiers
 
-## Immediate implementation sequence
+## Original foundation sequence (historical; use priorities above for next work)
 
 1. Land the versioned local progress envelope and migration tests.
 2. Inventory all SharedPreferences keys and classify each by ownership.

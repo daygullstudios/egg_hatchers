@@ -5,6 +5,7 @@ import 'package:egg_hatchers/services/audio_service.dart';
 import 'package:egg_hatchers/services/device_guest_slot_store.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/preferences_service.dart';
+import 'package:egg_hatchers/services/save_service.dart';
 import 'package:egg_hatchers/widgets/account_scope.dart';
 import 'package:egg_hatchers/widgets/account_protection_scope.dart';
 import 'package:egg_hatchers/widgets/audio_scope.dart';
@@ -14,6 +15,99 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  testWidgets('local removal cancels safely and preserves other players', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+    final accounts = AccountService();
+    final game = GameService();
+    final preferences = PreferencesService();
+    final audio = AudioService();
+    addTearDown(accounts.dispose);
+    addTearDown(preferences.dispose);
+    await accounts.initialize();
+    final otherPlayer = accounts.account!;
+    await game.initialize(accountId: otherPlayer.id);
+    game.setCoins(777);
+    await game.save();
+    await preferences.initialize();
+    await accounts.createAccount(
+      displayName: 'Remove This Player',
+      username: 'remove_me',
+      avatarColor: AccountService.avatarColors.first,
+    );
+    final target = accounts.account!;
+    await game.switchAccount(target.id);
+    game.setCoins(5678);
+    await game.save();
+    final prefs = await SharedPreferences.getInstance();
+    final targetArt = 'customSprite.account.${target.id}.chicken';
+    final otherArt = 'customSprite.account.${otherPlayer.id}.chicken';
+    await prefs.setString(targetArt, 'target-art');
+    await prefs.setString(otherArt, 'other-art');
+    await preferences.setHapticsEnabled(false);
+
+    await tester.pumpWidget(
+      AccountScope(
+        accounts: accounts,
+        child: AudioScope(
+          audio: audio,
+          child: MaterialApp(
+            home: SettingsScreen(preferences: preferences, game: game),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settings-panel-account')));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete Account'), findsNothing);
+    expect(find.text('Remove local player'), findsOneWidget);
+    final remove = find.byKey(const ValueKey('settings-delete-account-button'));
+    await tester.ensureVisible(remove);
+    await tester.tap(remove);
+    await tester.pumpAndSettle();
+    expect(find.text('Remove local player?'), findsOneWidget);
+    expect(find.text('Remove This Player'), findsNWidgets(2));
+    expect(
+      find.text('Cloud data and sign-in accounts are not deleted.'),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('settings-cancel-remove-local-player')),
+    );
+    await tester.pumpAndSettle();
+    expect(accounts.account?.id, target.id);
+    expect((await SaveService(accountId: target.id).load())?.coins, 5678);
+    expect(prefs.getString(targetArt), 'target-art');
+
+    await tester.ensureVisible(remove);
+    await tester.tap(remove);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('settings-confirm-delete-account')),
+    );
+    await tester.pumpAndSettle();
+    expect(accounts.accounts.any((a) => a.id == target.id), isFalse);
+    expect(await SaveService(accountId: target.id).load(), isNull);
+    expect(prefs.containsKey(targetArt), isFalse);
+    expect(accounts.accounts.single.id, otherPlayer.id);
+    expect((await SaveService(accountId: otherPlayer.id).load())?.coins, 777);
+    expect(prefs.getString(otherArt), 'other-art');
+    final restoredPreferences = PreferencesService();
+    await restoredPreferences.initialize();
+    expect(restoredPreferences.hapticsEnabled, isFalse);
+    restoredPreferences.dispose();
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    game.dispose();
+    audio.dispose();
+  });
+
   testWidgets('settings shows and switches the active account', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;

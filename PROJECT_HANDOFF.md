@@ -2,6 +2,43 @@
 
 Updated: 2026-09-06
 
+## Usability and player trust — current implementation checkpoint
+
+Owner explicitly made usability a major continuing priority. The ordered
+workstream and per-change acceptance criteria are now near the top of
+`docs/PLATFORM_ARCHITECTURE_WORKPLAN.md`: save/account trust, child-compatible
+account release, first-session comprehension, whole-app navigation/accessibility,
+consequential-action clarity, external rebrand gates, then durable multiplayer.
+Usability is a release criterion, not deferred polish. Human comprehension and
+family/device acceptance must be recorded separately from automated passes.
+
+First bounded implementation replaces the misleading **Delete Account** control
+with **Remove local player**. Its confirmation identifies the player, explains
+local progress/custom-content removal and preserved other players/settings,
+explicitly excludes cloud/sign-in deletion, warns guests against assuming cloud
+recovery, and points to Export Save before removal. The scrollable body retains
+reachable 48px decisions, with keyboard focus initially on **Keep player**.
+Underlying storage, Firebase identity/data and deletion APIs are unchanged;
+this is not implementation of full cloud-account erasure. The two unpublished
+support/data-page drafts use the same corrected control name.
+
+Validation: Flutter 3.47.2 analysis has no issues, all 518 Flutter tests pass,
+and `flutter build web --release` succeeds. Eleven focused dialog/Settings tests
+include 320/390/430px widths, 320x360 short height, wide desktop, 200% text,
+48px reachable decisions, keyboard-safe cancellation, and mocked other-player,
+artwork and device-setting preservation. Public-draft build and 9 tests pass;
+the legacy-brand audit classifies 518 references with none unclassified.
+Protected deployment and live browser evidence follow after publish/read-back.
+No real player was removed for QA. No new-domain route, provider, billing,
+credential or public-site publication is part of this patch.
+
+**Rebrand status:** owned game branding/display names/art are implemented;
+full external rollout is not complete. Public-site policy/publication,
+child-compatible identity/recovery, remaining third-party/native acceptance and
+the coordinated protected new-hostname cutover are open. Legacy save/package,
+bundle, Firebase and current Worker/origin IDs intentionally preserve continuity;
+see `docs/NESTARIUM_MIGRATION.md` and the verified legacy-reference ledger.
+
 ## Support identity readiness — latest checkpoint
 
 After the rebrand release, the owner authorized the G&A/Railcade support-account
@@ -118,10 +155,10 @@ CSP/no-index headers. CI now includes the same focused tests. This does not
 claim desktop/mobile visual acceptance or publication. No game source, build,
 deployment, native ID, Firebase data or billing changed.
 
-Source review found that the current in-app Delete Account action removes local
-player data only, not Firebase Auth or Firestore records. The support/data-page
-drafts state this explicitly. Trusted cloud deletion and truthful in-app labels
-must be completed before the account release; do not inherit the siblings'
+Source review found that the former in-app Delete Account action removes local
+player data only, not Firebase Auth or Firestore records. Its label is now
+Remove local player, with accurate scope warnings and matching support/data-page
+drafts. Trusted cloud deletion must be completed before the account release; do not inherit the siblings'
 completed deletion acceptance. Audience intent is now recorded; classification,
 child-privacy implementation and policy approval remain open.
 
