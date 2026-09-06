@@ -90,16 +90,19 @@ class ProgressSyncService extends ChangeNotifier {
 
   void localProgressSaved(String? accountId) {
     if (!_isConfigured || accountId != _accountId) return;
+    if (_syncing) {
+      _rerunRequested = true;
+      return;
+    }
+    // Income keeps saving locally while a player considers divergent saves.
+    // Never hide that decision or restart automatic cloud work behind it.
+    if (_conflict != null) return;
     _setState(
       const ProgressSyncState(
         status: ProgressSyncStatus.pending,
         message: 'Saved on this device. Cloud sync is pending…',
       ),
     );
-    if (_syncing) {
-      _rerunRequested = true;
-      return;
-    }
     if (!(_timer?.isActive ?? false)) {
       _timer = Timer(debounce, synchronize);
     }
@@ -111,6 +114,7 @@ class ProgressSyncService extends ChangeNotifier {
       _rerunRequested = true;
       return;
     }
+    if (_conflict != null) return;
     _timer?.cancel();
     final revision = _selectionRevision;
     _syncing = true;
@@ -136,11 +140,7 @@ class ProgressSyncService extends ChangeNotifier {
         _scheduleRetry();
       }
     } finally {
-      _syncing = false;
-      if (_rerunRequested && _isConfigured) {
-        _rerunRequested = false;
-        _timer = Timer(debounce, synchronize);
-      }
+      _finishSynchronization();
     }
   }
 
@@ -163,18 +163,25 @@ class ProgressSyncService extends ChangeNotifier {
         local: fresh.local!,
         expectedCloudRevision: fresh.cloud.snapshot?.cloudRevision,
       );
+      if (revision != _selectionRevision) return;
       await _record(written.contentFingerprint, written.cloudRevision);
+      if (revision != _selectionRevision) return;
       _conflict = null;
       _setSynced();
     } on CloudProgressWriteConflict {
+      if (revision != _selectionRevision) return;
       _setConflict(
         'Cloud progress changed again. Review your choice once more.',
       );
     } catch (error, stackTrace) {
       debugPrint('Keep-device resolution failed: $error\n$stackTrace');
-      _setError();
+      if (revision != _selectionRevision) return;
+      _setConflict(
+        'Could not finish your choice. Progress is safe on this device. '
+        'Check your connection, then choose again.',
+      );
     } finally {
-      _finishManualResolution(revision);
+      _finishSynchronization();
     }
   }
 
@@ -191,10 +198,14 @@ class ProgressSyncService extends ChangeNotifier {
       if (read.state != CloudProgressState.present || remote == null) {
         throw StateError('Cloud progress is unavailable.');
       }
-      if (!await _applyCloud!(remote.state)) return;
+      final restored = await _applyCloud!(remote.state);
+      if (revision != _selectionRevision) return;
+      if (!restored) throw StateError('Cloud restore was not applied.');
       final applied = await _local!.loadSnapshot();
+      if (revision != _selectionRevision) return;
       if (applied == null) throw StateError('Cloud restore was not saved.');
       await _record(remote.contentFingerprint, remote.cloudRevision);
+      if (revision != _selectionRevision) return;
       _conflict = null;
       if (applied.contentFingerprint == remote.contentFingerprint) {
         _setSynced();
@@ -203,16 +214,23 @@ class ProgressSyncService extends ChangeNotifier {
       }
     } catch (error, stackTrace) {
       debugPrint('Cloud restore failed: $error\n$stackTrace');
-      _setError();
+      if (revision != _selectionRevision) return;
+      _setConflict(
+        'Could not finish your choice. Progress is safe on this device. '
+        'Check your connection, then choose again.',
+      );
     } finally {
-      _finishManualResolution(revision);
+      _finishSynchronization();
     }
   }
 
-  void _finishManualResolution(int revision) {
+  void _finishSynchronization() {
     _syncing = false;
-    if (_rerunRequested && revision == _selectionRevision && _isConfigured) {
-      _rerunRequested = false;
+    final rerun = _rerunRequested;
+    _rerunRequested = false;
+    // A newly selected account may need the queued pass; an unresolved choice
+    // must instead wait for explicit resolution, including after a failed try.
+    if (rerun && _isConfigured && _conflict == null) {
       _timer = Timer(debounce, synchronize);
     }
   }
@@ -327,18 +345,12 @@ class ProgressSyncService extends ChangeNotifier {
     ProgressSyncState(status: ProgressSyncStatus.synced, message: message),
   );
 
-  void _setConflict(String message) => _setState(
-    ProgressSyncState(status: ProgressSyncStatus.conflict, message: message),
-  );
-
-  void _setError() {
+  void _setConflict(String message) {
+    _timer?.cancel();
+    _rerunRequested = false;
     _setState(
-      const ProgressSyncState(
-        status: ProgressSyncStatus.error,
-        message: 'Progress is safe on this device. Cloud sync will retry.',
-      ),
+      ProgressSyncState(status: ProgressSyncStatus.conflict, message: message),
     );
-    _scheduleRetry();
   }
 
   void _setState(ProgressSyncState value) {

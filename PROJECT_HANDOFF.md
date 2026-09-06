@@ -2,6 +2,35 @@
 
 Updated: 2026-09-06
 
+## Stable cloud-save choice — current implementation checkpoint
+
+The owner reported repeated **Cloud sync pending → Choose progress** flicker.
+Verified cause: the one-second idle-income save callback overwrote the conflict
+state and queued another cloud comparison, which rediscovered the same choice.
+A regression test reproduced that full transition loop before the fix.
+
+Unresolved conflicts now suspend automatic comparisons/uploads/downloads, cancel
+queued retries and keep the choice visible. Income and local persistence continue;
+neither save wins automatically. An explicit choice reads fresh progress and
+resumes normal sync only after success. Failed/offline/revision-raced choices
+remain actionable instead of entering another retry loop. Player selection clears
+the old decision; in-flight manual completions cannot update the newly selected
+player's sync state/checkpoint, and its queued initial sync still runs.
+
+Flutter 3.47.2 analysis has no issues; all 528 tests pass, including 10 new
+regressions and 29 focused sync/planner/assessment checks. Coverage includes
+continued local income saves, a retry queued before conflict detection, both
+explicit choices, newer cloud/local snapshots, offline failure, revision races,
+declined restore and player switches during either manual choice. Mocked data
+only; no real cloud/device save has been selected, replaced or deleted for QA.
+Release build, protected deployment and sustained live-screen evidence follow
+after the required release sequence. No schema, identity, Firebase rules,
+provider, new-domain route or credential change is part of this patch.
+
+Next remains save-comparison clarity and recovery/account trust. The stable
+buttons do not yet constitute an informative side-by-side comparison; do not
+choose a real player's save merely to clear this decision during testing.
+
 ## Usability and player trust — current implementation checkpoint
 
 Owner explicitly made usability a major continuing priority. The ordered

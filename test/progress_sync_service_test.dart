@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:egg_hatchers/data/game_data.dart';
 import 'package:egg_hatchers/models/cloud_progress_read.dart';
 import 'package:egg_hatchers/models/player_state.dart';
@@ -10,6 +12,293 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  testWidgets('autosaves and queued retries cannot dismiss a save choice', (
+    tester,
+  ) async {
+    final local = SaveService(accountId: 'guest_local');
+    await local.save(GameData.startingPlayerState().copyWith(coins: 900));
+    final gate = Completer<void>();
+    final cloud = _CloudRepository(
+      snapshot: _snapshot(
+        GameData.startingPlayerState().copyWith(coins: 1200),
+        4,
+      ),
+    )..readGate = gate;
+    final service = ProgressSyncService();
+    var restores = 0;
+    final selection = service.selectAccount(
+      accountId: 'guest_local',
+      protectedPlayerId: 'firebase-guest',
+      cloud: cloud,
+      applyCloud: (_) async {
+        restores++;
+        return true;
+      },
+    );
+    await tester.pump();
+    expect(cloud.reads, 1);
+    // An idle save during the first comparison queues another pass today.
+    service.localProgressSaved('guest_local');
+    gate.complete();
+    await selection;
+    expect(service.state.status, ProgressSyncStatus.conflict);
+    final transitions = <ProgressSyncStatus>[];
+    service.addListener(() => transitions.add(service.state.status));
+
+    for (var tick = 1; tick <= 20; tick++) {
+      await local.save(
+        GameData.startingPlayerState().copyWith(coins: 900 + tick),
+      );
+      service.localProgressSaved('guest_local');
+      await tester.pump(const Duration(seconds: 1));
+      await service.synchronize();
+      expect(service.state.status, ProgressSyncStatus.conflict);
+    }
+    expect(transitions, isEmpty);
+    expect(cloud.reads, 1);
+    expect(cloud.writes, 0);
+    expect(restores, 0);
+    expect((await local.load())?.coins, 920);
+    expect(cloud.snapshot?.state.coins, 1200);
+    service.dispose();
+  });
+
+  for (final keepDevice in [true, false]) {
+    testWidgets(
+      'player switch during ${keepDevice ? 'device' : 'cloud'} choice is isolated',
+      (tester) async {
+        final local = SaveService(accountId: 'guest_local');
+        await local.save(GameData.startingPlayerState().copyWith(coins: 900));
+        final cloud = _CloudRepository(
+          snapshot: _snapshot(
+            GameData.startingPlayerState().copyWith(coins: 1200),
+            4,
+          ),
+        );
+        final service = ProgressSyncService();
+        var restores = 0;
+        await service.selectAccount(
+          accountId: 'guest_local',
+          protectedPlayerId: 'firebase-guest',
+          cloud: cloud,
+          applyCloud: (_) async {
+            restores++;
+            return true;
+          },
+        );
+        final gate = Completer<void>();
+        cloud.readGate = gate;
+        final resolving = keepDevice
+            ? service.keepThisDevice()
+            : service.useCloud();
+        await tester.pump();
+        expect(cloud.reads, 2);
+        service.localProgressSaved('guest_local');
+        expect(service.state.status, ProgressSyncStatus.syncing);
+        final otherCloud = _CloudRepository();
+        await service.selectAccount(
+          accountId: 'other_player',
+          protectedPlayerId: 'other-identity',
+          cloud: otherCloud,
+          applyCloud: (_) async {
+            restores++;
+            return true;
+          },
+        );
+        gate.complete();
+        await resolving;
+        await tester.pump(const Duration(seconds: 3));
+        expect(service.state.status, ProgressSyncStatus.synced);
+        expect(otherCloud.reads, 1);
+        expect(cloud.writes, 0);
+        expect(otherCloud.writes, 0);
+        expect(restores, 0);
+        expect(
+          await ProgressSyncCheckpointStore(accountId: 'other_player').read(),
+          isNull,
+        );
+        service.dispose();
+      },
+    );
+
+    testWidgets(
+      'explicit ${keepDevice ? 'device' : 'cloud'} choice resumes sync',
+      (tester) async {
+        final local = SaveService(accountId: 'guest_local');
+        await local.save(GameData.startingPlayerState().copyWith(coins: 900));
+        final cloud = _CloudRepository(
+          snapshot: _snapshot(
+            GameData.startingPlayerState().copyWith(coins: 1200),
+            4,
+          ),
+        );
+        final service = ProgressSyncService();
+        await service.selectAccount(
+          accountId: 'guest_local',
+          protectedPlayerId: 'firebase-guest',
+          cloud: cloud,
+          applyCloud: (state) async {
+            await local.save(state);
+            service.localProgressSaved('guest_local');
+            return true;
+          },
+        );
+        await local.save(GameData.startingPlayerState().copyWith(coins: 950));
+        service.localProgressSaved('guest_local');
+        cloud.snapshot = _snapshot(
+          GameData.startingPlayerState().copyWith(coins: 1300),
+          5,
+        );
+        if (keepDevice) {
+          await service.keepThisDevice();
+        } else {
+          await service.useCloud();
+        }
+        expect(service.state.status, ProgressSyncStatus.synced);
+        expect((await local.load())?.coins, keepDevice ? 950 : 1300);
+        expect(cloud.snapshot?.state.coins, keepDevice ? 950 : 1300);
+
+        await local.save(GameData.startingPlayerState().copyWith(coins: 1400));
+        service.localProgressSaved('guest_local');
+        await tester.pump(const Duration(seconds: 3));
+        expect(service.state.status, ProgressSyncStatus.synced);
+        expect(cloud.snapshot?.state.coins, 1400);
+        service.dispose();
+      },
+    );
+
+    testWidgets(
+      'failed ${keepDevice ? 'device' : 'cloud'} choice stays actionable',
+      (tester) async {
+        final local = SaveService(accountId: 'guest_local');
+        await local.save(GameData.startingPlayerState().copyWith(coins: 900));
+        final cloud = _CloudRepository(
+          snapshot: _snapshot(
+            GameData.startingPlayerState().copyWith(coins: 1200),
+            4,
+          ),
+        );
+        final service = ProgressSyncService();
+        await service.selectAccount(
+          accountId: 'guest_local',
+          protectedPlayerId: 'firebase-guest',
+          cloud: cloud,
+          applyCloud: (_) async => true,
+        );
+        cloud.unknown = true;
+        if (keepDevice) {
+          await service.keepThisDevice();
+        } else {
+          await service.useCloud();
+        }
+        expect(service.state.status, ProgressSyncStatus.conflict);
+        final reads = cloud.reads;
+        service.localProgressSaved('guest_local');
+        await tester.pump(const Duration(seconds: 30));
+        expect(service.state.status, ProgressSyncStatus.conflict);
+        expect(cloud.reads, reads);
+        expect(cloud.writes, 0);
+        expect((await local.load())?.coins, 900);
+        expect(cloud.snapshot?.state.coins, 1200);
+        service.dispose();
+      },
+    );
+  }
+
+  test(
+    'selecting another player clears only the previous save choice',
+    () async {
+      final local = SaveService(accountId: 'guest_local');
+      await local.save(GameData.startingPlayerState().copyWith(coins: 900));
+      final cloud = _CloudRepository(
+        snapshot: _snapshot(
+          GameData.startingPlayerState().copyWith(coins: 1200),
+          4,
+        ),
+      );
+      final service = ProgressSyncService();
+      addTearDown(service.dispose);
+      await service.selectAccount(
+        accountId: 'guest_local',
+        protectedPlayerId: 'firebase-guest',
+        cloud: cloud,
+        applyCloud: (_) async => true,
+      );
+      expect(service.state.hasConflict, isTrue);
+      final otherCloud = _CloudRepository();
+      await service.selectAccount(
+        accountId: 'other_player',
+        protectedPlayerId: 'other-identity',
+        cloud: otherCloud,
+        applyCloud: (_) async => true,
+      );
+      expect(service.state.status, ProgressSyncStatus.synced);
+      service.localProgressSaved('guest_local');
+      expect(service.state.status, ProgressSyncStatus.synced);
+      expect(cloud.writes, 0);
+      expect(otherCloud.reads, 1);
+    },
+  );
+
+  testWidgets(
+    'a cloud revision race keeps the choice without automatic retries',
+    (tester) async {
+      final local = SaveService(accountId: 'guest_local');
+      await local.save(GameData.startingPlayerState().copyWith(coins: 900));
+      final cloud = _CloudRepository(
+        snapshot: _snapshot(
+          GameData.startingPlayerState().copyWith(coins: 1200),
+          4,
+        ),
+      )..rejectWrite = true;
+      final service = ProgressSyncService();
+      await service.selectAccount(
+        accountId: 'guest_local',
+        protectedPlayerId: 'firebase-guest',
+        cloud: cloud,
+        applyCloud: (_) async => true,
+      );
+      await service.keepThisDevice();
+      expect(service.state.hasConflict, isTrue);
+      expect(service.state.message, contains('changed again'));
+      final reads = cloud.reads;
+      service.localProgressSaved('guest_local');
+      await tester.pump(const Duration(seconds: 30));
+      expect(cloud.reads, reads);
+      expect(cloud.writes, 0);
+      expect((await local.load())?.coins, 900);
+      expect(cloud.snapshot?.state.coins, 1200);
+      service.dispose();
+    },
+  );
+
+  test(
+    'a declined cloud apply returns to the choice instead of staying busy',
+    () async {
+      final local = SaveService(accountId: 'guest_local');
+      await local.save(GameData.startingPlayerState().copyWith(coins: 900));
+      final cloud = _CloudRepository(
+        snapshot: _snapshot(
+          GameData.startingPlayerState().copyWith(coins: 1200),
+          4,
+        ),
+      );
+      final service = ProgressSyncService();
+      addTearDown(service.dispose);
+      await service.selectAccount(
+        accountId: 'guest_local',
+        protectedPlayerId: 'firebase-guest',
+        cloud: cloud,
+        applyCloud: (_) async => false,
+      );
+      await service.useCloud();
+      expect(service.state.hasConflict, isTrue);
+      expect(service.state.message, contains('choose again'));
+      expect((await local.load())?.coins, 900);
+      expect(cloud.writes, 0);
+    },
+  );
 
   test(
     'confirmed empty cloud uploads local progress and records ancestry',
@@ -154,11 +443,16 @@ final class _CloudRepository implements CloudProgressRepository {
   _CloudRepository({this.snapshot, this.unknown = false});
 
   CloudProgressSnapshot? snapshot;
-  final bool unknown;
+  bool unknown;
+  Completer<void>? readGate;
+  var reads = 0;
+  var rejectWrite = false;
   var writes = 0;
 
   @override
   Future<CloudProgressRead> read(String protectedPlayerId) async {
+    reads += 1;
+    await readGate?.future;
     if (unknown) return const CloudProgressRead.unknown();
     final value = snapshot;
     return value == null
@@ -172,7 +466,7 @@ final class _CloudRepository implements CloudProgressRepository {
     required ProgressSaveSnapshot local,
     required int? expectedCloudRevision,
   }) async {
-    if (snapshot?.cloudRevision != expectedCloudRevision) {
+    if (rejectWrite || snapshot?.cloudRevision != expectedCloudRevision) {
       throw const CloudProgressWriteConflict();
     }
     writes += 1;
