@@ -4,8 +4,11 @@ Updated: 2026-09-06
 
 ## Support identity readiness — latest checkpoint
 
-After the rebrand release, the owner asked to proceed. The safe email foundation
-is configured using the studio's existing model; no new account was created.
+After the rebrand release, the owner authorized the G&A/Railcade support-account
+model, explicitly lifting the earlier no-new-third-party-accounts restriction.
+Owner-controlled credentials/recovery and action-time access approvals remain.
+The separate gameplay rule that new player accounts must not overwrite older
+progress is unchanged. No Google account has been completed at this checkpoint.
 
 - **Verified:** `support@playnestarium.com` is an enabled exact forwarding rule
   to the same already verified company inbox. Catch-all remains disabled/drop.
@@ -15,20 +18,38 @@ is configured using the studio's existing model; no new account was created.
   is Configured and API DNS status is ready with no errors. Eleven mail-only
   MX/TXT records now cover receiving, bounce routing, SPF, DKIM, and DMARC.
   No new subscription, sending credential, mailbox, or game/web route was added.
-- **Open:** end-to-end delivery, Gmail label, and Nestarium Thunderbird
-  From/Reply-To/Sent-copy acceptance. An owner-only sending API test was rejected
+- **Verified:** Thunderbird now lists **Nestarium Support** with matching
+  `support@playnestarium.com` From/Reply-To. It reuses the existing Cloudflare
+  family SMTP selection and company Sent/Drafts folders. All eight earlier
+  identities (seven roles plus original Gmail) and studio hello default remain.
+  No SMTP credential was read, replaced, or created.
+- **Open:** end-to-end delivery, Gmail label, actual reply identity selection,
+  and sent-message copy acceptance. An owner-only sending API test was rejected
   by connector authentication before sending; no test message is claimed sent
   or delivered. Do not read/recreate the owner's existing SMTP credential.
 - **Verified:** the existing project's Google Auth Platform Branding page says
   **not configured yet**. Google provider and its client UI release flag remain
   off. No IAM grant, consent publication, or OAuth client was created/changed.
-- **Owner decision required:** permit a Google identity using the existing
-  `support@playnestarium.com` email (not a new Gmail mailbox), or choose a
-  different eligible support identity. The earlier prohibition on third-party
-  account creation remains in force. Owner handles credentials, recovery,
-  verification, and terms; any project-role grant needs separate approval.
-  The sibling products' OAuth Config Editor role is the model to evaluate,
-  not permission to grant it automatically.
+- **Owner handoff ready:** Chrome is at Google's Basic information step after
+  entering the role name Nestarium Support. Owner supplies accurate private
+  information, chooses **Use your existing email** with the support address,
+  and handles password, verification, recovery and final account creation.
+  Do not create a Gmail mailbox. Next evaluate the sibling OAuth Config Editor
+  role with action-time approval; do not silently grant broad Editor/Owner.
+- **Verified billing:** authenticated Cloud Billing API reads show G&A
+  Production and Railcade Production enabled on the **same** billing account.
+  The existing Nestarium development project is not billing-enabled. Owner
+  authorized using that shared Daygull account if Blaze becomes necessary;
+  do not create a new billing account or merge/replace Firebase projects.
+  This mail/identity checkpoint requires no billing upgrade and made none.
+  At the first Blaze-required backend deployment, verify shared-account linkage
+  and appropriate project-scoped budget alerts before billable deployment.
+
+Next mail acceptance: create a label-only Nestarium / Support Gmail filter,
+send an owner-only studio-to-Nestarium test, verify receipt/authentication,
+reply from Nestarium using the actual Reply action, and verify return receipt
+and Gmail Sent copies. Confirm the exact outbound message at the UI send step.
+Keep normal spam handling; no campaigns or messages to players.
 
 Public Nestarium homepage/privacy/terms/support surfaces, Google brand/provider
 setup, guest-link/recovery acceptance, and the coordinated protected-hostname

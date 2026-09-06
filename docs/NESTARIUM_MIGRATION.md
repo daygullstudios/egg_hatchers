@@ -108,13 +108,14 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
 
 1. `support@playnestarium.com` forwarding and authenticated sending DNS are
    configured using the existing studio email model. Actual receipt and a
-   Thunderbird matching From/Reply-To/Sent-copy test remain open. The role is
-   not yet eligible for Google's support-email selector: owner authorization
-   for a role-address Google identity is required, with owner-controlled
-   credentials/recovery/terms and separately approved least-privilege access.
-   No mailbox, Google account, or third-party account has been created. Do not
+   Thunderbird matching reply/Sent-copy test remain open. The local Nestarium
+   identity is saved with matching From/Reply-To, existing family Cloudflare
+   SMTP, and company Sent/Drafts. Owner has now authorized the sibling-model
+   role-address Google account; its private registration step is handed off.
+   No Gmail mailbox or completed Google account yet. Credentials/recovery and
+   action-time least-privilege access approval remain owner boundaries. Do not
    publish an untested support/recovery workflow. See PROJECT_HANDOFF.md for
-   the latest readiness evidence and exact decision boundary.
+   the latest evidence, shared-billing decision, and next acceptance steps.
 2. Complete the Google provider/OAuth brand as **Nestarium**, select the
    approved support identity, and review consent-screen domain, privacy/terms,
    verification and publishing status. Retain existing project/client IDs and
