@@ -118,9 +118,10 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
 
 1. `support@playnestarium.com` forwarding and authenticated sending DNS are
    configured using the existing studio email model. Controlled receipt, label,
-   SPF/DKIM/DMARC and first Sent copy pass. Thunderbird automatically chooses
-   the matching Nestarium reply identity; the return-test Send confirmation and
-   reply receipt/authentication/Sent-copy acceptance remain open. The local Nestarium
+   SPF/DKIM/DMARC and both Sent copies pass. Thunderbird automatically chooses
+   the matching Nestarium reply identity, and the approved return test arrived
+   with Nestarium DKIM and SPF/DMARC PASS. Received display-name preservation
+   remains a cosmetic follow-up, not a failed delivery check. The local Nestarium
    identity is saved with matching From/Reply-To, existing family Cloudflare
    SMTP, and company Sent/Drafts. The sibling-model Google role account is now
    created and verified as Nestarium Support / support@playnestarium.com after
@@ -133,9 +134,10 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
 2. Complete the remaining Google provider/OAuth brand configuration. The
    Nestarium name and approved support identity are saved in Testing; public
    homepage/privacy/terms/support pages, consent-screen domain,
-   verification and publishing status remain release gates. Confirm intended
-   age audience before finalizing policy/auth decisions; no Nestarium audience
-   designation was found in current sources. Retain existing project/client IDs
+   verification and publishing status remain release gates. The owner explicitly
+   intends ages 8–12 alongside teens and adults; plan mixed-audience protections
+   and review actual classification/SDK eligibility before policy/auth release.
+   This intent is not store-rating or legal clearance. Retain existing project/client IDs
    and Firebase handler URLs. No provider credentials were replaced here.
    The isolated local website draft, allowlisted build and closed publication
    gates are documented in `PUBLIC_SITE.md`; no public route was deployed.

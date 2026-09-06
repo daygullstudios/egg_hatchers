@@ -81,7 +81,7 @@ test('draft cannot be deployed, and alternate public aliases remain disabled', a
   assert.equal(config.workers_dev, false);
   assert.equal(config.preview_urls, false);
   assert.deepEqual(config.routes, []);
-  await assert.rejects(verifyRelease(), /Publication blocked: audienceDecisionRecorded/);
+  await assert.rejects(verifyRelease(), /Publication blocked: policyAndSupportCopyApproved, hostnameAndHeadersVerified/);
 });
 
 test('public configuration does not change the protected game route', async () => {

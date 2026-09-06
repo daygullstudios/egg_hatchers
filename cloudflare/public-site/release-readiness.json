@@ -1,6 +1,6 @@
 {
-  "audienceDecisionRecorded": false,
+  "audienceDecisionRecorded": true,
   "policyAndSupportCopyApproved": false,
-  "supportDeliveryAndReplyVerified": false,
+  "supportDeliveryAndReplyVerified": true,
   "hostnameAndHeadersVerified": false
 }

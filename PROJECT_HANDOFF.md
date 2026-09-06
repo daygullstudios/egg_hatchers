@@ -32,12 +32,18 @@ progress is unchanged. The product-support Google account is now created.
   received the Nestarium / Support label, and Gmail's received-message summary
   reports SPF/DKIM/DMARC PASS. Exact-subject `in:sent` search confirms the first
   test's company Sent copy. Only an owner-only setup message was sent.
-- **Verified Reply selection / open return delivery:** using Thunderbird's
+- **Verified Reply selection and return delivery:** using Thunderbird's
   actual Reply on that received test automatically selected Nestarium Support
   with matching support From/Reply-To and studio hello as recipient. The return
-  test is composed but **not sent**, awaiting the computer-use skill's separate
-  action-time Send confirmation. Return receipt/authentication and that reply's
-  Sent copy are not yet proven. No SMTP credential was read or recreated.
+  test was sent after the owner's explicit approval on September 6 at 3:10 PM
+  Central. Gmail received it in Inbox with the studio Hello label; the original
+  message summary reports SPF/DKIM/DMARC PASS, with DKIM domain
+  `playnestarium.com`. Exact-subject/from/to `in:sent` search confirms the reply
+  in company Sent mail. No SMTP credential was read or recreated.
+- **Open cosmetic mail issue:** the sent copy displays Nestarium Support, but
+  the received copy displays the support address as its name. From and Reply-To
+  are correct; display-name preservation needs separate investigation. This
+  does not invalidate the controlled delivery/authentication acceptance.
 - **Verified:** Google Auth Platform now has the **Nestarium** brand with
   `support@playnestarium.com` selected as user support email. The existing
   company contact receives private developer notifications. Audience is
@@ -77,10 +83,10 @@ progress is unchanged. The product-support Google account is now created.
   At the first Blaze-required backend deployment, verify shared-account linkage
   and appropriate project-scoped budget alerts before billable deployment.
 
-Next mail acceptance: obtain the pending return-test Send confirmation, send
-the prepared Nestarium-to-studio reply, and verify return receipt/authentication
-and the reply's Gmail Sent copy. Do not resend the successful first test.
-Keep normal spam handling; no campaigns or messages to players.
+Controlled two-way mail acceptance is complete; do not resend either setup
+test. Resolve the cosmetic received-display-name issue separately. Keep normal
+spam handling; no campaigns or messages to players. Independent-provider and
+Apple private-relay acceptance are not proven by this company-inbox test.
 
 Public Nestarium homepage/privacy/terms/support publication, remaining Google
 brand/client/provider setup, guest-link/recovery acceptance, and the coordinated
@@ -88,9 +94,13 @@ protected-hostname cutover remain later gates. Cloudflare's shared Railcade
 login stays untouched.
 This checkpoint is infrastructure/documentation only: no new game build or
 deployment. The previously verified release below remains current.
-Before public policy/auth launch, confirm the intended age audience; no
-documented Nestarium age designation was found. Do not invent it or assume
-sibling legal text accurately describes this game's data/features.
+**Owner-confirmed audience (September 6):** actively include ages 8–12 alongside
+teens and adults. This supersedes the previously unanswered audience question.
+Plan for mixed-audience protections, subject to classification/legal review;
+this is not a verified store rating, a worldwide minimum age, or clearance to
+collect children's data. See `docs/PUBLIC_SITE.md` for the recommended sequence.
+Do not copy the siblings' child-exclusion policy or enable Google sign-in before
+reviewing SDK eligibility and the full non-Google account/recovery experience.
 
 ### Public-site preparation — local draft, not published
 
@@ -112,7 +122,8 @@ Source review found that the current in-app Delete Account action removes local
 player data only, not Firebase Auth or Firestore records. The support/data-page
 drafts state this explicitly. Trusted cloud deletion and truthful in-app labels
 must be completed before the account release; do not inherit the siblings'
-completed deletion acceptance. Audience answer and policy approval remain open.
+completed deletion acceptance. Audience intent is now recorded; classification,
+child-privacy implementation and policy approval remain open.
 
 ## Nestarium migration — current checkpoint
 
