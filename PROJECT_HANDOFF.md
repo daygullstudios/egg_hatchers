@@ -47,7 +47,20 @@ Mock regression coverage includes every failed replacement mutation, interrupted
 rollback/restart, unverifiable recovery copy, ambiguous commit, wrong-type nested
 data, old exports, session/identity preservation, responsive confirmation and
 whole-app freezing after preparation failure. No real QA player is replaced.
-Deployment receipt and final brand count are recorded below after verification.
+Implementation **`e721e19`** is committed and pushed to `main`. Final analysis is
+clean; release web build succeeds (41.4s, including Wasm dry run), followed by
+playtest **3 tests**, Wrangler **4.129.0** dry-run and deployment in order. Brand
+audit: **578** classified legacy references, none unclassified. The unchanged
+protected custom-domain route reports 100% current version
+**`7b413314-8c5b-4dbb-9193-5f28dd95dc68`**, deployment timestamp
+`2026-09-06T23:31:04.601Z`; unauthenticated requests still return **302 to Access**.
+Live Chrome refresh reopens the existing guest with the same two normal chickens
+and one golden chicken, +4/sec income, and working shell navigation to Settings.
+Account & Saves retains the unresolved Choose progress / Compare saves and shows
+Import Save; neither cloud/device copy was selected. Tab returned to the Hatchery.
+Import confirmation/replacement/failure QA uses isolated mocked data only, not the
+real player's browser. Physical-device and human comprehension acceptance remain
+separate gates.
 
 Next: fail-closed unreadable account metadata and truthful startup/recovery status;
 do not silently create a new guest over unreadable saved profiles. Family-account
