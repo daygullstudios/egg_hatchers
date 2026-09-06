@@ -97,7 +97,8 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
   rename this shared OAuth client and alter Railcade's consent branding; a
   reviewed Nestarium-specific Access identity is a remaining infrastructure
   action, not a reason to weaken the playtest gate.
-- `playnestarium.com` currently has no DNS records or attached game Worker.
+- `playnestarium.com` has mail-only MX/TXT records after the support-readiness
+  continuation; it has no web-address DNS records or attached game Worker.
   The staged playtest hostname is deliberately **unrouted**, and the apex is
   reserved for the later public product surface. Access configuration alone
   does not publish the game. Ordinary deployment tests reject a new-domain
@@ -105,10 +106,15 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
 
 ## Hostname cutover and owner/platform actions
 
-1. Establish the intended Nestarium support role on the selected domain and
-   make it eligible for Google's support-email selector using the existing
-   studio email model. No mailbox, Google account, or third-party account was
-   created in this migration. Do not publish an unconfigured support address.
+1. `support@playnestarium.com` forwarding and authenticated sending DNS are
+   configured using the existing studio email model. Actual receipt and a
+   Thunderbird matching From/Reply-To/Sent-copy test remain open. The role is
+   not yet eligible for Google's support-email selector: owner authorization
+   for a role-address Google identity is required, with owner-controlled
+   credentials/recovery/terms and separately approved least-privilege access.
+   No mailbox, Google account, or third-party account has been created. Do not
+   publish an untested support/recovery workflow. See PROJECT_HANDOFF.md for
+   the latest readiness evidence and exact decision boundary.
 2. Complete the Google provider/OAuth brand as **Nestarium**, select the
    approved support identity, and review consent-screen domain, privacy/terms,
    verification and publishing status. Retain existing project/client IDs and

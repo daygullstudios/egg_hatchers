@@ -10,7 +10,8 @@ disabled, so Cloudflare does not create an unprotected alternate game URL.
 
 The selected public domain is `playnestarium.com`. The new private hostname
 `playtest.playnestarium.com` is staged in Access and Firebase authorized domains
-but has no DNS/Worker route yet. Keep it unrouted until the gates in
+but has no web DNS/Worker route yet. The apex has mail-only MX/TXT records for
+the staged support identity; those do not publish the game. Keep it unrouted until the gates in
 `deployment_identity.json` are accepted. Do not add an apex, wildcard, preview,
 or workers.dev route as a shortcut.
 

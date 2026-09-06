@@ -2,6 +2,40 @@
 
 Updated: 2026-09-06
 
+## Support identity readiness — latest checkpoint
+
+After the rebrand release, the owner asked to proceed. The safe email foundation
+is configured using the studio's existing model; no new account was created.
+
+- **Verified:** `support@playnestarium.com` is an enabled exact forwarding rule
+  to the same already verified company inbox. Catch-all remains disabled/drop.
+  Receiving status is ready. Cloudflare dashboard performed the writes after
+  the connector's write attempt returned authentication error 10000.
+- **Verified:** sending domain `playnestarium.com` is enabled; dashboard DNS
+  is Configured and API DNS status is ready with no errors. Eleven mail-only
+  MX/TXT records now cover receiving, bounce routing, SPF, DKIM, and DMARC.
+  No new subscription, sending credential, mailbox, or game/web route was added.
+- **Open:** end-to-end delivery, Gmail label, and Nestarium Thunderbird
+  From/Reply-To/Sent-copy acceptance. An owner-only sending API test was rejected
+  by connector authentication before sending; no test message is claimed sent
+  or delivered. Do not read/recreate the owner's existing SMTP credential.
+- **Verified:** the existing project's Google Auth Platform Branding page says
+  **not configured yet**. Google provider and its client UI release flag remain
+  off. No IAM grant, consent publication, or OAuth client was created/changed.
+- **Owner decision required:** permit a Google identity using the existing
+  `support@playnestarium.com` email (not a new Gmail mailbox), or choose a
+  different eligible support identity. The earlier prohibition on third-party
+  account creation remains in force. Owner handles credentials, recovery,
+  verification, and terms; any project-role grant needs separate approval.
+  The sibling products' OAuth Config Editor role is the model to evaluate,
+  not permission to grant it automatically.
+
+Public Nestarium homepage/privacy/terms/support surfaces, Google brand/provider
+setup, guest-link/recovery acceptance, and the coordinated protected-hostname
+cutover remain later gates. Cloudflare's shared Railcade login stays untouched.
+This checkpoint is infrastructure/documentation only: no new game build or
+deployment. The previously verified release below remains current.
+
 ## Nestarium migration — current checkpoint
 
 The public/product name is now **Nestarium** and the selected public domain is
@@ -23,8 +57,8 @@ Firebase now displays **Nestarium Dev** with renamed existing app registrations.
 The existing protected hostname and both selected Nestarium hostnames are
 authorized. Cloudflare Access displays **Nestarium private playtest** and
 protects the existing origin plus `playtest.playnestarium.com`, preserving the
-existing tester policy and session duration. The Nestarium domain has no game
-route/DNS yet. Google support/consent identity and cross-origin recovery
+existing tester policy and session duration. The Nestarium domain has mail-only
+DNS but no game/web route yet. Google support/consent identity and cross-origin recovery
 acceptance remain release gates; do not redirect existing players away from
 their browser-local saves.
 
