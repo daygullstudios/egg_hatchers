@@ -150,6 +150,10 @@ unavailable. The installed alternate SDK completed all asset exports; no system
 SDK/security setting was changed. The deployment receipt is added
 at the completed integration checkpoint in PROJECT_HANDOFF.md.
 
-The repository's pre-existing CI/Docker Flutter pin is 3.44.0. This rebrand does
-not silently upgrade that toolchain; check the remote verification run after
-push and record any compatibility issue separately.
+The repository's pre-existing CI/Docker Flutter pin is 3.44.0 and was not
+upgraded. [GitHub Verify run 34050144460](https://github.com/daygullstudios/egg_hatchers/actions/runs/34050144460)
+completed successfully, including the deployment-container smoke check. The
+verified source is `b6b0ea0`; the protected Worker release is
+`96c170ee-88f5-4276-8ae8-7bdaf5449751`. The post-deploy browser refresh shows
+Nestarium with the existing player's progress; anonymous HTML and asset
+requests still redirect to Access. Full receipt is in PROJECT_HANDOFF.md.

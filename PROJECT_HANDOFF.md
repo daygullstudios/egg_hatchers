@@ -46,8 +46,34 @@ APK label Nestarium and unchanged package `com.egghatchers.game` / 1.0.0+1.
 The three Cloudflare configuration tests and Wrangler 4.129.0 dry run pass
 (306 assets). The older PATH SDK failed during asset export and became
 unavailable; the installed alternate SDK completed regeneration. Do not change
-system security settings to recover the old SDK. Release/deployment evidence
-will be recorded below after verification.
+system security settings to recover the old SDK.
+
+### Deployed integration evidence — 2026-09-06
+
+- Verified implementation commit `b6b0ea03e57234c320b690584286adeb98e830ab`
+  is pushed to `origin/main`. The dependency lockfile and installed application
+  version remain unchanged. The compatibility inventory passed before commit
+  and again after staging (stable ordering across Windows and Linux).
+- Required sequence completed: `flutter build web --release`, then from
+  `cloudflare/playtest`, `npm test`, `npm run deploy:dry-run`, `npm run deploy`.
+  Wrangler 4.129.0 reports the existing protected custom-domain route and
+  current version **`96c170ee-88f5-4276-8ae8-7bdaf5449751`**.
+- Local deployed `main.dart.js` SHA-256:
+  `1cadfaf2280a54b19d7ddf8ad9dec5902ed88e0651fe6436155dff5004d08b1e`.
+- Anonymous requests to `/`, `/main.dart.js`, `/manifest.json`, and the in-app
+  logo return **302 to Cloudflare Access**, not game content. Approved Chrome
+  refresh displays the Nestarium title; the deployed image visibly reads
+  NESTARIUM. The same existing player's balance and collection state remain
+  present with income continuing, in the unchanged portrait shell. No save
+  import, reset, account replacement, purchase, or reward claim was performed.
+- Final API read-back confirms only the old hostname is attached to the Worker,
+  no Nestarium-zone DNS records, unchanged tester policy/session duration, and
+  eager cookie redirects off. New-domain publication remains explicitly gated.
+- [GitHub Verify run 34050144460](https://github.com/daygullstudios/egg_hatchers/actions/runs/34050144460)
+  completed **successfully**, including analysis, compatibility inventory,
+  tests, web build, server build, artifact packaging, and deployment-container
+  smoke checks on the pre-existing Flutter 3.44.0 pin. No signed native/store
+  release was made.
 
 ## Project status
 

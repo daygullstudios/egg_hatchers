@@ -42,7 +42,7 @@ variables used by managed hosting services. Command-line options take priority.
 previous `EGG_HATCHERS_*` options retained as fallbacks. The Dart define
 `NESTARIUM_SERVER_URL` similarly retains `EGG_HATCHERS_SERVER_URL` as a fallback.
 
-Every successful GitHub `main` build creates an `nestarium-linux-x64`
+Every successful GitHub `main` build creates a `nestarium-linux-x64`
 deployment artifact. Extract it on a Linux host and start the bundled server:
 
 ```bash

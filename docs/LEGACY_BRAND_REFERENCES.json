@@ -29,7 +29,15 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 123,
+      "line": 72,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 149,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -37,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 141,
+      "line": 167,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -45,7 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 148,
+      "line": 174,
       "references": [
         "egg_hatchers"
       ],
@@ -250,6 +258,14 @@
       "line": 144,
       "references": [
         "egghatchers.game"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "docs/NESTARIUM_MIGRATION.md",
+      "line": 154,
+      "references": [
+        "egg_hatchers"
       ],
       "reason": "Documented compatibility identity, origin, or migration history."
     },
