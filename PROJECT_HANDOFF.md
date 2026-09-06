@@ -35,6 +35,10 @@ These are code-level gaps, not a reproduced loss of a real player's data. Next
 work must add read-only import validation/preview, coordinate exclusive replacement
 and restart, verify write failure recovery and cancellation with mocked storage,
 and preserve the old export format. Do not import into real QA saves to prove it.
+Startup parse-failure recovery also remains open: `AccountService.initialize`
+falls back to a guest when the stored account list cannot be read. Preserve and
+explain unreadable metadata in that later recovery pass; the picker copy changes
+do not constitute corrupt-save recovery.
 Child-compatible account release, full recovery and external rebrand gates stay open.
 
 ## Review saves before replacing — preceding implementation checkpoint

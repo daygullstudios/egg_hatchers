@@ -22,6 +22,7 @@ void main() {
     testWidgets('picker, safe removal and creation fit $scenario', (
       tester,
     ) async {
+      final semantics = tester.ensureSemantics();
       final fixture = await _openPicker(
         tester,
         size: scenario.$1,
@@ -90,6 +91,7 @@ void main() {
         expect(rect.left, greaterThanOrEqualTo(surface.left));
         expect(rect.right, lessThanOrEqualTo(surface.right));
         expect(choice.hitTestable(), findsOneWidget);
+        expect(tester.getSemantics(choice).label, '$color avatar');
       }
       final back = find.text('Back to players');
       await tester.ensureVisible(back);
@@ -100,6 +102,7 @@ void main() {
       expect(fixture.accounts.accounts.single.id, guest.id);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
+      semantics.dispose();
       fixture.game.dispose();
       fixture.accounts.dispose();
     });

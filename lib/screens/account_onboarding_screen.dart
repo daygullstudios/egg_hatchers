@@ -382,6 +382,7 @@ class _ColorChoice extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: '$name avatar',
+      excludeFromSemantics: true,
       child: Semantics(
         button: true,
         selected: selected,
