@@ -31,7 +31,20 @@ web build succeeds. Thirty-three focused service/dialog/Settings tests pass;
 explicit replacement with mocked data, fresh device income, loading cancellation,
 retry, keyboard-safe defaults, 320/390/430px and desktop widths, short height and
 200% text. Brand inventory has 533 classified references, none unclassified.
-Protected-deployment and live non-destructive acceptance receipt follows below.
+Implementation commit `2c63d66` is pushed to `main`. Playtest 3 tests and Wrangler
+4.129.0 dry run/deploy pass in the required sequence. The unchanged protected
+custom-domain route reports version **`107a7dde-b14b-4943-8478-486611b1f438`**;
+deployment read-back shows 100% at `2026-09-06T21:33:29.596Z`. Unauthenticated
+access still returns 302 to Cloudflare Access.
+
+Refreshed external Chrome and verified Settings > Account & Saves > Compare
+saves. Both populated summaries and all three footer actions fit the portrait
+shell; Later has default keyboard focus. Keyboard cancellation returns to Settings.
+All 11 samples across 10 seconds retain Choose progress and Compare saves with no
+pending transition or dialog reappearance; income continues. Neither real save
+was selected, merged, restored, imported, reset or deleted during QA. Actual
+replacement/stale-write acceptance uses mocked data only. Human comprehension,
+native physical-device and complete recovery acceptance remain separate gates.
 Next: startup/recovery and import clarity, then child-compatible identity release;
 real player saves must not be selected merely to clear a QA conflict.
 
