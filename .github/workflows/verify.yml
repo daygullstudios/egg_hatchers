@@ -40,6 +40,10 @@ jobs:
       - name: Verify rebrand compatibility inventory
         run: node tool/audit_brand.mjs
 
+      - name: Verify isolated public information site
+        working-directory: cloudflare/public-site
+        run: npm test
+
       - name: Test
         run: flutter test
 

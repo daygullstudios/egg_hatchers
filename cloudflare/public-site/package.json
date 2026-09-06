@@ -1,0 +1,13 @@
+{
+  "name": "nestarium-public-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test",
+    "dev": "npm run build && npx --yes wrangler@4.129.0 dev --local --ip 127.0.0.1 --port 53219",
+    "deploy:dry-run": "npm run build && npx --yes wrangler@4.129.0 deploy --dry-run",
+    "deploy": "node verify-release.mjs && npm test && npm run deploy:dry-run && npx --yes wrangler@4.129.0 deploy"
+  },
+  "engines": { "node": ">=20" }
+}

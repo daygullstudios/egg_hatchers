@@ -21,7 +21,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 129,
+      "line": 157,
       "references": [
         "egghatchers.game"
       ],
@@ -29,7 +29,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 156,
+      "line": 184,
       "references": [
         "egg_hatchers"
       ],
@@ -37,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 233,
+      "line": 261,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -45,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 251,
+      "line": 279,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -53,7 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 258,
+      "line": 286,
       "references": [
         "egg_hatchers"
       ],
@@ -196,6 +196,22 @@
       "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
     },
     {
+      "path": "cloudflare/public-site/build.mjs",
+      "line": 35,
+      "references": [
+        "egg-hatchers-playtest"
+      ],
+      "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
+    },
+    {
+      "path": "cloudflare/public-site/site.test.mjs",
+      "line": 91,
+      "references": [
+        "egg-hatchers-playtest"
+      ],
+      "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
+    },
+    {
       "path": "docs/NESTARIUM_MIGRATION.md",
       "line": 42,
       "references": [
@@ -255,7 +271,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 166,
+      "line": 170,
       "references": [
         "egghatchers.game"
       ],
@@ -263,7 +279,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 176,
+      "line": 180,
       "references": [
         "egg_hatchers"
       ],

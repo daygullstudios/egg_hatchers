@@ -27,10 +27,17 @@ progress is unchanged. The product-support Google account is now created.
   `to:(support@playnestarium.com)` filter whose only action is applying that
   label. Seven existing filters remain unchanged; Inbox visibility and normal
   spam handling are preserved. No historical conversations were modified.
-- **Open:** end-to-end delivery, actual reply identity selection,
-  and sent-message copy acceptance. An owner-only sending API test was rejected
-  by connector authentication before sending; no test message is claimed sent
-  or delivered. Do not read/recreate the owner's existing SMTP credential.
+- **Verified controlled incoming test:** owner approved the actual Thunderbird
+  Send step. The studio hello-to-Nestarium test arrived in the company Inbox,
+  received the Nestarium / Support label, and Gmail's received-message summary
+  reports SPF/DKIM/DMARC PASS. Exact-subject `in:sent` search confirms the first
+  test's company Sent copy. Only an owner-only setup message was sent.
+- **Verified Reply selection / open return delivery:** using Thunderbird's
+  actual Reply on that received test automatically selected Nestarium Support
+  with matching support From/Reply-To and studio hello as recipient. The return
+  test is composed but **not sent**, awaiting the computer-use skill's separate
+  action-time Send confirmation. Return receipt/authentication and that reply's
+  Sent copy are not yet proven. No SMTP credential was read or recreated.
 - **Verified:** Google Auth Platform now has the **Nestarium** brand with
   `support@playnestarium.com` selected as user support email. The existing
   company contact receives private developer notifications. Audience is
@@ -70,13 +77,12 @@ progress is unchanged. The product-support Google account is now created.
   At the first Blaze-required backend deployment, verify shared-account linkage
   and appropriate project-scoped budget alerts before billable deployment.
 
-Next mail acceptance: send an owner-only studio-to-Nestarium test, verify
-receipt/authentication, reply from Nestarium using the actual Reply action,
-and verify return receipt and Gmail Sent copies. Confirm the exact outbound
-message at the UI send step.
+Next mail acceptance: obtain the pending return-test Send confirmation, send
+the prepared Nestarium-to-studio reply, and verify return receipt/authentication
+and the reply's Gmail Sent copy. Do not resend the successful first test.
 Keep normal spam handling; no campaigns or messages to players.
 
-Public Nestarium homepage/privacy/terms/support surfaces, remaining Google
+Public Nestarium homepage/privacy/terms/support publication, remaining Google
 brand/client/provider setup, guest-link/recovery acceptance, and the coordinated
 protected-hostname cutover remain later gates. Cloudflare's shared Railcade
 login stays untouched.
@@ -85,6 +91,28 @@ deployment. The previously verified release below remains current.
 Before public policy/auth launch, confirm the intended age audience; no
 documented Nestarium age designation was found. Do not invent it or assume
 sibling legal text accurately describes this game's data/features.
+
+### Public-site preparation — local draft, not published
+
+`cloudflare/public-site` now contains the separate non-playable homepage,
+support, privacy, terms and account/data-request drafts. See
+`docs/PUBLIC_SITE.md` for source-backed claims and release gates. The build
+copies only 11 allowlisted files, including unchanged approved artwork; the
+game bundle and authentication configuration cannot enter through directory
+copying. There are no routes or enabled alternate hostnames. Draft markers,
+no-index headers and a guarded deployment command prevent routine publication.
+
+Build, nine focused tests and Wrangler 4.129.0 dry run pass. Local five-page
+requests return 200; game-code paths and unknown routes return 404, all with
+CSP/no-index headers. CI now includes the same focused tests. This does not
+claim desktop/mobile visual acceptance or publication. No game source, build,
+deployment, native ID, Firebase data or billing changed.
+
+Source review found that the current in-app Delete Account action removes local
+player data only, not Firebase Auth or Firestore records. The support/data-page
+drafts state this explicitly. Trusted cloud deletion and truthful in-app labels
+must be completed before the account release; do not inherit the siblings'
+completed deletion acceptance. Audience answer and policy approval remain open.
 
 ## Nestarium migration — current checkpoint
 

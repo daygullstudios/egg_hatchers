@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/cloudflare/workers-sdk/main/packages/wrangler/config-schema.json",
+  "name": "nestarium-public-site",
+  "compatibility_date": "2026-09-06",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [],
+  "assets": {
+    "directory": "../../build/nestarium-public-site",
+    "html_handling": "drop-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

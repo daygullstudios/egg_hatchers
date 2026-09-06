@@ -117,8 +117,10 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
 ## Hostname cutover and owner/platform actions
 
 1. `support@playnestarium.com` forwarding and authenticated sending DNS are
-   configured using the existing studio email model. Actual receipt and a
-   Thunderbird matching reply/Sent-copy test remain open. The local Nestarium
+   configured using the existing studio email model. Controlled receipt, label,
+   SPF/DKIM/DMARC and first Sent copy pass. Thunderbird automatically chooses
+   the matching Nestarium reply identity; the return-test Send confirmation and
+   reply receipt/authentication/Sent-copy acceptance remain open. The local Nestarium
    identity is saved with matching From/Reply-To, existing family Cloudflare
    SMTP, and company Sent/Drafts. The sibling-model Google role account is now
    created and verified as Nestarium Support / support@playnestarium.com after
@@ -135,6 +137,8 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
    age audience before finalizing policy/auth decisions; no Nestarium audience
    designation was found in current sources. Retain existing project/client IDs
    and Firebase handler URLs. No provider credentials were replaced here.
+   The isolated local website draft, allowlisted build and closed publication
+   gates are documented in `PUBLIC_SITE.md`; no public route was deployed.
    Review a Nestarium-specific Access login identity separately from Firebase;
    the current shared Railcade Google identity was intentionally not renamed.
 3. Enable the staged Web Google button in a deliberate provider release; prove
