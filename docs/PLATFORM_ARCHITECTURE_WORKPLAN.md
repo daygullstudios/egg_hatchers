@@ -34,10 +34,12 @@ Automated passes are necessary but are not proof of player comprehension.
    guest-recovery warnings. Follow with an audit of account startup, cloud
    recovery, import/conflict
    comparisons and trusted cloud deletion. Do not erase real players for QA.
-   The next bounded patch fixes autosaves repeatedly dismissing the cloud-save
+   Completed patches fix autosaves repeatedly dismissing the cloud-save
    choice: unresolved decisions suspend automatic sync, not local saving; failed
-   choices remain actionable. Next add informative save comparisons and recovery
-   clarity without automatically choosing or merging divergent progress.
+   choices remain actionable. Settings now offers read-only device/cloud summaries,
+   then an explicit replacement confirmation; a changed cloud revision requires a
+   fresh review. Neither source is recommended or merged. Next audit startup and
+   recovery paths, including truthful protection/recovery status and imports.
 2. **Child-compatible account release:** use the confirmed family audience to
    review startup collection and SDK eligibility before enabling provider links.
    Design minimal age handling, parent access/consent where needed, retention,

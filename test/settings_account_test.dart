@@ -6,6 +6,11 @@ import 'package:egg_hatchers/services/device_guest_slot_store.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/preferences_service.dart';
 import 'package:egg_hatchers/services/save_service.dart';
+import 'package:egg_hatchers/services/progress_sync_service.dart';
+import 'package:egg_hatchers/models/progress_sync_state.dart';
+import 'package:egg_hatchers/models/progress_conflict_review.dart';
+import 'package:egg_hatchers/widgets/progress_sync_scope.dart';
+import 'package:egg_hatchers/widgets/progress_conflict_dialog.dart';
 import 'package:egg_hatchers/widgets/account_scope.dart';
 import 'package:egg_hatchers/widgets/account_protection_scope.dart';
 import 'package:egg_hatchers/widgets/audio_scope.dart';
@@ -15,6 +20,57 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  testWidgets(
+    'Settings opens review instead of replacing either save directly',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final accounts = AccountService();
+      final game = GameService();
+      final preferences = PreferencesService();
+      final audio = AudioService();
+      final sync = _ReviewOnlySync();
+      await accounts.initialize();
+      await game.initialize(accountId: accounts.account!.id);
+      await preferences.initialize();
+      await tester.pumpWidget(
+        AccountScope(
+          accounts: accounts,
+          child: AudioScope(
+            audio: audio,
+            child: ProgressSyncScope(
+              sync: sync,
+              child: MaterialApp(
+                home: SettingsScreen(preferences: preferences, game: game),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('settings-panel-account')));
+      await tester.pumpAndSettle();
+      expect(find.text('Use Cloud'), findsNothing);
+      expect(find.text('Keep Device'), findsNothing);
+      final compare = find.byKey(const ValueKey('settings-compare-saves'));
+      await tester.ensureVisible(compare);
+      await tester.tap(compare);
+      await tester.pumpAndSettle();
+      expect(find.byType(ProgressConflictDialog), findsOneWidget);
+      expect(sync.reviews, 1);
+      expect(find.text('Replace'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('save-review-later')));
+      await tester.pumpAndSettle();
+      expect(find.byType(ProgressConflictDialog), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      sync.dispose();
+      audio.dispose();
+      preferences.dispose();
+      game.dispose();
+      accounts.dispose();
+    },
+  );
+
   testWidgets('local removal cancels safely and preserves other players', (
     tester,
   ) async {
@@ -255,6 +311,20 @@ void main() {
     game.dispose();
     audio.dispose();
   });
+}
+
+class _ReviewOnlySync extends ProgressSyncService {
+  var reviews = 0;
+  @override
+  ProgressSyncState get state => const ProgressSyncState(
+    status: ProgressSyncStatus.conflict,
+    message: 'Compare both saves before choosing.',
+  );
+  @override
+  Future<ProgressConflictReview?> prepareConflictReview() async {
+    reviews++;
+    return null;
+  }
 }
 
 final class _SettingsProtectionGateway implements AccountProtectionGateway {

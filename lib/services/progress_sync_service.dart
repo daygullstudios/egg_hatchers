@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/cloud_progress_read.dart';
 import '../models/player_state.dart';
+import '../models/progress_conflict_review.dart';
 import '../models/progress_sync_checkpoint.dart';
 import '../models/progress_sync_plan.dart';
 import '../models/progress_sync_state.dart';
@@ -44,6 +45,7 @@ class ProgressSyncService extends ChangeNotifier {
   CloudProgressRepository? _cloud;
   ApplyCloudProgress? _applyCloud;
   ProgressSyncAssessment? _conflict;
+  ProgressConflictReview? _activeReview;
   var _selectionRevision = 0;
   var _syncing = false;
   var _rerunRequested = false;
@@ -67,6 +69,7 @@ class ProgressSyncService extends ChangeNotifier {
     _cloud = cloud;
     _applyCloud = applyCloud;
     _conflict = null;
+    _activeReview = null;
     if (!_isConfigured) {
       _setState(const ProgressSyncState.unavailable());
       return;
@@ -144,81 +147,151 @@ class ProgressSyncService extends ChangeNotifier {
     }
   }
 
-  Future<void> keepThisDevice() async {
+  /// Reads fresh copies for a decision; never uploads, restores or merges them.
+  Future<ProgressConflictReview?> prepareConflictReview() async {
+    if (_conflict == null || !_isConfigured || _syncing) return null;
+    _activeReview = null;
+    final revision = _selectionRevision;
+    _syncing = true;
+    _setSyncing('Reading both saves for comparison…');
+    try {
+      final fresh = await _assess();
+      if (revision != _selectionRevision) return null;
+      final remote = fresh.cloud.snapshot;
+      if (fresh.local == null ||
+          remote == null ||
+          fresh.cloud.state != CloudProgressState.present) {
+        throw StateError('Both saves could not be read.');
+      }
+      _conflict = fresh;
+      _activeReview = ProgressConflictReview(
+        local: fresh.local!,
+        cloud: remote,
+      );
+      _setConflict(
+        'Cloud sync is paused while you compare. This device keeps saving.',
+      );
+      return _activeReview;
+    } catch (error, stackTrace) {
+      debugPrint('Save comparison failed: $error\n$stackTrace');
+      if (revision == _selectionRevision) {
+        _setConflict(
+          'Could not read both saves. Check your connection and compare again.',
+        );
+      }
+      return null;
+    } finally {
+      _finishSynchronization();
+    }
+  }
+
+  bool _canResolve(ProgressConflictReview review) =>
+      identical(review, _activeReview) &&
+      _conflict != null &&
+      _isConfigured &&
+      !_syncing;
+
+  bool _matchesReviewedCloud(
+    ProgressConflictReview review,
+    CloudProgressRead read,
+  ) =>
+      read.state == CloudProgressState.present &&
+      read.snapshot?.cloudRevision == review.cloud.cloudRevision &&
+      read.snapshot?.contentFingerprint == review.cloud.contentFingerprint;
+
+  Future<bool> keepThisDevice(ProgressConflictReview review) async {
     final assessment = _conflict;
-    if (assessment?.local == null || !_isConfigured || _syncing) return;
+    if (assessment?.local == null || !_canResolve(review)) return false;
+    _activeReview = null;
     _timer?.cancel();
     final revision = _selectionRevision;
     _syncing = true;
     _setSyncing('Saving this device’s progress to the cloud…');
     try {
       final fresh = await _assess();
-      if (revision != _selectionRevision) return;
+      if (revision != _selectionRevision) return false;
       if (fresh.local == null ||
           fresh.cloud.state == CloudProgressState.unknown) {
         throw StateError('Cloud state is unavailable.');
+      }
+      if (!_matchesReviewedCloud(review, fresh.cloud)) {
+        _conflict = fresh;
+        _setConflict('The cloud save changed. Compare again before choosing.');
+        return false;
       }
       final written = await _cloud!.write(
         protectedPlayerId: _protectedPlayerId!,
         local: fresh.local!,
         expectedCloudRevision: fresh.cloud.snapshot?.cloudRevision,
       );
-      if (revision != _selectionRevision) return;
+      if (revision != _selectionRevision) return false;
       await _record(written.contentFingerprint, written.cloudRevision);
-      if (revision != _selectionRevision) return;
+      if (revision != _selectionRevision) return false;
       _conflict = null;
       _setSynced();
+      return true;
     } on CloudProgressWriteConflict {
-      if (revision != _selectionRevision) return;
+      if (revision != _selectionRevision) return false;
       _setConflict(
         'Cloud progress changed again. Review your choice once more.',
       );
+      return false;
     } catch (error, stackTrace) {
       debugPrint('Keep-device resolution failed: $error\n$stackTrace');
-      if (revision != _selectionRevision) return;
+      if (revision != _selectionRevision) return false;
       _setConflict(
         'Could not finish your choice. Progress is safe on this device. '
         'Check your connection, then choose again.',
       );
+      return false;
     } finally {
       _finishSynchronization();
     }
   }
 
-  Future<void> useCloud() async {
-    if (_conflict == null || !_isConfigured || _syncing) return;
+  Future<bool> useCloud(ProgressConflictReview review) async {
+    if (!_canResolve(review)) return false;
+    _activeReview = null;
     _timer?.cancel();
     final revision = _selectionRevision;
     _syncing = true;
     _setSyncing('Restoring the latest cloud progress…');
     try {
-      final read = await _cloud!.read(_protectedPlayerId!);
-      if (revision != _selectionRevision) return;
+      final fresh = await _assess();
+      final read = fresh.cloud;
+      if (revision != _selectionRevision) return false;
       final remote = read.snapshot;
       if (read.state != CloudProgressState.present || remote == null) {
         throw StateError('Cloud progress is unavailable.');
       }
+      if (!_matchesReviewedCloud(review, read)) {
+        _conflict = fresh;
+        _setConflict('The cloud save changed. Compare again before choosing.');
+        return false;
+      }
       final restored = await _applyCloud!(remote.state);
-      if (revision != _selectionRevision) return;
+      if (revision != _selectionRevision) return false;
       if (!restored) throw StateError('Cloud restore was not applied.');
       final applied = await _local!.loadSnapshot();
-      if (revision != _selectionRevision) return;
+      if (revision != _selectionRevision) return false;
       if (applied == null) throw StateError('Cloud restore was not saved.');
       await _record(remote.contentFingerprint, remote.cloudRevision);
-      if (revision != _selectionRevision) return;
+      if (revision != _selectionRevision) return false;
       _conflict = null;
       if (applied.contentFingerprint == remote.contentFingerprint) {
         _setSynced();
       } else {
         localProgressSaved(_accountId);
       }
+      return true;
     } catch (error, stackTrace) {
       debugPrint('Cloud restore failed: $error\n$stackTrace');
-      if (revision != _selectionRevision) return;
+      if (revision != _selectionRevision) return false;
       _setConflict(
         'Could not finish your choice. Progress is safe on this device. '
         'Check your connection, then choose again.',
       );
+      return false;
     } finally {
       _finishSynchronization();
     }

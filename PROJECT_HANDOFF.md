@@ -2,7 +2,40 @@
 
 Updated: 2026-09-06
 
-## Stable cloud-save choice — current implementation checkpoint
+## Review saves before replacing — current implementation checkpoint
+
+Settings > Account & Saves now opens **Compare saves** instead of immediately
+applying Use Cloud or Keep Device. Read-only, freshly validated summaries show
+saved local time, coins, animals owned, eggs hatched, rebirth/luck levels and boss
+wins. They explicitly warn that larger/newer totals are not proof of better
+progress, omit offline income until restoration, and do not summarize every
+field. Both source buttons have equal styling; neither source is recommended.
+
+Choosing a source opens a separate replacement confirmation describing exactly
+which progress is replaced, no merging, the preserved other players/device
+settings/custom eggs/artwork, and the existing Export Save backup path. Back and
+Later are keyboard defaults. Scrollable dialog bodies retain reachable 48px
+decisions even in narrow/short portrait layouts and at 200% text.
+
+Manual replacement requires the active in-memory review for the current player.
+Before applying either choice, cloud revision and fingerprint must still match
+the reviewed copy; changed/unavailable/expired reviews cannot overwrite progress.
+The device choice uses freshly saved local progress, including intervening
+income. Cancelling or opening a review never chooses, uploads or restores a save;
+local saving continues while automatic cloud sync remains paused for the decision.
+No schema, persisted key, identity, Firebase rule/provider or hostname change.
+
+Validation: Flutter 3.47.2 analysis has no issues, all 543 tests pass, and release
+web build succeeds. Thirty-three focused service/dialog/Settings tests pass;
+15 new regressions cover read-only comparison, stale/expired/unavailable reviews,
+explicit replacement with mocked data, fresh device income, loading cancellation,
+retry, keyboard-safe defaults, 320/390/430px and desktop widths, short height and
+200% text. Brand inventory has 533 classified references, none unclassified.
+Protected-deployment and live non-destructive acceptance receipt follows below.
+Next: startup/recovery and import clarity, then child-compatible identity release;
+real player saves must not be selected merely to clear a QA conflict.
+
+## Stable cloud-save choice — preceding implementation checkpoint
 
 The owner reported repeated **Cloud sync pending → Choose progress** flicker.
 Verified cause: the one-second idle-income save callback overwrote the conflict
@@ -36,9 +69,9 @@ The legacy-reference inventory passes without unclassified branding.
 No schema, identity, Firebase rules,
 provider, new-domain route or credential change is part of this patch.
 
-Next remains save-comparison clarity and recovery/account trust. The stable
-buttons do not yet constitute an informative side-by-side comparison; do not
-choose a real player's save merely to clear this decision during testing.
+The subsequent comparison checkpoint above replaces those direct buttons. Recovery
+and account trust remain priorities; do not choose a real player's save merely
+to clear this decision during testing.
 
 ## Usability and player trust — current implementation checkpoint
 

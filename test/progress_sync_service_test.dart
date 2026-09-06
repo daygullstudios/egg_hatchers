@@ -13,6 +13,98 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  test('comparison reads fresh saves without writing or restoring', () async {
+    final fixture = await _reviewFixture();
+    addTearDown(fixture.sync.dispose);
+    await fixture.local.save(
+      GameData.startingPlayerState().copyWith(coins: 980),
+    );
+    final review = (await fixture.sync.prepareConflictReview())!;
+    expect(review.local.state.coins, 980);
+    expect(review.cloud.state.coins, 1200);
+    expect(fixture.cloud.writes, 0);
+    expect(fixture.sync.state.hasConflict, isTrue);
+    expect(
+      await ProgressSyncCheckpointStore(accountId: 'review_player').read(),
+      isNull,
+    );
+    // Device selection intentionally keeps income accrued after the snapshot.
+    await fixture.local.save(
+      GameData.startingPlayerState().copyWith(coins: 990),
+    );
+    expect(await fixture.sync.keepThisDevice(review), isTrue);
+    expect(fixture.cloud.snapshot?.state.coins, 990);
+  });
+
+  for (final keepDevice in [true, false]) {
+    test(
+      'changed cloud blocks reviewed ${keepDevice ? 'device' : 'cloud'} replacement',
+      () async {
+        final fixture = await _reviewFixture();
+        addTearDown(fixture.sync.dispose);
+        final review = (await fixture.sync.prepareConflictReview())!;
+        fixture.cloud.snapshot = _snapshot(
+          GameData.startingPlayerState().copyWith(coins: 1500),
+          5,
+        );
+        final result = keepDevice
+            ? await fixture.sync.keepThisDevice(review)
+            : await fixture.sync.useCloud(review);
+        expect(result, isFalse);
+        expect(fixture.sync.state.message, contains('cloud save changed'));
+        expect(fixture.cloud.writes, 0);
+        expect((await fixture.local.load())?.coins, 900);
+        expect(fixture.cloud.snapshot?.state.coins, 1500);
+        final refreshed = (await fixture.sync.prepareConflictReview())!;
+        expect(refreshed.cloud.state.coins, 1500);
+        expect(
+          keepDevice
+              ? await fixture.sync.keepThisDevice(refreshed)
+              : await fixture.sync.useCloud(refreshed),
+          isTrue,
+        );
+      },
+    );
+  }
+
+  test(
+    'expired review cannot resolve another account or supersede a new review',
+    () async {
+      final fixture = await _reviewFixture();
+      addTearDown(fixture.sync.dispose);
+      final old = (await fixture.sync.prepareConflictReview())!;
+      final latest = (await fixture.sync.prepareConflictReview())!;
+      expect(await fixture.sync.keepThisDevice(old), isFalse);
+      expect(await fixture.sync.useCloud(old), isFalse);
+      await fixture.sync.selectAccount(
+        accountId: null,
+        protectedPlayerId: null,
+      );
+      expect(await fixture.sync.keepThisDevice(latest), isFalse);
+      expect(await fixture.sync.useCloud(latest), isFalse);
+      expect(fixture.cloud.writes, 0);
+      expect((await fixture.local.load())?.coins, 900);
+    },
+  );
+
+  test(
+    'unavailable comparison exposes no review or automatic resolution',
+    () async {
+      final fixture = await _reviewFixture();
+      addTearDown(fixture.sync.dispose);
+      final old = (await fixture.sync.prepareConflictReview())!;
+      fixture.cloud.unknown = true;
+      expect(await fixture.sync.prepareConflictReview(), isNull);
+      expect(await fixture.sync.keepThisDevice(old), isFalse);
+      expect(fixture.sync.state.hasConflict, isTrue);
+      expect(fixture.cloud.writes, 0);
+      fixture.cloud.unknown = false;
+      fixture.cloud.snapshot = null;
+      expect(await fixture.sync.prepareConflictReview(), isNull);
+      expect(fixture.cloud.writes, 0);
+    },
+  );
+
   testWidgets('autosaves and queued retries cannot dismiss a save choice', (
     tester,
   ) async {
@@ -87,13 +179,14 @@ void main() {
             return true;
           },
         );
+        final review = (await service.prepareConflictReview())!;
         final gate = Completer<void>();
         cloud.readGate = gate;
         final resolving = keepDevice
-            ? service.keepThisDevice()
-            : service.useCloud();
+            ? service.keepThisDevice(review)
+            : service.useCloud(review);
         await tester.pump();
-        expect(cloud.reads, 2);
+        expect(cloud.reads, 3);
         service.localProgressSaved('guest_local');
         expect(service.state.status, ProgressSyncStatus.syncing);
         final otherCloud = _CloudRepository();
@@ -150,10 +243,11 @@ void main() {
           GameData.startingPlayerState().copyWith(coins: 1300),
           5,
         );
+        final review = (await service.prepareConflictReview())!;
         if (keepDevice) {
-          await service.keepThisDevice();
+          await service.keepThisDevice(review);
         } else {
-          await service.useCloud();
+          await service.useCloud(review);
         }
         expect(service.state.status, ProgressSyncStatus.synced);
         expect((await local.load())?.coins, keepDevice ? 950 : 1300);
@@ -186,11 +280,12 @@ void main() {
           cloud: cloud,
           applyCloud: (_) async => true,
         );
+        final review = (await service.prepareConflictReview())!;
         cloud.unknown = true;
         if (keepDevice) {
-          await service.keepThisDevice();
+          await service.keepThisDevice(review);
         } else {
-          await service.useCloud();
+          await service.useCloud(review);
         }
         expect(service.state.status, ProgressSyncStatus.conflict);
         final reads = cloud.reads;
@@ -259,7 +354,7 @@ void main() {
         cloud: cloud,
         applyCloud: (_) async => true,
       );
-      await service.keepThisDevice();
+      await service.keepThisDevice((await service.prepareConflictReview())!);
       expect(service.state.hasConflict, isTrue);
       expect(service.state.message, contains('changed again'));
       final reads = cloud.reads;
@@ -292,7 +387,7 @@ void main() {
         cloud: cloud,
         applyCloud: (_) async => false,
       );
-      await service.useCloud();
+      await service.useCloud((await service.prepareConflictReview())!);
       expect(service.state.hasConflict, isTrue);
       expect(service.state.message, contains('choose again'));
       expect((await local.load())?.coins, 900);
@@ -422,7 +517,7 @@ void main() {
     expect(service.state.status, ProgressSyncStatus.conflict);
     expect(cloud.writes, 0);
 
-    await service.keepThisDevice();
+    await service.keepThisDevice((await service.prepareConflictReview())!);
 
     expect(service.state.status, ProgressSyncStatus.synced);
     expect(cloud.writes, 1);
@@ -438,6 +533,29 @@ CloudProgressSnapshot _snapshot(PlayerState state, int revision) =>
       cloudRevision: revision,
       savedAt: DateTime.utc(2026),
     );
+
+Future<({SaveService local, _CloudRepository cloud, ProgressSyncService sync})>
+_reviewFixture() async {
+  final local = SaveService(accountId: 'review_player');
+  await local.save(GameData.startingPlayerState().copyWith(coins: 900));
+  final cloud = _CloudRepository(
+    snapshot: _snapshot(
+      GameData.startingPlayerState().copyWith(coins: 1200),
+      4,
+    ),
+  );
+  final sync = ProgressSyncService(debounce: const Duration(days: 1));
+  await sync.selectAccount(
+    accountId: 'review_player',
+    protectedPlayerId: 'review-identity',
+    cloud: cloud,
+    applyCloud: (state) async {
+      await local.save(state);
+      return true;
+    },
+  );
+  return (local: local, cloud: cloud, sync: sync);
+}
 
 final class _CloudRepository implements CloudProgressRepository {
   _CloudRepository({this.snapshot, this.unknown = false});

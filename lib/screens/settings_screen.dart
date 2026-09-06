@@ -25,6 +25,7 @@ import '../widgets/audio_settings_card.dart';
 import '../widgets/game_background.dart';
 import '../widgets/game_primary_navigation.dart';
 import '../widgets/local_player_removal_dialog.dart';
+import '../widgets/progress_conflict_dialog.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/retro_pixel_animal_sprite.dart';
 
@@ -334,8 +335,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               account: account,
                               protection: protection,
                               syncState: syncState,
-                              onKeepDevice: progressSync?.keepThisDevice,
-                              onUseCloud: progressSync?.useCloud,
+                              onCompareSaves: progressSync == null
+                                  ? null
+                                  : () => showDialog<bool>(
+                                      context: context,
+                                      builder: (_) => ProgressConflictDialog(
+                                        sync: progressSync,
+                                        playerName: account.displayName,
+                                      ),
+                                    ),
                               onProtectWithGoogle:
                                   protection.canProtect &&
                                       (AccountProtectionScope.maybeOf(
@@ -635,8 +643,7 @@ class _AccountSettings extends StatelessWidget {
     required this.account,
     required this.protection,
     required this.syncState,
-    required this.onKeepDevice,
-    required this.onUseCloud,
+    required this.onCompareSaves,
     required this.onProtectWithGoogle,
     required this.theme,
     required this.onSwitch,
@@ -646,8 +653,7 @@ class _AccountSettings extends StatelessWidget {
   final PlayerAccount account;
   final AccountProtectionState protection;
   final ProgressSyncState syncState;
-  final VoidCallback? onKeepDevice;
-  final VoidCallback? onUseCloud;
+  final VoidCallback? onCompareSaves;
   final VoidCallback? onProtectWithGoogle;
   final BackgroundTheme theme;
   final VoidCallback onSwitch;
@@ -824,34 +830,16 @@ class _AccountSettings extends StatelessWidget {
                   ),
                 ],
               ),
-              if (syncState.hasConflict &&
-                  onKeepDevice != null &&
-                  onUseCloud != null) ...[
+              if (syncState.hasConflict && onCompareSaves != null) ...[
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        key: const ValueKey('settings-use-cloud-progress'),
-                        onPressed: onUseCloud,
-                        icon: const Icon(Icons.cloud_download_rounded),
-                        label: const Text('Use Cloud'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: FilledButton.icon(
-                        key: const ValueKey('settings-keep-device-progress'),
-                        onPressed: onKeepDevice,
-                        icon: const Icon(Icons.phone_android_rounded),
-                        label: const Text('Keep Device'),
-                        style: GameTheme.filledButton(
-                          theme,
-                          color: theme.secondaryColor,
-                        ),
-                      ),
-                    ),
-                  ],
+                OutlinedButton.icon(
+                  key: const ValueKey('settings-compare-saves'),
+                  onPressed: onCompareSaves,
+                  icon: const Icon(Icons.compare_arrows_rounded),
+                  label: const Text('Compare saves'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                  ),
                 ),
               ],
             ],
