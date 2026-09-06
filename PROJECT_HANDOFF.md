@@ -23,8 +23,17 @@ continued local income saves, a retry queued before conflict detection, both
 explicit choices, newer cloud/local snapshots, offline failure, revision races,
 declined restore and player switches during either manual choice. Mocked data
 only; no real cloud/device save has been selected, replaced or deleted for QA.
-Release build, protected deployment and sustained live-screen evidence follow
-after the required release sequence. No schema, identity, Firebase rules,
+Release build, playtest 3 tests and Wrangler 4.129.0 dry run/deploy pass.
+Implementation commit `79e54ce` is pushed to `main`; the existing protected
+custom-domain route reports version **`39c8950f-6676-44d1-a639-ddeee5aa8394`**.
+Deployment read-back shows that version at 100% at `2026-09-06T20:55:07Z`;
+an unauthenticated request still returns 302 to Cloudflare Access. Refreshed
+external Chrome, opened Settings > Account & Saves, and sampled the visible
+UI once per second for 30 seconds: all 31 samples retained Choose progress,
+Use Cloud and Keep Device, without pending/comparing transitions, while coins
+increased. Neither real save was selected; the unresolved choice is preserved.
+The legacy-reference inventory passes without unclassified branding.
+No schema, identity, Firebase rules,
 provider, new-domain route or credential change is part of this patch.
 
 Next remains save-comparison clarity and recovery/account trust. The stable
