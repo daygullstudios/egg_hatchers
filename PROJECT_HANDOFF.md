@@ -8,7 +8,7 @@ After the rebrand release, the owner authorized the G&A/Railcade support-account
 model, explicitly lifting the earlier no-new-third-party-accounts restriction.
 Owner-controlled credentials/recovery and action-time access approvals remain.
 The separate gameplay rule that new player accounts must not overwrite older
-progress is unchanged. No Google account has been completed at this checkpoint.
+progress is unchanged. The product-support Google account is now created.
 
 - **Verified:** `support@playnestarium.com` is an enabled exact forwarding rule
   to the same already verified company inbox. Catch-all remains disabled/drop.
@@ -30,12 +30,19 @@ progress is unchanged. No Google account has been completed at this checkpoint.
 - **Verified:** the existing project's Google Auth Platform Branding page says
   **not configured yet**. Google provider and its client UI release flag remain
   off. No IAM grant, consent publication, or OAuth client was created/changed.
-- **Owner handoff ready:** Chrome is at Google's Basic information step after
-  entering the role name Nestarium Support. Owner supplies accurate private
-  information, chooses **Use your existing email** with the support address,
-  and handles password, verification, recovery and final account creation.
-  Do not create a Gmail mailbox. Next evaluate the sibling OAuth Config Editor
-  role with action-time approval; do not silently grant broad Editor/Owner.
+- **Verified Google account:** after the owner completed private registration
+  details and handed back the Privacy and Terms screen, accepted the authorized
+  terms. Account home confirms **Nestarium Support / support@playnestarium.com**.
+  Optional Search recommendations/history, Play personalization/history,
+  Web & App Activity, personalized ads and YouTube history were all off at
+  submission. No new Gmail mailbox or private account details recorded.
+- **Access approval pending:** live IAM reads confirm both sibling support
+  accounts have only `roles/oauthconfig.editor`; Nestarium Support has no
+  project role yet. Chrome stages that exact role on Nestarium Dev only, but
+  **Save has not been clicked**. Owner confirmation requested. This role can
+  manage OAuth brands/clients and their secrets; it is not project Owner,
+  billing access, or general player-database administration. Existing owner
+  and service-account grants remain unchanged.
 - **Verified billing:** authenticated Cloud Billing API reads show G&A
   Production and Railcade Production enabled on the **same** billing account.
   The existing Nestarium development project is not billing-enabled. Owner

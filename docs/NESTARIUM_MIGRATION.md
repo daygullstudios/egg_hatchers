@@ -110,10 +110,10 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
    configured using the existing studio email model. Actual receipt and a
    Thunderbird matching reply/Sent-copy test remain open. The local Nestarium
    identity is saved with matching From/Reply-To, existing family Cloudflare
-   SMTP, and company Sent/Drafts. Owner has now authorized the sibling-model
-   role-address Google account; its private registration step is handed off.
-   No Gmail mailbox or completed Google account yet. Credentials/recovery and
-   action-time least-privilege access approval remain owner boundaries. Do not
+   SMTP, and company Sent/Drafts. The sibling-model Google role account is now
+   created and verified as Nestarium Support / support@playnestarium.com after
+   owner-authorized terms acceptance. No new Gmail mailbox. The Nestarium-only
+   OAuth Config Editor grant is staged, unsaved, awaiting owner approval. Do not
    publish an untested support/recovery workflow. See PROJECT_HANDOFF.md for
    the latest evidence, shared-billing decision, and next acceptance steps.
 2. Complete the Google provider/OAuth brand as **Nestarium**, select the
