@@ -21,7 +21,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 118,
+      "line": 153,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -29,7 +29,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 299,
+      "line": 334,
       "references": [
         "egghatchers.game"
       ],
@@ -37,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 326,
+      "line": 361,
       "references": [
         "egg_hatchers"
       ],
@@ -45,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 403,
+      "line": 438,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -53,7 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 421,
+      "line": 456,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -61,7 +61,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 428,
+      "line": 463,
       "references": [
         "egg_hatchers"
       ],
@@ -295,7 +295,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 164,
+      "line": 171,
       "references": [
         "eggHatchers"
       ],
@@ -303,7 +303,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 169,
+      "line": 176,
       "references": [
         "egg_hatchers_player_state_account_"
       ],
@@ -311,7 +311,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 181,
+      "line": 188,
       "references": [
         "egg_hatchers.settings"
       ],
@@ -319,7 +319,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 202,
+      "line": 209,
       "references": [
         "egg_hatchers"
       ],
@@ -327,7 +327,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 272,
+      "line": 279,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -335,7 +335,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 295,
+      "line": 302,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -343,7 +343,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 322,
+      "line": 329,
       "references": [
         "egg_hatchers"
       ],
@@ -351,7 +351,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 363,
+      "line": 370,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -776,6 +776,38 @@
     {
       "path": "test/account_onboarding_screen_test.dart",
       "line": 3,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/account_onboarding_screen_test.dart",
+      "line": 4,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/account_onboarding_screen_test.dart",
+      "line": 5,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/account_onboarding_screen_test.dart",
+      "line": 6,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/account_onboarding_screen_test.dart",
+      "line": 7,
       "references": [
         "egg_hatchers"
       ],

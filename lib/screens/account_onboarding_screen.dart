@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/player_account.dart';
 import '../services/account_service.dart';
 import '../services/game_service.dart';
+import '../widgets/local_player_removal_dialog.dart';
 
 class AccountOnboardingScreen extends StatefulWidget {
   const AccountOnboardingScreen({
@@ -25,6 +26,7 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
   final _usernameController = TextEditingController();
   var _avatarColor = AccountService.avatarColors.first;
   var _submitting = false;
+  String? _error;
   late bool _showCreateForm;
 
   @override
@@ -42,48 +44,55 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
 
   Future<void> _createAccount() async {
     if (_submitting || !(_formKey.currentState?.validate() ?? false)) return;
-    setState(() => _submitting = true);
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
     try {
       await widget.accounts.createAccount(
         displayName: _displayNameController.text,
         username: _usernameController.text,
         avatarColor: _avatarColor,
       );
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error = 'Could not create this local player. Try again.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
   }
 
-  Future<void> _deleteAccount(PlayerAccount account) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete account?'),
-        content: Text(
-          'Delete ${account.displayName} and all progress saved for this account? This cannot be undone.',
-        ),
-        actions: [
-          TextButton.icon(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            icon: const Icon(Icons.close_rounded),
-            label: const Text('CANCEL'),
-          ),
-          FilledButton.icon(
-            key: const ValueKey('confirm-delete-account-button'),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            icon: const Icon(Icons.delete_forever),
-            label: const Text('DELETE'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await widget.game.deleteAccountSave(account.id);
-    await widget.accounts.deleteAccount(account.id);
-    if (!mounted) return;
+  Future<void> _removeLocalPlayer(PlayerAccount account) async {
+    if (_submitting) return;
     setState(() {
-      _showCreateForm = widget.accounts.accounts.isEmpty;
+      _submitting = true;
+      _error = null;
     });
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (_) =>
+            LocalPlayerRemovalDialog(account: account, fromPlayerPicker: true),
+      );
+      if (confirmed != true || !mounted) return;
+      await widget.game.deleteAccountSave(account.id);
+      await widget.accounts.deleteAccount(account.id);
+      if (mounted) {
+        setState(() => _showCreateForm = widget.accounts.accounts.isEmpty);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _error =
+              'Could not finish removing this local player. Try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
@@ -112,8 +121,8 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
                     const SizedBox(height: 14),
                     Text(
                       _showCreateForm
-                          ? 'Create local profile'
-                          : 'Choose account',
+                          ? 'Create local player'
+                          : 'Choose local player',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineMedium
                           ?.copyWith(fontWeight: FontWeight.w800),
@@ -121,41 +130,63 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
                     const SizedBox(height: 6),
                     Text(
                       _showCreateForm
-                          ? 'Add another profile on this device.'
-                          : 'Each tab can use a different player.',
+                          ? 'Start separate progress on this device. Existing players keep their saves.'
+                          : 'Open a player saved here. This is not a sign-in or recovery screen.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: colors.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 24),
+                    if (_error != null) ...[
+                      Semantics(liveRegion: true, child: Text(_error!)),
+                      const SizedBox(height: 12),
+                    ],
                     if (!_showCreateForm) ...[
                       for (final account in widget.accounts.accounts)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: _AccountChoice(
                             account: account,
-                            onPressed: () =>
-                                widget.accounts.selectAccount(account.id),
-                            onDelete: () => _deleteAccount(account),
+                            onPressed: _submitting
+                                ? null
+                                : () =>
+                                      widget.accounts.selectAccount(account.id),
+                            onDelete: _submitting
+                                ? null
+                                : () => _removeLocalPlayer(account),
                           ),
                         ),
                       const SizedBox(height: 6),
                       OutlinedButton.icon(
                         key: const ValueKey('create-another-account-button'),
-                        onPressed: () => setState(() => _showCreateForm = true),
+                        onPressed: _submitting
+                            ? null
+                            : () => setState(() {
+                                _showCreateForm = true;
+                                _error = null;
+                              }),
                         icon: const Icon(Icons.person_add_alt_1),
-                        label: const Text('Create another local profile'),
+                        label: const Text('Create another player'),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                        ),
                       ),
                     ] else ...[
+                      const Text(
+                        'Use a nickname, not your real name. These details do not create a sign-in account or recover progress from another device.',
+                      ),
+                      const SizedBox(height: 16),
                       TextFormField(
                         key: const ValueKey('account-display-name'),
+                        enabled: !_submitting,
                         controller: _displayNameController,
                         textInputAction: TextInputAction.next,
                         maxLength: 20,
                         autofillHints: const [AutofillHints.nickname],
                         decoration: const InputDecoration(
                           labelText: 'Player name',
+                          errorMaxLines: 3,
                           prefixIcon: Icon(Icons.badge_outlined),
                           border: OutlineInputBorder(),
                         ),
@@ -167,6 +198,7 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
                       const SizedBox(height: 12),
                       TextFormField(
                         key: const ValueKey('account-username'),
+                        enabled: !_submitting,
                         controller: _usernameController,
                         textInputAction: TextInputAction.done,
                         maxLength: 16,
@@ -174,6 +206,8 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
                         enableSuggestions: false,
                         decoration: const InputDecoration(
                           labelText: 'Username',
+                          errorMaxLines: 3,
+                          helperMaxLines: 3,
                           prefixText: '@',
                           prefixIcon: Icon(Icons.alternate_email),
                           helperText: '3-16 letters, numbers, or underscores',
@@ -187,7 +221,7 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
                             return 'Enter a valid username.';
                           }
                           if (!widget.accounts.isUsernameAvailable(username)) {
-                            return 'That username already exists.';
+                            return 'That username is already used on this device.';
                           }
                           return null;
                         },
@@ -201,15 +235,26 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
-                          for (final color in AccountService.avatarColors)
+                          for (final (index, color)
+                              in AccountService.avatarColors.indexed)
                             _ColorChoice(
                               color: color,
+                              name: const [
+                                'Blue',
+                                'Purple',
+                                'Teal',
+                                'Pink',
+                                'Orange',
+                                'Green',
+                              ][index],
                               selected: color == _avatarColor,
-                              onPressed: () =>
-                                  setState(() => _avatarColor = color),
+                              onPressed: _submitting
+                                  ? null
+                                  : () => setState(() => _avatarColor = color),
                             ),
                         ],
                       ),
@@ -225,15 +270,25 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
                                 ),
                               )
                             : const Icon(Icons.arrow_forward),
-                        label: const Text('Enter Nestarium'),
+                        label: const Text('Create player'),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                        ),
                       ),
                       if (widget.accounts.accounts.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         TextButton.icon(
-                          onPressed: () =>
-                              setState(() => _showCreateForm = false),
+                          onPressed: _submitting
+                              ? null
+                              : () => setState(() {
+                                  _showCreateForm = false;
+                                  _error = null;
+                                }),
                           icon: const Icon(Icons.arrow_back),
-                          label: const Text('Back to accounts'),
+                          label: const Text('Back to players'),
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(48, 48),
+                          ),
                         ),
                       ],
                     ],
@@ -256,8 +311,8 @@ class _AccountChoice extends StatelessWidget {
   });
 
   final PlayerAccount account;
-  final VoidCallback onPressed;
-  final VoidCallback onDelete;
+  final VoidCallback? onPressed;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -297,8 +352,9 @@ class _AccountChoice extends StatelessWidget {
               IconButton(
                 key: ValueKey('delete-account-${account.id}'),
                 onPressed: onDelete,
-                tooltip: 'Delete account',
-                icon: const Icon(Icons.delete_outline),
+                tooltip: 'Remove local player ${account.displayName}',
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                icon: const Icon(Icons.person_remove_outlined),
               ),
               const Icon(Icons.login),
             ],
@@ -312,29 +368,32 @@ class _AccountChoice extends StatelessWidget {
 class _ColorChoice extends StatelessWidget {
   const _ColorChoice({
     required this.color,
+    required this.name,
     required this.selected,
     required this.onPressed,
   });
 
   final Color color;
+  final String name;
   final bool selected;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'Choose avatar color',
+      message: '$name avatar',
       child: Semantics(
         button: true,
         selected: selected,
-        label: 'Avatar color',
+        label: '$name avatar',
         child: InkResponse(
+          key: ValueKey('avatar-color-$name'),
           onTap: onPressed,
           radius: 26,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            width: 42,
-            height: 42,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,

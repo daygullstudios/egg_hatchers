@@ -5,9 +5,14 @@ import '../models/player_account.dart';
 
 /// Confirms local removal only; never implies a backend account deletion.
 class LocalPlayerRemovalDialog extends StatelessWidget {
-  const LocalPlayerRemovalDialog({super.key, required this.account});
+  const LocalPlayerRemovalDialog({
+    super.key,
+    required this.account,
+    this.fromPlayerPicker = false,
+  });
 
   final PlayerAccount account;
+  final bool fromPlayerPicker;
 
   @override
   Widget build(BuildContext context) {
@@ -45,10 +50,17 @@ class LocalPlayerRemovalDialog extends StatelessWidget {
           const SizedBox(height: 12),
           const Text('There is no undo.'),
           const SizedBox(height: 8),
-          const Text(
-            'To keep a backup, choose Keep player, '
-            'then Export Save in Account & Saves.',
-          ),
+          if (fromPlayerPicker) ...[
+            const Text('To keep a backup, choose Keep player.'),
+            const SizedBox(height: 8),
+            const Text('Open this player, then go to:'),
+            const SizedBox(height: 8),
+            const Text('Settings > Account & Saves > Export Save.'),
+          ] else
+            const Text(
+              'To keep a backup, choose Keep player, '
+              'then Export Save in Account & Saves.',
+            ),
         ],
       ),
       actionsOverflowButtonSpacing: 8,

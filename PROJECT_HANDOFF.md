@@ -2,7 +2,42 @@
 
 Updated: 2026-09-06
 
-## Review saves before replacing — current implementation checkpoint
+## Local-player picker clarity — current implementation checkpoint
+
+Startup/player switching still used an obsolete Delete account dialog. The picker
+now reuses Settings' **Remove local player** confirmation, including exact local
+scope, cloud/sign-in exclusions, guest-recovery warning, no-undo wording and safe
+Keep player keyboard default. Picker-specific backup directions explain opening
+the player before Settings > Account & Saves > Export Save. Duplicate picker
+actions are disabled during creation/removal, and failures surface an inline alert.
+
+Choose/Create local player copy now distinguishes separate local progress from
+sign-in or recovery and explicitly preserves existing players. The name field
+encourages a nickname; username collision copy says "on this device" rather than
+implying a global identity claim. Avatar colors have distinct accessibility labels,
+48px targets and wrap on narrow screens. Creation/back actions also have 48px
+minimum targets. Existing account/storage/identity APIs and keys are unchanged;
+this does not complete cross-device recovery or cloud-account erasure.
+
+Focused picker/Settings/removal suite: 22 passing, including seven new tests for
+320/390/430px/desktop, 320x360 short height, 200% text, keyboard cancellation,
+creation isolation and mocked local-removal preservation of another player's
+progress/artwork and device settings. Flutter 3.47.2 analysis has no issues and
+all 550 tests pass. Brand audit classifies 537 references, none unclassified.
+Release web build succeeds. Protected deployment and live receipt follows.
+
+**Next priority — import safety:** code inspection found `SaveTransferService`
+clears preferences and rewrites them while the existing game remains running,
+with no coordinated pause/drain of gameplay/cloud writers or checked rollback.
+Validation checks the transfer envelope, preference types and account list, but
+not every nested progress payload. The web file picker handles change, not cancel.
+These are code-level gaps, not a reproduced loss of a real player's data. Next
+work must add read-only import validation/preview, coordinate exclusive replacement
+and restart, verify write failure recovery and cancellation with mocked storage,
+and preserve the old export format. Do not import into real QA saves to prove it.
+Child-compatible account release, full recovery and external rebrand gates stay open.
+
+## Review saves before replacing — preceding implementation checkpoint
 
 Settings > Account & Saves now opens **Compare saves** instead of immediately
 applying Use Cloud or Keep Device. Read-only, freshly validated summaries show

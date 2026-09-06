@@ -38,8 +38,15 @@ Automated passes are necessary but are not proof of player comprehension.
    choice: unresolved decisions suspend automatic sync, not local saving; failed
    choices remain actionable. Settings now offers read-only device/cloud summaries,
    then an explicit replacement confirmation; a changed cloud revision requires a
-   fresh review. Neither source is recommended or merged. Next audit startup and
-   recovery paths, including truthful protection/recovery status and imports.
+   fresh review. Neither source is recommended or merged. The player picker now
+   shares accurate local-removal confirmation, distinguishes new local progress
+   from recovery/sign-in, and fits narrow layouts with named 48px avatar targets.
+   **Next: import safety before more recovery UI.** Current transfer rewrites
+   preferences while the old game remains active. Add validated read-only preview,
+   coordinated writer pause/drain, checked replacement/rollback and restart, plus
+   file-picker cancellation handling. Cover nested malformed progress, failures,
+   guest-slot continuity and old exports with mocked data; never replace real QA
+   saves. Then continue truthful startup/recovery status and trusted cloud erasure.
 2. **Child-compatible account release:** use the confirmed family audience to
    review startup collection and SDK eligibility before enabling provider links.
    Design minimal age handling, parent access/consent where needed, retention,
