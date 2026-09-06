@@ -89,11 +89,12 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
+            // Compatibility: path_provider_windows uses these two fields for saves.
             VALUE "CompanyName", "Egg Hatchers" "\0"
-            VALUE "FileDescription", "Egg Hatchers" "\0"
+            VALUE "FileDescription", "Nestarium" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "Egg Hatchers" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 Egg Hatchers. All rights reserved." "\0"
+            VALUE "InternalName", "Nestarium" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Daygull Studios LLC. All rights reserved." "\0"
             VALUE "OriginalFilename", "egg_hatchers.exe" "\0"
             VALUE "ProductName", "Egg Hatchers" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"

@@ -6,6 +6,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  test(
+    'pre-rename exports remain compatible and retain their format marker',
+    () async {
+      SharedPreferences.setMockInitialValues({});
+      final service = SaveTransferService();
+      await service.importSave(
+        jsonEncode({
+          'format': 'egg_hatchers_save',
+          'version': 1,
+          'preferences': {
+            'egg_hatchers_player_state': {
+              'type': 'string',
+              'value': '{"coins":123}',
+            },
+            'egg_hatchers.settings.audio.music_enabled.v1': {
+              'type': 'bool',
+              'value': false,
+            },
+          },
+        }),
+      );
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('egg_hatchers_player_state'), '{"coins":123}');
+      expect(
+        prefs.getBool('egg_hatchers.settings.audio.music_enabled.v1'),
+        false,
+      );
+      final exported = jsonDecode(await service.exportSave()) as Map;
+      expect(exported['format'], 'egg_hatchers_save');
+      expect(exported['version'], 1);
+    },
+  );
+
   const accountId = 'player_test';
   final accounts = jsonEncode([
     {

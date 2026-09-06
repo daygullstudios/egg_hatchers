@@ -336,7 +336,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
               backgroundColor: Colors.transparent,
               extendBody: true,
               appBar: PhoneWidthAppBar(
-                title: '🐣 Egg Hatchers',
+                title: '🐣 Nestarium',
                 titleStyle: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 22,

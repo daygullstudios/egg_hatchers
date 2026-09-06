@@ -1,10 +1,15 @@
-# Egg Hatchers Platform Architecture Workplan
+# Nestarium Platform Architecture Workplan
+
+The 2026-09-06 product rebrand is recorded in `NESTARIUM_MIGRATION.md`.
+`playnestarium.com` is selected; its protected playtest hostname is staged but
+unrouted until provider branding and origin-recovery acceptance. Technical
+save/project/bundle identities below remain compatibility contracts.
 
 Updated: 2026-09-05
 
 ## Goal
 
-Ship Egg Hatchers as one Flutter game across iOS, Android, desktop web, and
+Ship Nestarium as one Flutter game across iOS, Android, desktop web, and
 mobile web without risking existing local progress. Use Railcade as the model
 for account linking, offline-first saves, web delivery, diagnostics, and mobile
 web policy. Use Grids & Aces as the model for durable multiplayer identity,
@@ -12,7 +17,7 @@ sessions, reconnects, transactions, and preset-only player communication.
 
 ## Design authority
 
-Egg Hatchers is the migration source and gameplay sandbox, not the reference
+Nestarium is the migration source and gameplay sandbox, not the reference
 architecture. Its existing behavior is authoritative only where compatibility
 or game-specific product rules require preservation. For new systems:
 
@@ -23,8 +28,8 @@ or game-specific product rules require preservation. For new systems:
   preferences, guest-slot handoff, multiplayer lifecycle, reconnects,
   transactions, player codes, and preset communication.
 - When both have a relevant implementation, choose the safer and more mature
-  behavior rather than reproducing Egg Hatchers' current structure.
-- Adapt concepts and contracts to Egg Hatchers; do not blindly copy project
+  behavior rather than reproducing Nestarium' current structure.
+- Adapt concepts and contracts to Nestarium; do not blindly copy project
   branding, game-specific fields, or unnecessary complexity.
 
 The old local keys and account slots are compatibility inputs. They do not
@@ -224,7 +229,7 @@ smoke test passed on 2026-09-05.
 
 The Google protection client is now staged for Web. A first-time link uses
 Firebase account linking so the anonymous UID and cloud document remain
-unchanged. An existing Google-owned Egg Hatchers identity is treated as an
+unchanged. An existing Google-owned Nestarium identity is treated as an
 account switch: the prior sync checkpoint is cleared and the ordinary
 cloud/device conflict gate must resolve the selected save. Canceled or failed
 provider flows retain the guest identity and local progress. The UI is exposed
@@ -291,7 +296,8 @@ public preview route. The selected temporary hostname is
 Access application that reuses Railcade's approved-tester policy. The Flutter
 web build also ships private-cache, no-index, and baseline browser hardening
 headers. This permits private release verification without committing to the
-final product name.
+final product name. Nestarium is now selected; the original origin is retained
+for save continuity until the staged hostname's migration gates pass.
 
 The first routed release is deployed. Unauthenticated checks against both the
 app shell and compiled JavaScript are redirected to Cloudflare Access, while
@@ -388,7 +394,7 @@ remain separate revalidated operations for the future Firebase adapter.
 `AccountProtectionService` now provides the app-wide state seam used by the
 mature Railcade model: starting, local-only, guest, syncing, protected, and
 error. Until a Firebase gateway is configured, Settings explicitly identifies
-every Egg Hatchers profile as **Device only**. A local display name or username
+every Nestarium profile as **Device only**. A local display name or username
 is never presented as proof that progress is protected across devices.
 
 Immediate guest entry is also implemented locally. Fresh installs receive a

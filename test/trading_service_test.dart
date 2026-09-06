@@ -14,7 +14,7 @@ void main() {
     final webRoot = await Directory.systemTemp.createTemp('egg_trade_web_');
     await File(
       '${webRoot.path}${Platform.pathSeparator}index.html',
-    ).writeAsString('Egg Hatchers');
+    ).writeAsString('Nestarium');
     addTearDown(() => webRoot.delete(recursive: true));
     final server = await LocalMultiplayerServer.start(
       port: 0,

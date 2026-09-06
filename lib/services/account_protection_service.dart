@@ -112,8 +112,9 @@ class AccountProtectionService extends ChangeNotifier {
             ? AccountProtectionState(
                 status: AccountProtectionStatus.guest,
                 protectedPlayerId: identity.playerId,
-                message:
-                    'A cloud copy exists for this device guest. Link Google to recover it on other devices.',
+                message: canLinkGoogle
+                    ? 'A cloud copy exists for this device guest. Link Google to recover it on other devices.'
+                    : 'A cloud copy exists for this device guest. Keep a save export before changing browsers or devices.',
               )
             : AccountProtectionState(
                 status: AccountProtectionStatus.protected,

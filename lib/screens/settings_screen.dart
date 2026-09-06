@@ -142,7 +142,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         activeAccountId: accountId,
       );
       final date = DateTime.now().toIso8601String().split('T').first;
-      await downloadSaveFile(contents, 'egg-hatchers-save-$date.json');
+      await downloadSaveFile(contents, 'nestarium-save-$date.json');
       if (context.mounted) {
         UiSound.confirm(context);
         showGameSnackBar(
@@ -198,7 +198,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         builder: (dialogContext) => AlertDialog(
           title: const Text('Replace local save?'),
           content: const Text(
-            'This will replace every Egg Hatchers account, all progress, settings, custom eggs, and custom animals on this device.',
+            'This will replace every Nestarium account, all progress, settings, custom eggs, and custom animals on this device.',
           ),
           actions: [
             TextButton.icon(

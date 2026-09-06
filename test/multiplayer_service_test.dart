@@ -36,10 +36,10 @@ void main() {
   );
 
   test('two matched players share a server-authoritative battle', () async {
-    final webRoot = await Directory.systemTemp.createTemp('egg_hatchers_web_');
+    final webRoot = await Directory.systemTemp.createTemp('nestarium_web_');
     await File(
       '${webRoot.path}${Platform.pathSeparator}index.html',
-    ).writeAsString('<!doctype html><title>Egg Hatchers</title>');
+    ).writeAsString('<!doctype html><title>Nestarium</title>');
     addTearDown(() => webRoot.delete(recursive: true));
     final server = await LocalMultiplayerServer.start(
       port: 0,
@@ -52,7 +52,7 @@ void main() {
     final pageResponse = await pageRequest.close();
     final page = await utf8.decoder.bind(pageResponse).join();
     expect(pageResponse.statusCode, HttpStatus.ok);
-    expect(page, contains('Egg Hatchers'));
+    expect(page, contains('Nestarium'));
     final uri = Uri.parse('ws://127.0.0.1:${server.port}/ws');
     final first = MultiplayerService(serverUri: uri);
     final second = MultiplayerService(serverUri: uri);
@@ -138,10 +138,10 @@ void main() {
   });
 
   test('match server rejects teams containing unknown animals', () async {
-    final webRoot = await Directory.systemTemp.createTemp('egg_hatchers_web_');
+    final webRoot = await Directory.systemTemp.createTemp('nestarium_web_');
     await File(
       '${webRoot.path}${Platform.pathSeparator}index.html',
-    ).writeAsString('<!doctype html><title>Egg Hatchers</title>');
+    ).writeAsString('<!doctype html><title>Nestarium</title>');
     addTearDown(() => webRoot.delete(recursive: true));
     final server = await LocalMultiplayerServer.start(
       port: 0,

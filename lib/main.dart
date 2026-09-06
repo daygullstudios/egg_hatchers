@@ -41,17 +41,17 @@ import 'utils/arena_logic.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FirebaseBootstrap.initialize();
-  runApp(const EggHatchersApp());
+  runApp(const NestariumApp());
 }
 
-class EggHatchersApp extends StatefulWidget {
-  const EggHatchersApp({super.key});
+class NestariumApp extends StatefulWidget {
+  const NestariumApp({super.key});
 
   @override
-  State<EggHatchersApp> createState() => _EggHatchersAppState();
+  State<NestariumApp> createState() => _NestariumAppState();
 }
 
-class _EggHatchersAppState extends State<EggHatchersApp>
+class _NestariumAppState extends State<NestariumApp>
     with WidgetsBindingObserver {
   final GameService _game = GameService();
   final AccountService _accounts = AccountService();
@@ -312,7 +312,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
 
     return MaterialApp(
       navigatorKey: _navigatorKey,
-      title: 'Egg Hatchers',
+      title: 'Nestarium',
       debugShowCheckedModeBanner: false,
       navigatorObservers: [AppNavigationTracker.instance],
       theme: ThemeData(
@@ -416,7 +416,7 @@ class _LoadingScreen extends StatelessWidget {
                       height: logoSize,
                       fit: BoxFit.contain,
                       filterQuality: FilterQuality.high,
-                      semanticLabel: 'Egg Hatchers',
+                      semanticLabel: 'Nestarium',
                     ),
                     const SizedBox(height: 24),
                     const SizedBox.square(

@@ -107,7 +107,7 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
                       'assets/images/ui/app_logo.png',
                       height: 112,
                       fit: BoxFit.contain,
-                      semanticLabel: 'Egg Hatchers',
+                      semanticLabel: 'Nestarium',
                     ),
                     const SizedBox(height: 14),
                     Text(
@@ -225,7 +225,7 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
                                 ),
                               )
                             : const Icon(Icons.arrow_forward),
-                        label: const Text('Enter Egg Hatchers'),
+                        label: const Text('Enter Nestarium'),
                       ),
                       if (widget.accounts.accounts.isNotEmpty) ...[
                         const SizedBox(height: 8),

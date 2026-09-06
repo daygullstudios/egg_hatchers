@@ -1,10 +1,57 @@
-# Egg Hatchers Project Handoff
+# Nestarium Project Handoff
 
 Updated: 2026-09-06
 
+## Nestarium migration — current checkpoint
+
+The public/product name is now **Nestarium** and the selected public domain is
+`playnestarium.com`. See `docs/NESTARIUM_MIGRATION.md` for completed surfaces,
+hostname gates, platform actions, and rollback/continuity decisions.
+`docs/LEGACY_BRAND_REFERENCES.json` enumerates every retained legacy source
+reference; run `node tool/audit_brand.mjs` to validate it.
+
+UI/web metadata, all branded launcher/loading artwork, mobile display names,
+safe desktop display fields, tooling/artifact names and project documentation
+are migrated. Native bundle IDs, Firebase project/app IDs, all save/settings
+keys and formats, Firestore paths/rules/data, repository remote, Worker resource
+name and existing browser origin stay compatible. Windows CompanyName and
+ProductName specifically remain unchanged because the preferences directory
+depends on them. New exports use `nestarium-save-YYYY-MM-DD.json` while their
+transfer format remains compatible with pre-rename exports/installations.
+
+Firebase now displays **Nestarium Dev** with renamed existing app registrations.
+The existing protected hostname and both selected Nestarium hostnames are
+authorized. Cloudflare Access displays **Nestarium private playtest** and
+protects the existing origin plus `playtest.playnestarium.com`, preserving the
+existing tester policy and session duration. The Nestarium domain has no game
+route/DNS yet. Google support/consent identity and cross-origin recovery
+acceptance remain release gates; do not redirect existing players away from
+their browser-local saves.
+
+Access eager cookie redirects are **off** for this application: otherwise an
+approved old-origin login was redirected through the unresolved staged domain.
+Verified the corrected setting and successful return to the existing game.
+The shared Access Google account chooser still says Railcade; do not rename
+that shared OAuth client. A Nestarium-specific Access identity needs a separate
+review alongside the game's Firebase provider/support identity.
+
+The previously unreleased Google-linking implementation is gated off by default
+with `NESTARIUM_GOOGLE_SIGN_IN_ENABLED`, because the Firebase Google provider
+is still unconfigured. Existing anonymous cloud sync remains active. Native
+OAuth/signing and store metadata review remain owner/platform actions.
+
+Analysis, 509 Flutter tests, and the web release build pass on installed Flutter
+3.47.2 / Dart 3.13.2; no lockfile update. Android debug build also passes, with
+APK label Nestarium and unchanged package `com.egghatchers.game` / 1.0.0+1.
+The three Cloudflare configuration tests and Wrangler 4.129.0 dry run pass
+(306 assets). The older PATH SDK failed during asset export and became
+unavailable; the installed alternate SDK completed regeneration. Do not change
+system security settings to recover the old SDK. Release/deployment evidence
+will be recorded below after verification.
+
 ## Project status
 
-Egg Hatchers is a Flutter idle collection and battle game. It currently includes local multi-account saves, hatching and mutations, rebirths, quests, collections, fusions, custom eggs and sprites, three visual styles, manual boss fights, Bot Arena, live multiplayer battles, live trading, player invitations, collection viewing, and preset trade messages.
+Nestarium is a Flutter idle collection and battle game. It currently includes local multi-account saves, hatching and mutations, rebirths, quests, collections, fusions, custom eggs and sprites, three visual styles, manual boss fights, Bot Arena, live multiplayer battles, live trading, player invitations, collection viewing, and preset trade messages.
 
 Recent polish includes projectile trails, staged boss music that layers intensity without restarting, pause-resume countdowns, improved boss backgrounds, a hidden DayGull Egg unlock path, DayGull animals with animated glitch effects, and a live coin balance that remains in the shared app bar throughout navigation. The hatchery labels its Rebirth-scoped animal-income total as `earned` and explains the total on hover or tap; misleading player-facing `lifetime` terminology has been removed.
 
@@ -37,16 +84,17 @@ The repository is owned by the `daygullstudios` GitHub organization. The main de
 Accounts, game progress, settings, custom eggs, and custom sprites are stored locally through Flutter `SharedPreferences`; they are not stored in GitHub. The Settings screen includes Save Transfer controls:
 
 1. On the old computer, open Settings and choose **Export Save**.
-2. Move the downloaded `egg-hatchers-save-YYYY-MM-DD.json` file to the new computer.
+2. Move the downloaded `nestarium-save-YYYY-MM-DD.json` file to the new computer.
 3. On the new computer, open Settings and choose **Import Save**.
 4. Confirm replacement and restart the game when prompted.
 
-Import replaces all Egg Hatchers local data on the destination browser. Keep the exported file as a backup until migration is verified.
+Import replaces all Nestarium local data on the destination browser. Keep the exported file as a backup until migration is verified.
 
 ## Known unfinished production work
 
 - Multiplayer rooms and presence are held in server memory. Production needs authenticated server accounts, durable database storage, transactional trades, reconnect handling, moderation controls, and abuse protection.
-- Browser accounts are local profiles, not secure remote authentication.
+- Named local profiles remain local; the designated guest uses anonymous
+  Firebase authentication and revisioned cloud sync. Provider recovery is staged.
 - Android release signing is not configured. Follow `README.md` before store publishing.
 - Render configuration exists for later beta hosting, but the user does not want to release yet.
 - Bot Arena remains intentionally available until multiplayer is finished.
@@ -58,7 +106,7 @@ Phase 1 has begun by versioning local progress without changing existing save
 keys or the JSON transfer format. The persistence inventory, proposed protected
 cloud contract, and conservative guest-link conflict policy are documented in
 that plan and represented by Firebase-independent sync-planning tests.
-Egg Hatchers is explicitly treated as the legacy migration source rather than
+Nestarium is explicitly treated as the legacy migration source rather than
 the architecture authority; new systems follow the stronger proven Railcade or
 Grids & Aces pattern where applicable.
 
@@ -121,22 +169,20 @@ at inspection) on 2026-09-05.
 `playnestarium.com` was purchased through the existing Daygull Studios
 Cloudflare account on 2026-09-06 as the selected public-facing Nestarium
 domain. It is active, auto-renew is enabled, and it expires on 2027-09-06.
-No DNS, Worker route, email, Firebase, game-title, or public-site change has
-been made yet. Configure its public hostname deliberately and add it to
-Firebase Authentication's authorized domains before it is used for live
-sign-in or play.
+The Nestarium migration above supersedes the original purchase-only checkpoint:
+product/Firebase displays and authorized domains are now updated. DNS/Worker
+routing and public email remain staged; no public product site is published.
 
-The next identity slice is implemented locally but not released yet. The
+The next identity slice is implemented but gated off pending provider setup. The
 device guest can link Google on Web while preserving the anonymous UID and its
 Firestore document. If the selected Google credential already belongs to an
-Egg Hatchers identity, the client opens that UID, clears the old local sync
+Nestarium identity, the client opens that UID, clears the old local sync
 ancestry, and requires the normal cloud/device comparison before accepting a
 save. Cancellation and errors leave the guest save unchanged. Native Google
 buttons remain fail-closed because the Android OAuth/SHA registration and iOS
-client configuration are not provisioned yet. Firebase's Google provider form
-is prepared with the public app name but still requires the owner-approved
-public support email and final Save; the playtest hostname must then be added
-to Firebase Authentication's authorized domains before live QA.
+client configuration are not provisioned yet. Firebase's Google provider still
+requires the approved product support email and Nestarium consent branding.
+The playtest hostnames are already in Firebase's authorized-domain list.
 
 ## Art rules
 

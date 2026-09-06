@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('Firebase registrations belong only to Egg Hatchers development', () {
+  test('Firebase registrations belong only to Nestarium development', () {
     expect(FirebaseBootstrap.projectId, 'egg-hatchers-dev');
     expect(DefaultFirebaseOptions.web.projectId, FirebaseBootstrap.projectId);
     expect(

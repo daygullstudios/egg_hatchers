@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/animal.dart';
 import '../models/background_theme.dart';
 
-/// Shared styling helpers for the Egg Hatchers UI.
+/// Shared styling helpers for the Nestarium UI.
 class GameTheme {
   GameTheme._();
 
@@ -36,9 +36,7 @@ class GameTheme {
   /// Border color for cards/chips; ??? and Boss use theme-aware outlines.
   static Color rarityBorderColor(Rarity rarity, BackgroundTheme theme) {
     if (rarity == Rarity.unknown) {
-      return theme.isDark
-          ? const Color(0xFFE8E8E8)
-          : const Color(0xFF0A0A0A);
+      return theme.isDark ? const Color(0xFFE8E8E8) : const Color(0xFF0A0A0A);
     }
     if (rarity == Rarity.boss) {
       return const Color(0xFF42A5F5);
@@ -164,8 +162,9 @@ class GameTheme {
       border: Border.all(
         color: locked
             ? theme.disabledColor
-            : (borderColor ?? theme.cardBorderColor)
-                .withValues(alpha: borderColor != null ? 0.9 : 0.55),
+            : (borderColor ?? theme.cardBorderColor).withValues(
+                alpha: borderColor != null ? 0.9 : 0.55,
+              ),
         width: locked ? 2 : 2,
       ),
       boxShadow: [

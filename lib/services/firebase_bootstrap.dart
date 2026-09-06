@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 import '../firebase_options.dart';
 
-/// Initializes the isolated Egg Hatchers development Firebase project.
+/// Initializes the isolated Nestarium development Firebase project.
 ///
 /// Authentication may establish an anonymous device identity after bootstrap.
 /// Firestore and cloud progress remain disabled, so local saves are still the

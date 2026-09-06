@@ -37,6 +37,9 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
+      - name: Verify rebrand compatibility inventory
+        run: node tool/audit_brand.mjs
+
       - name: Test
         run: flutter test
 
@@ -44,37 +47,37 @@ jobs:
         run: flutter build web --release --no-pub
 
       - name: Build multiplayer server
-        run: dart compile exe tool/multiplayer_server.dart -o build/egg-hatchers-server
+        run: dart compile exe tool/multiplayer_server.dart -o build/nestarium-server
 
       - name: Package hosted release
         run: |
           mkdir -p build/deploy/build
-          cp build/egg-hatchers-server build/deploy/egg-hatchers-server
+          cp build/nestarium-server build/deploy/nestarium-server
           cp -R build/web build/deploy/build/web
-          tar -C build/deploy -czf build/egg-hatchers-linux-x64.tar.gz .
+          tar -C build/deploy -czf build/nestarium-linux-x64.tar.gz .
 
       - name: Upload hosted release
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: egg-hatchers-linux-x64
-          path: build/egg-hatchers-linux-x64.tar.gz
+          name: nestarium-linux-x64
+          path: build/nestarium-linux-x64.tar.gz
           if-no-files-found: error
           retention-days: 14
 
       - name: Verify deployment container
         run: |
-          docker build --tag egg-hatchers:verify .
-          docker run --detach --name egg-hatchers-verify \
-            --publish 18080:10000 egg-hatchers:verify
-          trap 'docker rm --force egg-hatchers-verify' EXIT
+          docker build --tag nestarium:verify .
+          docker run --detach --name nestarium-verify \
+            --publish 18080:10000 nestarium:verify
+          trap 'docker rm --force nestarium-verify' EXIT
           for attempt in $(seq 1 30); do
             if curl --fail --silent http://127.0.0.1:18080/health; then
               break
             fi
             if [ "$attempt" -eq 30 ]; then
-              docker logs egg-hatchers-verify
+              docker logs nestarium-verify
               exit 1
             fi
             sleep 1
           done
-          curl --fail --silent http://127.0.0.1:18080/ | grep --quiet "Egg Hatchers"
+          curl --fail --silent http://127.0.0.1:18080/ | grep --quiet "Nestarium"

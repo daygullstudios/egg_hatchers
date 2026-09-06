@@ -1,18 +1,32 @@
-# Egg Hatchers private web playtest
+# Nestarium private web playtest
 
 This directory is the checked-in Cloudflare delivery boundary for the compiled
-Flutter web game. It follows the proven Railcade shape while the current Egg
-Hatchers name remains an internal migration label.
+Nestarium Flutter web game. `deployment_identity.json` records its product
+identity, active compatibility origin, staged hostname, and release gates.
 
 The playtest publishes only to
 `egg-hatchers-playtest.daygullstudios.com`. `workers_dev` and preview URLs stay
 disabled, so Cloudflare does not create an unprotected alternate game URL.
 
-The temporary hostname is intentionally beneath the studio domain so the final
-product-name decision remains independent. Its self-hosted Cloudflare Access
-application is `2ed23c5f-4d30-42e9-83c4-90b4e24c2135` and reuses Railcade's
-approved-tester allow policy. The policy itself remains managed in Cloudflare;
+The selected public domain is `playnestarium.com`. The new private hostname
+`playtest.playnestarium.com` is staged in Access and Firebase authorized domains
+but has no DNS/Worker route yet. Keep it unrouted until the gates in
+`deployment_identity.json` are accepted. Do not add an apex, wildcard, preview,
+or workers.dev route as a shortcut.
+
+The Worker resource name stays `egg-hatchers-playtest` to retain deployment
+history and rollback continuity. The current browser origin remains available
+without a redirect because browser saves and anonymous credentials are
+origin-scoped. Its self-hosted Cloudflare Access application is
+`2ed23c5f-4d30-42e9-83c4-90b4e24c2135`, displayed as **Nestarium private
+playtest**, and reuses the established approved-tester allow policy. The policy
+itself remains managed in Cloudflare;
 tester email addresses and credentials are never checked into the repository.
+
+Keep this application's **Eager redirect cookie** setting off while any staged
+hostname is unrouted. Access issues authorization cookies when each hostname is
+visited; it must not redirect current players through an unresolved hostname.
+The tester policy and 24-hour session duration remain unchanged.
 
 The first routed release is Worker version
 `b95eec09-b6a8-4071-b20b-4bf4d97c9b00`. Direct unauthenticated requests to both
@@ -51,6 +65,11 @@ uploads a new version and updates only the protected custom-domain route.
 2. Run the configuration test, web release build, and Wrangler dry run.
 3. Deploy and verify that an unauthenticated browser is redirected to Access
    while an approved identity reaches the game.
+
+See `../../docs/NESTARIUM_MIGRATION.md` for continuity decisions and the
+remaining hostname/provider acceptance steps. The Google-linking client is
+staged behind `NESTARIUM_GOOGLE_SIGN_IN_ENABLED` (false by default); enable it
+only in an explicitly qualified provider release.
 
 Never place Cloudflare API tokens, Firebase credentials, Access assertions, or
 tester email lists in this directory or in the Flutter web bundle.

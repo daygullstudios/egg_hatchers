@@ -1,4 +1,4 @@
-# Generates cute placeholder PNG sprites for Egg Hatchers.
+# Generates cute placeholder PNG sprites for Nestarium.
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 

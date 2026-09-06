@@ -1,4 +1,4 @@
-"""Build the original, license-free Egg Hatchers game SFX bank.
+"""Build the original, license-free Nestarium game SFX bank.
 
 The sounds are deterministic procedural Foley. They combine filtered noise,
 mechanical transients, inharmonic percussion, and layered impacts instead of

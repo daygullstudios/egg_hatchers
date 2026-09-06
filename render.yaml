@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: egg-hatchers
+    name: nestarium
     runtime: docker
     plan: free
     region: ohio

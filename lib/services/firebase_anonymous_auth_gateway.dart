@@ -21,7 +21,8 @@ final class FirebaseAnonymousAuthGateway implements AccountProtectionGateway {
   // Native clients remain fail-closed until their OAuth client IDs and Android
   // signing fingerprints are provisioned in the development project.
   @override
-  bool get canLinkGoogle => kIsWeb;
+  bool get canLinkGoogle =>
+      kIsWeb && const bool.fromEnvironment('NESTARIUM_GOOGLE_SIGN_IN_ENABLED');
 
   @override
   Future<ProtectedPlayerIdentity?> restoreIdentity({

@@ -14,7 +14,7 @@ void main() {
         coins: coins,
         child: Scaffold(
           appBar: PhoneWidthAppBar(
-            title: 'Egg Hatchers',
+            title: 'Nestarium',
             backgroundColor: Colors.teal,
             foregroundColor: Colors.white,
             onCoinBalanceTap: onCoinBalanceTap,
@@ -32,7 +32,7 @@ void main() {
 
     expect(find.text('1,452'), findsOneWidget);
     expect(find.text('coins'), findsOneWidget);
-    expect(find.text('Egg Hatchers'), findsNothing);
+    expect(find.text('Nestarium'), findsNothing);
   });
 
   testWidgets('updates when the scoped balance changes', (tester) async {

@@ -1,4 +1,4 @@
-"""Generate cute placeholder PNG sprites for Egg Hatchers."""
+"""Generate cute placeholder PNG sprites for Nestarium."""
 
 from pathlib import Path
 

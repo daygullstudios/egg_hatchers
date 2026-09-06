@@ -3,6 +3,32 @@ import 'package:flutter_test/flutter_test.dart';
 import '../tool/multiplayer_server.dart';
 
 void main() {
+  test('Nestarium environment names win while legacy names remain usable', () {
+    const legacy = {
+      'EGG_HATCHERS_HOST': 'legacy-host',
+      'EGG_HATCHERS_PORT': '9001',
+      'EGG_HATCHERS_WEB_ROOT': 'legacy-web',
+    };
+    final old = MultiplayerServerConfig.fromArgs([], environment: legacy);
+    expect(
+      (old.host, old.port, old.webRoot),
+      ('legacy-host', 9001, 'legacy-web'),
+    );
+    final renamed = MultiplayerServerConfig.fromArgs(
+      [],
+      environment: {
+        ...legacy,
+        'NESTARIUM_HOST': 'new-host',
+        'NESTARIUM_PORT': '9002',
+        'NESTARIUM_WEB_ROOT': 'new-web',
+      },
+    );
+    expect(
+      (renamed.host, renamed.port, renamed.webRoot),
+      ('new-host', 9002, 'new-web'),
+    );
+  });
+
   test('server config uses local defaults', () {
     final config = MultiplayerServerConfig.fromArgs(const []);
 

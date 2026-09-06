@@ -5,7 +5,7 @@ import '../models/player_state.dart';
 import 'progress_sync_service.dart';
 import 'save_service.dart';
 
-/// Firestore persistence for one authenticated Egg Hatchers identity.
+/// Firestore persistence for one authenticated Nestarium identity.
 ///
 /// Reads require a confirmed server response. Writes are revision-checked
 /// transactions so a stale device cannot silently replace newer cloud data.

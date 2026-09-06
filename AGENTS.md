@@ -1,6 +1,13 @@
-# Egg Hatchers Working Rules
+# Nestarium Working Rules
 
 These instructions are part of the project and apply on every development computer.
+
+The public product is **Nestarium**, with selected domain `playnestarium.com`.
+Read `docs/NESTARIUM_MIGRATION.md` before changing product identifiers or
+hostnames. Preserve the compatibility identities in
+`docs/LEGACY_BRAND_REFERENCES.json`; `node tool/audit_brand.mjs` verifies the
+inventory. The staged Nestarium hostname must not be routed before its
+documented protection, identity, and recovery gates pass.
 
 ## Git workflow
 

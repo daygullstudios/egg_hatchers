@@ -24,7 +24,7 @@ Future<void> main(List<String> args) async {
     webRoot: config.webRoot,
   );
   stdout.writeln(
-    'Egg Hatchers match server: ws://${server.host}:${server.port}/ws',
+    'Nestarium match server: ws://${server.host}:${server.port}/ws',
   );
 }
 
@@ -73,11 +73,13 @@ class MultiplayerServerConfig {
 
     final host =
         options['host'] ??
+        environment['NESTARIUM_HOST'] ??
         environment['EGG_HATCHERS_HOST'] ??
         environment['HOST'] ??
         _defaultHost;
     final portValue =
         options['port'] ??
+        environment['NESTARIUM_PORT'] ??
         environment['EGG_HATCHERS_PORT'] ??
         environment['PORT'] ??
         '$_defaultPort';
@@ -87,6 +89,7 @@ class MultiplayerServerConfig {
     }
     final webRoot =
         options['web-root'] ??
+        environment['NESTARIUM_WEB_ROOT'] ??
         environment['EGG_HATCHERS_WEB_ROOT'] ??
         environment['WEB_ROOT'] ??
         'build/web';

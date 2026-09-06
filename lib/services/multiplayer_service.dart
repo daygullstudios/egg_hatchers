@@ -41,7 +41,10 @@ class MultiplayerService extends ChangeNotifier {
       _state != MultiplayerConnectionState.offline;
 
   static Uri defaultServerUri() {
-    const configuredUrl = String.fromEnvironment('EGG_HATCHERS_SERVER_URL');
+    const configuredUrl = String.fromEnvironment(
+      'NESTARIUM_SERVER_URL',
+      defaultValue: String.fromEnvironment('EGG_HATCHERS_SERVER_URL'),
+    );
     if (configuredUrl.isNotEmpty) {
       final configured = Uri.parse(configuredUrl);
       if (configured.scheme == 'ws' || configured.scheme == 'wss') {

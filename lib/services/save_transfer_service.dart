@@ -78,16 +78,14 @@ class SaveTransferService {
       throw const SaveTransferException('That file is not valid JSON.');
     }
     if (decoded is! Map) {
-      throw const SaveTransferException(
-        'That is not an Egg Hatchers save file.',
-      );
+      throw const SaveTransferException('That is not a Nestarium save file.');
     }
     final document = Map<String, dynamic>.from(decoded);
     if (document['format'] != formatName ||
         document['version'] != formatVersion ||
         document['preferences'] is! Map) {
       throw const SaveTransferException(
-        'That file is not a supported Egg Hatchers save file.',
+        'That file is not a supported Nestarium save file.',
       );
     }
     document['preferences'] = Map<String, dynamic>.from(
