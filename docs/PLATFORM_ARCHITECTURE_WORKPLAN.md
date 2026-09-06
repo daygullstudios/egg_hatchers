@@ -257,6 +257,11 @@ not claim cross-install recovery: Google/Apple provider linking is the next
 identity milestone that makes the same UID recoverable across installations
 and platforms.
 
+The first hosted implementation shipped in commit `38838e4` as Cloudflare
+playtest version `0ebef879-3b8b-4b4c-be93-7176e109696c`. External-Chrome QA
+confirmed the existing local save remained intact and its owner-scoped
+Firestore document advanced to cloud revision 44.
+
 ### 4. Establish web delivery and platform policy
 
 - Deploy release web builds through Cloudflare with separate preview and

@@ -112,6 +112,12 @@ recovery path. Rules are covered by emulator tests; sync planning, repository
 decoding, continuous-save throttling, restore, and conflict behavior are
 covered by Flutter tests.
 
+The first hosted sync release is commit `38838e4`, deployed to the protected
+Cloudflare playtest as version `0ebef879-3b8b-4b4c-be93-7176e109696c`. An
+external-Chrome smoke test loaded the existing local save and confirmed its
+owner-scoped Firestore document was actively advancing revisions (revision 44
+at inspection) on 2026-09-05.
+
 ## Art rules
 
 Every new animal needs Classic, Retro Pixel, and Realistic versions. Classic should be cartoony, Retro Pixel should be intentionally pixel-built, and Realistic should match the detailed transparent sprite set. DayGull animals may also need the established animated side-slice glitch treatment.
