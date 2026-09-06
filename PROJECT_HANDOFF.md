@@ -2,7 +2,52 @@
 
 Updated: 2026-09-06
 
-## Local-player picker clarity — current implementation checkpoint
+## Player-switch recovery — current implementation checkpoint
+
+A whole-app regression reproduced the loading freeze with a socket that never
+acknowledges close. `_switchGameAccount` previously awaited that network cleanup;
+the account-change listener could also reconnect presence with the newly selected
+profile before its local save loaded. The controlled reproduction failed against
+the old lifecycle and passes with synchronous connection retirement. The earlier
+live symptom was observed without a browser stack trace; live replay after the
+verified deployment is the separate acceptance check, not inferred from tests.
+
+Lobby disconnect now retires its ownership immediately, starts cancel/close
+independently, catches transport cleanup failures and ignores obsolete handshake,
+message and disconnect callbacks. Handshake failure no longer awaits close; only
+the latest queued presence is sent after a successful connection. Multiplayer
+protocols, endpoints and Bot Arena remain unchanged.
+
+Root player transitions are serialized. Old cloud/presence context is revoked
+before loading; neither can publish again until the currently selected player's
+progress and customizations finish. Superseded selections cannot reopen a stale
+player or pair a new identity with old progress. An interrupted legacy migration
+stays assigned to its original player. Failed local loads show **Try again** and
+**Choose local player**, without removing players or silently repairing unreadable
+customizations. Diagnostics expose only the stage and exception type, not save
+contents or identity. Firebase identity restoration and cloud-conflict decisions
+are unchanged; this is not a blanket claim of offline bootstrap/recovery readiness.
+
+New whole-app tests cover the actual Settings > Switch Account > creation/back >
+existing-player route, non-completing socket cleanup, overlapping selection,
+returning to the picker mid-load, recovery controls at 320x360/200% text, mocked
+local-read failure, untouched wrong-type custom-egg storage and other-player
+preservation. Socket regressions cover late success/failure, dual failure signals,
+queued presence and creation failure; existing real local-server battle/trade
+tests remain in the gate. Short/large-text testing also found and fixed an income
+chip Row overflow by allowing its label to wrap.
+
+Validation: Flutter 3.47.2 analysis has no issues and all **563 tests** pass,
+including 15 app/lobby checks (13 new). Brand inventory: 551 classified legacy
+references, none unclassified. Release build/deployment acceptance follows below.
+No real save is to be imported, reset, removed or selected in a cloud conflict
+for QA. Next priority remains validated import preview, coordinated writer
+pause/replacement/rollback/restart and cancellation, followed by unreadable account
+metadata recovery. Child-compatible identity and the new hostname cutover remain
+gated. No credential, Firebase project/provider/rule/schema, public route or
+bundle/save identifier changes are part of this patch.
+
+## Local-player picker clarity — preceding implementation checkpoint
 
 Startup/player switching still used an obsolete Delete account dialog. The picker
 now reuses Settings' **Remove local player** confirmation, including exact local
@@ -41,15 +86,14 @@ save imported, reset, restored or chosen in the device/cloud comparison for QA.
 Actual data-removal/creation isolation was tested only with mocked local data.
 Human comprehension and native device acceptance remain separate gates.
 
-**Immediate next — player-switch startup stall:** final live QA followed Settings
+**Observed follow-up — player-switch startup stall:** final live QA followed Settings
 > Switch Account > Create another player > Back to players > existing guest.
 The return stayed on the logo/loading screen across repeated observations.
 Refresh restored the existing progress and the same three animals with income
 continuing. No save was selected/replaced to recover. Root cause is not yet proven;
-inspect awaited stages in `_switchGameAccount` (lobby disconnect, identity restore,
-game/custom-service initialization), failure handling and overlapping selection.
-Add app-level regression coverage; picker-only tests do not establish whole-app
-switch completion. Do not clear local data or replace identity as a workaround.
+the recovery checkpoint above records the subsequent causal regression and fix.
+Picker-only tests do not establish whole-app switch completion. No local data or
+identity was cleared or replaced as a workaround.
 
 **Following priority — import safety:** code inspection found `SaveTransferService`
 clears preferences and rewrites them while the existing game remains running,

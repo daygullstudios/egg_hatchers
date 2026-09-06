@@ -13,8 +13,111 @@ import 'package:egg_hatchers/services/trading_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../tool/multiplayer_server.dart';
+import 'support/controlled_lobby_channel.dart';
 
 void main() {
+  test(
+    'synchronous socket creation failure leaves the lobby unavailable',
+    () async {
+      final lobby = OnlineLobbyService(
+        channelFactory: (_) => throw StateError('unavailable'),
+      );
+      await lobby.connect(_presence('first', 'First'));
+      expect(lobby.state, OnlineLobbyConnectionState.disconnected);
+      expect(lobby.statusMessage, 'Online lobby is unavailable.');
+      lobby.dispose();
+    },
+  );
+
+  test(
+    'disconnect finishes without a handshake or close acknowledgement',
+    () async {
+      final channel = ControlledLobbyChannel();
+      final lobby = OnlineLobbyService(channelFactory: (_) => channel);
+      final connecting = lobby.connect(_presence('first', 'First'));
+      await lobby.disconnect().timeout(const Duration(milliseconds: 100));
+      expect(lobby.state, OnlineLobbyConnectionState.disconnected);
+      expect(channel.sink.closeCalls, 1);
+      expect(channel.sink.closed.isCompleted, isFalse);
+      channel.finish();
+      await connecting;
+      expect(lobby.state, OnlineLobbyConnectionState.disconnected);
+      expect(channel.sink.messages, isEmpty);
+      lobby.dispose();
+    },
+  );
+
+  for (final failOldHandshake in [false, true]) {
+    test(
+      'retired handshake cannot change the new session ($failOldHandshake)',
+      () async {
+        final old = ControlledLobbyChannel();
+        final current = ControlledLobbyChannel();
+        var calls = 0;
+        final lobby = OnlineLobbyService(
+          channelFactory: (_) => calls++ == 0 ? old : current,
+        );
+        final oldConnect = lobby.connect(_presence('old', 'Old'));
+        await lobby.disconnect();
+        final newConnect = lobby.connect(_presence('current', 'Current'));
+        current.handshake.complete();
+        await newConnect;
+        if (failOldHandshake) {
+          old.handshake.completeError(StateError('retired handshake failed'));
+        } else {
+          old.handshake.complete();
+        }
+        old.incoming.add('{"type":"lobbyError","message":"stale"}');
+        old.sink.closed.completeError(StateError('retired close failed'));
+        await oldConnect;
+        expect(lobby.state, OnlineLobbyConnectionState.online);
+        expect(lobby.statusMessage, isNull);
+        expect(current.sink.closeCalls, 0);
+        expect(current.sink.messages.single, contains('current'));
+        lobby.dispose();
+        old.finish();
+        current.finish();
+      },
+    );
+  }
+
+  test(
+    'handshake queues only the latest presence and handles both failure signals',
+    () async {
+      final channel = ControlledLobbyChannel();
+      final lobby = OnlineLobbyService(channelFactory: (_) => channel);
+      final connecting = lobby.connect(_presence('first', 'First'));
+      lobby.updatePresence(_presence('second', 'Second'));
+      expect(channel.sink.messages, isEmpty);
+      channel.handshake.complete();
+      await connecting;
+      expect(channel.sink.messages, hasLength(1));
+      expect(channel.sink.messages.single, contains('second'));
+      channel.incoming.addError(StateError('connection lost'));
+      expect(lobby.state, OnlineLobbyConnectionState.disconnected);
+      expect(lobby.incomingInvite, isNull);
+      expect(lobby.sessionLaunch, isNull);
+      lobby.dispose();
+      channel.finish();
+    },
+  );
+
+  test(
+    'failed current handshake completes even if cleanup never completes',
+    () async {
+      final channel = ControlledLobbyChannel();
+      final lobby = OnlineLobbyService(channelFactory: (_) => channel);
+      final connecting = lobby.connect(_presence('first', 'First'));
+      channel.handshake.completeError(StateError('offline'));
+      channel.incoming.addError(StateError('offline stream'));
+      await connecting.timeout(const Duration(milliseconds: 100));
+      expect(lobby.state, OnlineLobbyConnectionState.disconnected);
+      expect(channel.sink.closed.isCompleted, isFalse);
+      lobby.dispose();
+      channel.finish();
+    },
+  );
+
   test(
     'online roster supports messages, decline, and invited battle',
     () async {

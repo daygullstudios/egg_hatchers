@@ -41,11 +41,13 @@ Automated passes are necessary but are not proof of player comprehension.
    fresh review. Neither source is recommended or merged. The player picker now
    shares accurate local-removal confirmation, distinguishes new local progress
    from recovery/sign-in, and fits narrow layouts with named 48px avatar targets.
-   **Immediate next: resolve the observed player-switch loading stall.** Final
-   live return to the same guest remained on the loading logo; refresh restored
-   progress. Diagnose the awaited switch stages and add app-level failure,
-   overlap and completion coverage; no clearing data or changing identity.
-   **Then: import safety before more recovery UI.** Current transfer rewrites
+   Player-switch recovery removes the reproduced wait on unfinished lobby close,
+   retires stale connections, serializes selection and prevents cloud/presence
+   publication before the selected save loads. Failure offers retry or the local
+   picker; whole-app tests cover the actual route, overlap and untouched local
+   data. `PROJECT_HANDOFF.md` owns release/live acceptance; no data reset or new
+   identity is a workaround. Full offline bootstrap/recovery remains separate.
+   **Next: import safety before more recovery UI.** Current transfer rewrites
    preferences while the old game remains active. Add validated read-only preview,
    coordinated writer pause/drain, checked replacement/rollback and restart, plus
    file-picker cancellation handling. Cover nested malformed progress, failures,

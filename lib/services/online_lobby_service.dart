@@ -11,10 +11,14 @@ import 'multiplayer_service.dart';
 enum OnlineLobbyConnectionState { disconnected, connecting, online }
 
 class OnlineLobbyService extends ChangeNotifier {
-  OnlineLobbyService({Uri? serverUri})
-    : serverUri = serverUri ?? MultiplayerService.defaultServerUri();
+  OnlineLobbyService({
+    Uri? serverUri,
+    WebSocketChannel Function(Uri)? channelFactory,
+  }) : serverUri = serverUri ?? MultiplayerService.defaultServerUri(),
+       _channelFactory = channelFactory ?? WebSocketChannel.connect;
 
   final Uri serverUri;
+  final WebSocketChannel Function(Uri) _channelFactory;
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
   OnlineLobbyConnectionState _state = OnlineLobbyConnectionState.disconnected;
@@ -25,6 +29,8 @@ class OnlineLobbyService extends ChangeNotifier {
   OnlineLobbyNotice? _notice;
   String? _statusMessage;
   String? _presenceSignature;
+  String? _pendingPresence;
+  var _connectionRevision = 0;
   OnlineInviteKind? _pendingInviteKind;
   String? _pendingInviteUsername;
   var _nextNoticeId = 1;
@@ -39,59 +45,67 @@ class OnlineLobbyService extends ChangeNotifier {
   String? get statusMessage => _statusMessage;
 
   Future<void> connect(OnlinePresenceSnapshot presence) async {
-    final signature = jsonEncode(presence.toJson());
+    if (_disposed) return;
     if (_channel != null) {
       updatePresence(presence);
       return;
     }
-    if (_disposed) return;
+    final revision = ++_connectionRevision;
+    _pendingPresence = jsonEncode(presence.toJson());
     _state = OnlineLobbyConnectionState.connecting;
     notifyListeners();
     try {
-      final channel = WebSocketChannel.connect(serverUri);
+      final channel = _channelFactory(serverUri);
       _channel = channel;
-      await channel.ready.timeout(const Duration(seconds: 4));
-      if (_disposed) {
-        _channel = null;
-        await channel.sink.close();
-        return;
-      }
+      // Listen during the handshake too: failed sockets can emit both a ready
+      // error and a stream error. Obsolete callbacks never own a newer socket.
       _subscription = channel.stream.listen(
-        _handleMessage,
-        onDone: _handleDisconnect,
-        onError: (_) => _handleDisconnect(),
+        (raw) {
+          if (_ownsConnection(revision)) _handleMessage(raw);
+        },
+        onDone: () => _handleDisconnect(revision),
+        onError: (_) => _handleDisconnect(revision),
       );
-      _presenceSignature = signature;
-      channel.sink.add(
-        jsonEncode({'type': 'registerPresence', ...presence.toJson()}),
-      );
+      await channel.ready.timeout(const Duration(seconds: 4));
+      if (!_ownsConnection(revision)) return;
       _state = OnlineLobbyConnectionState.online;
+      _sendPendingPresence();
       _statusMessage = null;
       notifyListeners();
     } catch (_) {
-      final failedChannel = _channel;
-      _channel = null;
-      try {
-        await failedChannel?.sink.close();
-      } catch (_) {}
-      if (_disposed) return;
-      _state = OnlineLobbyConnectionState.disconnected;
+      // The factory can throw before assigning a channel. That is still this
+      // attempt's failure, unlike a callback from an already retired socket.
+      if (_disposed || revision != _connectionRevision) return;
+      _detachConnection();
       _statusMessage = 'Online lobby is unavailable.';
       notifyListeners();
     }
   }
 
   void updatePresence(OnlinePresenceSnapshot presence) {
+    if (_disposed) return;
     final signature = jsonEncode(presence.toJson());
     if (_channel == null) {
       unawaited(connect(presence));
       return;
     }
-    if (signature == _presenceSignature) return;
-    _presenceSignature = signature;
+    _pendingPresence = signature;
+    if (_state == OnlineLobbyConnectionState.online) _sendPendingPresence();
+  }
+
+  bool _ownsConnection(int revision) =>
+      !_disposed && revision == _connectionRevision && _channel != null;
+
+  void _sendPendingPresence() {
+    final signature = _pendingPresence;
+    if (signature == null || signature == _presenceSignature) return;
     _channel!.sink.add(
-      jsonEncode({'type': 'registerPresence', ...presence.toJson()}),
+      jsonEncode({
+        'type': 'registerPresence',
+        ...jsonDecode(signature) as Map<String, dynamic>,
+      }),
     );
+    _presenceSignature = signature;
   }
 
   void invite(String playerId, OnlineInviteKind kind) {
@@ -159,9 +173,18 @@ class OnlineLobbyService extends ChangeNotifier {
   }
 
   Future<void> disconnect() async {
-    await _subscription?.cancel();
+    _detachConnection();
+    _statusMessage = null;
+    if (!_disposed) notifyListeners();
+  }
+
+  void _detachConnection() {
+    // Retire ownership synchronously. A server/transport may never acknowledge
+    // close; player switching must not await it or let it clear a new session.
+    _connectionRevision++;
+    final subscription = _subscription;
+    final channel = _channel;
     _subscription = null;
-    await _channel?.sink.close();
     _channel = null;
     _players = const [];
     _incomingInvite = null;
@@ -169,8 +192,22 @@ class OnlineLobbyService extends ChangeNotifier {
     _latestMessage = null;
     _notice = null;
     _presenceSignature = null;
+    _pendingPresence = null;
+    _pendingInviteKind = null;
+    _pendingInviteUsername = null;
     _state = OnlineLobbyConnectionState.disconnected;
-    if (!_disposed) notifyListeners();
+    // Both operations must start even if the other never completes. Catch
+    // synchronous and asynchronous transport failures without exposing data.
+    unawaited(_release(() => subscription?.cancel()));
+    unawaited(_release(() => channel?.sink.close()));
+  }
+
+  Future<void> _release(Future<dynamic>? Function() close) async {
+    try {
+      await close();
+    } catch (_) {
+      // Retired connection; no player action or retry is needed here.
+    }
   }
 
   void _handleMessage(dynamic raw) {
@@ -233,13 +270,9 @@ class OnlineLobbyService extends ChangeNotifier {
     if (!_disposed) notifyListeners();
   }
 
-  void _handleDisconnect() {
-    if (_disposed) return;
-    _channel = null;
-    _subscription = null;
-    _players = const [];
-    _notice = null;
-    _state = OnlineLobbyConnectionState.disconnected;
+  void _handleDisconnect(int revision) {
+    if (!_ownsConnection(revision)) return;
+    _detachConnection();
     _statusMessage = 'Online lobby connection was lost.';
     notifyListeners();
   }
@@ -247,8 +280,7 @@ class OnlineLobbyService extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
-    _subscription?.cancel();
-    _channel?.sink.close();
+    _detachConnection();
     super.dispose();
   }
 }

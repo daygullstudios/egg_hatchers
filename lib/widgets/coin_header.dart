@@ -114,12 +114,14 @@ class _StatChip extends StatelessWidget {
             children: [
               Text(icon, style: const TextStyle(fontSize: 14)),
               const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: color,
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
                 ),
               ),
               if (showInfoIcon) ...[

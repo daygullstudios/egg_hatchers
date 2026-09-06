@@ -45,7 +45,22 @@ Future<void> main() async {
 }
 
 class NestariumApp extends StatefulWidget {
-  const NestariumApp({super.key});
+  const NestariumApp({
+    super.key,
+    this.accounts,
+    this.game,
+    this.accountProtection,
+    this.onlineLobby,
+    this.progressSync,
+  });
+
+  // The app owns these services, including injected instances. Keeping the
+  // composition root injectable lets tests exercise real player transitions.
+  final AccountService? accounts;
+  final GameService? game;
+  final AccountProtectionService? accountProtection;
+  final OnlineLobbyService? onlineLobby;
+  final ProgressSyncService? progressSync;
 
   @override
   State<NestariumApp> createState() => _NestariumAppState();
@@ -53,12 +68,13 @@ class NestariumApp extends StatefulWidget {
 
 class _NestariumAppState extends State<NestariumApp>
     with WidgetsBindingObserver {
-  final GameService _game = GameService();
-  final AccountService _accounts = AccountService();
-  final AccountProtectionService _accountProtection = AccountProtectionService(
-    gateway: FirebaseAnonymousAuthGateway(),
-  );
-  final ProgressSyncService _progressSync = ProgressSyncService();
+  late final GameService _game = widget.game ?? GameService();
+  late final AccountService _accounts = widget.accounts ?? AccountService();
+  late final AccountProtectionService _accountProtection =
+      widget.accountProtection ??
+      AccountProtectionService(gateway: FirebaseAnonymousAuthGateway());
+  late final ProgressSyncService _progressSync =
+      widget.progressSync ?? ProgressSyncService();
   final PreferencesService _preferences = PreferencesService();
   final CustomSpriteService _customSprites = CustomSpriteService();
   final CustomEggService _customEggs = CustomEggService();
@@ -66,12 +82,16 @@ class _NestariumAppState extends State<NestariumApp>
   final SpriteReferenceOverlayService _referenceOverlay =
       SpriteReferenceOverlayService();
   final AudioService _audio = AudioService();
-  final OnlineLobbyService _onlineLobby = OnlineLobbyService();
+  late final OnlineLobbyService _onlineLobby =
+      widget.onlineLobby ?? OnlineLobbyService();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   String? _loadedAccountId;
   String? _configuredProgressPlayerId;
   var _switchingAccount = false;
+  var _playerSwitchFailed = false;
+  var _accountSelectionRevision = 0;
   var _legacyMigrationPending = false;
+  String? _legacyMigrationAccountId;
 
   @override
   void initState() {
@@ -131,37 +151,112 @@ class _NestariumAppState extends State<NestariumApp>
   }
 
   void _onAccountsChanged() {
-    _onGameChanged();
-    final accountId = _accounts.account?.id;
-    if (accountId == null) {
-      _loadedAccountId = null;
-      unawaited(_accountProtection.selectAccount(null));
-      unawaited(
-        _progressSync.selectAccount(accountId: null, protectedPlayerId: null),
-      );
-      unawaited(_onlineLobby.disconnect());
+    if (!_game.isInitialized) {
+      if (mounted) setState(() {});
       return;
     }
-    if (!_game.isInitialized || accountId == _loadedAccountId) return;
-    unawaited(_switchGameAccount(accountId));
+    final accountId = _accounts.account?.id;
+    if (accountId == _loadedAccountId &&
+        !_switchingAccount &&
+        !_playerSwitchFailed &&
+        accountId != null) {
+      _onGameChanged();
+      return;
+    }
+    _accountSelectionRevision++;
+    _playerSwitchFailed = false;
+    _loadedAccountId = null;
+    _configuredProgressPlayerId = null;
+    // Revoke old cloud/presence context before any async transition or income
+    // notification can associate the new profile with the old player's save.
+    unawaited(
+      _progressSync.selectAccount(accountId: null, protectedPlayerId: null),
+    );
+    unawaited(_onlineLobby.disconnect());
+    if (accountId == null) {
+      unawaited(_accountProtection.selectAccount(null));
+      if (mounted) setState(() {});
+      return;
+    }
+    if (!_switchingAccount) unawaited(_switchGameAccount());
   }
 
   void _onProtectionChanged() {
     if (mounted) setState(() {});
     final protectedPlayerId = _accountProtection.state.protectedPlayerId;
-    if (_game.isInitialized &&
+    if (_isReady &&
+        !_switchingAccount &&
+        !_playerSwitchFailed &&
+        _accounts.account?.id == _loadedAccountId &&
         protectedPlayerId != _configuredProgressPlayerId) {
       unawaited(_configureProgressSync());
     }
   }
 
-  Future<void> _switchGameAccount(String accountId) async {
+  Future<void> _switchGameAccount() async {
+    if (_switchingAccount || !mounted) return;
     _switchingAccount = true;
-    await _onlineLobby.disconnect();
-    if (mounted) setState(() {});
-    final migrateLegacyData = _legacyMigrationPending;
-    await _accountProtection.selectAccount(accountId);
-    await _game.switchAccount(accountId, migrateLegacySave: migrateLegacyData);
+    _playerSwitchFailed = false;
+    setState(() {});
+    try {
+      // Only one load owns mutable game/custom services. If selection changes
+      // while awaiting, finish that operation, then load the latest selection.
+      while (mounted) {
+        final accountId = _accounts.account?.id;
+        if (accountId == null) break;
+        final revision = _accountSelectionRevision;
+        bool stillSelected() =>
+            mounted && revision == _accountSelectionRevision;
+        var stage = 'identity check';
+        try {
+          await _accountProtection.selectAccount(accountId);
+          if (!stillSelected()) continue;
+          final migrateLegacyData =
+              _legacyMigrationPending &&
+              (_legacyMigrationAccountId == null ||
+                  _legacyMigrationAccountId == accountId);
+          // An interrupted migration belongs to its original local player;
+          // never copy the same legacy progress into a second selection.
+          if (migrateLegacyData) _legacyMigrationAccountId = accountId;
+          stage = 'local progress';
+          await _game.switchAccount(
+            accountId,
+            migrateLegacySave: migrateLegacyData,
+          );
+          if (!stillSelected()) continue;
+          stage = 'local customizations';
+          await _loadPlayerCustomizations(accountId, migrateLegacyData);
+          if (migrateLegacyData) _legacyMigrationPending = false;
+          if (!stillSelected()) continue;
+          _loadedAccountId = accountId;
+          break;
+        } catch (error) {
+          if (!stillSelected()) continue;
+          debugPrint(
+            'Player switch failed during $stage (${error.runtimeType}).',
+          );
+          // Do not expose a partly loaded player or create a replacement save.
+          _loadedAccountId = null;
+          _playerSwitchFailed = true;
+          break;
+        }
+      }
+    } finally {
+      _switchingAccount = false;
+      if (mounted) {
+        setState(() {});
+        if (!_playerSwitchFailed) {
+          _syncOnlinePresence();
+          unawaited(_configureProgressSync());
+        }
+      }
+    }
+  }
+
+  Future<void> _loadPlayerCustomizations(
+    String accountId,
+    bool migrateLegacyData,
+  ) async {
     await Future.wait([
       _customSprites.initialize(
         accountId: accountId,
@@ -180,15 +275,16 @@ class _NestariumAppState extends State<NestariumApp>
         migrateLegacyData: migrateLegacyData,
       ),
     ]);
-    _legacyMigrationPending = false;
-    _loadedAccountId = accountId;
-    _switchingAccount = false;
-    _syncOnlinePresence();
-    if (mounted) setState(() {});
-    unawaited(_configureProgressSync());
   }
 
   Future<void> _configureProgressSync() {
+    if (!mounted ||
+        !_isReady ||
+        _switchingAccount ||
+        _playerSwitchFailed ||
+        _accounts.account?.id != _loadedAccountId) {
+      return Future<void>.value();
+    }
     final accountId = _loadedAccountId;
     final protectedPlayerId = _accountProtection.state.protectedPlayerId;
     final cloud = Firebase.apps.isEmpty
@@ -207,7 +303,13 @@ class _NestariumAppState extends State<NestariumApp>
 
   void _syncOnlinePresence() {
     final account = _accounts.account;
-    if (!_game.isInitialized || account == null) return;
+    if (!_isReady ||
+        _switchingAccount ||
+        _playerSwitchFailed ||
+        account == null ||
+        account.id != _loadedAccountId) {
+      return;
+    }
     final team = ArenaLogic.recommendedTeam(_game.state.ownedAnimals)
         .map(ArenaLogic.fighterFromOwned)
         .map(MultiplayerFighterSnapshot.fromArenaFighter)
@@ -260,10 +362,16 @@ class _NestariumAppState extends State<NestariumApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed &&
+        _isReady &&
+        !_switchingAccount &&
+        !_playerSwitchFailed) {
+      final accountId = _loadedAccountId;
       unawaited(
-        _accountProtection.selectAccount(_loadedAccountId).then((_) {
-          return _configureProgressSync();
+        _accountProtection.selectAccount(accountId).then((_) async {
+          if (mounted && accountId == _loadedAccountId) {
+            await _configureProgressSync();
+          }
         }),
       );
     }
@@ -328,7 +436,7 @@ class _NestariumAppState extends State<NestariumApp>
       ),
       builder: (context, child) {
         final content = child ?? const SizedBox.shrink();
-        if (!_isReady || _switchingAccount) {
+        if (!_isReady || _switchingAccount || _playerSwitchFailed) {
           return PortraitAppShell(
             child: AppThemeBackground(theme: theme, child: content),
           );
@@ -372,7 +480,12 @@ class _NestariumAppState extends State<NestariumApp>
           ),
         );
       },
-      home: !_isReady || _switchingAccount
+      home: _playerSwitchFailed
+          ? _PlayerSwitchFailureScreen(
+              onRetry: () => unawaited(_switchGameAccount()),
+              onChoosePlayer: _accounts.chooseAnotherAccount,
+            )
+          : !_isReady || _switchingAccount
           ? const _LoadingScreen()
           : !_accounts.hasAccount
           ? AccountOnboardingScreen(accounts: _accounts, game: _game)
@@ -386,6 +499,61 @@ class _NestariumAppState extends State<NestariumApp>
             ),
     );
   }
+}
+
+class _PlayerSwitchFailureScreen extends StatelessWidget {
+  const _PlayerSwitchFailureScreen({
+    required this.onRetry,
+    required this.onChoosePlayer,
+  });
+
+  final VoidCallback onRetry;
+  final VoidCallback onChoosePlayer;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: SafeArea(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.warning_amber_rounded, size: 40),
+              const SizedBox(height: 16),
+              Text(
+                'Couldn’t open this player',
+                style: Theme.of(context).textTheme.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Your saved players have not been removed. Try again or '
+                'return to your local players.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(minimumSize: const Size(48, 48)),
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Try again'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(48, 48),
+                ),
+                onPressed: onChoosePlayer,
+                icon: const Icon(Icons.people_outline),
+                label: const Text('Choose local player'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _LoadingScreen extends StatelessWidget {
