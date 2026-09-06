@@ -76,6 +76,16 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
   iOS**. The four display-name-only API updates were read back successfully.
 - Firebase authorized domains preserve every prior entry and add the existing
   playtest origin, `playtest.playnestarium.com`, and `playnestarium.com`.
+- Owner-approved Nestarium-only `roles/oauthconfig.editor` access for
+  `support@playnestarium.com` is saved and independently verified, matching the
+  sibling support model without wider project/billing permissions. First-use
+  Cloud terms were separately approved and accepted; no trial or billing change.
+- Google OAuth branding is initialized as **Nestarium**, support email
+  `support@playnestarium.com`, External audience in **Testing**. Owner read-back
+  shows no clients or test users; public URLs/domain verification are incomplete.
+  Firebase General settings independently reflect the same public name/email.
+  All four Firebase email templates now use sender name Nestarium and that
+  Reply-To; default From, bodies, subject placeholders and action URLs are intact.
 - Anonymous authentication remains enabled. No Google provider is configured.
   The previously committed Google-linking implementation was unreleased; it
   is now explicitly gated by `NESTARIUM_GOOGLE_SIGN_IN_ENABLED` (default false)
@@ -113,13 +123,18 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
    SMTP, and company Sent/Drafts. The sibling-model Google role account is now
    created and verified as Nestarium Support / support@playnestarium.com after
    owner-authorized terms acceptance. No new Gmail mailbox. The Nestarium-only
-   OAuth Config Editor grant is staged, unsaved, awaiting owner approval. Do not
+   OAuth Config Editor grant and initial support-email selection are now saved
+   and verified. Gmail's new exact-address Nestarium / Support filter only
+   labels mail; existing filters and normal spam handling remain intact. Do not
    publish an untested support/recovery workflow. See PROJECT_HANDOFF.md for
    the latest evidence, shared-billing decision, and next acceptance steps.
-2. Complete the Google provider/OAuth brand as **Nestarium**, select the
-   approved support identity, and review consent-screen domain, privacy/terms,
-   verification and publishing status. Retain existing project/client IDs and
-   Firebase handler URLs. No provider credentials were replaced here.
+2. Complete the remaining Google provider/OAuth brand configuration. The
+   Nestarium name and approved support identity are saved in Testing; public
+   homepage/privacy/terms/support pages, consent-screen domain,
+   verification and publishing status remain release gates. Confirm intended
+   age audience before finalizing policy/auth decisions; no Nestarium audience
+   designation was found in current sources. Retain existing project/client IDs
+   and Firebase handler URLs. No provider credentials were replaced here.
    Review a Nestarium-specific Access login identity separately from Firebase;
    the current shared Railcade Google identity was intentionally not renamed.
 3. Enable the staged Web Google button in a deliberate provider release; prove

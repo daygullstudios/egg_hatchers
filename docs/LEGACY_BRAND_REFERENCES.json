@@ -21,7 +21,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 107,
+      "line": 129,
       "references": [
         "egghatchers.game"
       ],
@@ -29,7 +29,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 134,
+      "line": 156,
       "references": [
         "egg_hatchers"
       ],
@@ -37,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 211,
+      "line": 233,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -45,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 229,
+      "line": 251,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -53,7 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 236,
+      "line": 258,
       "references": [
         "egg_hatchers"
       ],
@@ -255,7 +255,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 151,
+      "line": 166,
       "references": [
         "egghatchers.game"
       ],
@@ -263,7 +263,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 161,
+      "line": 176,
       "references": [
         "egg_hatchers"
       ],

@@ -23,26 +23,44 @@ progress is unchanged. The product-support Google account is now created.
   family SMTP selection and company Sent/Drafts folders. All eight earlier
   identities (seven roles plus original Gmail) and studio hello default remain.
   No SMTP credential was read, replaced, or created.
-- **Open:** end-to-end delivery, Gmail label, actual reply identity selection,
+- **Verified:** Gmail has a `Nestarium / Support` label and exact
+  `to:(support@playnestarium.com)` filter whose only action is applying that
+  label. Seven existing filters remain unchanged; Inbox visibility and normal
+  spam handling are preserved. No historical conversations were modified.
+- **Open:** end-to-end delivery, actual reply identity selection,
   and sent-message copy acceptance. An owner-only sending API test was rejected
   by connector authentication before sending; no test message is claimed sent
   or delivered. Do not read/recreate the owner's existing SMTP credential.
-- **Verified:** the existing project's Google Auth Platform Branding page says
-  **not configured yet**. Google provider and its client UI release flag remain
-  off. No IAM grant, consent publication, or OAuth client was created/changed.
+- **Verified:** Google Auth Platform now has the **Nestarium** brand with
+  `support@playnestarium.com` selected as user support email. The existing
+  company contact receives private developer notifications. Audience is
+  **External / Testing**, with no test users or OAuth clients. Public URLs,
+  authorized brand domains, logo, verification and publication remain open.
+  The Firebase Google provider and its client UI release flag remain off.
 - **Verified Google account:** after the owner completed private registration
   details and handed back the Privacy and Terms screen, accepted the authorized
   terms. Account home confirms **Nestarium Support / support@playnestarium.com**.
   Optional Search recommendations/history, Play personalization/history,
   Web & App Activity, personalized ads and YouTube history were all off at
   submission. No new Gmail mailbox or private account details recorded.
-- **Access approval pending:** live IAM reads confirm both sibling support
-  accounts have only `roles/oauthconfig.editor`; Nestarium Support has no
-  project role yet. Chrome stages that exact role on Nestarium Dev only, but
-  **Save has not been clicked**. Owner confirmation requested. This role can
+- **Verified approved access:** after explicit owner approval, saved
+  `roles/oauthconfig.editor` for Nestarium Support on Nestarium Dev only.
+  Independent IAM API read-back confirms this sole, unconditional role and
+  retention of the existing owner. It matches both sibling support roles and can
   manage OAuth brands/clients and their secrets; it is not project Owner,
   billing access, or general player-database administration. Existing owner
-  and service-account grants remain unchanged.
+  and service-account grants remain unchanged. Its Overview/Clients console
+  pages request unrelated quota/service-account read permissions; do not widen
+  the role just to open those pages. Existing-owner read-only checks suffice.
+- **Verified approved Cloud terms:** owner separately approved first-use Google
+  Cloud Platform terms; accepted without starting a free trial or billing.
+  Initial OAuth setup also acknowledged the applicable API user-data policy.
+- **Verified Firebase public identity:** General settings independently show
+  Nestarium and `support@playnestarium.com`. All four email templates
+  (verification, password reset, address change, MFA enrollment notification)
+  were saved and individually read back with sender name Nestarium and matching
+  support Reply-To. Default Firebase From address, bodies, subject placeholders,
+  and action URLs remain unchanged. No provider or MFA feature was enabled.
 - **Verified billing:** authenticated Cloud Billing API reads show G&A
   Production and Railcade Production enabled on the **same** billing account.
   The existing Nestarium development project is not billing-enabled. Owner
@@ -52,17 +70,21 @@ progress is unchanged. The product-support Google account is now created.
   At the first Blaze-required backend deployment, verify shared-account linkage
   and appropriate project-scoped budget alerts before billable deployment.
 
-Next mail acceptance: create a label-only Nestarium / Support Gmail filter,
-send an owner-only studio-to-Nestarium test, verify receipt/authentication,
-reply from Nestarium using the actual Reply action, and verify return receipt
-and Gmail Sent copies. Confirm the exact outbound message at the UI send step.
+Next mail acceptance: send an owner-only studio-to-Nestarium test, verify
+receipt/authentication, reply from Nestarium using the actual Reply action,
+and verify return receipt and Gmail Sent copies. Confirm the exact outbound
+message at the UI send step.
 Keep normal spam handling; no campaigns or messages to players.
 
-Public Nestarium homepage/privacy/terms/support surfaces, Google brand/provider
-setup, guest-link/recovery acceptance, and the coordinated protected-hostname
-cutover remain later gates. Cloudflare's shared Railcade login stays untouched.
+Public Nestarium homepage/privacy/terms/support surfaces, remaining Google
+brand/client/provider setup, guest-link/recovery acceptance, and the coordinated
+protected-hostname cutover remain later gates. Cloudflare's shared Railcade
+login stays untouched.
 This checkpoint is infrastructure/documentation only: no new game build or
 deployment. The previously verified release below remains current.
+Before public policy/auth launch, confirm the intended age audience; no
+documented Nestarium age designation was found. Do not invent it or assume
+sibling legal text accurately describes this game's data/features.
 
 ## Nestarium migration — current checkpoint
 
