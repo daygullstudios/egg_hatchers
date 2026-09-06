@@ -23,6 +23,10 @@ import 'services/game_service.dart';
 import 'services/online_lobby_service.dart';
 import 'services/preferences_service.dart';
 import 'services/progress_sync_service.dart';
+import 'services/save_storage_lease.dart';
+import 'services/save_transfer_service.dart';
+import 'widgets/save_import_bootstrap.dart';
+import 'widgets/save_import_scope.dart';
 import 'services/sprite_rating_service.dart';
 import 'services/sprite_reference_overlay_service.dart';
 import 'widgets/animal_sprite_theme_scope.dart';
@@ -40,8 +44,12 @@ import 'utils/arena_logic.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await FirebaseBootstrap.initialize();
-  runApp(const NestariumApp());
+  runApp(
+    SaveImportBootstrap(
+      appBuilder: () => const NestariumApp(),
+      initializeCloud: FirebaseBootstrap.initialize,
+    ),
+  );
 }
 
 class NestariumApp extends StatefulWidget {
@@ -88,6 +96,7 @@ class _NestariumAppState extends State<NestariumApp>
   String? _loadedAccountId;
   String? _configuredProgressPlayerId;
   var _switchingAccount = false;
+  var _importFrozen = false;
   var _playerSwitchFailed = false;
   var _accountSelectionRevision = 0;
   var _legacyMigrationPending = false;
@@ -151,6 +160,7 @@ class _NestariumAppState extends State<NestariumApp>
   }
 
   void _onAccountsChanged() {
+    if (_importFrozen) return;
     if (!_game.isInitialized) {
       if (mounted) setState(() {});
       return;
@@ -194,7 +204,7 @@ class _NestariumAppState extends State<NestariumApp>
   }
 
   Future<void> _switchGameAccount() async {
-    if (_switchingAccount || !mounted) return;
+    if (_importFrozen || _switchingAccount || !mounted) return;
     _switchingAccount = true;
     _playerSwitchFailed = false;
     setState(() {});
@@ -278,7 +288,8 @@ class _NestariumAppState extends State<NestariumApp>
   }
 
   Future<void> _configureProgressSync() {
-    if (!mounted ||
+    if (_importFrozen ||
+        !mounted ||
         !_isReady ||
         _switchingAccount ||
         _playerSwitchFailed ||
@@ -303,7 +314,8 @@ class _NestariumAppState extends State<NestariumApp>
 
   void _syncOnlinePresence() {
     final account = _accounts.account;
-    if (!_isReady ||
+    if (_importFrozen ||
+        !_isReady ||
         _switchingAccount ||
         _playerSwitchFailed ||
         account == null ||
@@ -325,6 +337,7 @@ class _NestariumAppState extends State<NestariumApp>
   }
 
   void _openOnlineSession(OnlineSessionLaunch launch) {
+    if (_importFrozen) return;
     _onlineLobby.clearSessionLaunch();
     final account = _accounts.account;
     final navigator = _navigatorKey.currentState;
@@ -362,6 +375,7 @@ class _NestariumAppState extends State<NestariumApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_importFrozen) return;
     if (state == AppLifecycleState.resumed &&
         _isReady &&
         !_switchingAccount &&
@@ -412,6 +426,31 @@ class _NestariumAppState extends State<NestariumApp>
       _spriteRating.isInitialized &&
       _referenceOverlay.isInitialized;
 
+  Future<void> _stageImport(SaveImportPreview preview) async {
+    if (_importFrozen ||
+        !_isReady ||
+        _switchingAccount ||
+        _playerSwitchFailed) {
+      throw const SaveTransferException(
+        'The game must restart before importing.',
+      );
+    }
+    // From this point the confirmation stays modal and permits only restart,
+    // including on failure. No old runtime resumes over a pending import.
+    _importFrozen = true;
+    await _progressSync.pauseForSaveImport().timeout(
+      const Duration(seconds: 20),
+    );
+    await _game.pauseForSaveImport().timeout(const Duration(seconds: 20));
+    unawaited(_onlineLobby.disconnect());
+    final release = await acquireSaveImportStagingLease();
+    try {
+      await SaveTransferService().stageImport(preview);
+    } finally {
+      await release();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = _isReady
@@ -435,7 +474,10 @@ class _NestariumAppState extends State<NestariumApp>
         fontFamily: 'Roboto',
       ),
       builder: (context, child) {
-        final content = child ?? const SizedBox.shrink();
+        final content = SaveImportScope(
+          stageImport: _stageImport,
+          child: child ?? const SizedBox.shrink(),
+        );
         if (!_isReady || _switchingAccount || _playerSwitchFailed) {
           return PortraitAppShell(
             child: AppThemeBackground(theme: theme, child: content),

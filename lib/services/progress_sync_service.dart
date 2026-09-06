@@ -49,6 +49,21 @@ class ProgressSyncService extends ChangeNotifier {
   var _selectionRevision = 0;
   var _syncing = false;
   var _rerunRequested = false;
+  var _pausedForImport = false;
+  Completer<void>? _importDrain;
+
+  /// Permanently quiesce this runtime; only a fresh app may resume syncing.
+  Future<void> pauseForSaveImport() async {
+    _pausedForImport = true;
+    _selectionRevision++;
+    _timer?.cancel();
+    _activeReview = null;
+    _rerunRequested = false;
+    if (_syncing) {
+      _importDrain ??= Completer<void>();
+      await _importDrain!.future;
+    }
+  }
 
   ProgressSyncState get state => _state;
 
@@ -84,6 +99,7 @@ class ProgressSyncService extends ChangeNotifier {
   }
 
   bool get _isConfigured =>
+      !_pausedForImport &&
       _accountId != null &&
       _protectedPlayerId != null &&
       _local != null &&
@@ -299,6 +315,8 @@ class ProgressSyncService extends ChangeNotifier {
 
   void _finishSynchronization() {
     _syncing = false;
+    _importDrain?.complete();
+    _importDrain = null;
     final rerun = _rerunRequested;
     _rerunRequested = false;
     // A newly selected account may need the queued pass; an unresolved choice
@@ -340,6 +358,7 @@ class ProgressSyncService extends ChangeNotifier {
       case ProgressSyncAction.uploadLocal:
         final before = assessment.local!;
         final latest = await _local!.loadSnapshot();
+        if (revision != _selectionRevision) return;
         if (latest == null ||
             latest.revision != before.revision ||
             latest.contentFingerprint != before.contentFingerprint) {
@@ -362,6 +381,7 @@ class ProgressSyncService extends ChangeNotifier {
       case ProgressSyncAction.downloadCloud:
         final expected = assessment.cloud.snapshot!;
         final fresh = await _cloud!.read(_protectedPlayerId!);
+        if (revision != _selectionRevision) return;
         final remote = fresh.snapshot;
         if (fresh.state != CloudProgressState.present ||
             remote == null ||
@@ -404,6 +424,7 @@ class ProgressSyncService extends ChangeNotifier {
 
   void _scheduleRetry() {
     _timer?.cancel();
+    if (_pausedForImport) return;
     _timer = Timer(const Duration(seconds: 15), synchronize);
   }
 

@@ -47,12 +47,17 @@ Automated passes are necessary but are not proof of player comprehension.
    picker; whole-app tests cover the actual route, overlap and untouched local
    data. `PROJECT_HANDOFF.md` owns release/live acceptance; no data reset or new
    identity is a workaround. Full offline bootstrap/recovery remains separate.
-   **Next: import safety before more recovery UI.** Current transfer rewrites
-   preferences while the old game remains active. Add validated read-only preview,
-   coordinated writer pause/drain, checked replacement/rollback and restart, plus
-   file-picker cancellation handling. Cover nested malformed progress, failures,
-   guest-slot continuity and old exports with mocked data; never replace real QA
-   saves. Then continue truthful startup/recovery status and trusted cloud erasure.
+   Import safety now reviews nested payloads before an explicit two-step local
+   replacement confirmation, pauses/drains runtime writers and applies only at
+   restart before Firebase/game initialization. Checked recovery journaling and
+   exclusive updated-tab coordination protect interrupted replacement; chooser
+   cancellation releases its pending operation. Device guest identity and sync
+   ancestry never transfer in a file. Mock tests cover failures and old formats;
+   no real QA save is replaced. `PROJECT_HANDOFF.md` records the current gates.
+   **Next: unreadable account metadata and truthful startup/recovery status.**
+   Fail closed without inventing a fresh guest over unreadable older profiles;
+   distinguish storage/network failure from no saved player. Trusted cloud erasure
+   and child-compatible identity remain separate, deliberately authorized work.
 2. **Child-compatible account release:** use the confirmed family audience to
    review startup collection and SDK eligibility before enabling provider links.
    Design minimal age handling, parent access/consent where needed, retention,

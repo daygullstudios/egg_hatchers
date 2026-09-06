@@ -28,7 +28,26 @@ Future<String?> pickSaveFile() {
   web.document.body?.appendChild(input);
 
   late final StreamSubscription<web.Event> subscription;
+  late final JSFunction cancelled;
+  var reading = false;
+  void cleanUp() {
+    unawaited(subscription.cancel());
+    input.removeEventListener('cancel', cancelled);
+    input.remove();
+  }
+
+  void cancel(web.Event _) {
+    if (completer.isCompleted || reading) return;
+    completer.complete(null);
+    cleanUp();
+  }
+
+  // The browser emits cancel when its chooser is dismissed without a file.
+  cancelled = cancel.toJS;
+  input.addEventListener('cancel', cancelled);
   subscription = input.onChange.listen((_) async {
+    if (completer.isCompleted || reading) return;
+    reading = true;
     final file = input.files?.item(0);
     try {
       if (file == null) {
@@ -40,12 +59,16 @@ Future<String?> pickSaveFile() {
     } catch (error, stackTrace) {
       completer.completeError(error, stackTrace);
     } finally {
-      await subscription.cancel();
-      input.remove();
+      cleanUp();
     }
   });
 
-  input.click();
+  try {
+    input.click();
+  } catch (error, stackTrace) {
+    completer.completeError(error, stackTrace);
+    cleanUp();
+  }
   return completer.future;
 }
 

@@ -125,12 +125,18 @@ class SaveService {
     return value;
   }
 
-  Future<void> save(PlayerState state) async {
+  Future<void> save(PlayerState state) => _write(state);
+
+  Future<void> saveForTransfer(PlayerState state) =>
+      _write(state, verify: true);
+
+  Future<void> _write(PlayerState state, {bool verify = false}) async {
     final prefs = await SharedPreferences.getInstance();
     final currentJson = prefs.getString(_saveKey);
     final current = _decodeSnapshot(currentJson);
     if (current != null) {
-      await prefs.setString(_backupKey, currentJson!);
+      final accepted = await prefs.setString(_backupKey, currentJson!);
+      if (verify && !accepted) throw StateError('Backup write rejected');
     }
     final jsonString = jsonEncode({
       'format': progressFormat,
@@ -140,7 +146,13 @@ class SaveService {
       'contentFingerprint': contentFingerprint(state),
       'playerState': state.toJson(),
     });
-    await prefs.setString(_saveKey, jsonString);
+    final accepted = await prefs.setString(_saveKey, jsonString);
+    if (verify) {
+      await prefs.reload();
+      if (!accepted || prefs.getString(_saveKey) != jsonString) {
+        throw StateError('Final local save could not be verified');
+      }
+    }
   }
 
   Future<void> delete() async {

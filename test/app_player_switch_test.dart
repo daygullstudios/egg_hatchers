@@ -13,14 +13,48 @@ import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/online_lobby_service.dart';
 import 'package:egg_hatchers/services/progress_sync_service.dart';
 import 'package:egg_hatchers/services/save_service.dart';
+import 'package:egg_hatchers/widgets/save_import_scope.dart';
+import 'package:egg_hatchers/services/save_transfer_service.dart';
 import 'package:egg_hatchers/utils/daily_system_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/controlled_lobby_channel.dart';
+import 'helpers/save_import_fixture.dart';
 
 void main() {
+  testWidgets(
+    'root import freeze prevents lifecycle sync and account reload after preparation failure',
+    (tester) async {
+      final fixture = await _openFixture(tester, multiplePlayers: true);
+      final context = tester.element(find.byType(MainGameShell));
+      final stage = SaveImportScope.maybeOf(context)!.stageImport;
+      // Native test stub deliberately rejects browser coordination, after the
+      // actual root has paused/drained its real game and sync services.
+      await expectLater(
+        stage(SaveTransferService().inspectSave(importFixture())),
+        throwsUnsupportedError,
+      );
+      final selections = fixture.sync.selections.length;
+      final presence = fixture.lobby.presences.length;
+      final currentCoins = fixture.game.coins;
+      fixture.accounts.selectAccount(fixture.accounts.accounts.first.id);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await _pumpFrames(tester);
+      expect(fixture.game.loads, isEmpty);
+      expect(fixture.game.coins, currentCoins);
+      expect(fixture.sync.selections.length, selections);
+      expect(fixture.lobby.presences.length, presence);
+      expect(await SaveTransferService().hasPendingImport(), false);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
   testWidgets('picker round trip opens the same save without socket close', (
     tester,
   ) async {

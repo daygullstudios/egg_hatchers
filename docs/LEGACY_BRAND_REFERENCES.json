@@ -21,7 +21,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 242,
+      "line": 294,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -29,7 +29,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 423,
+      "line": 475,
       "references": [
         "egghatchers.game"
       ],
@@ -37,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 450,
+      "line": 502,
       "references": [
         "egg_hatchers"
       ],
@@ -45,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 527,
+      "line": 579,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -53,7 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 545,
+      "line": 597,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -61,7 +61,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 552,
+      "line": 604,
       "references": [
         "egg_hatchers"
       ],
@@ -77,7 +77,7 @@
     },
     {
       "path": "README.md",
-      "line": 42,
+      "line": 67,
       "references": [
         "EGG_HATCHERS"
       ],
@@ -85,7 +85,7 @@
     },
     {
       "path": "README.md",
-      "line": 43,
+      "line": 68,
       "references": [
         "EGG_HATCHERS_SERVER_URL"
       ],
@@ -295,7 +295,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 177,
+      "line": 182,
       "references": [
         "eggHatchers"
       ],
@@ -303,7 +303,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 182,
+      "line": 187,
       "references": [
         "egg_hatchers_player_state_account_"
       ],
@@ -311,7 +311,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 194,
+      "line": 199,
       "references": [
         "egg_hatchers.settings"
       ],
@@ -319,7 +319,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 215,
+      "line": 220,
       "references": [
         "egg_hatchers"
       ],
@@ -327,7 +327,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 285,
+      "line": 290,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -335,7 +335,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 308,
+      "line": 313,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -343,7 +343,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 335,
+      "line": 340,
       "references": [
         "egg_hatchers"
       ],
@@ -351,7 +351,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 376,
+      "line": 381,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -678,6 +678,14 @@
       "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
     },
     {
+      "path": "lib/services/save_import_validation.dart",
+      "line": 53,
+      "references": [
+        "egg_hatchers_player_state"
+      ],
+      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
       "path": "lib/services/save_service.dart",
       "line": 28,
       "references": [
@@ -695,9 +703,33 @@
     },
     {
       "path": "lib/services/save_transfer_service.dart",
-      "line": 18,
+      "line": 43,
       "references": [
         "egg_hatchers_save"
+      ],
+      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
+      "path": "lib/services/save_transfer_service.dart",
+      "line": 54,
+      "references": [
+        "egg_hatchers.sync_checkpoint"
+      ],
+      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
+      "path": "lib/services/save_transfer_service.dart",
+      "line": 74,
+      "references": [
+        "egg_hatchers_player_state"
+      ],
+      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
+      "path": "lib/services/save_transfer_service.dart",
+      "line": 77,
+      "references": [
+        "egg_hatchers_player_state_account_"
       ],
       "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
     },
@@ -1368,6 +1400,22 @@
     {
       "path": "test/app_player_switch_test.dart",
       "line": 16,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/app_player_switch_test.dart",
+      "line": 17,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/app_player_switch_test.dart",
+      "line": 18,
       "references": [
         "egg_hatchers"
       ],
@@ -2614,6 +2662,38 @@
       "reason": "Stable Dart package/import identity."
     },
     {
+      "path": "test/helpers/save_import_fixture.dart",
+      "line": 3,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/helpers/save_import_fixture.dart",
+      "line": 4,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/helpers/save_import_fixture.dart",
+      "line": 5,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/helpers/save_import_fixture.dart",
+      "line": 26,
+      "references": [
+        "egg_hatchers_player_state_account_imported"
+      ],
+      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
       "path": "test/local_player_removal_dialog_test.dart",
       "line": 1,
       "references": [
@@ -3574,6 +3654,102 @@
       "reason": "Stable Dart package/import identity."
     },
     {
+      "path": "test/save_import_browser_test.dart",
+      "line": 5,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/save_import_browser_test.dart",
+      "line": 6,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/save_import_browser_test.dart",
+      "line": 7,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/save_import_browser_test.dart",
+      "line": 8,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/save_import_game_pause_test.dart",
+      "line": 3,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/save_import_game_pause_test.dart",
+      "line": 4,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/save_import_game_pause_test.dart",
+      "line": 5,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/save_import_game_pause_test.dart",
+      "line": 6,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/save_import_game_pause_test.dart",
+      "line": 7,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/save_import_ui_test.dart",
+      "line": 3,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/save_import_ui_test.dart",
+      "line": 4,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/save_import_ui_test.dart",
+      "line": 5,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
       "path": "test/save_service_test.dart",
       "line": 3,
       "references": [
@@ -3615,7 +3791,31 @@
     },
     {
       "path": "test/save_transfer_service_test.dart",
-      "line": 16,
+      "line": 5,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/save_transfer_service_test.dart",
+      "line": 57,
+      "references": [
+        "egg_hatchers.sync_checkpoint"
+      ],
+      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
+      "path": "test/save_transfer_service_test.dart",
+      "line": 75,
+      "references": [
+        "egg_hatchers.sync_checkpoint"
+      ],
+      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
+      "path": "test/save_transfer_service_test.dart",
+      "line": 104,
       "references": [
         "egg_hatchers_save"
       ],
@@ -3623,39 +3823,7 @@
     },
     {
       "path": "test/save_transfer_service_test.dart",
-      "line": 19,
-      "references": [
-        "egg_hatchers_player_state"
-      ],
-      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
-    },
-    {
-      "path": "test/save_transfer_service_test.dart",
-      "line": 23,
-      "references": [
-        "egg_hatchers.settings"
-      ],
-      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
-    },
-    {
-      "path": "test/save_transfer_service_test.dart",
-      "line": 31,
-      "references": [
-        "egg_hatchers_player_state"
-      ],
-      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
-    },
-    {
-      "path": "test/save_transfer_service_test.dart",
-      "line": 33,
-      "references": [
-        "egg_hatchers.settings"
-      ],
-      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
-    },
-    {
-      "path": "test/save_transfer_service_test.dart",
-      "line": 37,
+      "line": 121,
       "references": [
         "egg_hatchers_save"
       ],
@@ -3663,9 +3831,57 @@
     },
     {
       "path": "test/save_transfer_service_test.dart",
-      "line": 56,
+      "line": 124,
       "references": [
-        "egg_hatchers_player_state_account_"
+        "egg_hatchers_player_state"
+      ],
+      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
+      "path": "test/save_transfer_service_test.dart",
+      "line": 129,
+      "references": [
+        "egg_hatchers.settings"
+      ],
+      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
+      "path": "test/save_transfer_service_test.dart",
+      "line": 144,
+      "references": [
+        "egg_hatchers_player_state"
+      ],
+      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
+      "path": "test/save_transfer_service_test.dart",
+      "line": 148,
+      "references": [
+        "egg_hatchers.settings"
+      ],
+      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
+      "path": "test/save_transfer_service_test.dart",
+      "line": 156,
+      "references": [
+        "egg_hatchers_player_state_account_imported"
+      ],
+      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
+      "path": "test/save_transfer_service_test.dart",
+      "line": 173,
+      "references": [
+        "egg_hatchers.settings"
+      ],
+      "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
+      "path": "test/save_transfer_service_test.dart",
+      "line": 263,
+      "references": [
+        "egg_hatchers.sync_checkpoint"
       ],
       "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
     },

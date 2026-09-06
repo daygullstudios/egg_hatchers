@@ -17,6 +17,31 @@ their original names for compatibility; the product name is Nestarium.
 
 ## Run the game
 
+### Importing a save safely
+
+In web Settings > Account & Saves, export a backup first, then choose Import Save.
+Review the file's players and progress before continuing to **Import & restart**.
+This replaces all local players, settings and custom art; it does not merge saves,
+transfer a Google sign-in, or delete cloud accounts. Close every other game tab,
+including older versions. Updated tabs block replacement while they remain open.
+The replacement happens at restart, before game/cloud services start, with a
+checked temporary recovery copy. If recovery pauses, keep browser data and retry;
+do not clear storage. The temporary recovery copy is not a permanent backup.
+Existing-format exports remain supported. Import requires a current browser with
+Web Locks; normal play remains available without that API.
+
+The browser-only regression suite can be run on Windows Flutter 3.47.2 with:
+
+```powershell
+node tool/test_save_import_browser.mjs C:/path/to/pinned/flutter/bin/flutter.bat
+```
+
+That test-only adapter serves the pinned SDK's renderer into the disposable test
+browser to work around the Windows test-server CanvasKit path/404 issue. It does
+not change the SDK, production renderer, or personal browser data.
+
+### Local development
+
 ```powershell
 flutter pub get
 flutter run -d chrome

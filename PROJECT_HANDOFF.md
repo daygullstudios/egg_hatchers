@@ -2,7 +2,59 @@
 
 Updated: 2026-09-06
 
-## Player-switch recovery — current implementation checkpoint
+## Save-import safety — current implementation checkpoint
+
+Web Settings now validates and previews a file before a second, explicit
+**Import & restart** confirmation. Review/cancel are read-only. The warning names
+all local players/progress/settings/custom eggs/artwork, no merge, cloud/sign-in
+exclusions, export-first guidance and closing all other game tabs. Dialogs fit
+320x360 at 200% text; cancel is the keyboard default. File chooser change and
+cancel both settle and remove the temporary input; repeat selection is guarded.
+
+The root permanently pauses/drains cloud work and gameplay saves, verifies one
+final local save, suppresses lifecycle/player/presence reconfiguration, then only
+stages the reviewed source. It never replaces preferences in the old runtime.
+Restart bootstrap runs before Firebase/game initialization. Updated browser tabs
+hold shared storage leases; import/recovery requires exclusive access without
+stealing another tab's lock. A separate exclusive staging lease prevents competing
+pending files. Browsers without Web Locks may play, but cannot import. Older
+already-open builds do not honor these locks: close those tabs explicitly.
+
+Bootstrap revalidates the staged source and checks a durable original-data/session
+journal before any replacement. All writes, removals and final content are checked;
+interruption or write failure restores originals, or retains recovery state and
+blocks startup when recovery cannot finish. Journal removal is the final commit
+point, outside rollback handling, so an ambiguous commit cannot launch destructive
+rollback without a durable journal. Recovery is temporary, not permanent backup.
+Never clear browser data to work around a paused recovery screen.
+
+Valid legacy-format exports remain supported. Import rejects unreadable nested
+progress/custom content and wrong-type known settings before mutation; it does not
+use normal loader fallback/repair. Device guest identity and sync checkpoints are
+excluded from transfer, with the destination guest generation rotated. Rollback
+restores original device identity/checkpoints/session. Firebase credentials,
+projects, providers, rules, cloud-copy choices and public routes are unchanged.
+
+Validation: full Flutter 3.47.2 analysis has no issues; **590 Flutter tests** pass.
+Five isolated Chrome tests cover chooser read/cancel, real web-preferences import
+round trip with mock data, shared/exclusive leases and competing staging. The
+Windows Flutter test server has a CanvasKit URL/backslash 404 bug; the repeatable
+`tool/test_save_import_browser.mjs` adapter supplies the same pinned SDK renderer
+only into its disposable browser. No SDK patch or production renderer change.
+`shared_preferences_web` 2.4.3 is also a direct dev dependency solely to register
+the real plugin in those tests; its installed version is unchanged.
+Mock regression coverage includes every failed replacement mutation, interrupted
+rollback/restart, unverifiable recovery copy, ambiguous commit, wrong-type nested
+data, old exports, session/identity preservation, responsive confirmation and
+whole-app freezing after preparation failure. No real QA player is replaced.
+Deployment receipt and final brand count are recorded below after verification.
+
+Next: fail-closed unreadable account metadata and truthful startup/recovery status;
+do not silently create a new guest over unreadable saved profiles. Family-account
+eligibility, public-site policy approval, trusted cloud erasure and coordinated
+new-hostname cutover remain separate gates. No public launch or store action.
+
+## Player-switch recovery — preceding implementation checkpoint
 
 A whole-app regression reproduced the loading freeze with a socket that never
 acknowledges close. `_switchGameAccount` previously awaited that network cleanup;

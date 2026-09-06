@@ -13,6 +13,41 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  testWidgets(
+    'import pause drains a late cloud read without upload or restore',
+    (tester) async {
+      final local = SaveService(accountId: 'guest_local');
+      await local.save(GameData.startingPlayerState());
+      final gate = Completer<void>();
+      final cloud = _CloudRepository()..readGate = gate;
+      final sync = ProgressSyncService();
+      addTearDown(sync.dispose);
+      var restores = 0, paused = false;
+      final selection = sync.selectAccount(
+        accountId: 'guest_local',
+        protectedPlayerId: 'mock-identity',
+        cloud: cloud,
+        applyCloud: (_) async {
+          restores++;
+          return true;
+        },
+      );
+      await tester.pump();
+      final pausing = sync.pauseForSaveImport().then((_) => paused = true);
+      await tester.pump();
+      expect(paused, false);
+      gate.complete();
+      await selection;
+      await pausing;
+      sync.localProgressSaved('guest_local');
+      await tester.pump(const Duration(seconds: 30));
+      await sync.synchronize();
+      expect(cloud.reads, 1);
+      expect(cloud.writes, 0);
+      expect(restores, 0);
+    },
+  );
+
   test('comparison reads fresh saves without writing or restoring', () async {
     final fixture = await _reviewFixture();
     addTearDown(fixture.sync.dispose);

@@ -13,6 +13,9 @@ import '../services/game_service.dart';
 import '../services/preferences_service.dart';
 import '../services/save_transfer_file.dart';
 import '../services/save_transfer_service.dart';
+import '../services/save_storage_lease.dart';
+import '../widgets/save_import_scope.dart';
+import '../widgets/save_import_review_dialog.dart';
 import '../services/tutorial_service.dart';
 import '../theme/game_theme.dart';
 import '../utils/snackbar_utils.dart';
@@ -173,73 +176,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  var _importSelecting = false;
+
   Future<void> _importSave(BuildContext context) async {
+    if (_importSelecting) return;
+    setState(() => _importSelecting = true);
     try {
+      if (!saveImportLockAvailable) {
+        throw const SaveTransferException(
+          'Use an updated browser with secure storage coordination to import saves.',
+        );
+      }
+      final coordinator = SaveImportScope.maybeOf(context);
+      if (coordinator == null) {
+        throw const SaveTransferException(
+          'Restart the game before importing saves.',
+        );
+      }
       final contents = await pickSaveFile();
       if (contents == null || !context.mounted) return;
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Replace local save?'),
-          content: const Text(
-            'This will replace every Nestarium account, all progress, settings, custom eggs, and custom animals on this device.',
-          ),
-          actions: [
-            TextButton.icon(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              icon: const Icon(Icons.close_rounded),
-              label: const Text('CANCEL'),
-            ),
-            FilledButton.icon(
-              key: const ValueKey('settings-confirm-import-save'),
-              onPressed: () => Navigator.pop(dialogContext, true),
-              icon: const Icon(Icons.restore_rounded),
-              label: const Text('IMPORT'),
-            ),
-          ],
-        ),
-      );
-      if (confirmed != true || !context.mounted) return;
-
-      final accountCount = await _saveTransfer.importSave(contents);
-      if (!context.mounted) return;
-      UiSound.confirm(context);
+      final preview = _saveTransfer.inspectSave(contents);
       await showDialog<void>(
         context: context,
         barrierDismissible: false,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Import complete'),
-          content: Text(
-            accountCount == 1
-                ? '1 account was restored. Restart the game to load it.'
-                : '$accountCount accounts were restored. Restart the game to load them.',
-          ),
-          actions: [
-            FilledButton.icon(
-              key: const ValueKey('settings-restart-after-import'),
-              onPressed: reloadAfterSaveImport,
-              icon: const Icon(Icons.restart_alt_rounded),
-              label: const Text('RESTART GAME'),
-            ),
-          ],
+        builder: (_) => SaveImportReviewDialog(
+          preview: preview,
+          stageImport: coordinator.stageImport,
+          restart: reloadAfterSaveImport,
         ),
       );
-    } on SaveTransferException catch (error) {
-      if (context.mounted) {
-        showGameSnackBar(
-          context,
-          message: error.message,
-          backgroundColor: Colors.redAccent,
-        );
-      }
     } catch (error) {
       if (context.mounted) {
         showGameSnackBar(
           context,
-          message: 'Save import failed: $error',
+          message: error is SaveTransferException
+              ? error.message
+              : 'Could not read that save file. Nothing was imported.',
           backgroundColor: Colors.redAccent,
         );
       }
+    } finally {
+      if (mounted) setState(() => _importSelecting = false);
     }
   }
 
@@ -407,7 +384,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           OutlinedButton.icon(
                             key: const ValueKey('settings-import-save'),
                             onPressed: kIsWeb
-                                ? () => _importSave(context)
+                                ? (_importSelecting
+                                      ? null
+                                      : () => _importSave(context))
                                 : null,
                             icon: const Icon(Icons.upload_file_rounded),
                             label: const Text(

@@ -1,177 +1,357 @@
 import 'dart:convert';
 
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
+import '../models/player_account.dart';
+import '../models/player_state.dart';
 import 'account_session_store.dart';
 import 'device_guest_slot_store.dart';
+import 'save_import_storage.dart';
+import 'save_import_validation.dart';
 
 class SaveTransferException implements Exception {
   const SaveTransferException(this.message);
-
   final String message;
-
   @override
   String toString() => message;
 }
 
+class SaveImportPreview {
+  SaveImportPreview._(
+    this.source,
+    this.exportedAt,
+    List<PlayerAccount> players,
+    Map<String, PlayerState> progress,
+    this.hasLegacyProgress,
+  ) : players = List.unmodifiable(players),
+      progress = Map.unmodifiable(progress);
+  final String source;
+  final DateTime? exportedAt;
+  final List<PlayerAccount> players;
+  final Map<String, PlayerState> progress;
+  final bool hasLegacyProgress;
+}
+
+enum SaveImportBootResult { none, imported, originalRestored }
+
+/// Review/stage while running; replace only at bootstrap under an exclusive
+/// storage lease, before game/auth services start.
 class SaveTransferService {
+  SaveTransferService({SaveImportStorage? storage})
+    : _storage = storage ?? PreferencesImportStorage();
+  final SaveImportStorage _storage;
   static const formatName = 'egg_hatchers_save';
   static const formatVersion = 1;
+  static const pendingKey = 'nestarium.import.pending.v1';
+  static const recoveryKey = 'nestarium.import.recovery.v1';
   static const _accountsKey = 'playerAccounts';
+  static const _guestGenerationKey =
+      '${DeviceGuestSlotStore.keyPrefix}generation';
+  static bool _internalKey(String key) => key.startsWith('nestarium.import.');
+  static bool _nonTransferable(String key) =>
+      _internalKey(key) ||
+      DeviceGuestSlotStore.ownsKey(key) ||
+      key.startsWith('egg_hatchers.sync_checkpoint.');
 
   Future<String> exportSave({String? activeAccountId}) async {
-    final preferences = await SharedPreferences.getInstance();
-    final values = <String, Object?>{};
-    final keys = preferences.getKeys().toList()..sort();
-    for (final key in keys) {
-      if (DeviceGuestSlotStore.ownsKey(key)) continue;
-      values[key] = _encodeValue(preferences.get(key));
-    }
-
-    return const JsonEncoder.withIndent('  ').convert({
-      'format': formatName,
-      'version': formatVersion,
-      'exportedAt': DateTime.now().toUtc().toIso8601String(),
-      'activeAccountId': activeAccountId,
-      'preferences': values,
-    });
+    final all = await _storage.readAll();
+    return _encodeDocument({
+      for (final entry in all.entries)
+        if (!_nonTransferable(entry.key)) entry.key: entry.value,
+    }, activeAccountId);
   }
 
-  Future<int> importSave(String source) async {
-    final decoded = _decodeDocument(source);
-    final rawPreferences = decoded['preferences'] as Map<String, dynamic>;
-    final restored = <String, Object>{};
-    for (final entry in rawPreferences.entries) {
-      if (DeviceGuestSlotStore.ownsKey(entry.key)) continue;
-      restored[entry.key] = _decodeValue(entry.key, entry.value);
+  SaveImportPreview inspectSave(String source) {
+    try {
+      final document = _decodeDocument(source);
+      final values = _values(document['preferences']);
+      final players = _players(values);
+      final states = <String, PlayerState>{};
+      var legacy = false;
+      for (final entry in values.entries) {
+        final state = validateTransferredValue(entry.key, entry.value);
+        if (state == null || entry.key.endsWith('_backup')) continue;
+        if (entry.key == 'egg_hatchers_player_state') {
+          legacy = true;
+        } else {
+          const prefix = 'egg_hatchers_player_state_account_';
+          if (!entry.key.startsWith(prefix)) {
+            throw const FormatException('Progress key');
+          }
+          final id = entry.key.substring(prefix.length);
+          if (!players.any((player) => player.id == id)) {
+            throw const FormatException('Orphan progress');
+          }
+          states[id] = state;
+        }
+      }
+      if (players.isEmpty && !legacy) throw const FormatException('Empty save');
+      return SaveImportPreview._(
+        source,
+        DateTime.tryParse(document['exportedAt']?.toString() ?? ''),
+        players,
+        states,
+        legacy,
+      );
+    } on SaveTransferException {
+      rethrow;
+    } catch (_) {
+      throw const SaveTransferException(
+        'This file contains unreadable players, progress or custom data. Nothing was imported.',
+      );
     }
-    _validateAccounts(restored[_accountsKey]);
+  }
 
-    final guestSlotStore = DeviceGuestSlotStore();
-    final previousGuestGeneration = await guestSlotStore.currentGeneration();
-    final preferences = await SharedPreferences.getInstance();
-    await preferences.clear();
-    for (final entry in restored.entries) {
-      await _writeValue(preferences, entry.key, entry.value);
+  /// Cannot replace progress. Bootstrap revalidates the exact staged file.
+  Future<void> stageImport(SaveImportPreview preview) async {
+    inspectSave(preview.source);
+    final values = await _storage.readAll();
+    if (values.containsKey(pendingKey) || values.containsKey(recoveryKey)) {
+      throw const SaveTransferException(
+        'A previous import needs a restart first.',
+      );
     }
-    await guestSlotStore.invalidateForAccountReplacement(
-      previousGeneration: previousGuestGeneration,
-    );
+    await _checkedWrite(pendingKey, preview.source);
+    if ((await _storage.readAll())[pendingKey] != preview.source) {
+      throw const SaveTransferException(
+        'Could not verify the staged file. Restart to check it.',
+      );
+    }
+  }
 
-    final accountIds = _accountIds(restored[_accountsKey]);
-    final requestedActiveId = decoded['activeAccountId'];
-    writeActiveAccountId(
-      requestedActiveId is String && accountIds.contains(requestedActiveId)
-          ? requestedActiveId
-          : accountIds.length == 1
-          ? accountIds.single
-          : null,
-    );
-    return accountIds.length;
+  Future<bool> hasPendingImport() async {
+    final all = await _storage.readAll();
+    return all.containsKey(pendingKey) || all.containsKey(recoveryKey);
+  }
+
+  /// Bootstrap only, under an exclusive storage lease. A retained journal
+  /// restores originals first; never guess whether an interrupted import won.
+  Future<SaveImportBootResult> finishPendingImport() async {
+    final all = await _storage.readAll();
+    if (all.containsKey(recoveryKey)) {
+      await _restoreOriginal(all[recoveryKey]);
+      return SaveImportBootResult.originalRestored;
+    }
+    final source = all[pendingKey];
+    if (source == null) return SaveImportBootResult.none;
+    if (source is! String) {
+      throw const SaveTransferException(
+        'The staged import is unreadable. Cancel this import to keep your local saves.',
+      );
+    }
+    final preview = inspectSave(source);
+    final document = _decodeDocument(source);
+    final incoming = _values(document['preferences']);
+    incoming[_guestGenerationKey] = (all[_guestGenerationKey] as int? ?? 0) + 1;
+    final original = {
+      for (final entry in all.entries)
+        if (!_internalKey(entry.key)) entry.key: entry.value,
+    };
+    final journal = jsonEncode({
+      'version': 1,
+      'activeAccountId': readActiveAccountId(),
+      'preferences': _encodedValues(original),
+    });
+    // Check the on-device recovery copy before the first destructive write.
+    await _checkedWrite(recoveryKey, journal);
+    if ((await _storage.readAll())[recoveryKey] != journal) {
+      throw const SaveTransferException(
+        'Could not verify the recovery copy. Original saves have not been replaced.',
+      );
+    }
+    try {
+      await _replaceValues(incoming);
+      final ids = preview.players.map((player) => player.id).toSet();
+      final requested = document['activeAccountId'];
+      final activeId = requested is String && ids.contains(requested)
+          ? requested
+          : ids.length == 1
+          ? ids.single
+          : null;
+      writeActiveAccountId(activeId);
+      if (readActiveAccountId() != activeId) {
+        throw StateError('Session write failed');
+      }
+      await _checkedRemove(pendingKey);
+    } catch (_) {
+      await _restoreOriginal(journal);
+      return SaveImportBootResult.originalRestored;
+    }
+    // Commit last, outside rollback handling: an ambiguous removal must never
+    // start destructive recovery without a durable journal. On restart an
+    // existing journal restores originals; an absent one means commit won.
+    await _checkedRemove(recoveryKey);
+    return SaveImportBootResult.imported;
+  }
+
+  Future<void> cancelPendingImport() async {
+    final values = await _storage.readAll();
+    if (values.containsKey(recoveryKey)) {
+      await _restoreOriginal(values[recoveryKey]);
+    } else {
+      await _checkedRemove(pendingKey);
+    }
+  }
+
+  Future<void> _restoreOriginal(Object? raw) async {
+    try {
+      final journal = jsonDecode(raw as String) as Map<String, dynamic>;
+      if (journal['version'] != 1) throw const FormatException();
+      final original = _values(journal['preferences'], includeInternal: true);
+      if (original.keys.any(_internalKey)) throw const FormatException();
+      await _replaceValues(original);
+      final activeId = journal['activeAccountId'] as String?;
+      writeActiveAccountId(activeId);
+      if (readActiveAccountId() != activeId) {
+        throw StateError('Session recovery failed');
+      }
+      await _checkedRemove(pendingKey);
+      await _checkedRemove(recoveryKey);
+    } catch (_) {
+      throw const SaveTransferException(
+        'Recovery could not finish. Do not clear browser data; free some storage and retry.',
+      );
+    }
+  }
+
+  Future<void> _replaceValues(Map<String, Object> values) async {
+    final current = await _storage.readAll();
+    for (final key in current.keys) {
+      if (!_internalKey(key) && !values.containsKey(key)) {
+        await _checkedRemove(key);
+      }
+    }
+    for (final entry in values.entries) {
+      await _checkedWrite(entry.key, entry.value);
+    }
+    final actual = await _storage.readAll();
+    final visible = {
+      for (final entry in actual.entries)
+        if (!_internalKey(entry.key)) entry.key: entry.value,
+    };
+    Map<String, String> comparable(Map<String, Object> data) =>
+        _encodedValues(data).map((k, v) => MapEntry(k, jsonEncode(v)));
+    if (!mapEquals(comparable(visible), comparable(values))) {
+      throw const SaveTransferException('Save verification failed.');
+    }
+  }
+
+  Future<void> _checkedWrite(String key, Object value) async {
+    if (!await _storage.write(key, value)) {
+      throw const SaveTransferException(
+        'Device storage did not accept a save write.',
+      );
+    }
+  }
+
+  Future<void> _checkedRemove(String key) async {
+    if (!await _storage.remove(key) ||
+        (await _storage.readAll()).containsKey(key)) {
+      throw const SaveTransferException(
+        'Device storage did not finish a save change.',
+      );
+    }
   }
 
   Map<String, dynamic> _decodeDocument(String source) {
     dynamic decoded;
     try {
       decoded = jsonDecode(source);
-    } on FormatException {
+    } catch (_) {
       throw const SaveTransferException('That file is not valid JSON.');
     }
-    if (decoded is! Map) {
-      throw const SaveTransferException('That is not a Nestarium save file.');
-    }
-    final document = Map<String, dynamic>.from(decoded);
-    if (document['format'] != formatName ||
-        document['version'] != formatVersion ||
-        document['preferences'] is! Map) {
+    if (decoded is! Map<String, dynamic> ||
+        decoded['format'] != formatName ||
+        decoded['version'] != formatVersion ||
+        decoded['preferences'] is! Map) {
       throw const SaveTransferException(
         'That file is not a supported Nestarium save file.',
       );
     }
-    document['preferences'] = Map<String, dynamic>.from(
-      document['preferences'] as Map,
-    );
-    return document;
+    return decoded;
   }
 
-  Map<String, Object?> _encodeValue(Object? value) {
-    if (value is String) return {'type': 'string', 'value': value};
-    if (value is bool) return {'type': 'bool', 'value': value};
-    if (value is int) return {'type': 'int', 'value': value};
-    if (value is double) return {'type': 'double', 'value': value};
-    if (value is List<String>) return {'type': 'stringList', 'value': value};
-    throw SaveTransferException(
-      'The game contains an unsupported saved value (${value.runtimeType}).',
-    );
-  }
-
-  Object _decodeValue(String key, dynamic encoded) {
-    if (encoded is! Map) {
-      throw SaveTransferException('Saved value "$key" is malformed.');
-    }
-    final map = Map<String, dynamic>.from(encoded);
-    final value = map['value'];
-    switch (map['type']) {
-      case 'string':
-        if (value is String) return value;
-      case 'bool':
-        if (value is bool) return value;
-      case 'int':
-        if (value is int) return value;
-      case 'double':
-        if (value is num) return value.toDouble();
-      case 'stringList':
-        if (value is List && value.every((item) => item is String)) {
-          return List<String>.from(value);
-        }
-    }
-    throw SaveTransferException('Saved value "$key" has the wrong type.');
-  }
-
-  void _validateAccounts(Object? value) {
-    if (value == null) return;
-    if (value is! String) {
-      throw const SaveTransferException('The account list is malformed.');
-    }
-    try {
-      final accounts = jsonDecode(value);
-      if (accounts is! List) throw const FormatException();
-      for (final account in accounts) {
-        if (account is! Map ||
-            account['id'] is! String ||
-            account['displayName'] is! String ||
-            account['username'] is! String ||
-            account['avatarColorValue'] is! int ||
-            DateTime.tryParse(account['createdAt']?.toString() ?? '') == null) {
-          throw const FormatException();
-        }
+  List<PlayerAccount> _players(Map<String, Object> values) {
+    final raw = values[_accountsKey];
+    final list = raw == null ? <dynamic>[] : jsonDecode(raw as String) as List;
+    final players = <PlayerAccount>[];
+    final ids = <String>{};
+    for (final entry in list) {
+      final json = entry as Map<String, dynamic>;
+      DateTime.parse(json['createdAt'] as String);
+      final player = PlayerAccount.fromJson(json);
+      if (player.id.trim().isEmpty ||
+          player.displayName.trim().isEmpty ||
+          player.username.trim().isEmpty ||
+          !ids.add(player.id)) {
+        throw const FormatException();
       }
-    } catch (_) {
-      throw const SaveTransferException('The account list is malformed.');
+      players.add(player);
     }
+    // Pre-directory exports used standalone profile fields.
+    if (values.containsKey('playerAccountId')) {
+      final player = PlayerAccount(
+        id: values['playerAccountId'] as String,
+        displayName: values['playerAccountDisplayName'] as String,
+        username: values['playerAccountUsername'] as String,
+        avatarColorValue:
+            values['playerAccountAvatarColor'] as int? ?? 0xFF5271FF,
+        createdAt: DateTime.parse(values['playerAccountCreatedAt'] as String),
+      );
+      if (player.id.trim().isEmpty ||
+          player.displayName.trim().isEmpty ||
+          player.username.trim().isEmpty) {
+        throw const FormatException();
+      }
+      if (ids.add(player.id)) players.add(player);
+    }
+    return players;
   }
 
-  Set<String> _accountIds(Object? value) {
-    if (value is! String) return {};
-    final accounts = jsonDecode(value) as List<dynamic>;
-    return accounts.map((account) => (account as Map)['id'] as String).toSet();
+  Map<String, Object> _values(Object? raw, {bool includeInternal = false}) {
+    final result = <String, Object>{};
+    for (final entry in (raw as Map<String, dynamic>).entries) {
+      if (!includeInternal && _nonTransferable(entry.key)) continue;
+      final map = entry.value as Map<String, dynamic>;
+      final value = map['value'];
+      switch (map['type']) {
+        case 'string' when value is String:
+          result[entry.key] = value;
+        case 'bool' when value is bool:
+          result[entry.key] = value;
+        case 'int' when value is int:
+          result[entry.key] = value;
+        case 'double' when value is num && value.isFinite:
+          result[entry.key] = value.toDouble();
+        case 'stringList' when value is List && value.every((v) => v is String):
+          result[entry.key] = List<String>.from(value);
+        default:
+          throw const FormatException('Saved value type');
+      }
+    }
+    return result;
   }
 
-  Future<void> _writeValue(
-    SharedPreferences preferences,
-    String key,
-    Object value,
-  ) async {
-    if (value is String) {
-      await preferences.setString(key, value);
-    } else if (value is bool) {
-      await preferences.setBool(key, value);
-    } else if (value is int) {
-      await preferences.setInt(key, value);
-    } else if (value is double) {
-      await preferences.setDouble(key, value);
-    } else if (value is List<String>) {
-      await preferences.setStringList(key, value);
-    }
-  }
+  Map<String, Object?> _encodedValues(Map<String, Object> values) => {
+    for (final entry in values.entries)
+      entry.key: {
+        'type': switch (entry.value) {
+          String() => 'string',
+          bool() => 'bool',
+          int() => 'int',
+          double() => 'double',
+          List<String>() => 'stringList',
+          _ => throw const SaveTransferException('Unsupported saved value.'),
+        },
+        'value': entry.value,
+      },
+  };
+  String _encodeDocument(Map<String, Object> values, String? activeId) =>
+      const JsonEncoder.withIndent('  ').convert({
+        'format': formatName,
+        'version': formatVersion,
+        'exportedAt': DateTime.now().toUtc().toIso8601String(),
+        'activeAccountId': activeId,
+        'preferences': _encodedValues(values),
+      });
 }

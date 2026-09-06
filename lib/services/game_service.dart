@@ -55,6 +55,8 @@ class GameService extends ChangeNotifier {
 
   PlayerState _state = GameData.startingPlayerState();
   Timer? _idleTimer;
+  var _pausedForImport = false;
+  final _pendingSaves = <Future<void>>{};
   bool _isInitialized = false;
   String? _pendingQuestNotification;
   bool _questNotificationDeferred = false;
@@ -444,6 +446,7 @@ class GameService extends ChangeNotifier {
 
   void _startIdleTimer() {
     _idleTimer?.cancel();
+    if (_pausedForImport) return;
     _idleTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _tickIdleIncome();
     });
@@ -543,12 +546,29 @@ class GameService extends ChangeNotifier {
   }
 
   Future<void> _saveQuietly() async {
+    if (_pausedForImport) return;
     final accountId = _activeAccountId;
-    await _saveService.save(_state);
-    onProgressSaved?.call(accountId);
+    final pending = _saveService.save(_state);
+    _pendingSaves.add(pending);
+    try {
+      await pending;
+      if (!_pausedForImport) onProgressSaved?.call(accountId);
+    } finally {
+      _pendingSaves.remove(pending);
+    }
+  }
+
+  /// Drain old writes before the bootstrap recovery snapshot is made.
+  Future<void> pauseForSaveImport() async {
+    _pausedForImport = true;
+    _idleTimer?.cancel();
+    await Future.wait(_pendingSaves.toList());
+    _state = _state.copyWith(lastSavedTime: DateTime.now());
+    await _saveService.saveForTransfer(_state);
   }
 
   Future<void> save() async {
+    if (_pausedForImport) return;
     _state = _state.copyWith(lastSavedTime: DateTime.now());
     await _saveQuietly();
   }
@@ -559,7 +579,7 @@ class GameService extends ChangeNotifier {
     String accountId,
     PlayerState state,
   ) async {
-    if (_activeAccountId != accountId) return false;
+    if (_pausedForImport || _activeAccountId != accountId) return false;
     _idleTimer?.cancel();
     _loadState(state);
     _startIdleTimer();
