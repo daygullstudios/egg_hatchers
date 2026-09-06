@@ -118,6 +118,18 @@ external-Chrome smoke test loaded the existing local save and confirmed its
 owner-scoped Firestore document was actively advancing revisions (revision 44
 at inspection) on 2026-09-05.
 
+The next identity slice is implemented locally but not released yet. The
+device guest can link Google on Web while preserving the anonymous UID and its
+Firestore document. If the selected Google credential already belongs to an
+Egg Hatchers identity, the client opens that UID, clears the old local sync
+ancestry, and requires the normal cloud/device comparison before accepting a
+save. Cancellation and errors leave the guest save unchanged. Native Google
+buttons remain fail-closed because the Android OAuth/SHA registration and iOS
+client configuration are not provisioned yet. Firebase's Google provider form
+is prepared with the public app name but still requires the owner-approved
+public support email and final Save; the playtest hostname must then be added
+to Firebase Authentication's authorized domains before live QA.
+
 ## Art rules
 
 Every new animal needs Classic, Retro Pixel, and Realistic versions. Classic should be cartoony, Retro Pixel should be intentionally pixel-built, and Realistic should match the detailed transparent sprite set. DayGull animals may also need the established animated side-slice glitch treatment.

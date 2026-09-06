@@ -8,6 +8,7 @@ import '../models/progress_sync_state.dart';
 import '../models/background_theme.dart';
 import '../models/player_account.dart';
 import '../navigation/app_page_route.dart';
+import '../services/account_protection_service.dart';
 import '../services/game_service.dart';
 import '../services/preferences_service.dart';
 import '../services/save_transfer_file.dart';
@@ -258,6 +259,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _protectWithGoogle(
+    BuildContext context,
+    PlayerAccount account,
+  ) async {
+    final protection = AccountProtectionScope.maybeOf(context);
+    if (protection == null) return;
+    final outcome = await protection.protectWithGoogle(accountId: account.id);
+    if (!context.mounted) return;
+    if (outcome.succeeded) UiSound.confirm(context);
+    showGameSnackBar(
+      context,
+      message: outcome.message,
+      backgroundColor: outcome.status == AccountProtectionAttemptStatus.failed
+          ? Colors.redAccent
+          : preferences.selectedTheme.primaryColor,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -334,6 +353,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               syncState: syncState,
                               onKeepDevice: progressSync?.keepThisDevice,
                               onUseCloud: progressSync?.useCloud,
+                              onProtectWithGoogle:
+                                  protection.canProtect &&
+                                      (AccountProtectionScope.maybeOf(
+                                            context,
+                                          )?.canLinkGoogle ??
+                                          false)
+                                  ? () => _protectWithGoogle(context, account)
+                                  : null,
                               theme: selected,
                               onSwitch: () => _switchAccount(context),
                               onDelete: () => _deleteAccount(context, account),
@@ -626,6 +653,7 @@ class _AccountSettings extends StatelessWidget {
     required this.syncState,
     required this.onKeepDevice,
     required this.onUseCloud,
+    required this.onProtectWithGoogle,
     required this.theme,
     required this.onSwitch,
     required this.onDelete,
@@ -636,6 +664,7 @@ class _AccountSettings extends StatelessWidget {
   final ProgressSyncState syncState;
   final VoidCallback? onKeepDevice;
   final VoidCallback? onUseCloud;
+  final VoidCallback? onProtectWithGoogle;
   final BackgroundTheme theme;
   final VoidCallback onSwitch;
   final VoidCallback onDelete;
@@ -675,7 +704,9 @@ class _AccountSettings extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    account.identityLabel,
+                    protection.isProtected
+                        ? _providerLabel(protection.providerIds)
+                        : account.identityLabel,
                     style: TextStyle(
                       color: theme.cardTextSecondaryColor,
                       fontWeight: FontWeight.w600,
@@ -735,6 +766,32 @@ class _AccountSettings extends StatelessWidget {
             ],
           ),
         ),
+        if (onProtectWithGoogle != null) ...[
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            key: const ValueKey('settings-protect-with-google'),
+            onPressed: protection.status == AccountProtectionStatus.syncing
+                ? null
+                : onProtectWithGoogle,
+            icon: protection.status == AccountProtectionStatus.syncing
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.g_mobiledata_rounded),
+            label: Text(
+              protection.status == AccountProtectionStatus.syncing
+                  ? 'Connecting Google…'
+                  : 'Protect with Google',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            style: GameTheme.filledButton(
+              theme,
+              color: theme.primaryColor,
+              height: 48,
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
         Container(
           key: const ValueKey('settings-progress-sync-status'),
@@ -857,6 +914,12 @@ class _AccountSettings extends StatelessWidget {
     ProgressSyncStatus.conflict => Icons.compare_arrows_rounded,
     ProgressSyncStatus.error => Icons.cloud_off_rounded,
   };
+
+  static String _providerLabel(Set<String> providerIds) {
+    if (providerIds.contains('google.com')) return 'Protected with Google';
+    if (providerIds.contains('apple.com')) return 'Protected with Apple';
+    return 'Protected account';
+  }
 }
 
 class _SettingsAccordionSection extends StatelessWidget {

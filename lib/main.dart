@@ -69,6 +69,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
   final OnlineLobbyService _onlineLobby = OnlineLobbyService();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   String? _loadedAccountId;
+  String? _configuredProgressPlayerId;
   var _switchingAccount = false;
   var _legacyMigrationPending = false;
 
@@ -80,6 +81,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     _initialize();
     _game.addListener(_onGameChanged);
     _accounts.addListener(_onAccountsChanged);
+    _accountProtection.addListener(_onProtectionChanged);
     _preferences.addListener(_onGameChanged);
     _customSprites.addListener(_onGameChanged);
     _customEggs.addListener(_onGameChanged);
@@ -144,6 +146,15 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     unawaited(_switchGameAccount(accountId));
   }
 
+  void _onProtectionChanged() {
+    if (mounted) setState(() {});
+    final protectedPlayerId = _accountProtection.state.protectedPlayerId;
+    if (_game.isInitialized &&
+        protectedPlayerId != _configuredProgressPlayerId) {
+      unawaited(_configureProgressSync());
+    }
+  }
+
   Future<void> _switchGameAccount(String accountId) async {
     _switchingAccount = true;
     await _onlineLobby.disconnect();
@@ -183,6 +194,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     final cloud = Firebase.apps.isEmpty
         ? null
         : FirebaseProgressRepository(FirebaseFirestore.instance);
+    _configuredProgressPlayerId = protectedPlayerId;
     return _progressSync.selectAccount(
       accountId: accountId,
       protectedPlayerId: protectedPlayerId,
@@ -266,6 +278,7 @@ class _EggHatchersAppState extends State<EggHatchersApp>
     WidgetsBinding.instance.removeObserver(this);
     _game.removeListener(_onGameChanged);
     _accounts.removeListener(_onAccountsChanged);
+    _accountProtection.removeListener(_onProtectionChanged);
     _preferences.removeListener(_onGameChanged);
     _customSprites.removeListener(_onGameChanged);
     _customEggs.removeListener(_onGameChanged);

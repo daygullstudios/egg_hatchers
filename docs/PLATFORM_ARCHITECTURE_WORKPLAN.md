@@ -222,6 +222,15 @@ clearing or uninstall. The Anonymous provider is enabled in the isolated
 `egg-hatchers-dev` Firebase project; a live disposable identity create/delete
 smoke test passed on 2026-09-05.
 
+The Google protection client is now staged for Web. A first-time link uses
+Firebase account linking so the anonymous UID and cloud document remain
+unchanged. An existing Google-owned Egg Hatchers identity is treated as an
+account switch: the prior sync checkpoint is cleared and the ordinary
+cloud/device conflict gate must resolve the selected save. Canceled or failed
+provider flows retain the guest identity and local progress. The UI is exposed
+only where provider configuration is known complete; Android and iOS stay
+fail-closed until their native OAuth registrations are provisioned and tested.
+
 ### 3. Add offline-first cloud progress
 
 - Introduce a progress repository above local storage and Firestore sync.

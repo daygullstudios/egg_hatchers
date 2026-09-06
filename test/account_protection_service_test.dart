@@ -1,6 +1,8 @@
 import 'package:egg_hatchers/models/account_protection_state.dart';
+import 'package:egg_hatchers/models/progress_sync_checkpoint.dart';
 import 'package:egg_hatchers/services/account_protection_service.dart';
 import 'package:egg_hatchers/services/device_guest_slot_store.dart';
+import 'package:egg_hatchers/services/progress_sync_checkpoint_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -83,17 +85,91 @@ void main() {
     expect(service.state.status, AccountProtectionStatus.localOnly);
     expect(gateway.restoreCalls, 0);
   });
+
+  test(
+    'linking Google preserves the anonymous UID and sync ancestry',
+    () async {
+      final slots = DeviceGuestSlotStore();
+      await slots.activate('guest_test');
+      await slots.bindFirebaseUid(
+        accountId: 'guest_test',
+        firebaseUid: 'anonymous-123',
+      );
+      final checkpoints = ProgressSyncCheckpointStore(accountId: 'guest_test');
+      await checkpoints.write(
+        ProgressSyncCheckpoint(
+          contentFingerprint: List.filled(64, 'a').join(),
+          cloudRevision: 4,
+          recordedAt: DateTime.utc(2026),
+        ),
+      );
+      final service = AccountProtectionService(
+        gateway: _Gateway(
+          identity: const ProtectedPlayerIdentity(playerId: 'anonymous-123'),
+          linkedIdentity: const ProtectedPlayerIdentity(
+            playerId: 'anonymous-123',
+            providerIds: {'google.com'},
+          ),
+        ),
+      );
+      await service.initialize(accountId: 'guest_test');
+
+      final outcome = await service.protectWithGoogle(accountId: 'guest_test');
+
+      expect(outcome.status, AccountProtectionAttemptStatus.protected);
+      expect(service.state.isProtected, isTrue);
+      expect((await slots.read())?.firebaseUid, 'anonymous-123');
+      expect((await checkpoints.read())?.cloudRevision, 4);
+    },
+  );
+
+  test('opening an existing Google account clears old sync ancestry', () async {
+    final slots = DeviceGuestSlotStore();
+    await slots.activate('guest_test');
+    await slots.bindFirebaseUid(
+      accountId: 'guest_test',
+      firebaseUid: 'anonymous-123',
+    );
+    final checkpoints = ProgressSyncCheckpointStore(accountId: 'guest_test');
+    await checkpoints.write(
+      ProgressSyncCheckpoint(
+        contentFingerprint: List.filled(64, 'a').join(),
+        cloudRevision: 4,
+        recordedAt: DateTime.utc(2026),
+      ),
+    );
+    final service = AccountProtectionService(
+      gateway: _Gateway(
+        identity: const ProtectedPlayerIdentity(playerId: 'anonymous-123'),
+        linkedIdentity: const ProtectedPlayerIdentity(
+          playerId: 'google-existing',
+          providerIds: {'google.com'},
+        ),
+      ),
+    );
+    await service.initialize(accountId: 'guest_test');
+
+    final outcome = await service.protectWithGoogle(accountId: 'guest_test');
+
+    expect(outcome.status, AccountProtectionAttemptStatus.switched);
+    expect((await slots.read())?.firebaseUid, 'google-existing');
+    expect(await checkpoints.read(), isNull);
+  });
 }
 
 final class _Gateway implements AccountProtectionGateway {
-  _Gateway({this.identity, this.error = false});
+  _Gateway({this.identity, this.linkedIdentity, this.error = false});
 
   final ProtectedPlayerIdentity? identity;
+  final ProtectedPlayerIdentity? linkedIdentity;
   final bool error;
   int restoreCalls = 0;
 
   @override
   bool get isConfigured => true;
+
+  @override
+  bool get canLinkGoogle => true;
 
   @override
   Future<ProtectedPlayerIdentity?> restoreIdentity({
@@ -104,4 +180,9 @@ final class _Gateway implements AccountProtectionGateway {
     if (error) throw StateError('offline');
     return identity;
   }
+
+  @override
+  Future<ProtectedPlayerIdentity?> linkGoogle({
+    required String expectedPlayerId,
+  }) async => linkedIdentity;
 }

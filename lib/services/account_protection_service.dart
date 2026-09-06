@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/account_protection_state.dart';
 import 'device_guest_slot_store.dart';
+import 'progress_sync_checkpoint_store.dart';
 
 class ProtectedPlayerIdentity {
   const ProtectedPlayerIdentity({
@@ -15,11 +16,29 @@ class ProtectedPlayerIdentity {
 
 abstract interface class AccountProtectionGateway {
   bool get isConfigured;
+  bool get canLinkGoogle;
 
   Future<ProtectedPlayerIdentity?> restoreIdentity({
     required String accountId,
     required String? expectedPlayerId,
   });
+
+  Future<ProtectedPlayerIdentity?> linkGoogle({
+    required String expectedPlayerId,
+  });
+}
+
+enum AccountProtectionAttemptStatus { protected, switched, canceled, failed }
+
+class AccountProtectionAttempt {
+  const AccountProtectionAttempt({required this.status, required this.message});
+
+  final AccountProtectionAttemptStatus status;
+  final String message;
+
+  bool get succeeded =>
+      status == AccountProtectionAttemptStatus.protected ||
+      status == AccountProtectionAttemptStatus.switched;
 }
 
 /// Owns the app-wide distinction between a device profile and a protected
@@ -38,6 +57,7 @@ class AccountProtectionService extends ChangeNotifier {
 
   AccountProtectionState get state => _state;
   bool get isInitialized => _isInitialized;
+  bool get canLinkGoogle => gateway?.canLinkGoogle ?? false;
   var _selectionRevision = 0;
 
   Future<void> initialize({String? accountId}) async {
@@ -93,7 +113,7 @@ class AccountProtectionService extends ChangeNotifier {
                 status: AccountProtectionStatus.guest,
                 protectedPlayerId: identity.playerId,
                 message:
-                    'Device guest identity established. Progress is not cloud-synced yet.',
+                    'A cloud copy exists for this device guest. Link Google to recover it on other devices.',
               )
             : AccountProtectionState(
                 status: AccountProtectionStatus.protected,
@@ -111,6 +131,116 @@ class AccountProtectionService extends ChangeNotifier {
           message:
               'Progress is still safe on this device. Cloud protection could not be checked.',
         ),
+      );
+    }
+  }
+
+  Future<AccountProtectionAttempt> protectWithGoogle({
+    required String accountId,
+  }) async {
+    final revision = ++_selectionRevision;
+    final configuredGateway = gateway;
+    final slot = await _guestSlots.read();
+    final expectedPlayerId = slot?.firebaseUid;
+    if (revision != _selectionRevision) {
+      return const AccountProtectionAttempt(
+        status: AccountProtectionAttemptStatus.failed,
+        message: 'The active player changed before Google started.',
+      );
+    }
+    if (configuredGateway == null ||
+        !configuredGateway.isConfigured ||
+        slot?.accountId != accountId ||
+        expectedPlayerId == null) {
+      return const AccountProtectionAttempt(
+        status: AccountProtectionAttemptStatus.failed,
+        message: 'Google protection is unavailable for this local profile.',
+      );
+    }
+    if (_state.isProtected) {
+      return const AccountProtectionAttempt(
+        status: AccountProtectionAttemptStatus.protected,
+        message: 'This progress is already protected.',
+      );
+    }
+
+    _setStateIfCurrent(
+      revision,
+      AccountProtectionState(
+        status: AccountProtectionStatus.syncing,
+        protectedPlayerId: expectedPlayerId,
+        message: 'Connecting Google without changing your progress…',
+      ),
+    );
+    try {
+      final identity = await configuredGateway.linkGoogle(
+        expectedPlayerId: expectedPlayerId,
+      );
+      if (revision != _selectionRevision) {
+        return const AccountProtectionAttempt(
+          status: AccountProtectionAttemptStatus.failed,
+          message: 'The active player changed before Google finished.',
+        );
+      }
+      if (identity == null) {
+        _setState(
+          AccountProtectionState(
+            status: AccountProtectionStatus.guest,
+            protectedPlayerId: expectedPlayerId,
+            message:
+                'Google linking was canceled. Your guest save is unchanged.',
+          ),
+        );
+        return const AccountProtectionAttempt(
+          status: AccountProtectionAttemptStatus.canceled,
+          message: 'Google linking canceled.',
+        );
+      }
+      if (!identity.providerIds.contains('google.com')) {
+        throw StateError('Google was not present on the returned identity.');
+      }
+
+      final switched = identity.playerId != expectedPlayerId;
+      if (switched) {
+        await ProgressSyncCheckpointStore(accountId: accountId).clear();
+      }
+      await _guestSlots.bindFirebaseUid(
+        accountId: accountId,
+        firebaseUid: identity.playerId,
+      );
+      _setState(
+        AccountProtectionState(
+          status: AccountProtectionStatus.protected,
+          protectedPlayerId: identity.playerId,
+          providerIds: identity.providerIds,
+          message: switched
+              ? 'Google account opened. Compare its cloud progress before choosing a save.'
+              : 'Progress is protected with Google and can be recovered on other devices.',
+        ),
+      );
+      return AccountProtectionAttempt(
+        status: switched
+            ? AccountProtectionAttemptStatus.switched
+            : AccountProtectionAttemptStatus.protected,
+        message: switched
+            ? 'Google account opened. Review the progress comparison below.'
+            : 'Progress protected with Google.',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Google account protection failed: $error\n$stackTrace');
+      if (revision == _selectionRevision) {
+        _setState(
+          AccountProtectionState(
+            status: AccountProtectionStatus.guest,
+            protectedPlayerId: expectedPlayerId,
+            message:
+                'Google could not be connected. Your guest save and cloud copy are unchanged.',
+          ),
+        );
+      }
+      return const AccountProtectionAttempt(
+        status: AccountProtectionAttemptStatus.failed,
+        message: 'Could not connect Google. Please try again.',
       );
     }
   }

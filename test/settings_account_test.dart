@@ -1,9 +1,12 @@
 import 'package:egg_hatchers/screens/settings_screen.dart';
 import 'package:egg_hatchers/services/account_service.dart';
+import 'package:egg_hatchers/services/account_protection_service.dart';
 import 'package:egg_hatchers/services/audio_service.dart';
+import 'package:egg_hatchers/services/device_guest_slot_store.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/preferences_service.dart';
 import 'package:egg_hatchers/widgets/account_scope.dart';
+import 'package:egg_hatchers/widgets/account_protection_scope.dart';
 import 'package:egg_hatchers/widgets/audio_scope.dart';
 import 'package:egg_hatchers/widgets/game_primary_navigation.dart';
 import 'package:flutter/material.dart';
@@ -89,4 +92,95 @@ void main() {
     game.dispose();
     audio.dispose();
   });
+
+  testWidgets('device guest can protect progress with Google', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+    final accounts = AccountService();
+    final game = GameService();
+    final preferences = PreferencesService();
+    final audio = AudioService();
+    await accounts.initialize();
+    await Future.wait([
+      game.initialize(accountId: accounts.account?.id),
+      preferences.initialize(),
+    ]);
+    final account = accounts.account!;
+    await DeviceGuestSlotStore().bindFirebaseUid(
+      accountId: account.id,
+      firebaseUid: 'anonymous-123',
+    );
+    final protection = AccountProtectionService(
+      gateway: _SettingsProtectionGateway(),
+    );
+    await protection.initialize(accountId: account.id);
+
+    await tester.pumpWidget(
+      AccountScope(
+        accounts: accounts,
+        child: AccountProtectionScope(
+          protection: protection,
+          child: AudioScope(
+            audio: audio,
+            child: MaterialApp(
+              home: MainGameShellScope(
+                current: MainGameDestination.settings,
+                game: game,
+                onSelect: (_) {},
+                child: SettingsScreen(preferences: preferences, game: game),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settings-panel-account')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('settings-protect-with-google')),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(const ValueKey('settings-protect-with-google')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Protected'), findsOneWidget);
+    expect(find.text('Protected with Google'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('settings-protect-with-google')),
+      findsNothing,
+    );
+
+    protection.dispose();
+    game.dispose();
+    audio.dispose();
+  });
+}
+
+final class _SettingsProtectionGateway implements AccountProtectionGateway {
+  @override
+  bool get isConfigured => true;
+
+  @override
+  bool get canLinkGoogle => true;
+
+  @override
+  Future<ProtectedPlayerIdentity?> restoreIdentity({
+    required String accountId,
+    required String? expectedPlayerId,
+  }) async => const ProtectedPlayerIdentity(playerId: 'anonymous-123');
+
+  @override
+  Future<ProtectedPlayerIdentity?> linkGoogle({
+    required String expectedPlayerId,
+  }) async => const ProtectedPlayerIdentity(
+    playerId: 'anonymous-123',
+    providerIds: {'google.com'},
+  );
 }
