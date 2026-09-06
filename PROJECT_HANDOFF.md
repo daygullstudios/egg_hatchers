@@ -120,11 +120,10 @@ at inspection) on 2026-09-05.
 
 `playnestarium.com` was purchased through the existing Daygull Studios
 Cloudflare account on 2026-09-06 as the selected public-facing Nestarium
-domain. Cloudflare had accepted the order but was still provisioning the
-registration at handoff time; no DNS, Worker route, email, Firebase, game
-title, or public-site change has been made yet. After the domain becomes an
-active Cloudflare zone, configure its public hostname deliberately and add it
-to Firebase Authentication's authorized domains before it is used for live
+domain. It is active, auto-renew is enabled, and it expires on 2027-09-06.
+No DNS, Worker route, email, Firebase, game-title, or public-site change has
+been made yet. Configure its public hostname deliberately and add it to
+Firebase Authentication's authorized domains before it is used for live
 sign-in or play.
 
 The next identity slice is implemented locally but not released yet. The
