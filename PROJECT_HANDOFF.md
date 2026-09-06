@@ -39,7 +39,23 @@ chip Row overflow by allowing its label to wrap.
 
 Validation: Flutter 3.47.2 analysis has no issues and all **563 tests** pass,
 including 15 app/lobby checks (13 new). Brand inventory: 551 classified legacy
-references, none unclassified. Release build/deployment acceptance follows below.
+references, none unclassified. Release web build succeeds (50.8s, including the
+Wasm dry run). Implementation **`74cde12`** is pushed to `main`. Playtest 3 tests
+and Wrangler 4.129.0 dry run/deploy pass in the required order. The unchanged
+protected custom-domain route has 100% current version
+**`fa0211d9-4070-4ebf-b53c-d0e663d8071a`**, read back at
+`2026-09-06T22:25:29.213Z`; unauthenticated requests still return 302 to Access.
+
+Live external Chrome replayed Settings > Switch Account > Create another player
+> Back to players > existing guest, then repeated a direct picker round trip.
+Both reopened the Hatchery on the next independent observation without refreshing.
+The same three animals and continuing income remain. Between the round trips,
+Settings retained the guest's cloud-copy status and unresolved Choose progress /
+Compare saves; neither copy was selected. The creation form was canceled, not
+submitted. No real player was created/removed and no save imported/reset/restored.
+The tab is left on the existing guest's Hatchery. Failure/overlap/destructive-data
+scenarios use mocks only; this is not physical-device, public multiplayer or full
+offline/cloud bootstrap acceptance.
 No real save is to be imported, reset, removed or selected in a cloud conflict
 for QA. Next priority remains validated import preview, coordinated writer
 pause/replacement/rollback/restart and cancellation, followed by unreadable account
