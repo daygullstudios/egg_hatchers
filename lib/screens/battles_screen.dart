@@ -17,6 +17,7 @@ import '../utils/battle_upgrade_logic.dart';
 import '../utils/boss_battle_logic.dart';
 import '../utils/egg_shard_logic.dart';
 import '../utils/format_utils.dart';
+import '../utils/quest_notification_utils.dart';
 import '../utils/snackbar_utils.dart';
 import '../utils/ui_sound.dart';
 import '../widgets/tutorial_screen_bindings.dart';
@@ -521,25 +522,35 @@ class BattlesScreen extends StatelessWidget {
     );
     if (fighter == null || !context.mounted) return;
 
-    game.recordBossBattleStarted();
+    final questNotificationHold = Object();
+    game.holdQuestNotifications(questNotificationHold);
+    try {
+      game.recordBossBattleStarted();
 
-    if (!context.mounted) return;
-    await pushThemedAppRoute<void>(
-      context,
-      theme: theme,
-      settings: const RouteSettings(name: '/manual-boss-battle'),
-      builder: (_) => ManualBossBattleScreen(
-        game: game,
-        preferences: preferences,
-        customSprites: customSprites,
-        boss: boss,
-        fighter: fighter,
-        mode: mode,
-      ),
-    );
-    if (context.mounted) {
-      AudioScope.of(context).playMusic(MusicTrack.hatchery);
+      if (!context.mounted) return;
+      await pushThemedAppRoute<void>(
+        context,
+        theme: theme,
+        settings: const RouteSettings(name: '/manual-boss-battle'),
+        builder: (_) => ManualBossBattleScreen(
+          game: game,
+          preferences: preferences,
+          customSprites: customSprites,
+          boss: boss,
+          fighter: fighter,
+          mode: mode,
+        ),
+      );
+    } finally {
+      game.releaseQuestNotifications(questNotificationHold);
     }
+    if (!context.mounted) return;
+    AudioScope.of(context).playMusic(MusicTrack.hatchery);
+    showPendingQuestCompletionNotification(
+      context,
+      game: game,
+      preferences: preferences,
+    );
   }
 
   Future<OwnedAnimal?> _pickFighter(

@@ -14,8 +14,9 @@ Quest _battleQuest(String id) =>
 
 void main() {
   test('battle quests are in the Battle category', () {
-    final battleQuests =
-        QuestData.all.where((q) => q.category == QuestCategory.battle);
+    final battleQuests = QuestData.all.where(
+      (q) => q.category == QuestCategory.battle,
+    );
     expect(battleQuests.length, 10);
     expect(QuestData.categoryOrder, contains(QuestCategory.battle));
   });
@@ -44,6 +45,30 @@ void main() {
       isTrue,
     );
 
+    game.dispose();
+  });
+
+  test('focused battles hold quest notifications until returning', () async {
+    SharedPreferences.setMockInitialValues({});
+    final game = GameService();
+    await game.initialize();
+    game.devSetOwnedAnimalsForTesting([
+      const OwnedAnimal(animalId: 'chicken', quantity: 1),
+    ]);
+    final battleRoute = Object();
+
+    game.holdQuestNotifications(battleRoute);
+    game.recordBossBattleStarted();
+
+    expect(game.isQuestNotificationDeferred, isTrue);
+    expect(game.consumePendingQuestNotification(), isNull);
+
+    game.releaseQuestNotifications(battleRoute);
+
+    expect(
+      game.consumePendingQuestNotification(),
+      '⚔️ Battle Quest Complete! Claim your reward.',
+    );
     game.dispose();
   });
 

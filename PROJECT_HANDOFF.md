@@ -347,14 +347,40 @@ acceptance therefore correctly waits for approved public information pages and
 domain verification, then a deliberate Web provider/client test release. Do not
 enable the provider merely to bypass that dependency chain.
 
-Physical Android preparation reached a safe partial checkpoint. The wirelessly
-connected SM A166U runs Android 16; `com.egghatchers.game` was absent, so the
-current debug APK built and installed without replacing an existing install or
-save. The phone was locked and dozing at launch, so no visual, touch, persistence
-or network behavior is claimed. The debug app remains installed for the owner to
-unlock and resume this bounded QA. Hosted multiplayer is deliberately off in
-this native build because the current Access-cookie protected backend is a Web
-test surface, not a native/public multiplayer endpoint.
+Physical Android acceptance now covers the wirelessly connected SM A166U on
+Android 16. The phone is configured to stay awake only while charging; wireless
+ADB control, screenshots, UI hierarchy inspection and filtered live app logs are
+available from this PC. The debug APK preserves the legacy
+`com.egghatchers.game` package identity. A fresh first-player tutorial completed
+across Hatchery, Shop, Collection, Quests and Battles; its route transitions and
+scrollable Fusion explanation remained operable at the device's normal 1080x2340
+display/font settings. Shop categories, Collection, quest accordion/Claim All,
+Custom Animals, Settings, battle accordion and manual-battle loss/return all
+rendered and responded. Force-stop/relaunch and an in-place debug APK upgrade
+preserved the original Guest Hatcher, tutorial completion, animal, level and
+coins.
+
+This device run found a real focused-route collision: starting the first manual
+battle completed First Fight while the underlying Battles listener was still
+active, so its large action banner covered the VS cinematic and its required
+"Click to start" prompt. Focused manual-battle routes now hold quest notifications
+from fighter selection through every rematch and release the pending banner only
+after returning to Battles. A new service regression test covers the hold/release
+contract. A temporary `QABattle` local profile physically proved the first-battle
+banner absent during the cinematic and present after Back; that profile and only
+its local test progress were then removed, and Guest Hatcher was reopened.
+
+Validation is clean: Flutter analysis passes, all **806 Flutter tests** pass,
+Android debug APK and release web builds pass, including the web Wasm dry run.
+The three protected-playtest tests and Wrangler 4.129.0 dry run pass; deployment
+kept the existing Access-protected custom domain and published version
+`91a7cbe4-b5d3-4a1c-a0c5-f018d323c11f`. Hosted multiplayer remains deliberately
+off in the native debug build because the current Access-cookie protected backend
+is a Web test surface, not a native/public multiplayer endpoint. The native
+Account & Saves panel continued to show `Cloud sync pending` during active idle
+income, so native Firestore currency/settlement is not claimed by this checkpoint
+and remains the next persistence investigation rather than being inferred from
+local force-stop survival.
 
 ## First-player journey — preceding bounded implementation checkpoint
 

@@ -544,15 +544,27 @@ class GameService extends ChangeNotifier {
     return message;
   }
 
-  final Set<Object> _customEditors = {};
-  void holdEditorQuestNotifications(Object editor) =>
-      _customEditors.add(editor);
-  void releaseEditorQuestNotifications(Object editor) {
-    _customEditors.remove(editor);
+  final Set<Object> _questNotificationHolders = {};
+
+  /// Prevents route-inappropriate quest banners until [owner] releases them.
+  ///
+  /// Focused experiences such as editors and live battles must not have their
+  /// controls or cinematics covered by a notification emitted by the shell
+  /// underneath them.
+  void holdQuestNotifications(Object owner) =>
+      _questNotificationHolders.add(owner);
+
+  void releaseQuestNotifications(Object owner) {
+    _questNotificationHolders.remove(owner);
   }
 
+  void holdEditorQuestNotifications(Object editor) =>
+      holdQuestNotifications(editor);
+  void releaseEditorQuestNotifications(Object editor) =>
+      releaseQuestNotifications(editor);
+
   bool get isQuestNotificationDeferred =>
-      _questNotificationDeferred || _customEditors.isNotEmpty;
+      _questNotificationDeferred || _questNotificationHolders.isNotEmpty;
 
   String? consumePendingMasteryNotification() {
     if (_pendingMasteryNotifications.isEmpty) return null;
