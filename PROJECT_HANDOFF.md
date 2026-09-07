@@ -382,6 +382,52 @@ income, so native Firestore currency/settlement is not claimed by this checkpoin
 and remains the next persistence investigation rather than being inferred from
 local force-stop survival.
 
+### Android cloud-backup cadence — completed continuation
+
+The native persistence investigation found two separate problems. First, an
+upload assessment captured one local revision, waited for the server read, and
+then abandoned the upload whenever continuously accruing animal income had
+advanced the local revision in the meantime. A slow connection could therefore
+starve cloud uploads indefinitely. Uploads now commit the assessed immutable
+snapshot with the expected cloud revision, record that exact snapshot as the
+confirmed ancestor, and retain newer local progress for a following upload. A
+regression test advances local progress during the cloud read and proves the
+assessed snapshot still reaches the repository.
+
+Second, the old `Cloud sync pending` label treated every few seconds of newer
+idle income as a backup failure even while Firestore was healthy. Sync now
+distinguishes `Cloud backup active`: a recent snapshot is safely stored and
+newer device progress is queued for the next update. The app-level upload
+cadence is 30 seconds, avoiding a Firestore write for every short idle-income
+tick; focused service tests retain their fast injected cadence. Pending,
+offline, conflict and error states remain explicit and cannot be overwritten by
+an unrelated local save. If the selected player changes during a sync, the new
+selection gets an immediate assessment rather than inheriting the former
+player's wait.
+
+Read-only live evidence closed the original Android uncertainty. The connected
+SM A166U's existing anonymous Firebase UID owned
+`users/<uid>/products/egg_hatchers`; its server `savedAt`, coins and revisions
+were actively advancing, reaching cloud revision **1619** during inspection.
+This proves the legacy owner-scoped Firestore path and anonymous identity remain
+compatible. No UID, Firebase project, rule, schema, save key, package ID or
+player data was changed. Debug builds now log sanitized Firestore read error
+codes/messages to aid future device diagnosis; release behavior is unchanged.
+
+Integration validation is clean: Flutter analysis passes, all **807 Flutter
+tests** pass, and the release web build plus Wasm dry run pass. The three
+protected-playtest tests and Wrangler dry run/deploy pass in the required
+sequence. The existing Access-protected hostname remains the only route and now
+serves version **`41d5948d-a7cb-415f-aa8c-3ef18f60b176`**. A fresh protected
+Chrome load shows the Nestarium portrait shell and Settings route with the
+existing browser save intact. That browser guest truthfully remains pending
+because its cloud is unavailable; no reward, account, import or save choice was
+performed. The latest Android debug APK is built, but the wireless ADB transport
+dropped before its in-place install; the preceding physical run and live
+Firestore evidence remain valid, while final on-screen acceptance of the new
+30-second/status presentation waits for reconnection and does not block the
+verified web deployment.
+
 ## First-player journey — preceding bounded implementation checkpoint
 
 Tony approved the six-milestone v1 finish line in

@@ -104,7 +104,10 @@ class _NestariumAppState extends State<NestariumApp>
       widget.accountProtection ??
       AccountProtectionService(gateway: FirebaseAnonymousAuthGateway());
   late final ProgressSyncService _progressSync =
-      widget.progressSync ?? ProgressSyncService();
+      widget.progressSync ??
+      // Local progress remains frequent; cloud snapshots are periodic so idle
+      // income does not turn into a Firestore write every few seconds.
+      ProgressSyncService(debounce: const Duration(seconds: 30));
   late final DeviceSettingsStore _deviceSettings =
       widget.deviceSettings ?? DeviceSettingsStore();
   late final PreferencesService _preferences = PreferencesService(

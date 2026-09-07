@@ -37,23 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1196,
-      "references": [
-        "egg-hatchers-playtest"
-      ],
-      "reason": "Documented compatibility identity, origin, or migration history."
-    },
-    {
-      "path": "PROJECT_HANDOFF.md",
-      "line": 1377,
-      "references": [
-        "egghatchers.game"
-      ],
-      "reason": "Documented compatibility identity, origin, or migration history."
-    },
-    {
-      "path": "PROJECT_HANDOFF.md",
-      "line": 1404,
+      "line": 410,
       "references": [
         "egg_hatchers"
       ],
@@ -61,7 +45,31 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1484,
+      "line": 1242,
+      "references": [
+        "egg-hatchers-playtest"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 1423,
+      "references": [
+        "egghatchers.game"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 1450,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 1530,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -69,7 +77,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1502,
+      "line": 1548,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -77,7 +85,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1509,
+      "line": 1555,
       "references": [
         "egg_hatchers"
       ],
@@ -687,7 +695,7 @@
     },
     {
       "path": "lib/services/firebase_progress_repository.dart",
-      "line": 21,
+      "line": 22,
       "references": [
         "egg_hatchers"
       ],
@@ -695,7 +703,7 @@
     },
     {
       "path": "lib/services/firebase_progress_repository.dart",
-      "line": 65,
+      "line": 75,
       "references": [
         "egg_hatchers_cloud_progress"
       ],
@@ -703,7 +711,7 @@
     },
     {
       "path": "lib/services/firebase_progress_repository.dart",
-      "line": 86,
+      "line": 96,
       "references": [
         "egg_hatchers_cloud_progress"
       ],

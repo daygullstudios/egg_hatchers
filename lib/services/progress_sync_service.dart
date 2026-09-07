@@ -163,12 +163,10 @@ class ProgressSyncService extends ChangeNotifier {
     // Income keeps saving locally while a player considers divergent saves.
     // Never hide that decision or restart automatic cloud work behind it.
     if (_conflict != null) return;
-    _setState(
-      const ProgressSyncState(
-        status: ProgressSyncStatus.pending,
-        message: 'Saved on this device. Cloud sync is pending…',
-      ),
-    );
+    if (_state.status == ProgressSyncStatus.synced ||
+        _state.status == ProgressSyncStatus.active) {
+      _setBackupActive();
+    }
     if (!(_timer?.isActive ?? false)) {
       _timer = Timer(debounce, synchronize);
     }
@@ -210,7 +208,7 @@ class ProgressSyncService extends ChangeNotifier {
         _scheduleRetry();
       }
     } finally {
-      _finishSynchronization();
+      _finishSynchronization(revision);
     }
   }
 
@@ -255,7 +253,7 @@ class ProgressSyncService extends ChangeNotifier {
       }
       return null;
     } finally {
-      _finishSynchronization();
+      _finishSynchronization(revision);
     }
   }
 
@@ -329,7 +327,7 @@ class ProgressSyncService extends ChangeNotifier {
       );
       return false;
     } finally {
-      _finishSynchronization();
+      _finishSynchronization(revision);
     }
   }
 
@@ -378,11 +376,11 @@ class ProgressSyncService extends ChangeNotifier {
       );
       return false;
     } finally {
-      _finishSynchronization();
+      _finishSynchronization(revision);
     }
   }
 
-  void _finishSynchronization() {
+  void _finishSynchronization(int revision) {
     _syncing = false;
     _importDrain?.complete();
     _importDrain = null;
@@ -393,7 +391,12 @@ class ProgressSyncService extends ChangeNotifier {
     if (_checkpointIssue && _isConfigured) {
       _showCheckpointIssue();
     } else if (rerun && _isConfigured && _conflict == null) {
-      _timer = Timer(debounce, synchronize);
+      // A new account must not inherit the old account's normal upload wait.
+      // Finish its initial comparison immediately after stale work drains.
+      _timer = Timer(
+        revision == _selectionRevision ? debounce : Duration.zero,
+        synchronize,
+      );
     }
   }
 
@@ -435,19 +438,18 @@ class ProgressSyncService extends ChangeNotifier {
         await _confirmCurrent(remote.contentFingerprint, revision);
         return;
       case ProgressSyncAction.uploadLocal:
-        final before = assessment.local!;
-        final latest = await _local!.loadSnapshot();
-        if (revision != _selectionRevision) return;
-        if (latest == null ||
-            latest.revision != before.revision ||
-            latest.contentFingerprint != before.contentFingerprint) {
-          _rerunRequested = true;
-          return;
-        }
+        // The assessment's local snapshot and cloud revision form one safe,
+        // conditional upload attempt. Gameplay (especially idle income) may
+        // save again while the cloud read is in flight. Rejecting the assessed
+        // snapshot here would let continuous saves starve cloud progress
+        // forever on a slower connection. Upload it under the cloud revision
+        // precondition, record that acknowledged ancestor, then
+        // _confirmCurrent queues a follow-up when the device has moved ahead.
+        final assessedLocal = assessment.local!;
         try {
           final written = await _cloud!.write(
             protectedPlayerId: _protectedPlayerId!,
-            local: latest,
+            local: assessedLocal,
             expectedCloudRevision: assessment.cloud.snapshot?.cloudRevision,
           );
           if (revision != _selectionRevision) return;
@@ -577,7 +579,7 @@ class ProgressSyncService extends ChangeNotifier {
         _showCheckpointIssue();
       }
     } finally {
-      _finishSynchronization();
+      _finishSynchronization(revision);
     }
   }
 
@@ -605,13 +607,7 @@ class ProgressSyncService extends ChangeNotifier {
       _setSynced();
     } else {
       _rerunRequested = true;
-      _setState(
-        const ProgressSyncState(
-          status: ProgressSyncStatus.pending,
-          message:
-              'Newer progress is saved on this device. Cloud sync is pending…',
-        ),
-      );
+      _setBackupActive();
     }
   }
 
@@ -635,6 +631,14 @@ class ProgressSyncService extends ChangeNotifier {
         'Progress is synced for this guest identity on this device.',
   ]) => _setState(
     ProgressSyncState(status: ProgressSyncStatus.synced, message: message),
+  );
+
+  void _setBackupActive() => _setState(
+    const ProgressSyncState(
+      status: ProgressSyncStatus.active,
+      message:
+          'Recent progress is backed up. Newer progress is safe on this device and queued for the next cloud update.',
+    ),
   );
 
   void _setConflict(String message) {

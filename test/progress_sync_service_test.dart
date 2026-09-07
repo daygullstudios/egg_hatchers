@@ -580,6 +580,47 @@ void main() {
     },
   );
 
+  testWidgets(
+    'a slow cloud read cannot starve uploads while local progress advances',
+    (tester) async {
+      final local = SaveService(accountId: 'guest_local');
+      await local.save(GameData.startingPlayerState().copyWith(coins: 1));
+      final gate = Completer<void>();
+      final cloud = _CloudRepository()..readGate = gate;
+      final service = ProgressSyncService(
+        debounce: const Duration(milliseconds: 20),
+      );
+      addTearDown(service.dispose);
+
+      final selection = service.selectAccount(
+        accountId: 'guest_local',
+        protectedPlayerId: 'firebase-guest',
+        cloud: cloud,
+        applyCloud: (_) async => true,
+      );
+      await tester.pump();
+      expect(cloud.reads, 1);
+
+      await local.save(GameData.startingPlayerState().copyWith(coins: 2));
+      service.localProgressSaved('guest_local');
+      gate.complete();
+      await selection;
+
+      expect(cloud.writes, 1);
+      expect(cloud.snapshot?.state.coins, 1);
+      expect(service.state.status, ProgressSyncStatus.active);
+      expect(service.state.label, 'Cloud backup active');
+      expect(service.state.message, contains('queued'));
+
+      await tester.pump(const Duration(milliseconds: 25));
+      await tester.pump();
+
+      expect(cloud.writes, 2);
+      expect(cloud.snapshot?.state.coins, 2);
+      expect(service.state.status, ProgressSyncStatus.synced);
+    },
+  );
+
   test('cloud-only progress restores locally without a conflict', () async {
     final remoteState = GameData.startingPlayerState().copyWith(coins: 1200);
     final cloud = _CloudRepository(snapshot: _snapshot(remoteState, 4));

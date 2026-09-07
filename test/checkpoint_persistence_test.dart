@@ -284,7 +284,7 @@ void main() {
       expect(fixture.storage.mutations, 1);
       gate.complete();
       await selecting;
-      expect(fixture.sync.state.status, ProgressSyncStatus.pending);
+      expect(fixture.sync.state.status, ProgressSyncStatus.active);
       expect(fixture.cloud.writes, 1);
       expect(fixture.storage.maxInFlight, 1);
       expect((await fixture.local.load())!.coins, 980);

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/cloud_progress_read.dart';
 import '../models/player_state.dart';
@@ -37,9 +38,18 @@ final class FirebaseProgressRepository implements CloudProgressRepository {
       return snapshot == null
           ? const CloudProgressRead.unknown()
           : CloudProgressRead.present(snapshot);
-    } on FirebaseException {
+    } on FirebaseException catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+          '[ProgressSync] Firestore read failed: '
+          '${error.code}: ${error.message}',
+        );
+      }
       return const CloudProgressRead.unknown();
-    } catch (_) {
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[ProgressSync] Firestore read failed: $error');
+      }
       return const CloudProgressRead.unknown();
     }
   }

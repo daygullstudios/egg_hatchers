@@ -834,7 +834,9 @@ class _AccountSettings extends StatelessWidget {
                   Icon(
                     _syncIcon(syncState.status),
                     size: 20,
-                    color: syncState.status == ProgressSyncStatus.synced
+                    color:
+                        syncState.status == ProgressSyncStatus.synced ||
+                            syncState.status == ProgressSyncStatus.active
                         ? Colors.greenAccent.shade400
                         : theme.primaryColor,
                   ),
@@ -939,6 +941,7 @@ class _AccountSettings extends StatelessWidget {
     ProgressSyncStatus.unavailable => Icons.phone_android_rounded,
     ProgressSyncStatus.pending => Icons.cloud_queue_rounded,
     ProgressSyncStatus.syncing => Icons.sync_rounded,
+    ProgressSyncStatus.active => Icons.cloud_done_rounded,
     ProgressSyncStatus.synced => Icons.cloud_done_rounded,
     ProgressSyncStatus.conflict => Icons.compare_arrows_rounded,
     ProgressSyncStatus.error => Icons.cloud_off_rounded,
