@@ -89,6 +89,48 @@ void main() {
   );
 
   test(
+    'hosted relative battle identities map to the local player models',
+    () async {
+      final channel = ControlledLobbyChannel()..handshake.complete();
+      final service = MultiplayerService(
+        serverUri: Uri.parse(
+          'wss://egg-hatchers-playtest.daygullstudios.com/ws',
+        ),
+        identityTokenProvider: _TokenProvider('firebase-token'),
+        hostedMultiplayerEnabled: true,
+        channelFactory: (uri, {protocols}) => channel,
+      );
+      addTearDown(() {
+        service.dispose();
+        channel.finish();
+      });
+      await service.connect();
+      service.findMatch(_player('local-player', 'Local Player'));
+      channel.incoming.add(
+        jsonEncode({
+          'type': 'matched',
+          'matchId': 'hosted-match',
+          'opponent': _player('peer-safe-id', 'Player A1B2C3').toJson(),
+        }),
+      );
+      channel.incoming.add(
+        jsonEncode({
+          'type': 'battleState',
+          'matchId': 'hosted-match',
+          'revision': 1,
+          'message': 'test complete',
+          'lastActor': 'opponent',
+          'winner': 'self',
+          'self': _combatantState(),
+          'opponent': _combatantState(),
+        }),
+      );
+      expect(service.battleState!.winnerId, 'local-player');
+      expect(service.battleState!.lastActorId, 'peer-safe-id');
+    },
+  );
+
+  test(
     'released hosted multiplayer rejects a missing identity token',
     () async {
       var opened = false;
@@ -291,6 +333,17 @@ MultiplayerPlayerSnapshot _player(String id, String name, {int rating = 1000}) {
     ],
   );
 }
+
+Map<String, dynamic> _combatantState() => {
+  'health': [100, 100, 100],
+  'activeIndex': 0,
+  'energy': 0,
+  'shield': 0,
+  'energyHits': 0,
+  'energyMisses': 0,
+  'combo': 0,
+  'bestCombo': 0,
+};
 
 Future<void> _waitFor(bool Function() condition) async {
   final deadline = DateTime.now().add(const Duration(seconds: 5));

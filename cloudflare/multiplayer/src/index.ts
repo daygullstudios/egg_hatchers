@@ -5,6 +5,20 @@ import {
   verifyFirebaseSession,
   type SessionCapabilities,
 } from "./auth";
+import {
+  authoritativeFighter,
+  collectEnergy,
+  createBattle,
+  forfeitBattle,
+  markReady,
+  nextBattleEventAt,
+  processBattleClock,
+  stateFor,
+  switchFighter,
+  useAbility,
+  type BattleMutation,
+  type BattleSession,
+} from "./battle";
 
 type SocketAttachment = {
   uid: string;
@@ -95,6 +109,15 @@ export class MatchmakingPool extends DurableObject<Env> {
         updated_at INTEGER NOT NULL
       )
     `);
+    this.ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS battles (
+        match_id TEXT PRIMARY KEY,
+        state_json TEXT NOT NULL,
+        status TEXT NOT NULL,
+        next_event_at INTEGER,
+        updated_at INTEGER NOT NULL
+      )
+    `);
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -164,6 +187,13 @@ export class MatchmakingPool extends DurableObject<Env> {
       case "cancel":
         this.cancel(socket, attachment);
         break;
+      case "ready":
+      case "collectEnergy":
+      case "ability":
+      case "switch":
+      case "leave":
+        await this.handleBattle(socket, attachment, data);
+        break;
       default:
         sendError(
           socket,
@@ -211,7 +241,7 @@ export class MatchmakingPool extends DurableObject<Env> {
       });
       return;
     }
-    this.createMatch(socket, opponent);
+    await this.createMatch(socket, opponent);
   }
 
   private waitingSocket(exceptUid: string): WebSocket | undefined {
@@ -230,7 +260,10 @@ export class MatchmakingPool extends DurableObject<Env> {
       })[0];
   }
 
-  private createMatch(firstSocket: WebSocket, secondSocket: WebSocket): void {
+  private async createMatch(
+    firstSocket: WebSocket,
+    secondSocket: WebSocket,
+  ): Promise<void> {
     const first = firstSocket.deserializeAttachment() as SocketAttachment;
     const second = secondSocket.deserializeAttachment() as SocketAttachment;
     if (!first.player || !second.player) return;
@@ -260,6 +293,21 @@ export class MatchmakingPool extends DurableObject<Env> {
       now,
       now,
     );
+    const battle = createBattle(
+      matchId,
+      first.uid,
+      first.player.displayName,
+      first.player.team,
+      second.uid,
+      second.player.displayName,
+      second.player.team,
+    );
+    this.ctx.storage.sql.exec(
+      "INSERT INTO battles (match_id, state_json, status, next_event_at, updated_at) VALUES (?, ?, 'waiting', NULL, ?)",
+      matchId,
+      JSON.stringify(battle),
+      now,
+    );
     send(firstSocket, {
       type: "matched",
       matchId,
@@ -270,6 +318,185 @@ export class MatchmakingPool extends DurableObject<Env> {
       matchId,
       opponent: first.player,
     });
+    await this.scheduleNextAlarm();
+  }
+
+  private async handleBattle(
+    socket: WebSocket,
+    attachment: SocketAttachment,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    if (
+      attachment.state !== "matched" ||
+      !attachment.matchId ||
+      data.matchId !== attachment.matchId
+    ) {
+      sendError(socket, "That protected test match is no longer active.");
+      return;
+    }
+    const battle = this.readBattle(attachment.matchId);
+    if (!battle || battle.finished) {
+      sendError(socket, "That protected test match has ended.");
+      return;
+    }
+    const now = Date.now();
+    let mutation: BattleMutation;
+    switch (data.type) {
+      case "ready":
+        mutation = markReady(battle, attachment.uid, now);
+        break;
+      case "collectEnergy":
+        mutation = collectEnergy(
+          battle,
+          attachment.uid,
+          integerInRange(data.spawnId, 1, Number.MAX_SAFE_INTEGER) ?? -1,
+          now,
+        );
+        break;
+      case "ability":
+        mutation = useAbility(
+          battle,
+          attachment.uid,
+          integerInRange(data.abilityIndex, 0, 2) ?? -1,
+        );
+        break;
+      case "switch":
+        mutation = switchFighter(
+          battle,
+          attachment.uid,
+          integerInRange(data.fighterIndex, 0, 2) ?? -1,
+        );
+        break;
+      case "leave":
+        mutation = forfeitBattle(battle, attachment.uid);
+        break;
+      default:
+        mutation = { changed: false };
+    }
+    if (!mutation.changed) return;
+    this.sendBattleNotices(mutation);
+    if (mutation.message) {
+      battle.revision += 1;
+      this.broadcastBattle(battle, mutation.message, mutation.actorUid);
+    }
+    this.writeBattle(battle);
+    if (battle.finished) this.releaseBattleSockets(battle);
+    await this.scheduleNextAlarm();
+  }
+
+  async alarm(): Promise<void> {
+    const now = Date.now();
+    const rows = this.ctx.storage.sql.exec<{ state_json: string }>(
+      "SELECT state_json FROM battles WHERE status = 'active'",
+    );
+    for (const row of rows) {
+      const battle = JSON.parse(row.state_json) as BattleSession;
+      const mutation = processBattleClock(battle, now);
+      if (!mutation.changed) continue;
+      this.sendBattleNotices(mutation);
+      if (mutation.message) {
+        battle.revision += 1;
+        this.broadcastBattle(battle, mutation.message, mutation.actorUid);
+      }
+      this.writeBattle(battle);
+    }
+    await this.scheduleNextAlarm();
+  }
+
+  private readBattle(matchId: string): BattleSession | undefined {
+    const row = [
+      ...this.ctx.storage.sql.exec<{ state_json: string }>(
+        "SELECT state_json FROM battles WHERE match_id = ? AND status IN ('waiting', 'active')",
+        matchId,
+      ),
+    ][0];
+    return row ? (JSON.parse(row.state_json) as BattleSession) : undefined;
+  }
+
+  private writeBattle(battle: BattleSession): void {
+    const status = battle.finished
+      ? "finished"
+      : battle.started
+        ? "active"
+        : "waiting";
+    const nextEventAt = nextBattleEventAt(battle) ?? null;
+    const now = Date.now();
+    this.ctx.storage.sql.exec(
+      "UPDATE battles SET state_json = ?, status = ?, next_event_at = ?, updated_at = ? WHERE match_id = ?",
+      JSON.stringify(battle),
+      status,
+      nextEventAt,
+      now,
+      battle.matchId,
+    );
+    this.ctx.storage.sql.exec(
+      "UPDATE sessions SET status = ?, updated_at = ? WHERE match_id = ?",
+      status,
+      now,
+      battle.matchId,
+    );
+  }
+
+  private sendBattleNotices(mutation: BattleMutation): void {
+    for (const notice of mutation.notices ?? []) {
+      if (!notice.targetUid) continue;
+      const socket = this.socketForUid(notice.targetUid);
+      if (socket) send(socket, notice.payload);
+    }
+  }
+
+  private broadcastBattle(
+    battle: BattleSession,
+    message: string,
+    actorUid?: string,
+  ): void {
+    for (const player of battle.players) {
+      const socket = this.socketForUid(player.uid);
+      if (socket) send(socket, stateFor(battle, player.uid, message, actorUid));
+    }
+  }
+
+  private socketForUid(uid: string): WebSocket | undefined {
+    return this.ctx.getWebSockets().find((socket) => {
+      const attachment = socket.deserializeAttachment() as
+        | SocketAttachment
+        | undefined;
+      return attachment?.uid === uid && socket.readyState === WebSocket.OPEN;
+    });
+  }
+
+  private releaseBattleSockets(battle: BattleSession): void {
+    for (const player of battle.players) {
+      const socket = this.socketForUid(player.uid);
+      if (!socket) continue;
+      const attachment = socket.deserializeAttachment() as SocketAttachment;
+      socket.serializeAttachment({
+        ...attachment,
+        state: "ready",
+        matchId: undefined,
+        peerUid: undefined,
+        player: undefined,
+      } satisfies SocketAttachment);
+    }
+  }
+
+  private async scheduleNextAlarm(): Promise<void> {
+    let earliest: number | undefined;
+    const rows = this.ctx.storage.sql.exec<{ next_event_at: number | null }>(
+      "SELECT next_event_at FROM battles WHERE status = 'active' AND next_event_at IS NOT NULL",
+    );
+    for (const row of rows) {
+      if (row.next_event_at === null) continue;
+      earliest =
+        earliest === undefined
+          ? row.next_event_at
+          : Math.min(earliest, row.next_event_at);
+    }
+    if (earliest === undefined) {
+      await this.ctx.storage.deleteAlarm();
+    } else {
+      await this.ctx.storage.setAlarm(Math.max(Date.now(), earliest));
+    }
   }
 
   private cancel(socket: WebSocket, attachment: SocketAttachment): void {
@@ -292,7 +519,12 @@ export class MatchmakingPool extends DurableObject<Env> {
       | undefined;
     if (!attachment?.matchId) return;
     this.ctx.storage.sql.exec(
-      "UPDATE sessions SET status = 'abandoned', updated_at = ? WHERE match_id = ? AND status = 'matched'",
+      "UPDATE sessions SET status = 'interrupted', updated_at = ? WHERE match_id = ? AND status IN ('matched', 'waiting', 'active')",
+      Date.now(),
+      attachment.matchId,
+    );
+    this.ctx.storage.sql.exec(
+      "UPDATE battles SET status = 'interrupted', next_event_at = NULL, updated_at = ? WHERE match_id = ? AND status IN ('waiting', 'active')",
       Date.now(),
       attachment.matchId,
     );
@@ -362,11 +594,10 @@ function parseFighterSnapshot(value: unknown): FighterSnapshot | undefined {
   const animalId = safeIdentifier(fighter.animalId);
   const mutationId = safeIdentifier(fighter.mutationId);
   const level = integerInRange(fighter.level, 1, 1_000);
-  const power = integerInRange(fighter.power, 1, 1_000_000);
-  if (!animalId || !mutationId || level === undefined || power === undefined) {
+  if (!animalId || !mutationId || level === undefined) {
     return undefined;
   }
-  return { animalId, mutationId, level, power };
+  return authoritativeFighter(animalId, mutationId, level);
 }
 
 function safeIdentifier(value: unknown): string | undefined {

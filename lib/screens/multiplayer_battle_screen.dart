@@ -69,6 +69,7 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
   var _abilityPlayerAttacks = true;
   ArenaReward? _reward;
   var _rewardApplied = false;
+  var _protectedTestResult = false;
 
   List<ArenaFighter> get _playerTeam =>
       widget.player.team.map(_arenaFighterFromSnapshot).toList(growable: false);
@@ -194,6 +195,12 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
 
   void _applyReward(MultiplayerBattleState state) {
     _rewardApplied = true;
+    if (widget.multiplayer.isHostedServer) {
+      // Hosted rewards stay disabled until the backend settles them
+      // idempotently. A client-observed winner is never economy authority.
+      _protectedTestResult = true;
+      return;
+    }
     final won = state.winnerId == widget.player.playerId;
     final reward = ArenaLogic.rewardFor(
       won: won,
@@ -417,12 +424,12 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                 ],
               ),
             ),
-            if (finished && _reward != null)
+            if (finished && (_reward != null || _protectedTestResult))
               Positioned.fill(
                 child: _OnlineResultOverlay(
                   won: state.winnerId == widget.player.playerId,
                   opponentName: widget.opponent.displayName,
-                  reward: _reward!,
+                  reward: _reward,
                   rating: widget.game.arenaRating,
                   onContinue: _continue,
                 ),
@@ -983,7 +990,7 @@ class _OnlineResultOverlay extends StatelessWidget {
 
   final bool won;
   final String opponentName;
-  final ArenaReward reward;
+  final ArenaReward? reward;
   final int rating;
   final VoidCallback onContinue;
 
@@ -1034,27 +1041,38 @@ class _OnlineResultOverlay extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 18),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _OnlineRewardStat(
-                        icon: Icons.trending_up,
-                        value:
-                            '${reward.ratingChange >= 0 ? '+' : ''}${reward.ratingChange}',
-                        label: 'RATING',
+                  if (reward case final earned?)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _OnlineRewardStat(
+                          icon: Icons.trending_up,
+                          value:
+                              '${earned.ratingChange >= 0 ? '+' : ''}${earned.ratingChange}',
+                          label: 'RATING',
+                        ),
+                        _OnlineRewardStat(
+                          icon: Icons.monetization_on,
+                          value: formatCoins(earned.coins),
+                          label: 'COINS',
+                        ),
+                        _OnlineRewardStat(
+                          icon: Icons.sports_martial_arts,
+                          value: '${earned.battleTokens}',
+                          label: 'TOKENS',
+                        ),
+                      ],
+                    )
+                  else
+                    const Text(
+                      'Protected test match — coins, tokens, and rating stay unchanged until secure server settlement is ready.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFFFD54F),
+                        fontWeight: FontWeight.w800,
+                        height: 1.3,
                       ),
-                      _OnlineRewardStat(
-                        icon: Icons.monetization_on,
-                        value: formatCoins(reward.coins),
-                        label: 'COINS',
-                      ),
-                      _OnlineRewardStat(
-                        icon: Icons.sports_martial_arts,
-                        value: '${reward.battleTokens}',
-                        label: 'TOKENS',
-                      ),
-                    ],
-                  ),
+                    ),
                   const SizedBox(height: 22),
                   SizedBox(
                     width: double.infinity,

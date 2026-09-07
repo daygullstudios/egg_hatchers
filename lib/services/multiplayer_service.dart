@@ -45,6 +45,7 @@ class MultiplayerService extends ChangeNotifier {
   String? _message;
   MultiplayerBattleState? _battleState;
   MultiplayerEnergySpawn? _energySpawn;
+  String? _selfPlayerId;
   bool _disposed = false;
 
   MultiplayerConnectionState get state => _state;
@@ -56,6 +57,7 @@ class MultiplayerService extends ChangeNotifier {
   bool get isConnected =>
       _state != MultiplayerConnectionState.connecting &&
       _state != MultiplayerConnectionState.offline;
+  bool get isHostedServer => !isLocalServerUri(serverUri);
 
   static Uri defaultServerUri() {
     const configuredUrl = String.fromEnvironment(
@@ -150,6 +152,7 @@ class MultiplayerService extends ChangeNotifier {
     _matchId = null;
     _battleState = null;
     _energySpawn = null;
+    _selfPlayerId = player.playerId;
     _channel!.sink.add(
       jsonEncode({'type': 'queue', 'player': player.toJson()}),
     );
@@ -163,6 +166,7 @@ class MultiplayerService extends ChangeNotifier {
     _matchId = null;
     _battleState = null;
     _energySpawn = null;
+    _selfPlayerId = player.playerId;
     _channel!.sink.add(
       jsonEncode({
         'type': 'joinBattleInvite',
@@ -189,6 +193,7 @@ class MultiplayerService extends ChangeNotifier {
     _message = null;
     _battleState = null;
     _energySpawn = null;
+    _selfPlayerId = null;
     if (_channel != null) _setState(MultiplayerConnectionState.ready);
   }
 
@@ -232,7 +237,20 @@ class MultiplayerService extends ChangeNotifier {
         _message = 'Opponent found!';
         _setState(MultiplayerConnectionState.matched);
       case 'battleState':
-        _battleState = MultiplayerBattleState.fromJson(data);
+        final normalized = Map<String, dynamic>.from(data);
+        final winner = data['winner'] as String?;
+        final lastActor = data['lastActor'] as String?;
+        if (winner != null) {
+          normalized['winnerId'] = winner == 'self'
+              ? _selfPlayerId
+              : _opponent?.playerId;
+        }
+        if (lastActor != null) {
+          normalized['lastActorId'] = lastActor == 'self'
+              ? _selfPlayerId
+              : _opponent?.playerId;
+        }
+        _battleState = MultiplayerBattleState.fromJson(normalized);
         _message = _battleState!.message;
         notifyListeners();
       case 'energy':
@@ -258,6 +276,7 @@ class MultiplayerService extends ChangeNotifier {
     _matchId = null;
     _battleState = null;
     _energySpawn = null;
+    _selfPlayerId = null;
     _message = 'Connection to the match server was lost.';
     _setState(MultiplayerConnectionState.offline);
   }

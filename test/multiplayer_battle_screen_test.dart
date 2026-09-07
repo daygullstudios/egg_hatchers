@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:egg_hatchers/models/arena.dart';
 import 'package:egg_hatchers/models/multiplayer.dart';
@@ -7,12 +8,14 @@ import 'package:egg_hatchers/screens/multiplayer_battle_screen.dart';
 import 'package:egg_hatchers/services/custom_sprite_service.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/multiplayer_service.dart';
+import 'package:egg_hatchers/services/online_identity_token_provider.dart';
 import 'package:egg_hatchers/services/preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../tool/multiplayer_server.dart';
+import 'support/controlled_lobby_channel.dart';
 
 void main() {
   testWidgets('online battle fits a narrow phone', (tester) async {
@@ -81,7 +84,115 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('hosted test result cannot grant client-local rewards', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final channel = ControlledLobbyChannel()..handshake.complete();
+    final multiplayer = MultiplayerService(
+      serverUri: Uri.parse('wss://egg-hatchers-playtest.daygullstudios.com/ws'),
+      identityTokenProvider: const _TokenProvider(),
+      hostedMultiplayerEnabled: true,
+      channelFactory: (uri, {protocols}) => channel,
+    );
+    final player = _player('local-player', 'Local Player');
+    final opponent = _player('peer-safe-id', 'Player A1B2C3');
+    final game = GameService();
+    final preferences = PreferencesService();
+    final sprites = CustomSpriteService();
+    await tester.runAsync(() async {
+      await Future.wait([
+        game.initialize(),
+        preferences.initialize(),
+        sprites.initialize(),
+      ]);
+      await multiplayer.connect();
+      multiplayer.findMatch(player);
+      channel.incoming.add(
+        _message({
+          'type': 'matched',
+          'matchId': 'hosted-match',
+          'opponent': opponent.toJson(),
+        }),
+      );
+      channel.incoming.add(
+        _message({
+          'type': 'battleState',
+          'matchId': 'hosted-match',
+          'revision': 1,
+          'message': 'Battle ready',
+          'self': _combatantState([100, 100, 100]),
+          'opponent': _combatantState([100, 100, 100]),
+        }),
+      );
+    });
+    addTearDown(() {
+      multiplayer.dispose();
+      game.dispose();
+      channel.finish();
+    });
+    final coinsBefore = game.coins;
+    final ratingBefore = game.arenaRating;
+    final tokensBefore = game.battleTokens;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MultiplayerBattleScreen(
+          multiplayer: multiplayer,
+          game: game,
+          player: player,
+          opponent: opponent,
+          customSprites: sprites,
+          preferences: preferences,
+        ),
+      ),
+    );
+    await tester.pump();
+    channel.incoming.add(
+      _message({
+        'type': 'battleState',
+        'matchId': 'hosted-match',
+        'revision': 2,
+        'message': 'Local Player wins the test battle!',
+        'lastActor': 'self',
+        'winner': 'self',
+        'self': _combatantState([100, 100, 100]),
+        'opponent': _combatantState([0, 0, 0]),
+      }),
+    );
+    await tester.pump();
+
+    expect(find.text('ONLINE VICTORY'), findsOneWidget);
+    expect(
+      find.textContaining('coins, tokens, and rating stay unchanged'),
+      findsOneWidget,
+    );
+    expect(game.coins, coinsBefore);
+    expect(game.arenaRating, ratingBefore);
+    expect(game.battleTokens, tokensBefore);
+  });
 }
+
+final class _TokenProvider implements OnlineIdentityTokenProvider {
+  const _TokenProvider();
+
+  @override
+  Future<String?> getIdToken() async => 'test-token';
+}
+
+String _message(Map<String, dynamic> value) => jsonEncode(value);
+
+Map<String, dynamic> _combatantState(List<int> health) => {
+  'health': health,
+  'activeIndex': 0,
+  'energy': 0,
+  'shield': 0,
+  'energyHits': 0,
+  'energyMisses': 0,
+  'combo': 0,
+  'bestCombo': 0,
+};
 
 MultiplayerPlayerSnapshot _player(String id, String name) {
   return MultiplayerPlayerSnapshot.fromPlayer(

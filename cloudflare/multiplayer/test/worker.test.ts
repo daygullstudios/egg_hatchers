@@ -61,7 +61,21 @@ describe("multiplayer edge authentication", () => {
     expect(secondMatch).toMatchObject({ type: "matched" });
     expect(firstMatch.opponent.playerId).not.toBe("forged-b");
     expect(firstMatch.opponent.displayName).not.toBe("Unsafe supplied name");
+    expect(firstMatch.opponent.team[0].power).toBe(1);
     expect(firstMatch.matchId).toBe(secondMatch.matchId);
+
+    first.send(JSON.stringify({ type: "ready", matchId: firstMatch.matchId }));
+    second.send(JSON.stringify({ type: "ready", matchId: secondMatch.matchId }));
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "battleState",
+      revision: 1,
+      self: { energy: 0 },
+    });
+    await expect(secondMessages.next()).resolves.toMatchObject({
+      type: "battleState",
+      revision: 1,
+      opponent: { energy: 0 },
+    });
 
     first.send(JSON.stringify({ type: "grantReward", coins: 999999 }));
     await expect(firstMessages.next()).resolves.toMatchObject({
@@ -108,9 +122,9 @@ function player(playerId: string): Record<string, unknown> {
     avatarColorValue: 4_285_712_800,
     rating: 1000,
     team: [
-      { animalId: "chicken", mutationId: "normal", level: 1, power: 10 },
-      { animalId: "mouse", mutationId: "normal", level: 1, power: 10 },
-      { animalId: "rabbit", mutationId: "normal", level: 1, power: 10 },
+      { animalId: "chicken", mutationId: "none", level: 1, power: 10 },
+      { animalId: "mouse", mutationId: "none", level: 1, power: 10 },
+      { animalId: "rabbit", mutationId: "none", level: 1, power: 10 },
     ],
   };
 }
