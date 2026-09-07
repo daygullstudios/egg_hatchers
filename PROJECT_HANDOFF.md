@@ -50,8 +50,17 @@ The final backup-action copy also passes 21 focused import/recovery UI tests.
 Final release web build passes (43.5s, Wasm dry run succeeds); main bundle SHA-256
 `825d4994fd60a4df462a36861379ab64a772e50c4ccf08c3ffa191f981fffbe1`.
 Playtest **3 tests** and Wrangler **4.129.0** dry run pass in the required order.
-Brand inventory: **606** classified references, none unclassified. Deployment/live
-receipt follows; no real player's data is damaged or replaced for QA.
+Brand inventory: **606** classified references, none unclassified. Implementation
+**`ab1f4d9`** is committed and pushed to main. The verified build is deployed to
+the unchanged protected custom-domain route at 100% current version
+**`8f2176db-27b9-43fc-8cb0-697ac54622c8`**, deployment timestamp
+`2026-09-07T00:18:35.105Z`. Unauthenticated requests still return **302 to Access**.
+External Chrome refresh opens the existing guest with two normal chickens, one
+golden chicken and +4/sec income. Settings retains **Choose progress / Compare
+saves** without choosing either copy; shell navigation works and the tab is back
+at the Hatchery. No real player is created, removed, damaged or replaced for QA.
+Physical-device and human comprehension acceptance remain open; automated layout
+and isolated mock recovery tests do not substitute for those gates.
 
 Next: fail-closed primary/backup **progress payload** loading and truthful local
 recovery status, then broader offline startup acceptance. The normal progress
