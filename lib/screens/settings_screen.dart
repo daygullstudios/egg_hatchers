@@ -72,8 +72,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _selectTheme(BuildContext context, BackgroundTheme theme) async {
-    await preferences.setBackgroundTheme(theme);
-    if (context.mounted) {
+    final saved = await preferences.setBackgroundTheme(theme);
+    if (context.mounted && saved) {
       UiSound.confirm(context);
       showGameSnackBar(
         context,
@@ -87,8 +87,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     BuildContext context,
     AnimalSpriteTheme theme,
   ) async {
-    await preferences.setAnimalSpriteTheme(theme);
-    if (context.mounted) {
+    final saved = await preferences.setAnimalSpriteTheme(theme);
+    if (context.mounted && saved) {
       UiSound.confirm(context);
       showGameSnackBar(
         context,
@@ -122,6 +122,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _exportSave(BuildContext context) async {
+    if (_settingsStillSaving(context)) return;
     try {
       await game.save();
       if (!context.mounted ||
@@ -157,6 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _copySave(BuildContext context) async {
+    if (_settingsStillSaving(context)) return;
     try {
       await game.save();
       if (!context.mounted ||
@@ -190,7 +192,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   var _importSelecting = false;
 
+  bool _settingsStillSaving(BuildContext context) {
+    if (!preferences.hasUnsavedSettings) return false;
+    showGameSnackBar(
+      context,
+      message:
+          'Finish saving your settings before transferring a save. If saving stalls, use Settings unsaved to retry.',
+      backgroundColor: Colors.redAccent,
+    );
+    return true;
+  }
+
   Future<void> _importSave(BuildContext context) async {
+    if (_settingsStillSaving(context)) return;
     if (_importSelecting) return;
     setState(() => _importSelecting = true);
     try {

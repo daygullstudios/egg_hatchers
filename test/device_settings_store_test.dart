@@ -4,9 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  const store = DeviceSettingsStore();
-
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  late DeviceSettingsStore store;
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    store = DeviceSettingsStore();
+  });
+  tearDown(() => store.dispose());
 
   test('fresh installs receive safe defaults', () async {
     final settings = await store.read();

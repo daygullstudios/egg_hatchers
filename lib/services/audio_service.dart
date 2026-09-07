@@ -9,7 +9,7 @@ import 'device_settings_store.dart';
 /// Central music/SFX controller with persisted settings and web-safe playback.
 class AudioService extends ChangeNotifier {
   AudioService({DeviceSettingsStore? settingsStore})
-    : _settingsStore = settingsStore ?? const DeviceSettingsStore();
+    : _settingsStore = settingsStore ?? DeviceSettingsStore();
 
   final DeviceSettingsStore _settingsStore;
 
@@ -63,7 +63,7 @@ class AudioService extends ChangeNotifier {
 
   Future<void> _initialize() async {
     try {
-      final settings = await _settingsStore.read();
+      final settings = await _settingsStore.read(includePending: true);
       _musicEnabled = settings.musicEnabled;
       _sfxEnabled = settings.sfxEnabled;
       _musicVolume = settings.musicVolume;
@@ -86,11 +86,10 @@ class AudioService extends ChangeNotifier {
     await playMusic(pending);
   }
 
-  Future<void> setMusicEnabled(bool value) async {
-    if (_musicEnabled == value) return;
+  Future<bool> setMusicEnabled(bool value) async {
     _musicEnabled = value;
     notifyListeners();
-    await _settingsStore.writeMusicEnabled(value);
+    final saved = _settingsStore.writeMusicEnabled(value);
     if (!value) {
       await _stopMusic();
     } else if (_userUnlocked && _currentTrack != null) {
@@ -98,33 +97,32 @@ class AudioService extends ChangeNotifier {
     } else if (_userUnlocked) {
       await playMusic(MusicTrack.hatchery);
     }
+    return saved;
   }
 
-  Future<void> setSfxEnabled(bool value) async {
-    if (_sfxEnabled == value) return;
+  Future<bool> setSfxEnabled(bool value) async {
     _sfxEnabled = value;
     notifyListeners();
-    await _settingsStore.writeSfxEnabled(value);
+    return _settingsStore.writeSfxEnabled(value);
   }
 
-  Future<void> setMusicVolume(double value) async {
-    final clamped = value.clamp(0.0, 1.0);
-    if ((_musicVolume - clamped).abs() < 0.001) return;
+  Future<bool> setMusicVolume(double value) async {
+    final clamped = value.isFinite ? value.clamp(0.0, 1.0) : 0.6;
     _musicVolume = clamped;
     notifyListeners();
-    await _settingsStore.writeMusicVolume(clamped);
+    final saved = _settingsStore.writeMusicVolume(clamped);
     try {
       await _musicPlayer.setVolume(clamped);
       await _setBattleLayerVolumes(_targetBattleLayerVolumes());
     } catch (_) {}
+    return saved;
   }
 
-  Future<void> setSfxVolume(double value) async {
-    final clamped = value.clamp(0.0, 1.0);
-    if ((_sfxVolume - clamped).abs() < 0.001) return;
+  Future<bool> setSfxVolume(double value) async {
+    final clamped = value.isFinite ? value.clamp(0.0, 1.0) : 0.8;
     _sfxVolume = clamped;
     notifyListeners();
-    await _settingsStore.writeSfxVolume(clamped);
+    return _settingsStore.writeSfxVolume(clamped);
   }
 
   Future<void> playMusic(MusicTrack track, {bool restart = false}) async {

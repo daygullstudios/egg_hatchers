@@ -83,9 +83,13 @@ Automated passes are necessary but are not proof of player comprehension.
    but pauses automatic cloud changes. Explicit confirmation retry does not replay
    an earlier replacement; fresh divergence requires review. Slow writes stay
    single-flight and late confirmations cannot publish into another player's UI.
-   **Next: checked settings persistence and custom-editor draft recovery.**
-   Settings currently publish optimistic values and ignore rejected writes;
-   custom egg/sprite editors need retained drafts, and bulk resets need truthful
+   Device settings now share checked, serialized writes and fresh backend reads.
+   Failed/slow operations retain session choices and show a persistent recovery
+   action across routes without pausing gameplay. Retry verifies uncertain writes
+   without repeating them; mute does not wait for storage. Pending settings block
+   normal save transfer before writer pause/staging, with safe cancellation.
+   **Next: custom-editor draft recovery and checked custom-data writes.**
+   Custom egg/sprite editors need retained drafts, and bulk resets need truthful
    partial-failure handling before any success message. Auxiliary preferences and
    profile/directory deletion remain separate acceptance work.
    Native recovery and representative human acceptance

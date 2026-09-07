@@ -12,7 +12,7 @@ class CustomSpriteService extends ChangeNotifier {
   static const _migrationKey = 'customSpriteMigrationComplete';
 
   CustomSpriteService({DeviceSettingsStore? settingsStore})
-    : _settingsStore = settingsStore ?? const DeviceSettingsStore();
+    : _settingsStore = settingsStore ?? DeviceSettingsStore();
 
   final DeviceSettingsStore _settingsStore;
 
@@ -35,7 +35,9 @@ class CustomSpriteService extends ChangeNotifier {
     _accountId = accountId;
     final prefs = await SharedPreferences.getInstance();
     _sprites.clear();
-    _showCustomSprites = (await _settingsStore.read()).showCustomSprites;
+    _showCustomSprites = (await _settingsStore.read(
+      includePending: true,
+    )).showCustomSprites;
     final migrationKey = AccountStorage.key(_migrationKey, accountId);
     final shouldMigrate =
         accountId != null &&
@@ -85,13 +87,11 @@ class CustomSpriteService extends ChangeNotifier {
 
   bool hasCustomSprite(String animalId) => _sprites.containsKey(animalId);
 
-  Future<void> setShowCustomSprites(bool value) async {
-    if (_showCustomSprites == value) return;
-
+  Future<bool> setShowCustomSprites(bool value) async {
     _showCustomSprites = value;
     notifyListeners();
 
-    await _settingsStore.writeShowCustomSprites(value);
+    return _settingsStore.writeShowCustomSprites(value);
   }
 
   Future<void> resetAllCustomSprites() async {

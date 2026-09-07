@@ -6,7 +6,7 @@ import 'device_settings_store.dart';
 /// Persists visual preferences separately from gameplay save data.
 class PreferencesService extends ChangeNotifier {
   PreferencesService({DeviceSettingsStore? store})
-    : _store = store ?? const DeviceSettingsStore();
+    : _store = store ?? DeviceSettingsStore();
 
   final DeviceSettingsStore _store;
 
@@ -23,9 +23,10 @@ class PreferencesService extends ChangeNotifier {
   bool get reducedBattleEffects => _reducedBattleEffects;
   bool get hapticsEnabled => _hapticsEnabled;
   bool get isInitialized => _isInitialized;
+  bool get hasUnsavedSettings => _store.hasUnsavedChanges || _store.isSaving;
 
   Future<void> initialize() async {
-    final settings = await _store.read();
+    final settings = await _store.read(includePending: true);
     final savedId = settings.backgroundThemeId;
     _selectedTheme = savedId != null
         ? BackgroundThemes.byId(savedId)
@@ -38,48 +39,40 @@ class PreferencesService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setBackgroundTheme(BackgroundTheme theme) async {
-    if (_selectedTheme.id == theme.id) return;
-
+  Future<bool> setBackgroundTheme(BackgroundTheme theme) async {
     _selectedTheme = theme;
     notifyListeners();
 
-    await _store.writeBackgroundTheme(theme.id);
+    return await _store.writeBackgroundTheme(theme.id) &&
+        _selectedTheme.id == theme.id;
   }
 
-  Future<void> setAnimalSpriteTheme(AnimalSpriteTheme theme) async {
-    if (_animalSpriteTheme.id == theme.id) return;
-
+  Future<bool> setAnimalSpriteTheme(AnimalSpriteTheme theme) async {
     _animalSpriteTheme = theme;
     notifyListeners();
 
-    await _store.writeAnimalSpriteTheme(theme.id);
+    return await _store.writeAnimalSpriteTheme(theme.id) &&
+        _animalSpriteTheme.id == theme.id;
   }
 
-  Future<void> setShowBattleBackgrounds(bool value) async {
-    if (_showBattleBackgrounds == value) return;
-
+  Future<bool> setShowBattleBackgrounds(bool value) async {
     _showBattleBackgrounds = value;
     notifyListeners();
 
-    await _store.writeShowBattleBackgrounds(value);
+    return _store.writeShowBattleBackgrounds(value);
   }
 
-  Future<void> setReducedBattleEffects(bool value) async {
-    if (_reducedBattleEffects == value) return;
-
+  Future<bool> setReducedBattleEffects(bool value) async {
     _reducedBattleEffects = value;
     notifyListeners();
 
-    await _store.writeReducedBattleEffects(value);
+    return _store.writeReducedBattleEffects(value);
   }
 
-  Future<void> setHapticsEnabled(bool value) async {
-    if (_hapticsEnabled == value) return;
-
+  Future<bool> setHapticsEnabled(bool value) async {
     _hapticsEnabled = value;
     notifyListeners();
 
-    await _store.writeHapticsEnabled(value);
+    return _store.writeHapticsEnabled(value);
   }
 }

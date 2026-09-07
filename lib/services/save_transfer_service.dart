@@ -18,6 +18,12 @@ class SaveTransferException implements Exception {
   String toString() => message;
 }
 
+/// Only for a preflight rejection before any runtime writer is paused or any
+/// import is staged. The review may safely return to Cancel in this case.
+class SaveImportNotStartedException extends SaveTransferException {
+  const SaveImportNotStartedException(super.message);
+}
+
 class SaveImportPreview {
   SaveImportPreview._(
     this.source,

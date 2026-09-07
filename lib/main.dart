@@ -18,6 +18,7 @@ import 'services/account_protection_service.dart';
 import 'services/audio_service.dart';
 import 'services/custom_egg_service.dart';
 import 'services/custom_sprite_service.dart';
+import 'services/device_settings_store.dart';
 import 'services/firebase_anonymous_auth_gateway.dart';
 import 'services/firebase_bootstrap.dart';
 import 'services/cloud_connection_service.dart';
@@ -35,6 +36,7 @@ import 'services/progress_recovery_service.dart';
 import 'services/unsaved_exit_guard.dart';
 import 'widgets/save_import_bootstrap.dart';
 import 'widgets/save_import_scope.dart';
+import 'widgets/settings_save_host.dart';
 import 'services/sprite_rating_service.dart';
 import 'services/sprite_reference_overlay_service.dart';
 import 'widgets/animal_sprite_theme_scope.dart';
@@ -69,6 +71,7 @@ class NestariumApp extends StatefulWidget {
     this.onlineLobby,
     this.progressSync,
     this.cloudConnection,
+    this.deviceSettings,
   });
 
   // The app owns these services, including injected instances (except the
@@ -80,6 +83,7 @@ class NestariumApp extends StatefulWidget {
   final OnlineLobbyService? onlineLobby;
   final ProgressSyncService? progressSync;
   final CloudConnectionService? cloudConnection;
+  final DeviceSettingsStore? deviceSettings;
 
   @override
   State<NestariumApp> createState() => _NestariumAppState();
@@ -94,13 +98,19 @@ class _NestariumAppState extends State<NestariumApp>
       AccountProtectionService(gateway: FirebaseAnonymousAuthGateway());
   late final ProgressSyncService _progressSync =
       widget.progressSync ?? ProgressSyncService();
-  final PreferencesService _preferences = PreferencesService();
-  final CustomSpriteService _customSprites = CustomSpriteService();
+  late final DeviceSettingsStore _deviceSettings =
+      widget.deviceSettings ?? DeviceSettingsStore();
+  late final PreferencesService _preferences = PreferencesService(
+    store: _deviceSettings,
+  );
+  late final CustomSpriteService _customSprites = CustomSpriteService(
+    settingsStore: _deviceSettings,
+  );
   final CustomEggService _customEggs = CustomEggService();
   final SpriteRatingService _spriteRating = SpriteRatingService();
   final SpriteReferenceOverlayService _referenceOverlay =
       SpriteReferenceOverlayService();
-  final AudioService _audio = AudioService();
+  late final AudioService _audio = AudioService(settingsStore: _deviceSettings);
   late final OnlineLobbyService _onlineLobby =
       widget.onlineLobby ?? OnlineLobbyService();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
@@ -137,6 +147,7 @@ class _NestariumAppState extends State<NestariumApp>
     _spriteRating.addListener(_onGameChanged);
     _referenceOverlay.addListener(_onGameChanged);
     _audio.addListener(_onGameChanged);
+    _deviceSettings.addListener(_onSettingsChanged);
     widget.cloudConnection?.addListener(_onCloudConnectionChanged);
   }
 
@@ -260,7 +271,7 @@ class _NestariumAppState extends State<NestariumApp>
   void _onGameChanged() {
     if (_saveAttentionHeld != _game.saveNeedsAttention) {
       _saveAttentionHeld = _game.saveNeedsAttention;
-      setUnsavedExitGuard(_saveAttentionHeld);
+      _onSettingsChanged();
       _progressSync.setLocalPersistencePaused(_saveAttentionHeld);
       if (_saveAttentionHeld) unawaited(_onlineLobby.disconnect());
     }
@@ -586,6 +597,8 @@ class _NestariumAppState extends State<NestariumApp>
     _spriteRating.removeListener(_onGameChanged);
     _referenceOverlay.removeListener(_onGameChanged);
     _audio.removeListener(_onGameChanged);
+    _deviceSettings.removeListener(_onSettingsChanged);
+    _deviceSettings.dispose();
     _game.onProgressSaved = null;
     _audio.dispose();
     _accountProtection.dispose();
@@ -607,6 +620,11 @@ class _NestariumAppState extends State<NestariumApp>
       _referenceOverlay.isInitialized;
 
   Future<void> _stageImport(SaveImportPreview preview) async {
+    if (_deviceSettings.hasUnsavedChanges || _deviceSettings.isSaving) {
+      throw const SaveImportNotStartedException(
+        'Finish saving your settings before importing. Use Settings unsaved to retry.',
+      );
+    }
     if (_game.saveNeedsAttention) {
       throw StateError('Save or export held progress before importing');
     }
@@ -726,31 +744,35 @@ class _NestariumAppState extends State<NestariumApp>
         }
         return PortraitAppShell(
           child: guardProgress(
-            AppThemeBackground(
-              theme: theme,
-              child: AudioScope(
-                audio: _audio,
-                child: AudioUnlockListener(
+            SettingsSaveHost(
+              store: _deviceSettings,
+              navigatorKey: _navigatorKey,
+              child: AppThemeBackground(
+                theme: theme,
+                child: AudioScope(
                   audio: _audio,
-                  child: AccountScope(
-                    accounts: _accounts,
-                    child: AccountProtectionScope(
-                      protection: _accountProtection,
-                      child: ProgressSyncScope(
-                        sync: _progressSync,
-                        child: OnlineLobbyScope(
-                          lobby: _onlineLobby,
-                          child: OnlineLobbyHost(
+                  child: AudioUnlockListener(
+                    audio: _audio,
+                    child: AccountScope(
+                      accounts: _accounts,
+                      child: AccountProtectionScope(
+                        protection: _accountProtection,
+                        child: ProgressSyncScope(
+                          sync: _progressSync,
+                          child: OnlineLobbyScope(
                             lobby: _onlineLobby,
-                            onSessionReady: _openOnlineSession,
-                            child: CoinBalanceScope(
-                              coins: _game.coins,
-                              child: AnimalSpriteThemeScope(
-                                theme: _preferences.animalSpriteTheme,
-                                child: TutorialHost(
-                                  game: _game,
-                                  theme: theme,
-                                  child: content,
+                            child: OnlineLobbyHost(
+                              lobby: _onlineLobby,
+                              onSessionReady: _openOnlineSession,
+                              child: CoinBalanceScope(
+                                coins: _game.coins,
+                                child: AnimalSpriteThemeScope(
+                                  theme: _preferences.animalSpriteTheme,
+                                  child: TutorialHost(
+                                    game: _game,
+                                    theme: theme,
+                                    child: content,
+                                  ),
                                 ),
                               ),
                             ),
@@ -799,6 +821,12 @@ class _NestariumAppState extends State<NestariumApp>
               spriteRating: _spriteRating,
               referenceOverlay: _referenceOverlay,
             ),
+    );
+  }
+
+  void _onSettingsChanged() {
+    setUnsavedExitGuard(
+      _saveAttentionHeld || _deviceSettings.hasUnsavedChanges,
     );
   }
 }

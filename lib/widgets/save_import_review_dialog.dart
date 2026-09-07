@@ -35,6 +35,10 @@ class _SaveImportReviewDialogState extends State<SaveImportReviewDialog> {
     try {
       await widget.stageImport(widget.preview);
       widget.restart();
+    } on SaveImportNotStartedException catch (error) {
+      _started = false;
+      _confirming = false;
+      _error = error.message;
     } catch (_) {
       // Do not echo the file, preference keys, or platform exception payload.
       _error =
@@ -65,6 +69,14 @@ class _SaveImportReviewDialogState extends State<SaveImportReviewDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (!_started && _error != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  _error!,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
             if (!_started && !_confirming) ...[
               const Text('Preview only. Nothing has been imported.'),
               if (preview.exportedAt != null)

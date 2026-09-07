@@ -4,6 +4,7 @@ library;
 import 'dart:js_interop';
 import 'dart:convert';
 import 'package:egg_hatchers/data/game_data.dart';
+import 'package:egg_hatchers/services/device_settings_store.dart';
 import 'package:egg_hatchers/models/progress_sync_checkpoint.dart';
 import 'package:egg_hatchers/services/progress_sync_checkpoint_store.dart';
 import 'package:egg_hatchers/services/progress_recovery_service.dart';
@@ -23,6 +24,33 @@ import 'helpers/save_import_fixture.dart';
 
 void main() {
   SharedPreferencesPlugin.registerWith(null);
+  test(
+    'browser settings ignore optimistic cache and retry uncertain writes without repeating them',
+    () async {
+      const key = DeviceSettingsStore.musicEnabledKey;
+      final storage = _UncertainCheckpointStorage({key});
+      final store = DeviceSettingsStore(storage: storage);
+      try {
+        expect(await store.writeMusicEnabled(false), true);
+        final prefs = await SharedPreferences.getInstance();
+        web.window.localStorage.setItem('flutter.$key', jsonEncode(true));
+        expect(prefs.getBool(key), false);
+        expect((await store.read()).musicEnabled, true);
+        storage.uncertain = true;
+        expect(await store.writeMusicEnabled(false), false);
+        expect(store.needsAttention, true);
+        final attempts = storage.writes;
+        storage.uncertain = false;
+        await store.retry();
+        expect(storage.writes, attempts);
+        expect(store.hasUnsavedChanges, false);
+        expect((await store.read()).musicEnabled, false);
+      } finally {
+        store.dispose();
+        await storage.remove(key);
+      }
+    },
+  );
   test(
     'browser checkpoints use fresh backend reads and verify uncertain writes',
     () async {

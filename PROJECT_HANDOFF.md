@@ -2,7 +2,56 @@
 
 Updated: 2026-09-07
 
-## Checked cloud-sync confirmations — current implementation checkpoint
+## Checked device settings and session recovery — current implementation checkpoint
+
+All ten device settings now check backend acceptance and fresh read-back using
+the installed preference backend, not its optimistic cache. The app shares one
+store across visual, audio and custom-visibility services. Writes serialize by
+key across store instances, use supported-browser leases, skip superseded queued
+choices, and retain the latest failed intent in memory. Explicit retry first
+checks whether an uncertain operation already applied. Runtime reads preserve
+pending choices and re-read if a choice completes during the read. Legacy keys,
+fallbacks, preference backend/prefix, account identities and saves are unchanged.
+
+Failed or eight-second-pending operations expose a persistent **Settings unsaved**
+action across game screens. The scrollable review identifies affected settings,
+offers non-overlapping retry and lets players keep playing. Session choices stay
+applied; mute and volume changes do not wait on storage. Theme success messages
+require verified saving. Browser exit warnings now cover pending settings as
+well as held gameplay progress, but cannot guarantee survival of force-close or
+eviction. Closing/refreshing can still lose unsaved choices; the dialog says so.
+
+Normal Settings export/copy/import asks players to finish settings saves first.
+The composition-root import preflight also rejects pending settings before any
+writer pause or staging. Its typed rejection preserves Cancel in the review
+instead of forcing a restart that would discard the pending choices. The unused
+multi-key settings reset now reports partial failure and retains individual keys
+for retry; it is not an atomic reset. This does not change emergency gameplay
+recovery exports or claim that custom-content/delete writers are checked.
+
+Validation: clean Flutter 3.47.2 analysis (13.3s), full **756-test** Flutter suite,
+final **25-test** settings failure/UX suite (including one additional read-race
+regression after the full run), and **eleven isolated Chrome tests** pass.
+Coverage includes rejected/thrown/uncertain/lying writes, read outages, partial
+removals, rapid/coalesced changes, same-key serialization, slow writes, immediate
+mute, late disposal, player-switch visibility, import preflight and retained
+gameplay. Recovery fits 320x360, 390x844 and 1440x900 at 200% text. Chrome verifies
+fresh settings reads and no duplicate uncertain retry using disposable storage.
+Release web build passes (40.8s; Wasm dry run succeeds); main bundle SHA-256
+`b71c071eb392f9fc0ec4c734fedce7224476121a598c4e06431d2d808ad0613b`.
+Required playtest three tests and Wrangler 4.129.0 dry run pass after the build.
+Deployment and live acceptance are recorded in the receipt below when completed.
+
+**Next: custom-editor draft recovery and checked custom-data writes.** Custom
+egg/sprite save/delete/reset still publish before unchecked persistence; bulk
+sprite reset can partially apply. Preserve drafts and truthful partial results
+before success feedback. Auxiliary preferences, profile/directory deletion,
+native full-disk/eviction and representative human QA remain open. Settings are
+device-local, explicit last-choice wins, not conflict-protected progress or a
+new cloud-sync contract. Old builds do not honor the new write leases. No public
+hostname, Firebase/provider/credential, billing/mail, store or sibling-app changes.
+
+## Checked cloud-sync confirmations — preceding implementation checkpoint
 
 Cloud-sync ancestry reads now use the installed preference backend directly,
 without accepting optimistic cache values or reloading the shared settings cache.
