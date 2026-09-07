@@ -14,7 +14,9 @@
   "vars": {
     "FIREBASE_PROJECT_ID": "egg-hatchers-dev",
     "CAPABILITY_MODE": "protected_playtest",
-    "MATCHMAKING_POOL": "protected-v1"
+    "MATCHMAKING_POOL": "protected-v1",
+    "MATCHMAKING_SHARD_COUNT": "1",
+    "MATCHMAKING_ROUTING_MODE": "single_compatibility"
   },
   "durable_objects": {
     "bindings": [

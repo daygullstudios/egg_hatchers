@@ -64,6 +64,15 @@ objects; a public topology therefore still needs an approved sharding and data-
 migration plan. Changing the current pool name would create a different roster
 namespace and must not happen cosmetically.
 
+The routing foundation now makes that compatibility rule executable.
+`MATCHMAKING_SHARD_COUNT=1` with
+`MATCHMAKING_ROUTING_MODE=single_compatibility` resolves the current generation
+to the exact `protected-v1` Durable Object name. Multi-shard routing requires a
+new immutable generation plus the explicit `sharded_migration_ready` mode, and
+the router refuses to shard `protected-v1`. This does not migrate or copy roster
+data. The required drain, manifest, export/import, canary and rollback sequence
+is specified in `../../docs/MULTIPLAYER_SHARD_MIGRATION.md`.
+
 ## Verify
 
 ```powershell

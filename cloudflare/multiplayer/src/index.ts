@@ -22,6 +22,10 @@ import {
   type BattleMutation,
   type BattleSession,
 } from "./battle";
+import {
+  matchmakingShardCount,
+  routeMatchmakingPool,
+} from "./pool_routing";
 
 type SocketAttachment = {
   uid: string;
@@ -166,12 +170,22 @@ export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/ws/health") {
+      let shardCount: number;
+      try {
+        shardCount = matchmakingShardCount(env.MATCHMAKING_SHARD_COUNT);
+      } catch {
+        return Response.json(
+          { status: "misconfigured", service: "nestarium-multiplayer" },
+          { status: 503, headers: jsonHeaders },
+        );
+      }
       return Response.json(
         {
           status: "ok",
           service: "nestarium-multiplayer",
           protocol: 1,
           protectedPoolSessionLimit,
+          shardCount,
         },
         { headers: jsonHeaders },
       );
@@ -205,8 +219,14 @@ export default {
       "X-Nestarium-Capabilities",
       JSON.stringify(session.capabilities),
     );
-    const pool = env.MATCHMAKING.getByName(env.MATCHMAKING_POOL);
     try {
+      const route = routeMatchmakingPool(
+        session.uid,
+        env.MATCHMAKING_POOL,
+        env.MATCHMAKING_SHARD_COUNT,
+        env.MATCHMAKING_ROUTING_MODE,
+      );
+      const pool = env.MATCHMAKING.getByName(route.poolName);
       return await pool.fetch(new Request(request, { headers }));
     } catch (error) {
       console.error("Multiplayer pool unavailable", {

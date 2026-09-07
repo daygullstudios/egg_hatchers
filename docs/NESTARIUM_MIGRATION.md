@@ -65,6 +65,11 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
   target to preserve deployment history, rollback, browser saves and sessions.
   No redirect is installed. Route paths, WebSocket protocol and local port
   53218 remain stable. Old environment options continue to work.
+- Durable Object generation `protected-v1` remains an exact compatibility data
+  address for existing Online Rosters, receipts and safety state. The versioned
+  router deliberately refuses to reinterpret it as a shard prefix. Any public
+  shard generation requires the separate verified migration in
+  `MULTIPLAYER_SHARD_MIGRATION.md`; no roster namespace has moved.
 - Egg Shop, Hatchery, hatching, egg types, animal IDs, guest display names and
   player-created content are gameplay/user data, not obsolete product branding.
   No stored player names, custom sprites, or save contents are rewritten.

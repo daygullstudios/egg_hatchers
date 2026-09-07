@@ -31,9 +31,11 @@ both participants one server-owned roster animal from a rating-gated pool.
 Preset-only report/block controls and server-enforced matchmaking blocks are
 also deployed. Durable Object eviction/hibernation and duplicate-session
 acceptance now pass automatically. The versioned trusted-claim enforcement seam
-and explicit protected-pool capacity behavior are implemented; reviewed family
-claim issuance/revocation, public sharding/migration and representative human/
-device acceptance remain open. Do not call either batch complete.
+and explicit protected-pool capacity behavior are implemented. The public shard
+router/interlock and migration design are also complete; private migration
+tooling, protected multi-shard canary, reviewed family claim issuance/revocation
+and representative human/device acceptance remain open. Do not call either
+batch complete.
 
 The capability/capacity tail uses `trusted_claims` for any future public Worker.
 Only a signed `nestariumCapabilities` object with policy version 1 and an explicit
@@ -53,6 +55,16 @@ basic protected-pool behavior only. Cloudflare's current guidance describes one
 Durable Object as single-threaded with horizontal scale across objects, so a
 public release still needs an approved shard topology and migration that keeps
 the existing roster namespace intact.
+
+That public-scale routing foundation is now implemented without activating it.
+The deployed configuration uses `protected-v1`, shard count `1` and
+`single_compatibility`, so every existing player reaches the exact same Durable
+Object as before. Deterministic FNV-1a UID routing is available only for a new
+immutable generation in explicit `sharded_migration_ready` mode; the router
+refuses to shard `protected-v1` and fails closed on invalid counts or modes.
+`docs/MULTIPLAYER_SHARD_MIGRATION.md` defines the required private manifest,
+drain, idempotent export/import, checksum, canary, cutover and rollback process.
+No roster record, public hostname or Firebase identity moved in this checkpoint.
 
 The current settlement checkpoint persists one Durable Object receipt per UID
 and match, server-owned online rating, fixed hosted rewards and an explicit
@@ -116,8 +128,8 @@ now requires `cloudflare/playtest`'s `npm run build:web`, which preserves the
 protected-only feature flags. Final static version
 `d25ea84c-4ff9-47a7-a21d-5f7fc701f8d0` is routed only at the existing protected
 custom domain. Multiplayer Worker version
-`4ccde7b4-be30-47d8-85ba-37264673b030` remains routed only at `/ws*` there.
-The last unchanged Flutter checkpoint remains clean at 805 tests. Sixteen current
+`2c6df0bb-11b7-40e4-b782-8d82c5384d31` remains routed only at `/ws*` there.
+The last unchanged Flutter checkpoint remains clean at 805 tests. Nineteen current
 Worker tests pass, as do Worker typecheck/types/dry-run; the preceding release
 web/Wasm and static tests/dry-run remain valid because no Flutter/static asset
 changed in this tail. Anonymous
@@ -233,9 +245,9 @@ receipt state, and commits roster trades atomically. The local Dart server remai
 a development sandbox and does not define hosted trust. Global discovery/invites
 stay off; protected trading uses only preset messages and private aliases.
 
-**Next:** design the public multiplayer shard/migration boundary without moving
-the protected roster namespace, then close representative human/device
-acceptance. The exact reviewed family identity/consent and claim-issuance
+**Next:** implement private roster export/import plus drain/read-only controls,
+then exercise an empty protected multi-shard canary. The exact reviewed family
+identity/consent and claim-issuance
 mechanism remains an external decision gate; isolated backend and platform-
 readiness work may continue.
 The workplan records four bounded multiplayer packages: authenticated hosting;

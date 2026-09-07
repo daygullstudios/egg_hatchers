@@ -154,9 +154,14 @@ family-policy decisions and independently enforces battle, trading and preset-
 message permissions. The protected compatibility pool accepts 32 simultaneous
 sessions, forms 16 isolated matches in automated acceptance and returns a
 recoverable `503` at the explicit guardrail. This closes basic protected-pool
-load behavior, not public scale: production sharding/migration, reviewed family
-claim issuance/revocation and representative human/device acceptance remain
-open. See
+load behavior. A deterministic versioned shard router is now implemented with
+a fail-closed activation interlock: the live `protected-v1` compatibility pool
+still maps to its exact existing Durable Object, while any future multi-shard
+topology requires a new immutable generation and an explicit migration-ready
+mode. No roster data or public route has moved. Export/import, drain/read-only
+controls and a protected multi-shard canary remain before activation; reviewed
+family claim issuance/revocation and representative human/device acceptance
+also remain open. See `MULTIPLAYER_SHARD_MIGRATION.md` and
 `PROJECT_HANDOFF.md` for exact versions/evidence.
 
 Web lifecycle acceptance now includes a versioned selective resume coordinator:
