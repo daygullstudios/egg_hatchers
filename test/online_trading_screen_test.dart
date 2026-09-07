@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:egg_hatchers/models/online_trade.dart';
@@ -7,6 +8,7 @@ import 'package:egg_hatchers/models/player_account.dart';
 import 'package:egg_hatchers/screens/online_trading_screen.dart';
 import 'package:egg_hatchers/services/custom_sprite_service.dart';
 import 'package:egg_hatchers/services/game_service.dart';
+import 'package:egg_hatchers/services/online_identity_token_provider.dart';
 import 'package:egg_hatchers/services/preferences_service.dart';
 import 'package:egg_hatchers/services/trading_service.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +16,108 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../tool/multiplayer_server.dart';
+import 'support/controlled_lobby_channel.dart';
 
 void main() {
+  testWidgets('hosted trading shows the server roster, not local animals', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+
+    final channel = ControlledLobbyChannel()..handshake.complete();
+    final trading = TradingService(
+      serverUri: Uri.parse('wss://egg-hatchers-playtest.daygullstudios.com/ws'),
+      identityTokenProvider: const _TokenProvider('firebase-token'),
+      hostedTradingEnabled: true,
+      channelFactory: (uri, {protocols}) => channel,
+    );
+    final game = GameService();
+    final preferences = PreferencesService();
+    final sprites = CustomSpriteService();
+    await tester.runAsync(() async {
+      await Future.wait([
+        game.initialize(),
+        preferences.initialize(),
+        sprites.initialize(),
+        trading.connect(),
+      ]);
+      game.devSetOwnedAnimalsForTesting(const [
+        OwnedAnimal(animalId: 'chicken', quantity: 2),
+      ]);
+      channel.incoming.add(
+        jsonEncode({
+          'type': 'onlineInventory',
+          'revision': 1,
+          'items': [
+            {
+              'animalId': 'rabbit',
+              'mutationId': 'none',
+              'level': 1,
+              'quantity': 2,
+            },
+          ],
+        }),
+      );
+    });
+    addTearDown(() {
+      trading.dispose();
+      channel.finish();
+      game.dispose();
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OnlineTradingScreen(
+          game: game,
+          account: _account('hosted', 'Hosted Trader'),
+          theme: preferences.selectedTheme,
+          customSprites: sprites,
+          trading: trading,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('online-trade-roster-notice')), findsOne);
+    expect(find.textContaining('Online Roster stacks'), findsOne);
+    await tester.scrollUntilVisible(
+      find.text('Rabbit'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Rabbit'), findsOne);
+    expect(find.text('Chicken'), findsNothing);
+    expect(tester.takeException(), isNull);
+
+    channel.incoming.add(
+      jsonEncode({
+        'type': 'tradeComplete',
+        'receiptId': 'trade-1:hosted',
+        'tradeId': 'trade-1',
+        'sent': {
+          'animalId': 'rabbit',
+          'mutationId': 'none',
+          'level': 1,
+          'quantity': 1,
+        },
+        'received': {
+          'animalId': 'mouse',
+          'mutationId': 'none',
+          'level': 1,
+          'quantity': 1,
+        },
+      }),
+    );
+    await tester.pump();
+    expect(game.state.ownedAnimals, hasLength(1));
+    expect(game.state.ownedAnimals.single.animalId, 'chicken');
+    expect(game.state.ownedAnimals.single.quantity, 2);
+  });
+
   testWidgets('online trading lobby fits a narrow phone', (tester) async {
     tester.view.physicalSize = const Size(320, 568);
     tester.view.devicePixelRatio = 1;
@@ -158,6 +260,15 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+}
+
+class _TokenProvider implements OnlineIdentityTokenProvider {
+  const _TokenProvider(this.token);
+
+  final String? token;
+
+  @override
+  Future<String?> getIdToken() async => token;
 }
 
 PlayerAccount _account(String id, String displayName) => PlayerAccount(

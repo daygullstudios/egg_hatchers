@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/multiplayer.dart';
+import '../models/owned_animal.dart';
 import '../utils/web_socket_message.dart';
 import 'online_identity_token_provider.dart';
 
@@ -52,6 +53,8 @@ class MultiplayerService extends ChangeNotifier {
   MultiplayerBattleState? _battleState;
   MultiplayerEnergySpawn? _energySpawn;
   MultiplayerSettlement? _settlement;
+  List<OwnedAnimal>? _onlineInventory;
+  int? _onlineInventoryRevision;
   String? _selfPlayerId;
   bool _matchInterrupted = false;
   bool _matchResumed = false;
@@ -64,6 +67,10 @@ class MultiplayerService extends ChangeNotifier {
   MultiplayerBattleState? get battleState => _battleState;
   MultiplayerEnergySpawn? get energySpawn => _energySpawn;
   MultiplayerSettlement? get settlement => _settlement;
+  List<OwnedAnimal>? get onlineInventory => _onlineInventory == null
+      ? null
+      : List<OwnedAnimal>.unmodifiable(_onlineInventory!);
+  int? get onlineInventoryRevision => _onlineInventoryRevision;
   bool get matchInterrupted => _matchInterrupted;
   bool get matchResumed => _matchResumed;
   bool get isConnected =>
@@ -122,13 +129,16 @@ class MultiplayerService extends ChangeNotifier {
         await channel.sink.close();
         return;
       }
+      _message = null;
+      _setState(MultiplayerConnectionState.ready);
       _subscription = channel.stream.listen(
         _handleMessage,
         onError: (_) => _handleDisconnect(),
         onDone: _handleDisconnect,
       );
-      _message = null;
-      _setState(MultiplayerConnectionState.ready);
+      if (isHostedServer) {
+        channel.sink.add(jsonEncode({'type': 'getInventory'}));
+      }
     } catch (_) {
       final failedChannel = _channel;
       _channel = null;
@@ -313,6 +323,23 @@ class MultiplayerService extends ChangeNotifier {
         } catch (_) {
           _message =
               'The match result could not be verified. Reconnect to retry.';
+          notifyListeners();
+        }
+      case 'onlineInventory':
+        final items = data['items'];
+        if (items is! List) return;
+        try {
+          _onlineInventory = items
+              .map(
+                (item) => OwnedAnimal.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ),
+              )
+              .toList(growable: false);
+          _onlineInventoryRevision = (data['revision'] as num?)?.toInt();
+          notifyListeners();
+        } catch (_) {
+          _message = 'Your Online Roster could not be verified.';
           notifyListeners();
         }
       case 'error':

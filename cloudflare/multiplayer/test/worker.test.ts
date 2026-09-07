@@ -86,6 +86,195 @@ describe("multiplayer edge authentication", () => {
     second.close(1000, "done");
   });
 
+  it("owns the online roster and rejects a forged battle team", async () => {
+    const response = await openSocket(await tokenFor("inventory-owner"));
+    const socket = response.webSocket!;
+    socket.accept();
+    const received = messages(socket);
+
+    socket.send(JSON.stringify({ type: "getInventory" }));
+    await expect(received.next()).resolves.toMatchObject({
+      type: "onlineInventory",
+      revision: 1,
+      items: [
+        { animalId: "chicken", mutationId: "none", level: 1, quantity: 2 },
+        { animalId: "mouse", mutationId: "none", level: 1, quantity: 2 },
+        { animalId: "rabbit", mutationId: "none", level: 1, quantity: 2 },
+      ],
+    });
+
+    const forged = player("inventory-owner");
+    forged.team = [
+      { animalId: "dragon", mutationId: "shadow", level: 999, power: 999999 },
+      { animalId: "mouse", mutationId: "none", level: 1, power: 999999 },
+      { animalId: "rabbit", mutationId: "none", level: 1, power: 999999 },
+    ];
+    socket.send(JSON.stringify({ type: "queue", player: forged }));
+    await expect(received.next()).resolves.toMatchObject({
+      type: "onlineInventory",
+      revision: 1,
+    });
+    await expect(received.next()).resolves.toMatchObject({
+      type: "error",
+      message: expect.stringContaining("Online Roster changed"),
+    });
+    socket.close(1000, "done");
+  });
+
+  it("commits a two-sided Online Roster trade exactly once", async () => {
+    const firstResponse = await openSocket(await tokenFor("trade-owner-a"));
+    const secondResponse = await openSocket(await tokenFor("trade-owner-b"));
+    const first = firstResponse.webSocket!;
+    const second = secondResponse.webSocket!;
+    first.accept();
+    second.accept();
+    const firstMessages = messages(first);
+    const secondMessages = messages(second);
+
+    first.send(JSON.stringify({ type: "getInventory" }));
+    second.send(JSON.stringify({ type: "getInventory" }));
+    await firstMessages.next();
+    await secondMessages.next();
+
+    first.send(JSON.stringify({ type: "queueTrade" }));
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "tradeQueued",
+    });
+    second.send(JSON.stringify({ type: "queueTrade" }));
+    const firstState = await firstMessages.next();
+    const secondState = await secondMessages.next();
+    expect(firstState).toMatchObject({
+      type: "tradeState",
+      opponent: { displayName: expect.stringMatching(/^Player [A-F0-9]{6}$/) },
+    });
+    expect(firstState.opponentInventory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ animalId: "mouse", quantity: 2 }),
+      ]),
+    );
+    expect(secondState).toMatchObject({
+      type: "tradeState",
+      tradeId: firstState.tradeId,
+    });
+
+    first.send(
+      JSON.stringify({
+        type: "tradeOffer",
+        tradeId: firstState.tradeId,
+        animal: { animalId: "chicken", mutationId: "none", level: 1 },
+      }),
+    );
+    await firstMessages.next();
+    await secondMessages.next();
+    second.send(
+      JSON.stringify({
+        type: "tradeOffer",
+        tradeId: firstState.tradeId,
+        animal: { animalId: "mouse", mutationId: "none", level: 1 },
+      }),
+    );
+    await firstMessages.next();
+    await secondMessages.next();
+
+    first.send(
+      JSON.stringify({ type: "tradeConfirm", tradeId: firstState.tradeId }),
+    );
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "tradeState",
+      selfConfirmed: true,
+      opponentConfirmed: false,
+    });
+    await expect(secondMessages.next()).resolves.toMatchObject({
+      type: "tradeState",
+      selfConfirmed: false,
+      opponentConfirmed: true,
+    });
+    second.send(
+      JSON.stringify({ type: "tradeConfirm", tradeId: firstState.tradeId }),
+    );
+    const firstComplete = await firstMessages.next();
+    const firstInventory = await firstMessages.next();
+    const secondComplete = await secondMessages.next();
+    const secondInventory = await secondMessages.next();
+    expect(firstComplete).toMatchObject({
+      type: "tradeComplete",
+      sent: { animalId: "chicken" },
+      received: { animalId: "mouse" },
+    });
+    expect(secondComplete).toMatchObject({
+      type: "tradeComplete",
+      sent: { animalId: "mouse" },
+      received: { animalId: "chicken" },
+    });
+    expect(firstInventory).toMatchObject({
+      type: "onlineInventory",
+      revision: 2,
+    });
+    expect(secondInventory).toMatchObject({
+      type: "onlineInventory",
+      revision: 2,
+    });
+    expect(firstInventory.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ animalId: "mouse", quantity: 3 }),
+      ]),
+    );
+    expect(secondInventory.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ animalId: "chicken", quantity: 3 }),
+      ]),
+    );
+    expect(
+      firstInventory.items.find((item: any) => item.animalId === "chicken")
+        .quantity,
+    ).toBe(1);
+    expect(
+      secondInventory.items.find((item: any) => item.animalId === "mouse")
+        .quantity,
+    ).toBe(1);
+
+    second.send(
+      JSON.stringify({ type: "tradeConfirm", tradeId: firstState.tradeId }),
+    );
+    await expect(secondMessages.next()).resolves.toMatchObject({
+      type: "error",
+      message: expect.stringContaining("no longer active"),
+    });
+
+    const thirdResponse = await openSocket(await tokenFor("trade-owner-c"));
+    const third = thirdResponse.webSocket!;
+    third.accept();
+    const thirdMessages = messages(third);
+    first.send(JSON.stringify({ type: "queueTrade" }));
+    await firstMessages.next();
+    third.send(JSON.stringify({ type: "queueTrade" }));
+    const nextFirstState = await firstMessages.next();
+    await thirdMessages.next();
+    first.send(
+      JSON.stringify({
+        type: "tradeOffer",
+        tradeId: nextFirstState.tradeId,
+        animal: { animalId: "chicken", mutationId: "none", level: 1 },
+      }),
+    );
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "onlineInventory",
+      revision: 2,
+    });
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "error",
+      message: expect.stringContaining("not available"),
+    });
+    first.send(
+      JSON.stringify({ type: "leaveTrade", tradeId: nextFirstState.tradeId }),
+    );
+    await firstMessages.next();
+    await thirdMessages.next();
+    third.close(1000, "done");
+    first.close(1000, "done");
+    second.close(1000, "done");
+  });
+
   it("pauses and resumes a server-run battle after a verified reconnect", async () => {
     const firstToken = await tokenFor("reconnect-a");
     const secondToken = await tokenFor("reconnect-b");

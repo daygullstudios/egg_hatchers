@@ -136,13 +136,18 @@ foundation is deployed on the legacy protected playtest route, while reviewed
 family consent/retention/deletion remains externally gated. Protected direct
 matchmaking is active; server-run battles, a 30-second reconnect window and
 authoritative replay-safe result settlement are deployed as safe independent
-Batch 2 progress. Automatic global presence, discovery/invites and hosted
-trading remain off. Live two-browser matching, authoritative damage,
-reconnect/pause, no-result expiry, confirmed forfeit and exact-once reward
-acceptance now pass on the protected deployment. Hosted online rating and
-win/loss/streak history are isolated from Rival Arena. Trusted inventory and
-atomic trades plus representative human/device acceptance remain open. See
-`PROJECT_HANDOFF.md` for exact versions/evidence.
+Batch 2 progress. A server-owned Online Roster now gates hosted battle teams;
+atomic hosted trades exchange only extra roster copies and retain one battle
+copy. Automatic global presence and discovery/invites remain off. Preset-only
+trade messages and trading are enabled only in the Access-protected capability
+mode; this is test access, not parental consent or a public capability decision.
+Live two-browser matching, authoritative damage, reconnect/pause, no-result
+expiry, confirmed forfeit, exact-once reward acceptance and a reciprocal atomic
+trade now pass on the protected deployment. Hosted online rating and win/loss/
+streak history remain isolated from Rival Arena. Controlled roster acquisition/
+growth, reviewed family capabilities, remaining failure/restart coverage and
+representative human/device acceptance remain open. See `PROJECT_HANDOFF.md`
+for exact versions/evidence.
 
 Web lifecycle acceptance now includes a versioned selective resume coordinator:
 restore meaningful route/substate and safe local drafts/scroll position; use a
@@ -596,8 +601,13 @@ The actual gaps are bounded into four completion packages:
    cannot mint rewards/animals or cause one-sided loss.
    Server-issued battle settlement, receipt redelivery/acknowledgement and
    separate online ratings are complete. Fixed hosted coin rewards do not trust
-   submitted team power. Server-owned inventory and atomic trading remain open,
-   so this package is not complete.
+   submitted team power. Hosted battles now validate teams against a Durable
+   Object Online Roster, and atomic SQLite trades move only extra roster copies,
+   preserve one battle copy, increment both revisions and redeliver completion
+   receipts until acknowledged. The local Hatchery Collection remains separate
+   because its offline/client-writable saves are not safe trade authority.
+   Controlled server-owned roster acquisition/growth and production-scale
+   partitioning remain open, so this package is not complete.
 3. **Family-safe participation:** integrate the Roblox-informed capability/parent
    model in `FAMILY_AUDIENCE_V1.md`; separate gameplay from public discovery,
    profile disclosure, messaging and trading. Enforce safe names, minimum peer

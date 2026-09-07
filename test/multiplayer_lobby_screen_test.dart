@@ -8,6 +8,7 @@ import 'package:egg_hatchers/screens/multiplayer_battle_screen.dart';
 import 'package:egg_hatchers/services/custom_sprite_service.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/multiplayer_service.dart';
+import 'package:egg_hatchers/services/online_identity_token_provider.dart';
 import 'package:egg_hatchers/services/preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -144,6 +145,75 @@ void main() {
     setup.game.dispose();
   });
 
+  testWidgets('hosted lobby selects only the server-owned Online Roster', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final setup = await services();
+    final channel = ControlledLobbyChannel()..handshake.complete();
+    final multiplayer = MultiplayerService(
+      serverUri: Uri.parse('wss://playtest.example/ws'),
+      identityTokenProvider: const _TokenProvider('firebase-token'),
+      hostedMultiplayerEnabled: true,
+      channelFactory: (uri, {protocols}) => channel,
+    );
+    await multiplayer.connect();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MultiplayerLobbyScreen(
+          game: setup.game,
+          preferences: setup.preferences,
+          customSprites: setup.sprites,
+          account: account,
+          multiplayer: multiplayer,
+        ),
+      ),
+    );
+    channel.incoming.add(
+      jsonEncode({
+        'type': 'onlineInventory',
+        'revision': 1,
+        'items': [
+          {
+            'animalId': 'chicken',
+            'mutationId': 'none',
+            'level': 1,
+            'quantity': 1,
+          },
+          {
+            'animalId': 'mouse',
+            'mutationId': 'none',
+            'level': 1,
+            'quantity': 1,
+          },
+          {
+            'animalId': 'rabbit',
+            'mutationId': 'none',
+            'level': 1,
+            'quantity': 1,
+          },
+        ],
+      }),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('online-roster-notice')), findsOneWidget);
+    expect(find.text('Mouse'), findsOneWidget);
+    expect(find.text('Rabbit'), findsOneWidget);
+    expect(find.text('Fox'), findsNothing);
+    expect(find.text('Dragon'), findsNothing);
+    expect(find.text('FIND MATCH'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    multiplayer.dispose();
+    channel.finish();
+    setup.game.dispose();
+  });
+
   testWidgets('a resumed hosted match reopens battle without a stale prompt', (
     tester,
   ) async {
@@ -199,6 +269,15 @@ void main() {
     channel.finish();
     setup.game.dispose();
   });
+}
+
+class _TokenProvider implements OnlineIdentityTokenProvider {
+  const _TokenProvider(this.token);
+
+  final String? token;
+
+  @override
+  Future<String?> getIdToken() async => token;
 }
 
 MultiplayerPlayerSnapshot _opponent() => const MultiplayerPlayerSnapshot(

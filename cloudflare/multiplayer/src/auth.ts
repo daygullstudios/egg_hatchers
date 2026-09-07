@@ -135,8 +135,10 @@ function capabilitiesFor(
     return {
       onlineBattle: true,
       profileDiscovery: false,
-      presetMessages: false,
-      trading: false,
+      // The Access-protected owner playtest may exercise the bounded preset
+      // trade flow. Public builds still require explicit trusted claims.
+      presetMessages: true,
+      trading: true,
     };
   }
   const claim = payload.nestariumCapabilities;

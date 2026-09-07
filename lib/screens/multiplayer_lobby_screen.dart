@@ -62,8 +62,17 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
   bool _ownsMultiplayer = false;
   String? _shownMatchId;
   bool _joinedDirectRoom = false;
+  int? _serverRosterAppliedRevision;
 
-  bool get _teamReady => _team.length == ArenaLogic.teamSize;
+  bool get _usesServerRoster => _multiplayer?.isHostedServer == true;
+
+  List<OwnedAnimal> get _availableAnimals => _usesServerRoster
+      ? (_multiplayer?.onlineInventory ?? const [])
+      : widget.game.state.ownedAnimals;
+
+  bool get _teamReady =>
+      (!_usesServerRoster || _multiplayer?.onlineInventory != null) &&
+      _team.length == ArenaLogic.teamSize;
 
   @override
   void initState() {
@@ -79,6 +88,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
 
   void _onMultiplayerChanged() {
     if (!mounted) return;
+    _syncServerRoster();
     setState(() {});
     _joinDirectRoomIfReady();
     final multiplayer = _multiplayer;
@@ -90,6 +100,21 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
         if (mounted) _showMatchFound(multiplayer);
       });
     }
+  }
+
+  void _syncServerRoster() {
+    final multiplayer = _multiplayer;
+    final inventory = multiplayer?.onlineInventory;
+    final revision = multiplayer?.onlineInventoryRevision;
+    if (multiplayer?.isHostedServer != true ||
+        inventory == null ||
+        revision == _serverRosterAppliedRevision ||
+        multiplayer?.state == MultiplayerConnectionState.searching ||
+        multiplayer?.state == MultiplayerConnectionState.matched) {
+      return;
+    }
+    _serverRosterAppliedRevision = revision;
+    _team = ArenaLogic.recommendedTeam(inventory);
   }
 
   MultiplayerPlayerSnapshot _playerSnapshot() =>
@@ -239,7 +264,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
   }
 
   Future<void> _chooseTeam(BackgroundTheme theme) async {
-    final owned = [...widget.game.state.ownedAnimals]
+    final owned = [..._availableAnimals]
       ..sort(
         (a, b) => BattlePowerLogic.battlePowerForOwnedAnimal(
           b,
@@ -474,6 +499,10 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
                     account: widget.account,
                     rating: widget.game.onlineArenaRating,
                   ),
+                  if (_usesServerRoster) ...[
+                    const SizedBox(height: 12),
+                    const _OnlineRosterNotice(),
+                  ],
                   const SizedBox(height: 18),
                   Row(
                     children: [
@@ -488,7 +517,9 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
                         ),
                       ),
                       TextButton.icon(
-                        onPressed: () => _chooseTeam(theme),
+                        onPressed: _availableAnimals.isEmpty
+                            ? null
+                            : () => _chooseTeam(theme),
                         icon: const Icon(Icons.edit, size: 17),
                         label: const Text('EDIT'),
                       ),
@@ -499,7 +530,9 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
                     team: fighters,
                     theme: theme,
                     customSprites: widget.customSprites,
-                    onTap: () => _chooseTeam(theme),
+                    onTap: _availableAnimals.isEmpty
+                        ? null
+                        : () => _chooseTeam(theme),
                   ),
                   const SizedBox(height: 14),
                   Row(
@@ -547,6 +580,9 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
                       label: Text(
                         searching
                             ? 'CANCEL SEARCH'
+                            : _usesServerRoster &&
+                                  _multiplayer?.onlineInventory == null
+                            ? 'LOADING ONLINE ROSTER...'
                             : !_teamReady
                             ? 'SELECT 3 ANIMALS'
                             : serverConnected
@@ -615,6 +651,37 @@ class _ProtectedMatchmakingNotice extends StatelessWidget {
                   style: TextStyle(color: Color(0xFFC5D0FF), height: 1.3),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OnlineRosterNotice extends StatelessWidget {
+  const _OnlineRosterNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('online-roster-notice'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF18284D),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF70D9FF)),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.inventory_2_outlined, color: Color(0xFF70D9FF)),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Online Roster is server-verified for fair battles and safe trades. '
+              'Your Hatchery Collection stays separate and unchanged.',
+              style: TextStyle(color: Color(0xFFD8E5FF), height: 1.3),
             ),
           ),
         ],
@@ -799,7 +866,7 @@ class _OnlineTeamStrip extends StatelessWidget {
   final List<ArenaFighter> team;
   final BackgroundTheme theme;
   final CustomSpriteService customSprites;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

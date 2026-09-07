@@ -8,6 +8,7 @@ import '../models/online_trade.dart';
 import '../models/owned_animal.dart';
 import '../utils/web_socket_message.dart';
 import 'multiplayer_service.dart';
+import 'online_identity_token_provider.dart';
 
 enum TradingConnectionState {
   connecting,
@@ -19,10 +20,22 @@ enum TradingConnectionState {
 }
 
 class TradingService extends ChangeNotifier {
-  TradingService({Uri? serverUri})
-    : serverUri = serverUri ?? MultiplayerService.defaultServerUri();
+  TradingService({
+    Uri? serverUri,
+    OnlineIdentityTokenProvider? identityTokenProvider,
+    MultiplayerChannelFactory? channelFactory,
+    bool? hostedTradingEnabled,
+  }) : serverUri = serverUri ?? MultiplayerService.defaultServerUri(),
+       _identityTokenProvider =
+           identityTokenProvider ?? FirebaseOnlineIdentityTokenProvider(),
+       _channelFactory = channelFactory ?? WebSocketChannel.connect,
+       _hostedTradingEnabled =
+           hostedTradingEnabled ?? MultiplayerService.hostedTradingBuildEnabled;
 
   final Uri serverUri;
+  final OnlineIdentityTokenProvider _identityTokenProvider;
+  final MultiplayerChannelFactory _channelFactory;
+  final bool _hostedTradingEnabled;
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
   TradingConnectionState _state = TradingConnectionState.connecting;
@@ -31,6 +44,9 @@ class TradingService extends ChangeNotifier {
   String? _tradeId;
   String? _message;
   String? _cancellationMessage;
+  List<OwnedAnimal>? _onlineInventory;
+  int? _onlineInventoryRevision;
+  String? _completionReceiptId;
   final List<TradeChatMessage> _chatMessages = [];
   var _disposed = false;
 
@@ -40,12 +56,17 @@ class TradingService extends ChangeNotifier {
   String? get message => _message;
   String? get cancellationMessage => _cancellationMessage;
   List<TradeChatMessage> get chatMessages => List.unmodifiable(_chatMessages);
+  bool get isHostedServer => !MultiplayerService.isLocalServerUri(serverUri);
+  List<OwnedAnimal>? get onlineInventory => _onlineInventory == null
+      ? null
+      : List<OwnedAnimal>.unmodifiable(_onlineInventory!);
+  int? get onlineInventoryRevision => _onlineInventoryRevision;
 
   Future<void> connect() async {
     if (_channel != null || _disposed) return;
     _setState(TradingConnectionState.connecting);
     try {
-      final channel = WebSocketChannel.connect(serverUri);
+      final channel = await _openChannel();
       _channel = channel;
       await channel.ready.timeout(const Duration(seconds: 3));
       if (_disposed) {
@@ -53,13 +74,16 @@ class TradingService extends ChangeNotifier {
         await channel.sink.close();
         return;
       }
+      _message = null;
+      _setState(TradingConnectionState.ready);
       _subscription = channel.stream.listen(
         _handleMessage,
         onDone: _handleDisconnect,
         onError: (_) => _handleDisconnect(),
       );
-      _message = null;
-      _setState(TradingConnectionState.ready);
+      if (isHostedServer) {
+        channel.sink.add(jsonEncode({'type': 'getInventory'}));
+      }
     } catch (_) {
       final failedChannel = _channel;
       _channel = null;
@@ -72,6 +96,21 @@ class TradingService extends ChangeNotifier {
     }
   }
 
+  Future<WebSocketChannel> _openChannel() async {
+    if (!isHostedServer) return _channelFactory(serverUri);
+    if (!_hostedTradingEnabled) {
+      throw StateError('Hosted trading is not released');
+    }
+    final token = await _identityTokenProvider.getIdToken();
+    if (token == null || token.isEmpty) {
+      throw StateError('A restored cloud identity is required');
+    }
+    return _channelFactory(
+      serverUri,
+      protocols: ['nestarium-v1', 'firebase-auth.$token'],
+    );
+  }
+
   void findTrader(OnlineTraderSnapshot trader) {
     if (_state != TradingConnectionState.ready || _channel == null) return;
     _trade = null;
@@ -79,6 +118,7 @@ class TradingService extends ChangeNotifier {
     _tradeId = null;
     _chatMessages.clear();
     _cancellationMessage = null;
+    _completionReceiptId = null;
     _channel!.sink.add(jsonEncode({'type': 'queueTrade', ...trader.toJson()}));
     _message = 'Looking for another trader...';
     _setState(TradingConnectionState.searching);
@@ -91,6 +131,7 @@ class TradingService extends ChangeNotifier {
     _tradeId = null;
     _chatMessages.clear();
     _cancellationMessage = null;
+    _completionReceiptId = null;
     _channel!.sink.add(
       jsonEncode({
         'type': 'joinTradeInvite',
@@ -129,12 +170,22 @@ class TradingService extends ChangeNotifier {
 
   void leaveTrade() => _send('leaveTrade');
 
+  void acknowledgeCompletion() {
+    final receiptId = _completionReceiptId;
+    if (receiptId == null || _channel == null) return;
+    _channel!.sink.add(
+      jsonEncode({'type': 'ackTrade', 'receiptId': receiptId}),
+    );
+    _completionReceiptId = null;
+  }
+
   void reset() {
     _trade = null;
     _completion = null;
     _tradeId = null;
     _chatMessages.clear();
     _cancellationMessage = null;
+    _completionReceiptId = null;
     _message = null;
     if (_channel != null) _setState(TradingConnectionState.ready);
   }
@@ -160,8 +211,26 @@ class TradingService extends ChangeNotifier {
         _setState(TradingConnectionState.trading);
       case 'tradeComplete':
         _completion = OnlineTradeCompletion.fromJson(data);
+        _completionReceiptId = data['receiptId'] as String?;
         _message = 'Trade complete!';
         _setState(TradingConnectionState.completed);
+      case 'onlineInventory':
+        final items = data['items'];
+        if (items is! List) return;
+        try {
+          _onlineInventory = items
+              .map(
+                (item) => OwnedAnimal.fromJson(
+                  Map<String, dynamic>.from(item as Map),
+                ),
+              )
+              .toList(growable: false);
+          _onlineInventoryRevision = (data['revision'] as num?)?.toInt();
+          notifyListeners();
+        } catch (_) {
+          _message = 'Your Online Roster could not be verified.';
+          notifyListeners();
+        }
       case 'tradeChat':
         _chatMessages.add(TradeChatMessage.fromJson(data));
         if (_chatMessages.length > 20) _chatMessages.removeAt(0);
@@ -174,7 +243,11 @@ class TradingService extends ChangeNotifier {
         _setState(TradingConnectionState.ready);
       case 'error':
         _message = data['message'] as String? ?? 'Trading failed.';
-        notifyListeners();
+        if (_state == TradingConnectionState.searching) {
+          _setState(TradingConnectionState.ready);
+        } else {
+          notifyListeners();
+        }
     }
   }
 

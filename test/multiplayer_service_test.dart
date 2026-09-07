@@ -85,6 +85,26 @@ void main() {
       expect(openedUri, service.serverUri);
       expect(openedProtocols, ['nestarium-v1', 'firebase-auth.firebase-token']);
       expect(service.state, MultiplayerConnectionState.ready);
+      expect(jsonDecode(channel.sink.messages.single as String), {
+        'type': 'getInventory',
+      });
+
+      channel.incoming.add(
+        jsonEncode({
+          'type': 'onlineInventory',
+          'revision': 3,
+          'items': [
+            {
+              'animalId': 'chicken',
+              'mutationId': 'none',
+              'level': 1,
+              'quantity': 1,
+            },
+          ],
+        }),
+      );
+      expect(service.onlineInventoryRevision, 3);
+      expect(service.onlineInventory?.single.animalId, 'chicken');
     },
   );
 

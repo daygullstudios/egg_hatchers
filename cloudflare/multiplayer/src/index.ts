@@ -26,11 +26,19 @@ import {
 type SocketAttachment = {
   uid: string;
   capabilities: SessionCapabilities;
-  state: "ready" | "queued" | "matched" | "replaced";
+  safeAccount?: SafeAccount;
+  state:
+    | "ready"
+    | "queued"
+    | "matched"
+    | "tradeQueued"
+    | "trading"
+    | "replaced";
   queuedAt?: number;
   player?: PlayerSnapshot;
   matchId?: string;
   peerUid?: string;
+  tradeId?: string;
   windowStartedAt: number;
   messageCount: number;
 };
@@ -68,6 +76,71 @@ type ArenaSettlement = {
   coins: number;
   battle_tokens: number;
   server_rating: number;
+};
+
+type OnlineInventoryItem = {
+  animalId: string;
+  mutationId: string;
+  level: number;
+  quantity: number;
+};
+
+type OnlineInventoryRow = {
+  uid: string;
+  item_key: string;
+  animal_id: string;
+  mutation_id: string;
+  level: number;
+  quantity: number;
+};
+
+type OnlineInventoryAccount = {
+  uid: string;
+  revision: number;
+};
+
+type TradeOffer = {
+  itemKey: string;
+  animalId: string;
+  mutationId: string;
+  level: number;
+};
+
+type TradeSession = {
+  tradeId: string;
+  firstUid: string;
+  secondUid: string;
+  firstAccount: SafeAccount;
+  secondAccount: SafeAccount;
+  firstOffer?: TradeOffer;
+  secondOffer?: TradeOffer;
+  firstConfirmed: boolean;
+  secondConfirmed: boolean;
+};
+
+type SafeAccount = {
+  id: string;
+  displayName: string;
+  username: string;
+  avatarColorValue: number;
+  createdAt: string;
+  isGuest: boolean;
+};
+
+type TradeRow = {
+  trade_id: string;
+  first_uid: string;
+  second_uid: string;
+  state_json: string;
+  status: string;
+};
+
+type TradeReceiptRow = {
+  receipt_id: string;
+  trade_id: string;
+  uid: string;
+  sent_json: string;
+  received_json: string;
 };
 
 const jsonHeaders = {
@@ -172,6 +245,47 @@ export class MatchmakingPool extends DurableObject<Env> {
       );
       CREATE INDEX IF NOT EXISTS settlements_pending
         ON settlements(uid, acknowledged, created_at);
+      CREATE TABLE IF NOT EXISTS online_inventory_accounts (
+        uid TEXT PRIMARY KEY,
+        revision INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS online_inventory (
+        uid TEXT NOT NULL,
+        item_key TEXT NOT NULL,
+        animal_id TEXT NOT NULL,
+        mutation_id TEXT NOT NULL,
+        level INTEGER NOT NULL,
+        quantity INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY(uid, item_key)
+      );
+      CREATE INDEX IF NOT EXISTS online_inventory_owner
+        ON online_inventory(uid, quantity, item_key);
+      CREATE TABLE IF NOT EXISTS trades (
+        trade_id TEXT PRIMARY KEY,
+        first_uid TEXT NOT NULL,
+        second_uid TEXT NOT NULL,
+        state_json TEXT NOT NULL,
+        status TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS trades_participants
+        ON trades(first_uid, second_uid, status, updated_at);
+      CREATE TABLE IF NOT EXISTS trade_receipts (
+        receipt_id TEXT PRIMARY KEY,
+        trade_id TEXT NOT NULL,
+        uid TEXT NOT NULL,
+        sent_json TEXT NOT NULL,
+        received_json TEXT NOT NULL,
+        acknowledged INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        UNIQUE(trade_id, uid)
+      );
+      CREATE INDEX IF NOT EXISTS trade_receipts_pending
+        ON trade_receipts(uid, acknowledged, created_at);
     `);
   }
 
@@ -194,11 +308,18 @@ export class MatchmakingPool extends DurableObject<Env> {
         | SocketAttachment
         | undefined;
       if (attachment?.uid === uid) {
+        // Retire the prior activity through the ordinary disconnect path so a
+        // duplicate tab cannot orphan a battle or a pending trade.
+        await this.remove(socket);
+        const retired =
+          (socket.deserializeAttachment() as SocketAttachment | undefined) ??
+          attachment;
         socket.serializeAttachment({
-          ...attachment,
+          ...retired,
           state: "replaced",
           matchId: undefined,
           peerUid: undefined,
+          tradeId: undefined,
         } satisfies SocketAttachment);
         socket.close(4001, "A newer multiplayer session was opened");
       }
@@ -209,6 +330,7 @@ export class MatchmakingPool extends DurableObject<Env> {
     const attachment: SocketAttachment = {
       uid,
       capabilities,
+      safeAccount: await peerSafeAccount(uid),
       state: "ready",
       windowStartedAt: Date.now(),
       messageCount: 0,
@@ -217,6 +339,7 @@ export class MatchmakingPool extends DurableObject<Env> {
     this.ctx.acceptWebSocket(server);
     const resumed = await this.resumeSession(server, attachment);
     if (!resumed) this.sendPendingSettlements(server, uid);
+    this.sendPendingTradeReceipts(server, uid);
     return new Response(null, {
       status: 101,
       webSocket: client,
@@ -246,6 +369,24 @@ export class MatchmakingPool extends DurableObject<Env> {
     switch (data.type) {
       case "queue":
         await this.queue(socket, attachment, data.player);
+        break;
+      case "getInventory":
+        this.sendInventory(socket, attachment.uid);
+        break;
+      case "queueTrade":
+        await this.queueTrade(socket, attachment);
+        break;
+      case "cancelTrade":
+        this.cancelTradeSearch(socket, attachment);
+        break;
+      case "tradeOffer":
+      case "tradeConfirm":
+      case "tradeChat":
+      case "leaveTrade":
+        await this.handleTrade(socket, attachment, data);
+        break;
+      case "ackTrade":
+        this.acknowledgeTrade(socket, attachment, data.receiptId);
         break;
       case "cancel":
         this.cancel(socket, attachment);
@@ -290,10 +431,23 @@ export class MatchmakingPool extends DurableObject<Env> {
       sendError(socket, "Choose a valid team before matchmaking.");
       return;
     }
+    const trustedTeam = this.trustedBattleTeam(
+      attachment.uid,
+      suppliedPlayer.team,
+    );
+    if (!trustedTeam) {
+      this.sendInventory(socket, attachment.uid);
+      sendError(
+        socket,
+        "Your Online Roster changed. Choose three available animals and try again.",
+      );
+      return;
+    }
     const account = this.arenaAccount(attachment.uid);
     const player = {
       ...(await peerSafeSnapshot(attachment.uid, suppliedPlayer)),
       rating: account.rating,
+      team: trustedTeam,
     };
     const updated: SocketAttachment = {
       ...attachment,
@@ -614,6 +768,16 @@ export class MatchmakingPool extends DurableObject<Env> {
     const attachment = socket.deserializeAttachment() as
       | SocketAttachment
       | undefined;
+    if (attachment?.state === "trading" && attachment.tradeId) {
+      const trade = this.readTrade(attachment.tradeId);
+      if (trade) {
+        await this.cancelActiveTrade(
+          trade,
+          "The other player disconnected before the trade completed.",
+        );
+      }
+      return;
+    }
     if (!attachment?.matchId || attachment.state !== "matched") return;
     const battle = this.readBattle(attachment.matchId);
     if (!battle || battle.finished) return;
@@ -854,6 +1018,512 @@ export class MatchmakingPool extends DurableObject<Env> {
     );
   }
 
+  private ensureOnlineInventory(uid: string): OnlineInventoryAccount {
+    const existing = [
+      ...this.ctx.storage.sql.exec<OnlineInventoryAccount>(
+        "SELECT uid, revision FROM online_inventory_accounts WHERE uid = ?",
+        uid,
+      ),
+    ][0];
+    if (existing) return existing;
+    const now = Date.now();
+    return this.ctx.storage.transactionSync(() => {
+      this.ctx.storage.sql.exec(
+        "INSERT OR IGNORE INTO online_inventory_accounts (uid, revision, created_at, updated_at) VALUES (?, 1, ?, ?)",
+        uid,
+        now,
+        now,
+      );
+      for (const item of starterOnlineInventory) {
+        this.ctx.storage.sql.exec(
+          "INSERT OR IGNORE INTO online_inventory (uid, item_key, animal_id, mutation_id, level, quantity, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          uid,
+          onlineItemKey(item),
+          item.animalId,
+          item.mutationId,
+          item.level,
+          item.quantity,
+          now,
+        );
+      }
+      return this.ctx.storage.sql
+        .exec<OnlineInventoryAccount>(
+          "SELECT uid, revision FROM online_inventory_accounts WHERE uid = ?",
+          uid,
+        )
+        .one();
+    });
+  }
+
+  private inventoryForUid(uid: string): OnlineInventoryItem[] {
+    this.ensureOnlineInventory(uid);
+    return this.ctx.storage.sql
+      .exec<OnlineInventoryRow>(
+        "SELECT uid, item_key, animal_id, mutation_id, level, quantity FROM online_inventory WHERE uid = ? AND quantity > 0 ORDER BY item_key",
+        uid,
+      )
+      .toArray()
+      .map(inventoryItemFromRow);
+  }
+
+  private sendInventory(socket: WebSocket, uid: string): void {
+    const account = this.ensureOnlineInventory(uid);
+    send(socket, {
+      type: "onlineInventory",
+      revision: account.revision,
+      items: this.inventoryForUid(uid).map(onlineItemJson),
+    });
+  }
+
+  private tradableInventoryForUid(uid: string): OnlineInventoryItem[] {
+    return this.inventoryForUid(uid).filter((item) => item.quantity > 1);
+  }
+
+  private trustedBattleTeam(
+    uid: string,
+    requested: FighterSnapshot[],
+  ): FighterSnapshot[] | undefined {
+    const available = new Map(
+      this.inventoryForUid(uid).map((item) => [onlineItemKey(item), item]),
+    );
+    const used = new Set<string>();
+    const result: FighterSnapshot[] = [];
+    for (const fighter of requested) {
+      const key = onlineItemKey(fighter);
+      if (used.has(key) || !available.has(key)) return undefined;
+      const trusted = authoritativeFighter(
+        fighter.animalId,
+        fighter.mutationId,
+        fighter.level,
+      );
+      if (!trusted) return undefined;
+      used.add(key);
+      result.push(trusted);
+    }
+    return result.length === 3 ? result : undefined;
+  }
+
+  private async queueTrade(
+    socket: WebSocket,
+    attachment: SocketAttachment,
+  ): Promise<void> {
+    if (!attachment.capabilities.trading) {
+      sendError(socket, "Online trading is not enabled for this player.");
+      return;
+    }
+    if (attachment.state !== "ready") {
+      sendError(socket, "Finish the current online activity first.");
+      return;
+    }
+    if (this.tradableInventoryForUid(attachment.uid).length === 0) {
+      sendError(socket, "Your Online Roster has no tradable animals.");
+      return;
+    }
+    const updated: SocketAttachment = {
+      ...attachment,
+      state: "tradeQueued",
+      queuedAt: Date.now(),
+    };
+    socket.serializeAttachment(updated);
+    const opponent = this.waitingTradeSocket(attachment.uid);
+    if (!opponent) {
+      send(socket, {
+        type: "tradeQueued",
+        message: "Waiting for another protected playtester...",
+      });
+      return;
+    }
+    await this.createTrade(socket, opponent);
+  }
+
+  private waitingTradeSocket(exceptUid: string): WebSocket | undefined {
+    return this.ctx
+      .getWebSockets()
+      .filter((candidate) => candidate.readyState === WebSocket.OPEN)
+      .filter((candidate) => {
+        const attachment =
+          candidate.deserializeAttachment() as SocketAttachment;
+        return (
+          attachment.state === "tradeQueued" && attachment.uid !== exceptUid
+        );
+      })
+      .sort((first, second) => {
+        const a = first.deserializeAttachment() as SocketAttachment;
+        const b = second.deserializeAttachment() as SocketAttachment;
+        return (a.queuedAt ?? 0) - (b.queuedAt ?? 0);
+      })[0];
+  }
+
+  private async createTrade(
+    firstSocket: WebSocket,
+    secondSocket: WebSocket,
+  ): Promise<void> {
+    const first = firstSocket.deserializeAttachment() as SocketAttachment;
+    const second = secondSocket.deserializeAttachment() as SocketAttachment;
+    const trade: TradeSession = {
+      tradeId: crypto.randomUUID(),
+      firstUid: first.uid,
+      secondUid: second.uid,
+      firstAccount: first.safeAccount ?? (await peerSafeAccount(first.uid)),
+      secondAccount: second.safeAccount ?? (await peerSafeAccount(second.uid)),
+      firstConfirmed: false,
+      secondConfirmed: false,
+    };
+    const now = Date.now();
+    this.ctx.storage.sql.exec(
+      "INSERT INTO trades (trade_id, first_uid, second_uid, state_json, status, created_at, updated_at) VALUES (?, ?, ?, ?, 'active', ?, ?)",
+      trade.tradeId,
+      first.uid,
+      second.uid,
+      JSON.stringify(trade),
+      now,
+      now,
+    );
+    firstSocket.serializeAttachment({
+      ...first,
+      state: "trading",
+      tradeId: trade.tradeId,
+      peerUid: second.uid,
+      queuedAt: undefined,
+    } satisfies SocketAttachment);
+    secondSocket.serializeAttachment({
+      ...second,
+      state: "trading",
+      tradeId: trade.tradeId,
+      peerUid: first.uid,
+      queuedAt: undefined,
+    } satisfies SocketAttachment);
+    this.broadcastTrade(trade, "Choose an animal to offer.");
+  }
+
+  private readTrade(tradeId: string): TradeSession | undefined {
+    const row = [
+      ...this.ctx.storage.sql.exec<TradeRow>(
+        "SELECT trade_id, first_uid, second_uid, state_json, status FROM trades WHERE trade_id = ? AND status = 'active'",
+        tradeId,
+      ),
+    ][0];
+    if (!row) return undefined;
+    try {
+      return JSON.parse(row.state_json) as TradeSession;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private writeTrade(trade: TradeSession): void {
+    this.ctx.storage.sql.exec(
+      "UPDATE trades SET state_json = ?, updated_at = ? WHERE trade_id = ? AND status = 'active'",
+      JSON.stringify(trade),
+      Date.now(),
+      trade.tradeId,
+    );
+  }
+
+  private async handleTrade(
+    socket: WebSocket,
+    attachment: SocketAttachment,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    if (
+      !attachment.capabilities.trading ||
+      attachment.state !== "trading" ||
+      !attachment.tradeId ||
+      (data.tradeId !== undefined && data.tradeId !== attachment.tradeId)
+    ) {
+      sendError(socket, "That protected trade is no longer active.");
+      return;
+    }
+    const trade = this.readTrade(attachment.tradeId);
+    if (!trade || !tradeHasUid(trade, attachment.uid)) {
+      sendError(socket, "That protected trade has ended.");
+      return;
+    }
+    switch (data.type) {
+      case "tradeOffer": {
+        const offer = parseTradeOffer(data.animal);
+        if (!offer || !this.uidOwnsOffer(attachment.uid, offer)) {
+          this.sendInventory(socket, attachment.uid);
+          sendError(socket, "That animal is not available in your Online Roster.");
+          return;
+        }
+        setTradeOffer(trade, attachment.uid, offer);
+        trade.firstConfirmed = false;
+        trade.secondConfirmed = false;
+        this.writeTrade(trade);
+        this.broadcastTrade(trade, "Review both animals, then confirm.");
+        return;
+      }
+      case "tradeConfirm": {
+        const ownOffer = offerForUid(trade, attachment.uid);
+        const peerOffer = offerForUid(trade, otherTradeUid(trade, attachment.uid));
+        if (!ownOffer || !peerOffer) {
+          sendError(socket, "Both players must choose an animal first.");
+          return;
+        }
+        setTradeConfirmed(trade, attachment.uid, true);
+        if (!trade.firstConfirmed || !trade.secondConfirmed) {
+          this.writeTrade(trade);
+          this.broadcastTrade(trade, "One player confirmed. Waiting for the other.");
+          return;
+        }
+        const receipts = this.completeTrade(trade);
+        if (!receipts) {
+          setTradeConfirmed(trade, attachment.uid, false);
+          this.writeTrade(trade);
+          this.broadcastTrade(
+            trade,
+            "An offered animal changed. Review the trade again.",
+          );
+          return;
+        }
+        for (const receipt of receipts) {
+          const target = this.socketForUid(receipt.uid);
+          if (target) {
+            this.sendTradeReceipt(target, receipt);
+            this.sendInventory(target, receipt.uid);
+            this.releaseTradeSocket(target);
+          }
+        }
+        return;
+      }
+      case "tradeChat": {
+        if (!attachment.capabilities.presetMessages) {
+          sendError(socket, "Preset trade messages are not enabled.");
+          return;
+        }
+        const tag = parseTradeChatTag(data.tag);
+        if (!tag) {
+          sendError(socket, "Choose an available preset message.");
+          return;
+        }
+        let animal: TradeOffer | undefined;
+        if (tag === "request_animal") {
+          animal = parseTradeOffer(data.animal);
+          const peerUid = otherTradeUid(trade, attachment.uid);
+          if (!animal || !this.uidOwnsOffer(peerUid, animal)) {
+            sendError(socket, "That requested animal is no longer available.");
+            return;
+          }
+        }
+        const peer = this.socketForUid(otherTradeUid(trade, attachment.uid));
+        if (peer) {
+          send(peer, {
+            type: "tradeChat",
+            chatId: crypto.randomUUID(),
+            tag,
+            fromSelf: false,
+            ...(animal ? { animal: tradeOfferJson(animal) } : {}),
+          });
+        }
+        send(socket, {
+          type: "tradeChat",
+          chatId: crypto.randomUUID(),
+          tag,
+          fromSelf: true,
+          ...(animal ? { animal: tradeOfferJson(animal) } : {}),
+        });
+        return;
+      }
+      case "leaveTrade":
+        await this.cancelActiveTrade(trade, "The other player left the trade.");
+        return;
+    }
+  }
+
+  private uidOwnsOffer(uid: string, offer: TradeOffer): boolean {
+    const row = [
+      ...this.ctx.storage.sql.exec<{ quantity: number }>(
+        "SELECT quantity FROM online_inventory WHERE uid = ? AND item_key = ? AND quantity > 1",
+        uid,
+        offer.itemKey,
+      ),
+    ][0];
+    return (row?.quantity ?? 0) > 0;
+  }
+
+  private completeTrade(trade: TradeSession): TradeReceiptRow[] | undefined {
+    const firstOffer = trade.firstOffer;
+    const secondOffer = trade.secondOffer;
+    if (!firstOffer || !secondOffer) return undefined;
+    return this.ctx.storage.transactionSync(() => {
+      if (
+        !this.uidOwnsOffer(trade.firstUid, firstOffer) ||
+        !this.uidOwnsOffer(trade.secondUid, secondOffer)
+      ) {
+        return undefined;
+      }
+      const now = Date.now();
+      this.transferOnlineItem(trade.firstUid, trade.secondUid, firstOffer, now);
+      this.transferOnlineItem(trade.secondUid, trade.firstUid, secondOffer, now);
+      this.ctx.storage.sql.exec(
+        "UPDATE online_inventory_accounts SET revision = revision + 1, updated_at = ? WHERE uid IN (?, ?)",
+        now,
+        trade.firstUid,
+        trade.secondUid,
+      );
+      this.ctx.storage.sql.exec(
+        "UPDATE trades SET state_json = ?, status = 'completed', updated_at = ? WHERE trade_id = ? AND status = 'active'",
+        JSON.stringify(trade),
+        now,
+        trade.tradeId,
+      );
+      const pairs = [
+        [trade.firstUid, firstOffer, secondOffer],
+        [trade.secondUid, secondOffer, firstOffer],
+      ] as const;
+      for (const [uid, sentOffer, receivedOffer] of pairs) {
+        this.ctx.storage.sql.exec(
+          "INSERT OR IGNORE INTO trade_receipts (receipt_id, trade_id, uid, sent_json, received_json, acknowledged, created_at) VALUES (?, ?, ?, ?, ?, 0, ?)",
+          `${trade.tradeId}:${uid}`,
+          trade.tradeId,
+          uid,
+          JSON.stringify(tradeOfferJson(sentOffer)),
+          JSON.stringify(tradeOfferJson(receivedOffer)),
+          now,
+        );
+      }
+      return this.tradeReceiptsFor(trade.tradeId);
+    });
+  }
+
+  private transferOnlineItem(
+    fromUid: string,
+    toUid: string,
+    offer: TradeOffer,
+    now: number,
+  ): void {
+    this.ctx.storage.sql.exec(
+      "UPDATE online_inventory SET quantity = quantity - 1, updated_at = ? WHERE uid = ? AND item_key = ? AND quantity > 0",
+      now,
+      fromUid,
+      offer.itemKey,
+    );
+    this.ctx.storage.sql.exec(
+      "INSERT INTO online_inventory (uid, item_key, animal_id, mutation_id, level, quantity, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?) ON CONFLICT(uid, item_key) DO UPDATE SET quantity = quantity + 1, updated_at = excluded.updated_at",
+      toUid,
+      offer.itemKey,
+      offer.animalId,
+      offer.mutationId,
+      offer.level,
+      now,
+    );
+  }
+
+  private tradeReceiptsFor(tradeId: string): TradeReceiptRow[] {
+    return this.ctx.storage.sql
+      .exec<TradeReceiptRow>(
+        "SELECT receipt_id, trade_id, uid, sent_json, received_json FROM trade_receipts WHERE trade_id = ? ORDER BY uid",
+        tradeId,
+      )
+      .toArray();
+  }
+
+  private sendTradeReceipt(socket: WebSocket, receipt: TradeReceiptRow): void {
+    send(socket, {
+      type: "tradeComplete",
+      receiptId: receipt.receipt_id,
+      tradeId: receipt.trade_id,
+      sent: JSON.parse(receipt.sent_json),
+      received: JSON.parse(receipt.received_json),
+    });
+  }
+
+  private sendPendingTradeReceipts(socket: WebSocket, uid: string): void {
+    const rows = this.ctx.storage.sql.exec<TradeReceiptRow>(
+      "SELECT receipt_id, trade_id, uid, sent_json, received_json FROM trade_receipts WHERE uid = ? AND acknowledged = 0 ORDER BY created_at LIMIT 20",
+      uid,
+    );
+    for (const row of rows) this.sendTradeReceipt(socket, row);
+  }
+
+  private acknowledgeTrade(
+    socket: WebSocket,
+    attachment: SocketAttachment,
+    value: unknown,
+  ): void {
+    if (typeof value !== "string" || value.length < 1 || value.length > 200) {
+      sendError(socket, "Invalid trade receipt.");
+      return;
+    }
+    this.ctx.storage.sql.exec(
+      "UPDATE trade_receipts SET acknowledged = 1 WHERE receipt_id = ? AND uid = ?",
+      value,
+      attachment.uid,
+    );
+  }
+
+  private broadcastTrade(trade: TradeSession, message: string): void {
+    for (const uid of [trade.firstUid, trade.secondUid]) {
+      const socket = this.socketForUid(uid);
+      if (!socket) continue;
+      const opponentUid = otherTradeUid(trade, uid);
+      send(socket, {
+        type: "tradeState",
+        tradeId: trade.tradeId,
+        opponent: accountForUid(trade, opponentUid),
+        selfOffer: offerForUid(trade, uid)
+          ? tradeOfferJson(offerForUid(trade, uid)!)
+          : null,
+        opponentOffer: offerForUid(trade, opponentUid)
+          ? tradeOfferJson(offerForUid(trade, opponentUid)!)
+          : null,
+        selfConfirmed: confirmedForUid(trade, uid),
+        opponentConfirmed: confirmedForUid(trade, opponentUid),
+        message,
+        opponentInventory: this.tradableInventoryForUid(opponentUid).map(
+          onlineItemJson,
+        ),
+      });
+    }
+  }
+
+  private cancelTradeSearch(
+    socket: WebSocket,
+    attachment: SocketAttachment,
+  ): void {
+    if (attachment.state !== "tradeQueued") return;
+    socket.serializeAttachment({
+      ...attachment,
+      state: "ready",
+      queuedAt: undefined,
+    } satisfies SocketAttachment);
+    send(socket, { type: "ready" });
+  }
+
+  private async cancelActiveTrade(
+    trade: TradeSession,
+    peerMessage: string,
+  ): Promise<void> {
+    this.ctx.storage.sql.exec(
+      "UPDATE trades SET status = 'cancelled', updated_at = ? WHERE trade_id = ? AND status = 'active'",
+      Date.now(),
+      trade.tradeId,
+    );
+    for (const uid of [trade.firstUid, trade.secondUid]) {
+      const target = this.socketForUid(uid);
+      if (!target) continue;
+      send(target, {
+        type: "tradeCancelled",
+        message: uid === trade.firstUid || uid === trade.secondUid
+          ? peerMessage
+          : "Trade cancelled.",
+      });
+      this.releaseTradeSocket(target);
+    }
+  }
+
+  private releaseTradeSocket(socket: WebSocket): void {
+    const attachment = socket.deserializeAttachment() as SocketAttachment;
+    socket.serializeAttachment({
+      ...attachment,
+      state: "ready",
+      tradeId: undefined,
+      peerUid: undefined,
+      queuedAt: undefined,
+    } satisfies SocketAttachment);
+  }
+
   private ensureColumn(table: string, column: string, type: string): void {
     const columns = [
       ...this.ctx.storage.sql.exec<{ name: string }>(`PRAGMA table_info(${table})`),
@@ -971,6 +1641,116 @@ function clampInteger(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, Math.trunc(value)));
 }
 
+const starterOnlineInventory: readonly OnlineInventoryItem[] = [
+  { animalId: "chicken", mutationId: "none", level: 1, quantity: 2 },
+  { animalId: "mouse", mutationId: "none", level: 1, quantity: 2 },
+  { animalId: "rabbit", mutationId: "none", level: 1, quantity: 2 },
+];
+
+function onlineItemKey(
+  item: Pick<OnlineInventoryItem, "animalId" | "mutationId" | "level">,
+): string {
+  return `${item.animalId}|${item.mutationId}|${item.level}`;
+}
+
+function inventoryItemFromRow(row: OnlineInventoryRow): OnlineInventoryItem {
+  return {
+    animalId: row.animal_id,
+    mutationId: row.mutation_id,
+    level: row.level,
+    quantity: row.quantity,
+  };
+}
+
+function onlineItemJson(item: OnlineInventoryItem): Record<string, unknown> {
+  return {
+    animalId: item.animalId,
+    mutationId: item.mutationId,
+    level: item.level,
+    quantity: item.quantity,
+    isProtected: false,
+    isSecretReward: false,
+    isEliteReward: false,
+  };
+}
+
+function parseTradeOffer(value: unknown): TradeOffer | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const raw = value as Record<string, unknown>;
+  const animalId = safeIdentifier(raw.animalId);
+  const mutationId = safeIdentifier(raw.mutationId);
+  const level = integerInRange(raw.level, 1, 1_000);
+  if (!animalId || !mutationId || level === undefined) return undefined;
+  if (!authoritativeFighter(animalId, mutationId, level)) return undefined;
+  return {
+    itemKey: onlineItemKey({ animalId, mutationId, level }),
+    animalId,
+    mutationId,
+    level,
+  };
+}
+
+function tradeOfferJson(offer: TradeOffer): Record<string, unknown> {
+  return onlineItemJson({
+    animalId: offer.animalId,
+    mutationId: offer.mutationId,
+    level: offer.level,
+    quantity: 1,
+  });
+}
+
+function tradeHasUid(trade: TradeSession, uid: string): boolean {
+  return trade.firstUid === uid || trade.secondUid === uid;
+}
+
+function otherTradeUid(trade: TradeSession, uid: string): string {
+  return trade.firstUid === uid ? trade.secondUid : trade.firstUid;
+}
+
+function accountForUid(trade: TradeSession, uid: string): SafeAccount {
+  return trade.firstUid === uid ? trade.firstAccount : trade.secondAccount;
+}
+
+function offerForUid(
+  trade: TradeSession,
+  uid: string,
+): TradeOffer | undefined {
+  return trade.firstUid === uid ? trade.firstOffer : trade.secondOffer;
+}
+
+function setTradeOffer(
+  trade: TradeSession,
+  uid: string,
+  offer: TradeOffer,
+): void {
+  if (trade.firstUid === uid) trade.firstOffer = offer;
+  else trade.secondOffer = offer;
+}
+
+function confirmedForUid(trade: TradeSession, uid: string): boolean {
+  return trade.firstUid === uid
+    ? trade.firstConfirmed
+    : trade.secondConfirmed;
+}
+
+function setTradeConfirmed(
+  trade: TradeSession,
+  uid: string,
+  confirmed: boolean,
+): void {
+  if (trade.firstUid === uid) trade.firstConfirmed = confirmed;
+  else trade.secondConfirmed = confirmed;
+}
+
+function parseTradeChatTag(value: unknown): string | undefined {
+  return value === "yes" ||
+    value === "no" ||
+    value === "is_this_fair" ||
+    value === "request_animal"
+    ? value
+    : undefined;
+}
+
 async function peerSafeSnapshot(
   uid: string,
   supplied: PlayerSnapshot,
@@ -988,6 +1768,27 @@ async function peerSafeSnapshot(
     playerId: `peer-${code}`,
     displayName: `Player ${code}`,
     username: `nest-${code.toLowerCase()}`,
+  };
+}
+
+async function peerSafeAccount(uid: string): Promise<SafeAccount> {
+  const safe = await peerSafeSnapshot(uid, {
+    playerId: "",
+    displayName: "",
+    username: "",
+    avatarColorValue: 0xff2f766f,
+    rating: 1000,
+    team: starterOnlineInventory.map((item) =>
+      authoritativeFighter(item.animalId, item.mutationId, item.level)!,
+    ),
+  });
+  return {
+    id: safe.playerId,
+    displayName: safe.displayName,
+    username: safe.username,
+    avatarColorValue: safe.avatarColorValue,
+    createdAt: "2000-01-01T00:00:00.000Z",
+    isGuest: false,
   };
 }
 

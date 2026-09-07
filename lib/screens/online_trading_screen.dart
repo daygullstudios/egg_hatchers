@@ -48,6 +48,12 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
   var _joinedDirectRoom = false;
   String? _shownCancellation;
 
+  List<OwnedAnimal> get _availableInventory => _trading.isHostedServer
+      ? (_trading.onlineInventory ?? const [])
+            .where((animal) => animal.quantity > 1)
+            .toList(growable: false)
+      : widget.game.tradableAnimals;
+
   @override
   void initState() {
     super.initState();
@@ -76,17 +82,19 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
     _joinDirectRoomIfReady();
     if (completion != null && !_completionApplied) {
       _completionApplied = true;
-      widget.game.applyOnlineTrade(
-        sent: completion.sent,
-        received: completion.received,
-      );
+      if (!_trading.isHostedServer) {
+        widget.game.applyOnlineTrade(
+          sent: completion.sent,
+          received: completion.received,
+        );
+      }
     }
     setState(() {});
   }
 
   OnlineTraderSnapshot _traderSnapshot() => OnlineTraderSnapshot(
     account: widget.account,
-    inventory: widget.game.tradableAnimals,
+    inventory: _availableInventory,
   );
 
   void _joinDirectRoomIfReady() {
@@ -94,7 +102,7 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
     if (roomId == null ||
         _joinedDirectRoom ||
         _trading.state != TradingConnectionState.ready ||
-        widget.game.tradableAnimals.isEmpty) {
+        _availableInventory.isEmpty) {
       return;
     }
     _joinedDirectRoom = true;
@@ -103,7 +111,7 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
   }
 
   void _findTrader() {
-    final inventory = widget.game.tradableAnimals;
+    final inventory = _availableInventory;
     if (inventory.isEmpty) return;
     _completionApplied = false;
     _trading.findTrader(_traderSnapshot());
@@ -169,7 +177,7 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
   }
 
   void _offerRequestedAnimal(OwnedAnimal requested) {
-    for (final owned in widget.game.tradableAnimals) {
+    for (final owned in _availableInventory) {
       if (_sameAnimal(owned, requested)) {
         _trading.offer(owned);
         return;
@@ -219,7 +227,7 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
   }
 
   Widget _lobbyView() {
-    final inventory = widget.game.tradableAnimals;
+    final inventory = _availableInventory;
     final lobby = widget.lobby ?? OnlineLobbyScope.maybeOf(context);
     final searching = _trading.state == TradingConnectionState.searching;
     final connected = _trading.state == TradingConnectionState.ready;
@@ -233,8 +241,16 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
           title: searching ? 'Finding a trader' : 'Trading Hub',
           message:
               _trading.message ??
-              '${inventory.length} animal stacks available to trade',
+              (_trading.isHostedServer
+                  ? _trading.onlineInventory == null
+                        ? 'Loading your server-verified Online Roster...'
+                        : '${inventory.length} Online Roster stacks available to trade'
+                  : '${inventory.length} animal stacks available to trade'),
         ),
+        if (_trading.isHostedServer) ...[
+          const SizedBox(height: 12),
+          const _OnlineTradeRosterNotice(),
+        ],
         const SizedBox(height: 14),
         SizedBox(
           height: 52,
@@ -242,7 +258,10 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
             key: const ValueKey('find-online-trader-button'),
             onPressed: searching
                 ? _trading.cancelSearch
-                : connected && inventory.isNotEmpty
+                : connected &&
+                      inventory.isNotEmpty &&
+                      (!_trading.isHostedServer ||
+                          _trading.onlineInventory != null)
                 ? _findTrader
                 : null,
             icon: searching
@@ -258,17 +277,18 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        const Text(
-          'Available Animals',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+        Text(
+          _trading.isHostedServer ? 'Online Roster' : 'Available Animals',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 8),
         if (inventory.isEmpty)
-          const _StatusPanel(
+          _StatusPanel(
             icon: Icons.lock_outline,
             title: 'No tradable animals',
-            message:
-                'Protected and special reward animals stay in your collection.',
+            message: _trading.isHostedServer
+                ? 'Your Online Roster is still loading or has no available animals.'
+                : 'Protected and special reward animals stay in your collection.',
           )
         else
           for (final animal in inventory)
@@ -294,7 +314,7 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
 
   Widget _tradeView() {
     final trade = _trading.trade!;
-    final inventory = widget.game.tradableAnimals;
+    final inventory = _availableInventory;
     return ListView(
       padding: const EdgeInsets.all(14),
       children: [
@@ -405,7 +425,10 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
         SizedBox(
           height: 52,
           child: FilledButton.icon(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              _trading.acknowledgeCompletion();
+              Navigator.pop(context);
+            },
             icon: const Icon(Icons.check),
             label: const Text('DONE'),
           ),
@@ -515,6 +538,38 @@ class _StatusPanel extends StatelessWidget {
                 ),
                 Text(message, style: const TextStyle(fontSize: 12)),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OnlineTradeRosterNotice extends StatelessWidget {
+  const _OnlineTradeRosterNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('online-trade-roster-notice'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE9F7F4),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF2F8F83)),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.verified_user_outlined, color: Color(0xFF236D65)),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Hosted trades exchange only extra server-owned Online Roster '
+              'copies. One of each animal stays locked for battles, and your '
+              'Hatchery Collection is never removed or replaced.',
+              style: TextStyle(color: Color(0xFF164A45), height: 1.3),
             ),
           ),
         ],

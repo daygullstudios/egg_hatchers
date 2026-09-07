@@ -21,7 +21,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 64,
+      "line": 123,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -29,7 +29,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 939,
+      "line": 1013,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -37,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1120,
+      "line": 1194,
       "references": [
         "egghatchers.game"
       ],
@@ -45,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1147,
+      "line": 1221,
       "references": [
         "egg_hatchers"
       ],
@@ -53,7 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1224,
+      "line": 1301,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -61,7 +61,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1242,
+      "line": 1319,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -69,7 +69,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1249,
+      "line": 1326,
       "references": [
         "egg_hatchers"
       ],
@@ -327,7 +327,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 338,
+      "line": 356,
       "references": [
         "eggHatchers"
       ],
@@ -335,7 +335,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 343,
+      "line": 361,
       "references": [
         "egg_hatchers_player_state_account_"
       ],
@@ -343,7 +343,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 355,
+      "line": 373,
       "references": [
         "egg_hatchers.settings"
       ],
@@ -351,7 +351,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 376,
+      "line": 394,
       "references": [
         "egg_hatchers"
       ],
@@ -359,7 +359,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 446,
+      "line": 464,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -367,7 +367,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 469,
+      "line": 487,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -375,7 +375,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 496,
+      "line": 514,
       "references": [
         "egg_hatchers"
       ],
@@ -383,7 +383,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 537,
+      "line": 555,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -695,7 +695,7 @@
     },
     {
       "path": "lib/services/multiplayer_service.dart",
-      "line": 79,
+      "line": 90,
       "references": [
         "EGG_HATCHERS_SERVER_URL"
       ],
@@ -1542,6 +1542,30 @@
       "reason": "Stable Dart package/import identity."
     },
     {
+      "path": "test/app_player_switch_test.dart",
+      "line": 19,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/app_player_switch_test.dart",
+      "line": 20,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/app_player_switch_test.dart",
+      "line": 21,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
       "path": "test/arena_ability_test.dart",
       "line": 3,
       "references": [
@@ -1624,6 +1648,14 @@
     {
       "path": "test/arena_progress_test.dart",
       "line": 3,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/arena_progress_test.dart",
+      "line": 4,
       "references": [
         "egg_hatchers"
       ],
@@ -3343,27 +3375,19 @@
     },
     {
       "path": "test/multiplayer_battle_screen_test.dart",
-      "line": 182,
+      "line": 215,
       "references": [
         "egg-hatchers-playtest"
       ],
       "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
     },
     {
-      "path": "test/multiplayer_lobby_screen_test.dart",
-      "line": 1,
+      "path": "test/multiplayer_battle_screen_test.dart",
+      "line": 297,
       "references": [
-        "egg_hatchers"
+        "egg-hatchers-playtest"
       ],
-      "reason": "Stable Dart package/import identity."
-    },
-    {
-      "path": "test/multiplayer_lobby_screen_test.dart",
-      "line": 2,
-      "references": [
-        "egg_hatchers"
-      ],
-      "reason": "Stable Dart package/import identity."
+      "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
     },
     {
       "path": "test/multiplayer_lobby_screen_test.dart",
@@ -3408,6 +3432,38 @@
     {
       "path": "test/multiplayer_lobby_screen_test.dart",
       "line": 8,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/multiplayer_lobby_screen_test.dart",
+      "line": 9,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/multiplayer_lobby_screen_test.dart",
+      "line": 10,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/multiplayer_lobby_screen_test.dart",
+      "line": 11,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/multiplayer_lobby_screen_test.dart",
+      "line": 12,
       "references": [
         "egg_hatchers"
       ],
@@ -3519,7 +3575,7 @@
     },
     {
       "path": "test/multiplayer_service_test.dart",
-      "line": 97,
+      "line": 117,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -3527,7 +3583,7 @@
     },
     {
       "path": "test/multiplayer_service_test.dart",
-      "line": 141,
+      "line": 157,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -3535,7 +3591,15 @@
     },
     {
       "path": "test/multiplayer_service_test.dart",
-      "line": 211,
+      "line": 198,
+      "references": [
+        "egg-hatchers-playtest"
+      ],
+      "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
+    },
+    {
+      "path": "test/multiplayer_service_test.dart",
+      "line": 270,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -3839,14 +3903,6 @@
     },
     {
       "path": "test/online_trading_screen_test.dart",
-      "line": 4,
-      "references": [
-        "egg_hatchers"
-      ],
-      "reason": "Stable Dart package/import identity."
-    },
-    {
-      "path": "test/online_trading_screen_test.dart",
       "line": 5,
       "references": [
         "egg_hatchers"
@@ -3900,6 +3956,30 @@
         "egg_hatchers"
       ],
       "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/online_trading_screen_test.dart",
+      "line": 12,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/online_trading_screen_test.dart",
+      "line": 13,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/online_trading_screen_test.dart",
+      "line": 33,
+      "references": [
+        "egg-hatchers-playtest"
+      ],
+      "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
     },
     {
       "path": "test/phone_width_app_bar_test.dart",
@@ -4759,7 +4839,7 @@
     },
     {
       "path": "test/save_service_test.dart",
-      "line": 10,
+      "line": 11,
       "references": [
         "egg_hatchers_player_state_account_"
       ],
@@ -5527,14 +5607,6 @@
     },
     {
       "path": "test/trading_service_test.dart",
-      "line": 4,
-      "references": [
-        "egg_hatchers"
-      ],
-      "reason": "Stable Dart package/import identity."
-    },
-    {
-      "path": "test/trading_service_test.dart",
       "line": 5,
       "references": [
         "egg_hatchers"
@@ -5556,6 +5628,30 @@
         "egg_hatchers"
       ],
       "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/trading_service_test.dart",
+      "line": 8,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/trading_service_test.dart",
+      "line": 9,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/trading_service_test.dart",
+      "line": 23,
+      "references": [
+        "egg-hatchers-playtest"
+      ],
+      "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
     },
     {
       "path": "test/tutorial_target_visibility_test.dart",

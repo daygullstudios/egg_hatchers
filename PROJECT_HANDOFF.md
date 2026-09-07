@@ -25,18 +25,33 @@ is implemented and live on the protected playtest, while its reviewed family
 identity/consent/retention decisions remain an external gate. Safe independent
 Batch 2 work has begun: server-run battles and reconnect recovery are deployed,
 and live two-browser multiplayer acceptance now passes. Authoritative,
-replay-safe battle settlement is also deployed; trusted inventory, atomic
-trades and representative human/device acceptance remain open. Do
-not call either batch complete.
+replay-safe battle settlement, a server-owned Online Roster and atomic hosted
+trades are deployed. Controlled roster acquisition/growth, the reviewed family
+capability model, remaining failure/restart acceptance and representative human/
+device acceptance remain open. Do not call either batch complete.
 
 The current settlement checkpoint persists one Durable Object receipt per UID
 and match, server-owned online rating, fixed hosted rewards and an explicit
 client acknowledgement only after the local/cloud-capable save path completes.
 Unacknowledged receipts are redelivered; the PlayerState receipt ledger makes
 reapplication idempotent. Online rating/wins/losses/streaks are separate from
-Rival Arena history. The server reward intentionally does not scale from the
-still client-supplied roster power; server-owned inventory remains the next
-economy boundary. Hosted trading is still disabled.
+Rival Arena history. The server reward intentionally does not scale from local
+Hatchery Collection power. Hosted battles now accept only animals from each
+Firebase UID's Durable Object Online Roster. A first connection mints two each
+of Chicken, Mouse and Rabbit; this separate online baseline does not read,
+replace or reset the client-writable Hatchery Collection. Hosted trades exchange
+only extra Online Roster copies and retain one of each animal for battles.
+The server moves both offered copies in one SQLite transaction, increments both
+inventory revisions and redelivers unacknowledged completion receipts.
+
+Live trade acceptance on 2026-09-07 used the same isolated Chrome and in-app
+browser guest identities. Both received independent six-animal server rosters,
+matched through the deployed Worker and completed Chicken for Mouse. Chrome's
+tradeable roster became Mouse x3 and Rabbit x2 with its retained Chicken x1
+hidden from the extra-copy picker; the isolated client became Chicken x3 and
+Rabbit x2 with its retained Mouse x1 hidden. Both saw reciprocal completion
+receipts and acknowledged them. Local Hatchery Collection cards and save payloads
+were not used as trade authority or mutated by hosted completion.
 
 Live acceptance on 2026-09-07 matched isolated Chrome and in-app-browser guest
 identities. The in-app client used the new confirmed forfeit path and received
@@ -53,13 +68,15 @@ tampered fingerprint.
 Deployment safety was corrected after a live reload showed that the generic
 Flutter web build silently compiled hosted playtest multiplayer out. `AGENTS.md`
 now requires `cloudflare/playtest`'s `npm run build:web`, which preserves the
-protected-only feature flag. Final static version
-`2f370769-0eea-4582-ad0d-a1a8bbcfbe65` is routed only at the existing protected
+protected-only feature flags. Final static version
+`629ec81d-b6fa-4f8d-af94-526a82a825d5` is routed only at the existing protected
 custom domain. Multiplayer Worker version
-`b968a743-e5fa-4acf-8316-92168199b251` remains routed only at `/ws*` there.
-Analysis is clean; the earlier full 798-test Flutter checkpoint passed, the
-final 25 focused settlement/save/battle tests pass, eight Worker tests pass,
-and release web/Wasm dry run plus static tests/dry-run pass.
+`843e9143-8314-419e-b7e8-74b777db3cae` remains routed only at `/ws*` there.
+Analysis is clean; all 803 Flutter tests and ten Worker tests pass, as do Worker
+typecheck/dry-run, release web/Wasm dry run and static tests/dry-run. Anonymous
+requests to both `/` and `/ws/health` still receive Cloudflare Access 302.
+The Nestarium legacy-reference audit classifies 772 retained compatibility
+occurrences with no unclassified branding.
 
 Desktop/web resilience is now an explicit follow-on acceptance item. Use a
 versioned selective resume checkpoint (route and meaningful substate, safe
@@ -170,9 +187,9 @@ Firebase socket identity, trusts supplied roster/levels/rating, keeps sessions i
 memory and settles trades/results through client-local updates. This is not a
 from-scratch gameplay project, nor is it ready just by deploying the server.
 
-**Next:** prove the hosted identity/session contract with two disposable approved
-Firebase accounts, then implement server-run battle/reconnect without enabling
-client-local rewards. In parallel, the exact reviewed family identity/consent
+**Next:** add a controlled server-owned Online Roster acquisition/growth path,
+then finish the reviewed family capability boundary and remaining disconnect/
+restart/human-device acceptance. The exact reviewed family identity/consent
 mechanism remains an external decision gate; isolated backend work may continue.
 The workplan records four bounded multiplayer packages: authenticated hosting;
 trusted inventory/results/trades; family-safe capabilities; failure recovery and

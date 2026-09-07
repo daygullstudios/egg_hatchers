@@ -11,19 +11,26 @@ Cloudflare Access application.
   `nestarium-v1` and `firebase-auth.<token>` WebSocket subprotocols.
 - The edge verifies the token's RS256 signature, Firebase project audience,
   issuer, expiry, issued-at time, authentication time and UID.
-- `protected_playtest` permits authenticated battle matchmaking because Access
-  limits the hostname to approved testers. It is not parental consent.
+- `protected_playtest` permits authenticated battle matchmaking and the bounded
+  preset-message trade flow because Access limits the hostname to approved
+  testers. It is not parental consent and does not define public capabilities.
 - Client player IDs and names are ignored. Peers receive a server-derived test
-  alias. Profile discovery, messages, trading, rewards and result settlement
-  are default-denied until their later authority/safety packages ship.
-- Match records are durable SQLite rows. Open sockets use Durable Object
-  WebSocket hibernation and serialized attachments.
-- The Flutter client knows how to attach its restored Firebase ID token, but its
-  hosted release switch remains off until battle execution and settlement are
-  implemented. Local development WebSockets remain available without Firebase.
+  alias. Profile discovery and free-text communication remain unavailable.
+- The Online Roster is separate from the offline-first Hatchery Collection. It
+  starts with three server-minted animals, is stored in Durable Object SQLite,
+  and is the only inventory accepted for hosted teams or trades. A client-
+  writable Firestore save is never treated as trusted inventory.
+- Hosted battles use roster-validated fighters and server-owned ratings/results.
+  Hosted trades exchange both roster items in one SQLite transaction, preserve
+  pending receipts until acknowledgement, and cancel without moving either item
+  if a player leaves or disconnects before the commit.
+- Match, settlement, roster, trade and receipt records are durable SQLite rows.
+  Open sockets use Durable Object WebSocket hibernation and serialized
+  attachments. Local development WebSockets keep the existing sandbox behavior.
 
 The one named playtest pool is intentionally a small protected vertical slice,
-not the production sharding plan.
+not a production capacity or sharding promise. Changing its name would create a
+different roster namespace and therefore requires an explicit migration plan.
 
 ## Verify
 

@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "build:web": "cd ../.. && flutter build web --release --dart-define=NESTARIUM_HOSTED_MULTIPLAYER_ENABLED=true",
+    "build:web": "cd ../.. && flutter build web --release --dart-define=NESTARIUM_HOSTED_MULTIPLAYER_ENABLED=true --dart-define=NESTARIUM_HOSTED_TRADING_ENABLED=true",
     "deploy:dry-run": "npx --yes wrangler@4.129.0 deploy --dry-run",
     "deploy": "npx --yes wrangler@4.129.0 deploy"
   },

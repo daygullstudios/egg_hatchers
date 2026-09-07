@@ -1,15 +1,64 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:egg_hatchers/models/online_trade.dart';
 import 'package:egg_hatchers/models/owned_animal.dart';
 import 'package:egg_hatchers/models/player_account.dart';
 import 'package:egg_hatchers/services/trading_service.dart';
+import 'package:egg_hatchers/services/online_identity_token_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../tool/multiplayer_server.dart';
+import 'support/controlled_lobby_channel.dart';
 
 void main() {
+  test(
+    'hosted trading authenticates and consumes only server inventory',
+    () async {
+      final channel = ControlledLobbyChannel()..handshake.complete();
+      Iterable<String>? openedProtocols;
+      final service = TradingService(
+        serverUri: Uri.parse(
+          'wss://egg-hatchers-playtest.daygullstudios.com/ws',
+        ),
+        identityTokenProvider: _TokenProvider('firebase-token'),
+        hostedTradingEnabled: true,
+        channelFactory: (uri, {protocols}) {
+          openedProtocols = protocols;
+          return channel;
+        },
+      );
+      addTearDown(() {
+        service.dispose();
+        channel.finish();
+      });
+
+      await service.connect();
+      expect(openedProtocols, ['nestarium-v1', 'firebase-auth.firebase-token']);
+      expect(jsonDecode(channel.sink.messages.single as String), {
+        'type': 'getInventory',
+      });
+      channel.incoming.add(
+        jsonEncode({
+          'type': 'onlineInventory',
+          'revision': 2,
+          'items': [
+            {
+              'animalId': 'rabbit',
+              'mutationId': 'none',
+              'level': 1,
+              'quantity': 2,
+            },
+          ],
+        }),
+      );
+      expect(service.onlineInventoryRevision, 2);
+      expect(service.onlineInventory?.single.animalId, 'rabbit');
+      expect(service.onlineInventory?.single.quantity, 2);
+    },
+  );
+
   test('two online players complete a confirmed animal trade', () async {
     final webRoot = await Directory.systemTemp.createTemp('egg_trade_web_');
     await File(
@@ -129,6 +178,15 @@ void main() {
       expect(first.state, TradingConnectionState.ready);
     },
   );
+}
+
+class _TokenProvider implements OnlineIdentityTokenProvider {
+  const _TokenProvider(this.token);
+
+  final String? token;
+
+  @override
+  Future<String?> getIdToken() async => token;
 }
 
 PlayerAccount _account(String id, String name) => PlayerAccount(

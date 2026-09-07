@@ -46,8 +46,11 @@ attached.
   not become a second save database.
 - `../multiplayer` is the separate authenticated Worker/Durable Object for the
   `/ws*` route. Keep its identity, tests and deployment separate from assets.
-- The protected build command enables hosted test battles. Those matches do not
-  grant coins, tokens or rating until server-owned settlement is released.
+- The protected build command enables hosted test battles and hosted Online
+  Roster trading. Public/default builds keep both release switches off. Hosted
+  results, ratings and rewards are server-set; hosted teams and trades use only
+  the separate server-owned Online Roster and never mutate the Hatchery
+  Collection.
 
 ## Local verification
 
