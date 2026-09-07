@@ -152,6 +152,17 @@ Test verified parent requests/revocation, stopped future uploads, actual cloud
 and Auth removal, retry/failure reporting and explained backup/provider retention.
 Removing local data alone is not enough.
 
+Technical checkpoint: the hosted Worker now has a private, D1-backed capability
+decision registry with policy version, explicit allow/deny, separate battle,
+trading and preset-message flags, expiry, revocation, revision and an opaque
+review reference. It hashes Firebase UIDs before storage and can retire a live
+hosted session on denial or revocation. Moderation reports use the same central
+safety database with pseudonymous subject hashes and 180-day expiry. No DOB,
+email, name, guardian identity or consent evidence is stored there. This closes
+the enforcement/operations seam only; it does not select or perform a lawful
+consent method, authorize child cloud use, or complete parent review/deletion
+operations.
+
 The FTC's May 2026 guidance requires applicable notice, verifiable parental
 consent, parental review/revocation/deletion, written security safeguards and
 purpose-limited retention/deletion procedures. Separate permission for qualifying

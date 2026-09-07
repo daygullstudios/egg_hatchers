@@ -1,7 +1,8 @@
 # Nestarium multiplayer shard and roster migration
 
-Status: protected routing, private per-player migration RPC and isolated empty
-two-shard canary implemented; public activation blocked.
+Status: protected routing, private per-player migration RPC, central moderation
+retention and isolated empty two-shard canary implemented; public activation
+blocked.
 Updated: 2026-09-07.
 
 ## Compatibility boundary
@@ -64,8 +65,9 @@ The Durable Object now exposes private RPC for migration mode/status, paginated
 authority UID listing, per-player export and transactional import. Export/import
 is accepted only after the generation reaches drained `read_only` mode. Each
 bundle carries a SHA-256 checksum; a `(manifest ID, UID)` receipt makes the same
-import idempotent and rejects a conflicting rerun. The operator bridge is not
-attached to any public Worker route.
+import idempotent and rejects a conflicting rerun. The named operator entrypoint
+is reachable only through a Cloudflare service binding and is not attached to
+any public Worker route. The former static-header HTTP bridge has been removed.
 
 The local operator uses an internal remote service binding rather than a public
 admin hostname. It writes only AES-256-GCM encrypted artifacts, refuses to
@@ -90,9 +92,10 @@ export/import is run merely to test the tool.
    flip is not a substitute for a drain.
 4. **Export owner state.** Through private Worker-to-Durable-Object RPC, export
    arena account, inventory account/rows, daily grants, unacknowledged settlement
-   and trade receipts, and both directions of block rows. Export reports to the
-   approved moderation/retention system instead of scattering the review queue
-   across gameplay shards. Do not migrate active sessions, battles or trades.
+   and trade receipts, and both directions of block rows. Reports are already
+   centralized idempotently into `nestarium-safety-authority`; run and record the
+   per-source backfill before cutover rather than copying report rows into
+   destination gameplay shards. Do not migrate active sessions, battles or trades.
 5. **Import idempotently.** Route each UID with the checked-in algorithm. Import
    into an empty destination generation using transactions and immutable source
    revision/checksum markers. Re-running the same manifest must not duplicate an
@@ -114,17 +117,17 @@ export/import is run merely to test the tool.
 
 The deterministic router, activation interlock, queue drain/read-only control,
 paginated export, idempotent checked import, encrypted private operator and
-Access-protected empty two-shard canary are complete. Canary Worker version
-`f593529b-6aba-4d28-a87f-c29053b8add3` owns a dedicated custom domain and a
-separate Durable Object namespace. Both `canary-v1-shard-00` and
+Access-protected empty two-shard canary are complete. Central D1 report storage,
+180-day expiry/pruning, encrypted export and private backfill are also complete.
+Canary Worker version `f79e6564-f3cd-4db2-8477-2c103e257b59` owns a dedicated
+custom domain and a separate Durable Object namespace. Both `canary-v1-shard-00` and
 `canary-v1-shard-01` report active, empty and drained; anonymous health requests
 receive Access 302. No source data was exported or imported and no migration
 mode changed. The following remain prerequisites:
 
-- central moderation-report destination and retention procedure;
 - authenticated multi-client canary behavior, saturation and measured latency/cost;
 - representative human/device/network acceptance;
-- reviewed family claim issuance/revocation and public hostname authorization.
+- reviewed family consent/decision authority and public hostname authorization.
 
 No current player save, Firebase UID, local storage, package/bundle identity,
 protected roster record, domain route or production credential changes in this

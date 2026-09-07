@@ -1,4 +1,4 @@
-import { DurableObject } from "cloudflare:workers";
+import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 
 import {
   readFirebaseProtocol,
@@ -41,9 +41,21 @@ import {
   type SettlementMigrationRow,
   type TradeReceiptMigrationRow,
 } from "./migration";
+import {
+  capabilityDecisionForUid,
+  issueCapabilityDecision,
+  listModerationReports,
+  moderationReportId,
+  pruneExpiredModerationReports,
+  recordModerationReport,
+  revokeCapabilityDecision,
+  safetyAuthoritySummary,
+  type CapabilityDecisionInput,
+} from "./safety_authority";
 
 type SocketAttachment = {
   uid: string;
+  poolName: string;
   capabilities: SessionCapabilities;
   safeAccount?: SafeAccount;
   state:
@@ -193,9 +205,6 @@ export type GenerationMigrationStatus = {
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
-    if (url.pathname === "/__migration") {
-      return handleMigrationServiceRequest(request, env);
-    }
     if (url.pathname === "/ws/health") {
       let shardCount: number;
       try {
@@ -227,7 +236,13 @@ export default {
     let session;
     try {
       const token = readFirebaseProtocol(request);
-      session = await verifyFirebaseSession(token, env);
+      session = await verifyFirebaseSession(token, env, async (uid) => {
+        const decision = await capabilityDecisionForUid(
+          env.SAFETY_AUTHORITY,
+          uid,
+        );
+        return decision.status === "allowed" ? decision.capabilities : undefined;
+      });
     } catch (error) {
       console.warn("Rejected multiplayer session", {
         reason: error instanceof Error ? error.message : "unknown",
@@ -254,6 +269,7 @@ export default {
         env.MATCHMAKING_ROUTING_MODE,
       );
       const pool = env.MATCHMAKING.getByName(route.poolName);
+      headers.set("X-Nestarium-Pool", route.poolName);
       return await pool.fetch(new Request(request, { headers }));
     } catch (error) {
       console.error("Multiplayer pool unavailable", {
@@ -265,46 +281,154 @@ export default {
       });
     }
   },
+  async scheduled(_controller, env): Promise<void> {
+    const deleted = await pruneExpiredModerationReports(env.SAFETY_AUTHORITY);
+    const pool = env.MATCHMAKING.getByName(env.MATCHMAKING_POOL);
+    let createdAt = 0;
+    let reportId = "";
+    let inserted = 0;
+    do {
+      const page = await pool.centralizeModerationReports(
+        createdAt,
+        reportId,
+        100,
+      );
+      inserted += page.inserted;
+      if (!page.nextCursor) break;
+      createdAt = page.nextCursor.createdAt;
+      reportId = page.nextCursor.reportId;
+    } while (true);
+    console.log("Completed moderation report maintenance", {
+      centralized: inserted,
+      deleted,
+    });
+  },
 } satisfies ExportedHandler<Env>;
 
-async function handleMigrationServiceRequest(
-  request: Request,
-  env: Env,
-): Promise<Response> {
-  if (
-    request.method !== "POST" ||
-    request.headers.get("X-Nestarium-Migration-Binding") !==
-      migrationBindingProtocol
-  ) {
-    return new Response("Not found", { status: 404 });
+export class MultiplayerOperator extends WorkerEntrypoint<Env> {
+  private pool(generation: string): DurableObjectStub<MatchmakingPool> {
+    assertMigrationIdentifier(generation, "generation", 80);
+    return this.env.MATCHMAKING.getByName(generation);
   }
-  const bodyText = await request.text();
-  if (bodyText.length > 1_000_000) {
-    return Response.json({ error: "migration request too large" }, { status: 413 });
+
+  async migrationCall(
+    generation: string,
+    action: string,
+    payload: Record<string, unknown> = {},
+  ): Promise<unknown> {
+    const pool = this.pool(generation);
+    switch (action) {
+      case "status":
+        return pool.getGenerationMigrationStatus();
+      case "setMode":
+        return pool.setGenerationMigrationMode(payload.mode as GenerationMode);
+      case "listUids":
+        return pool.listPlayerAuthorityUids(
+          typeof payload.afterUid === "string" ? payload.afterUid : "",
+          typeof payload.limit === "number" ? payload.limit : 100,
+        );
+      case "exportPlayer":
+        return pool.exportPlayerAuthority(
+          String(payload.uid ?? ""),
+          String(payload.sourceGeneration ?? ""),
+        );
+      case "importPlayer":
+        return pool.importPlayerAuthority(
+          String(payload.manifestId ?? ""),
+          payload.bundle as PlayerAuthorityExport,
+        );
+      default:
+        throw new Error("unsupported migration action");
+    }
   }
-  let body: Record<string, unknown>;
-  try {
-    body = JSON.parse(bodyText) as Record<string, unknown>;
-    assertMigrationIdentifier(String(body.generation ?? ""), "generation", 80);
-  } catch (error) {
-    return Response.json(
-      { error: error instanceof Error ? error.message : "invalid migration request" },
-      { status: 400 },
+
+  async safetySummary(): Promise<Record<string, number>> {
+    return safetyAuthoritySummary(this.env.SAFETY_AUTHORITY);
+  }
+
+  async listReports(
+    afterCreatedAt = 0,
+    afterReportId = "",
+    limit = 100,
+  ): ReturnType<typeof listModerationReports> {
+    return listModerationReports(
+      this.env.SAFETY_AUTHORITY,
+      afterCreatedAt,
+      afterReportId,
+      limit,
     );
   }
-  const generation = String(body.generation);
-  delete body.generation;
-  const pool = env.MATCHMAKING.getByName(generation);
-  return pool.fetch(
-    new Request("https://private-binding.invalid/__migration", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Nestarium-Migration-Binding": migrationBindingProtocol,
-      },
-      body: JSON.stringify(body),
-    }),
-  );
+
+  async centralizeReports(
+    generation: string,
+    afterCreatedAt = 0,
+    afterReportId = "",
+    limit = 100,
+  ): Promise<{
+    scanned: number;
+    inserted: number;
+    nextCursor: { createdAt: number; reportId: string } | null;
+  }> {
+    return this.pool(generation).centralizeModerationReports(
+      afterCreatedAt,
+      afterReportId,
+      limit,
+    );
+  }
+
+  async getCapability(uid: string): ReturnType<typeof capabilityDecisionForUid> {
+    return capabilityDecisionForUid(this.env.SAFETY_AUTHORITY, uid);
+  }
+
+  async issueCapability(
+    uid: string,
+    input: CapabilityDecisionInput,
+  ): ReturnType<typeof issueCapabilityDecision> {
+    const decision = await issueCapabilityDecision(
+      this.env.SAFETY_AUTHORITY,
+      uid,
+      input,
+    );
+    if (decision.status !== "allowed") {
+      await this.retireCapabilitySubject(uid);
+    }
+    return decision;
+  }
+
+  async revokeCapability(
+    uid: string,
+    reviewReference: string,
+  ): ReturnType<typeof revokeCapabilityDecision> {
+    const decision = await revokeCapabilityDecision(
+      this.env.SAFETY_AUTHORITY,
+      uid,
+      reviewReference,
+    );
+    await this.retireCapabilitySubject(uid);
+    return decision;
+  }
+
+  async pruneReports(now = Date.now()): Promise<{ deleted: number }> {
+    return {
+      deleted: await pruneExpiredModerationReports(
+        this.env.SAFETY_AUTHORITY,
+        now,
+      ),
+    };
+  }
+
+  private async retireCapabilitySubject(uid: string): Promise<void> {
+    assertMigrationIdentifier(uid, "capability uid");
+    const route = routeMatchmakingPool(
+      uid,
+      this.env.MATCHMAKING_POOL,
+      this.env.MATCHMAKING_SHARD_COUNT,
+      this.env.MATCHMAKING_ROUTING_MODE,
+    );
+    await this.env.MATCHMAKING.getByName(route.poolName).retireCapabilitySubject(
+      uid,
+    );
+  }
 }
 
 export class MatchmakingPool extends DurableObject<Env> {
@@ -477,6 +601,12 @@ export class MatchmakingPool extends DurableObject<Env> {
     if (!capabilities.onlineBattle && !capabilities.trading) {
       return new Response("Forbidden", { status: 403 });
     }
+    const poolName = request.headers.get("X-Nestarium-Pool") ?? this.env.MATCHMAKING_POOL;
+    try {
+      assertMigrationIdentifier(poolName, "matchmaking pool", 100);
+    } catch {
+      return new Response("Forbidden", { status: 403 });
+    }
     if (this.generationMode() !== "active") {
       return new Response("Protected multiplayer is draining for maintenance", {
         status: 503,
@@ -530,6 +660,7 @@ export class MatchmakingPool extends DurableObject<Env> {
     const [client, server] = Object.values(pair);
     const attachment: SocketAttachment = {
       uid,
+      poolName,
       capabilities,
       safeAccount: await peerSafeAccount(uid),
       state: "ready",
@@ -1951,8 +2082,8 @@ export class MatchmakingPool extends DurableObject<Env> {
         )
         .one().count;
       const existing = [
-        ...this.ctx.storage.sql.exec<{ report_id: string }>(
-          "SELECT report_id FROM player_reports WHERE reporter_uid = ? AND reported_uid = ? AND reason = ? AND report_day = ? LIMIT 1",
+        ...this.ctx.storage.sql.exec<{ report_id: string; created_at: number }>(
+          "SELECT report_id, created_at FROM player_reports WHERE reporter_uid = ? AND reported_uid = ? AND reason = ? AND report_day = ? LIMIT 1",
           attachment.uid,
           targetUid,
           reason,
@@ -1969,9 +2100,15 @@ export class MatchmakingPool extends DurableObject<Env> {
         return;
       }
       if (!existing) {
+        const reportId = await moderationReportId(
+          attachment.uid,
+          targetUid,
+          reason,
+          reportDay,
+        );
         this.ctx.storage.sql.exec(
           "INSERT INTO player_reports (report_id, reporter_uid, reported_uid, reason, context_type, context_id, report_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-          crypto.randomUUID(),
+          reportId,
           attachment.uid,
           targetUid,
           reason,
@@ -1981,6 +2118,34 @@ export class MatchmakingPool extends DurableObject<Env> {
           now,
         );
         reportRecorded = true;
+      }
+      const reportId =
+        existing?.report_id ??
+        (await moderationReportId(
+          attachment.uid,
+          targetUid,
+          reason,
+          reportDay,
+        ));
+      try {
+        await recordModerationReport(this.env.SAFETY_AUTHORITY, {
+          reportId,
+          sourceGeneration: this.env.MATCHMAKING_POOL,
+          sourcePool: attachment.poolName,
+          reporterUid: attachment.uid,
+          reportedUid: targetUid,
+          reason,
+          contextType,
+          contextId,
+          reportDay,
+          createdAt: existing?.created_at ?? now,
+        });
+      } catch (error) {
+        // The shard copy preserves the player's report and any requested block.
+        // Daily maintenance retries centralization without logging identities.
+        console.error("Moderation report centralization deferred", {
+          reason: error instanceof Error ? error.name : "unknown",
+        });
       }
     }
 
@@ -2314,6 +2479,107 @@ export class MatchmakingPool extends DurableObject<Env> {
       );
       return { uid: bundle.uid, checksum, alreadyImported: false };
     });
+  }
+
+  async centralizeModerationReports(
+    afterCreatedAt = 0,
+    afterReportId = "",
+    requestedLimit = 100,
+  ): Promise<{
+    scanned: number;
+    inserted: number;
+    nextCursor: { createdAt: number; reportId: string } | null;
+  }> {
+    if (!Number.isSafeInteger(afterCreatedAt) || afterCreatedAt < 0) {
+      throw new Error("invalid report cursor timestamp");
+    }
+    if (afterReportId) {
+      assertMigrationIdentifier(afterReportId, "report cursor", 80);
+    }
+    if (
+      !Number.isInteger(requestedLimit) ||
+      requestedLimit < 1 ||
+      requestedLimit > 500
+    ) {
+      throw new Error("invalid report page size");
+    }
+    const cutoff = Date.now() - reportRetentionMs;
+    const rows = [
+      ...this.ctx.storage.sql.exec<{
+        report_id: string;
+        reporter_uid: string;
+        reported_uid: string;
+        reason: string;
+        context_type: "battle" | "trade";
+        context_id: string;
+        report_day: string;
+        created_at: number;
+      }>(
+        `SELECT report_id, reporter_uid, reported_uid, reason, context_type,
+          context_id, report_day, created_at
+         FROM player_reports
+         WHERE created_at >= ? AND
+           (created_at > ? OR (created_at = ? AND report_id > ?))
+         ORDER BY created_at, report_id LIMIT ?`,
+        cutoff,
+        afterCreatedAt,
+        afterCreatedAt,
+        afterReportId,
+        requestedLimit + 1,
+      ),
+    ];
+    const hasMore = rows.length > requestedLimit;
+    const page = rows.slice(0, requestedLimit);
+    let inserted = 0;
+    for (const row of page) {
+      if (
+        await recordModerationReport(this.env.SAFETY_AUTHORITY, {
+          reportId: row.report_id,
+          sourceGeneration: this.env.MATCHMAKING_POOL,
+          sourcePool: this.ctx.id.name ?? this.env.MATCHMAKING_POOL,
+          reporterUid: row.reporter_uid,
+          reportedUid: row.reported_uid,
+          reason: row.reason,
+          contextType: row.context_type,
+          contextId: row.context_id,
+          reportDay: row.report_day,
+          createdAt: row.created_at,
+        })
+      ) {
+        inserted += 1;
+      }
+    }
+    const last = page.at(-1);
+    return {
+      scanned: page.length,
+      inserted,
+      nextCursor:
+        hasMore && last
+          ? { createdAt: last.created_at, reportId: last.report_id }
+          : null,
+    };
+  }
+
+  async retireCapabilitySubject(uid: string): Promise<{ retired: boolean }> {
+    assertMigrationIdentifier(uid, "capability uid");
+    const socket = this.ctx.getWebSockets().find((candidate) => {
+      const attachment = candidate.deserializeAttachment() as
+        | SocketAttachment
+        | undefined;
+      return attachment?.uid === uid && candidate.readyState === WebSocket.OPEN;
+    });
+    if (!socket) return { retired: false };
+    await this.remove(socket);
+    const attachment = socket.deserializeAttachment() as SocketAttachment;
+    socket.serializeAttachment({
+      ...attachment,
+      state: "replaced",
+      matchId: undefined,
+      peerUid: undefined,
+      tradeId: undefined,
+    } satisfies SocketAttachment);
+    socket.close(4003, "Online capabilities were disabled");
+    return { retired: true };
   }
 
   private generationMode(): GenerationMode {

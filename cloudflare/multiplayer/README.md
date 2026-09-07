@@ -14,12 +14,13 @@ Cloudflare Access application.
 - `protected_playtest` permits authenticated battle matchmaking and the bounded
   preset-message trade flow because Access limits the hostname to approved
   testers. It is not parental consent and does not define public capabilities.
-- Public mode is `trusted_claims`. It accepts only a signed Firebase custom
-  claim with `nestariumCapabilities.policyVersion: 1` and `decision: "allow"`.
-  Missing, old, partial or otherwise unknown policy claims fail closed. Battle
-  and trading are independently enforced; trading does not silently grant
-  battle access, and preset messages remain a separate permission. The future
-  reviewed family-identity service must own claim issuance and revocation.
+- Preferred public mode is `trusted_registry`. It accepts only a current,
+  time-limited D1 capability decision issued through the private operator;
+  missing, denied, expired, revoked or stale decisions fail closed. Battle and
+  trading are independently enforced, preset messages require trading, and
+  profile discovery stays disabled in policy v1. `trusted_claims` remains a
+  compatibility mode. Neither mode proves consent; an approved family review
+  process must supply the decision and opaque review reference.
 - Client player IDs and names are ignored. Peers receive a server-derived test
   alias. Profile discovery and free-text communication remain unavailable.
 - The Online Roster is separate from the offline-first Hatchery Collection. It
@@ -40,7 +41,10 @@ Cloudflare Access application.
   than accepting a client-supplied account ID. Reports store only opaque UIDs,
   one approved reason, activity context and timestamps; free text is not
   accepted. Duplicate same-reason reports are ignored per UTC day and each
-  reporter is limited to ten unique reports per day.
+  reporter is limited to ten unique reports per day. Accepted reports are copied
+  to a shared D1 review queue using SHA-256 subject hashes rather than raw UIDs.
+  The shard copy is retained for delivery recovery; daily maintenance retries
+  centralization and removes central reports after 180 days.
 - A block applies in both directions for future battle and trade matchmaking.
   Blocking during a trade cancels it before inventory can move; blocking during
   a battle does not alter its outcome. The safety context remains usable for one
@@ -77,10 +81,13 @@ Private Durable Object RPC now supports generation status/mode transitions,
 paginated player UID listing, checked per-player export and transactional,
 idempotent import. A generation must move through `draining` and reach zero open
 sockets/battles/trades before it can become `read_only`; new sessions are refused
-during maintenance. These methods are not exposed by the public Worker handler.
+during maintenance. These methods are not exposed by the public Worker handler;
+operations use a named Worker RPC entrypoint and the former header-guarded HTTP
+bridge is gone.
+
 A separate Access-protected multi-shard canary is deployed for empty-topology
 acceptance. It remains isolated from the compatibility generation; no migration
-may run until the remaining report-retention, family-policy, measured-load and
+may run until the remaining family-policy, measured-load and
 representative acceptance gates are complete.
 
 The checked-in local operator now reaches the deployed Worker only through a
@@ -94,6 +101,18 @@ commands against `protected-v1` outside a recorded migration window.
 
 ```powershell
 npm run migration:operator -- status wrangler.operator.protected.jsonc protected-v1
+```
+
+The same private entrypoint exposes moderation maintenance and the technical
+capability registry. `NESTARIUM_SAFETY_UID` is accepted only from the local
+process environment. Decision/revocation mutations require an exact repeated
+identifier, and report exports are encrypted/no-overwrite using
+`NESTARIUM_SAFETY_EXPORT_PASSPHRASE`. Do not issue a decision until the external
+family review has approved its meaning.
+
+```powershell
+npm run safety:operator -- summary wrangler.operator.protected.jsonc
+npm run safety:operator -- backfill-reports wrangler.operator.protected.jsonc protected-v1
 ```
 
 `wrangler.canary.jsonc` deploys the isolated two-shard `canary-v1` Worker at the

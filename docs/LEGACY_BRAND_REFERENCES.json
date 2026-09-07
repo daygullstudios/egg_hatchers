@@ -21,7 +21,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 212,
+      "line": 224,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -29,7 +29,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1101,
+      "line": 1113,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -37,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1282,
+      "line": 1294,
       "references": [
         "egghatchers.game"
       ],
@@ -45,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1309,
+      "line": 1321,
       "references": [
         "egg_hatchers"
       ],
@@ -53,7 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1389,
+      "line": 1401,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -61,7 +61,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1407,
+      "line": 1419,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -69,7 +69,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1414,
+      "line": 1426,
       "references": [
         "egg_hatchers"
       ],
@@ -149,7 +149,7 @@
     },
     {
       "path": "cloudflare/multiplayer/worker-configuration.d.ts",
-      "line": 5,
+      "line": 6,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -319,7 +319,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 182,
+      "line": 188,
       "references": [
         "egghatchers.game"
       ],
@@ -327,7 +327,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 192,
+      "line": 198,
       "references": [
         "egg_hatchers"
       ],
@@ -335,7 +335,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 378,
+      "line": 384,
       "references": [
         "eggHatchers"
       ],
@@ -343,7 +343,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 383,
+      "line": 389,
       "references": [
         "egg_hatchers_player_state_account_"
       ],
@@ -351,7 +351,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 395,
+      "line": 401,
       "references": [
         "egg_hatchers.settings"
       ],
@@ -359,7 +359,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 416,
+      "line": 422,
       "references": [
         "egg_hatchers"
       ],
@@ -367,7 +367,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 486,
+      "line": 492,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -375,7 +375,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 509,
+      "line": 515,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -383,7 +383,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 536,
+      "line": 542,
       "references": [
         "egg_hatchers"
       ],
@@ -391,7 +391,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 577,
+      "line": 583,
       "references": [
         "egg-hatchers-playtest"
       ],

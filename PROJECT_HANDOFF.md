@@ -33,19 +33,24 @@ also deployed. Durable Object eviction/hibernation and duplicate-session
 acceptance now pass automatically. The versioned trusted-claim enforcement seam
 and explicit protected-pool capacity behavior are implemented. The public shard
 router/interlock, migration design, private per-player migration RPC, encrypted
-local operator and isolated Access-protected two-shard canary are also complete;
-authenticated canary load/latency acceptance, central report retention, reviewed
-family claim issuance/revocation and representative human/device acceptance
-remain open. Do not call either batch complete.
+local operator and isolated Access-protected two-shard canary are also complete.
+Central report retention and a D1-backed family-capability issuance/revocation
+boundary are now implemented without enabling public capabilities. Authenticated
+canary load/latency acceptance, the actual reviewed consent/guardian decision,
+and representative human/device acceptance remain open. Do not call either
+batch complete.
 
-The capability/capacity tail uses `trusted_claims` for any future public Worker.
-Only a signed `nestariumCapabilities` object with policy version 1 and an explicit
-allow decision is accepted; missing, old or partial decisions fail closed.
+The capability/capacity tail now supports `trusted_registry` for a future public
+Worker. It reads a versioned, time-limited server-side D1 decision keyed only by
+a SHA-256 subject hash; missing, denied, expired, revoked or stale decisions fail
+closed. `trusted_claims` remains a compatibility mode but is not the preferred
+public authority.
 Online battle and trading are separate permissions, and preset trade messages
 remain independently gated. This is an enforcement contract, not a consent
-system: the future reviewed family-identity service must issue and revoke the
-claims. The existing Access-protected mode remains deliberately permissive for
-approved testers and is still not evidence of age or guardian permission.
+system: the private operator can issue/revoke only the technical hosted-feature
+decision after an approved review supplies its opaque reference. The existing
+Access-protected mode remains deliberately permissive for approved testers and
+is still not evidence of age or guardian permission. No live decision was issued.
 
 The existing compatibility pool now admits at most 32 distinct live sessions.
 A replacement socket for the same UID remains recoverable; a 33rd distinct
@@ -78,8 +83,11 @@ receipts keyed by manifest ID and UID make a retry idempotent and reject a
 conflicting replay. Sessions, active battles/trades, reports, display names,
 tokens and credentials are not exported. There is no public HTTP admin route.
 
-The local operator connects through a Cloudflare remote service binding, not a
-public admin hostname. It produces AES-256-GCM encrypted, no-overwrite artifacts;
+The local operator connects to a named `MultiplayerOperator` Worker entrypoint
+through a Cloudflare remote service binding, not a public admin hostname. The
+old header-guarded HTTP migration bridge was removed from the default Worker
+handler, including the whole-host canary surface. It produces AES-256-GCM
+encrypted, no-overwrite artifacts;
 accepts the passphrase only through `NESTARIUM_MIGRATION_PASSPHRASE`; verifies
 the aggregate manifest checksum; and requires the exact target generation name
 on every mutating command. Its live status-only acceptance read `protected-v1`
@@ -126,9 +134,13 @@ The multiplayer safety checkpoint adds one narrow-phone sheet to active and
 just-completed hosted battles/trades. It accepts four preset reasons and no free
 text or client-selected peer identity. The Durable Object records opaque UIDs,
 reason, activity context and timestamps, deduplicates the same reason/peer/day,
-caps each reporter at ten unique daily reports and opportunistically removes
-reports older than 180 days. Blocks apply in both directions to battle and trade
-matchmaking. A trade block cancels before any Online Roster mutation; a battle
+caps each reporter at ten unique daily reports. Each accepted report is also
+written to the shared `nestarium-safety-authority` D1 database with pseudonymous
+subject hashes, source generation/pool and a 180-day expiry; raw UIDs remain only
+in the gameplay shard recovery copy. A daily protected-Worker job centralizes
+deferred shard copies and prunes expired central rows. Blocks apply in both
+directions to battle and trade matchmaking. A trade block cancels before any
+Online Roster mutation; a battle
 block does not alter the result. Automated acceptance evicts the live Durable
 Object with hibernated trade sockets, submits the safety action after restoration,
 proves both match queues exclude the blocked pair, and proves a duplicate UID
@@ -154,15 +166,15 @@ now requires `cloudflare/playtest`'s `npm run build:web`, which preserves the
 protected-only feature flags. Final static version
 `d25ea84c-4ff9-47a7-a21d-5f7fc701f8d0` is routed only at the existing protected
 custom domain. Multiplayer Worker version
-`60921df5-7bbe-4a45-baa3-c879a9ae7f8e` remains routed only at `/ws*` there.
-The last unchanged Flutter checkpoint remains clean at 805 tests. Twenty-two current
+`61597463-c8af-4af0-aa62-b8e41d51ce40` is routed only at `/ws*` there.
+The last unchanged Flutter checkpoint remains clean at 805 tests. Twenty-six current
 Worker tests and two Node operator tests pass, as do Worker typecheck/types and
 both protected/canary dry-runs; the preceding release
 web/Wasm and static tests/dry-run remain valid because no Flutter/static asset
 changed in this tail. Anonymous
 requests to both `/` and `/ws/health` still receive Cloudflare Access 302. The
-compatibility Worker remains version `60921df5-7bbe-4a45-baa3-c879a9ae7f8e`;
-isolated canary Worker version `f593529b-6aba-4d28-a87f-c29053b8add3` owns only
+compatibility Worker is version `61597463-c8af-4af0-aa62-b8e41d51ce40`;
+isolated canary Worker version `f79e6564-f3cd-4db2-8477-2c103e257b59` owns only
 its dedicated Access-protected custom domain. The Nestarium legacy-reference
 audit classifies the retained compatibility occurrences with no unclassified
 branding.
@@ -275,12 +287,12 @@ receipt state, and commits roster trades atomically. The local Dart server remai
 a development sandbox and does not define hosted trust. Global discovery/invites
 stay off; protected trading uses only preset messages and private aliases.
 
-**Next:** centralize moderation-report export/retention and finish the reviewed
-family capability issuance/revocation boundary without exposing a public origin.
-The exact family identity/consent mechanism remains an external decision gate;
-isolated backend and platform-readiness work may continue. Authenticated
-multi-client canary behavior, saturation and latency/cost measurement remain
-acceptance gates rather than grounds to move current player data.
+**Next:** one bounded implementation remains: consolidate platform/public-origin
+readiness and fix only demonstrated release-candidate blockers. The exact family
+identity/consent mechanism remains an external decision gate; the new capability
+registry is enforcement machinery, not consent. Authenticated multi-client
+canary behavior, saturation and latency/cost measurement remain acceptance gates
+rather than grounds to move current player data.
 The workplan records four bounded multiplayer packages: authenticated hosting;
 trusted inventory/results/trades; family-safe capabilities; failure recovery and
 integrated acceptance. They fit inside the existing six-milestone finish line.

@@ -1,4 +1,7 @@
-import { cloudflareTest } from "@cloudflare/vitest-plugin";
+import {
+  cloudflareTest,
+  readD1Migrations,
+} from "@cloudflare/vitest-plugin";
 import { defineConfig } from "vitest/config";
 
 const testPublicJwk = {
@@ -10,18 +13,25 @@ const testPublicJwk = {
   alg: "RS256",
 };
 
-export default defineConfig({
+export default defineConfig(async () => ({
   plugins: [
     cloudflareTest({
       wrangler: { configPath: "./wrangler.jsonc" },
       miniflare: {
         bindings: {
           FIREBASE_TEST_PUBLIC_JWK_JSON: JSON.stringify(testPublicJwk),
+          TEST_MIGRATIONS: await readD1Migrations(
+            decodeURIComponent(new URL("./migrations", import.meta.url).pathname).replace(
+              /^\/(?:[A-Za-z]:\/)/,
+              (match) => match.slice(1),
+            ),
+          ),
         },
       },
     }),
   ],
   test: {
     sequence: { concurrent: false },
+    setupFiles: ["./test/apply-migrations.ts"],
   },
-});
+}));

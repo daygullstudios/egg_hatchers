@@ -111,6 +111,33 @@ describe("multiplayer edge authentication", () => {
     });
   });
 
+  it("fails closed in registry mode and accepts only a resolved hosted capability", async () => {
+    const token = await tokenFor("family-registry");
+    const registryEnv = {
+      FIREBASE_PROJECT_ID: env.FIREBASE_PROJECT_ID,
+      CAPABILITY_MODE: "trusted_registry",
+      FIREBASE_TEST_PUBLIC_JWK_JSON: JSON.stringify(publicJwk()),
+    };
+    await expect(verifyFirebaseSession(token, registryEnv)).rejects.toThrow(
+      "hosted online capabilities are not enabled",
+    );
+    await expect(
+      verifyFirebaseSession(token, registryEnv, async (uid) =>
+        uid === "family-registry"
+          ? {
+              onlineBattle: true,
+              profileDiscovery: false,
+              presetMessages: false,
+              trading: false,
+            }
+          : undefined,
+      ),
+    ).resolves.toMatchObject({
+      uid: "family-registry",
+      capabilities: { onlineBattle: true, profileDiscovery: false },
+    });
+  });
+
   it("enforces battle and trade permissions independently after connection", async () => {
     const response = await openPoolSocket("trade-only-session", {
       onlineBattle: false,
@@ -490,6 +517,15 @@ describe("multiplayer edge authentication", () => {
       blocked: true,
       message: expect.stringContaining("not be matched"),
     });
+    const centralReport = await env.SAFETY_AUTHORITY.prepare(
+      "SELECT reporter_subject_hash, reported_subject_hash, source_generation, source_pool FROM moderation_reports WHERE reason = 'trade_concern' ORDER BY created_at DESC LIMIT 1",
+    ).first<Record<string, unknown>>();
+    expect(centralReport).toMatchObject({
+      source_generation: env.MATCHMAKING_POOL,
+      source_pool: env.MATCHMAKING_POOL,
+    });
+    expect(JSON.stringify(centralReport)).not.toContain("safety-owner-a");
+    expect(JSON.stringify(centralReport)).not.toContain("safety-owner-b");
     await expect(firstMessages.next()).resolves.toMatchObject({
       type: "tradeCancelled",
       message: expect.stringContaining("blocked"),
@@ -565,6 +601,42 @@ describe("multiplayer edge authentication", () => {
       type: "tradeQueued",
     });
     replacement.close(1000, "done");
+  });
+
+  it("retires a live hosted session when its capability decision is revoked", async () => {
+    const uid = `capability-retire-${crypto.randomUUID()}`;
+    const response = await openPoolSocket(uid, {
+      onlineBattle: true,
+      trading: true,
+      presetMessages: true,
+      profileDiscovery: false,
+    });
+    const socket = response.webSocket!;
+    socket.accept();
+    const closed = new Promise<CloseEvent>((resolve) => {
+      socket.addEventListener("close", resolve, { once: true });
+    });
+    const decisionId = `decision-${crypto.randomUUID()}`;
+    await expect(
+      exports.MultiplayerOperator.issueCapability(uid, {
+        decisionId,
+        policyVersion: trustedCapabilityPolicyVersion,
+        decision: "allow",
+        onlineBattle: true,
+        trading: true,
+        presetMessages: true,
+        profileDiscovery: false,
+        reviewReference: "test-live-review",
+        expiresAt: Date.now() + 60_000,
+      }),
+    ).resolves.toMatchObject({ status: "allowed" });
+    await expect(
+      exports.MultiplayerOperator.revokeCapability(uid, "test-live-revoke"),
+    ).resolves.toMatchObject({ status: "revoked" });
+    await expect(closed).resolves.toMatchObject({
+      code: 4003,
+      reason: expect.stringContaining("capabilities were disabled"),
+    });
   });
 
   it("pauses and resumes a server-run battle after a verified reconnect", async () => {

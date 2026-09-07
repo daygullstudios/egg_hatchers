@@ -9,6 +9,7 @@
     {
       "binding": "MULTIPLAYER",
       "service": "nestarium-multiplayer-playtest",
+      "entrypoint": "MultiplayerOperator",
       "remote": true
     }
   ]

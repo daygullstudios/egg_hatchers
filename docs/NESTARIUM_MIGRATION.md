@@ -123,6 +123,12 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
   Daygull Studios test hostname. It does not attach, redirect or publish either
   `playtest.playnestarium.com` or `playnestarium.com`, and its isolated Durable
   Object namespace contains no migrated player data.
+- A new empty Daygull-account D1 database, `nestarium-safety-authority`, now
+  centralizes pseudonymous moderation reports and holds the inactive, versioned
+  hosted-capability registry. This does not replace Firebase, change a UID or
+  move player authority. Protected and canary Workers share only this safety
+  store; no capability decision has been issued, and `playnestarium.com` remains
+  unrouted.
 
 ## Hostname cutover and owner/platform actions
 

@@ -41,9 +41,11 @@ hardening inventory into an indefinite pre-release project.
    data-collection, privacy and necessary consent decisions for the confirmed
    ages 8–12 plus teens/adults. Record exact owner/professional review gates;
    do not infer compliance or enable new SDK collection from a generic approval.
-   Requirements/source review is recorded in `FAMILY_AUDIENCE_V1.md`. Runtime
-   controls are not implemented. Tony selected Roblox as the age/parent-control
-   product model; classification/territories and consent/retention implementation
+   Requirements/source review is recorded in `FAMILY_AUDIENCE_V1.md`. A hosted
+   capability issuance/revocation enforcement seam is implemented but inactive;
+   the actual consent/guardian decision and local/cloud gating remain open.
+   Tony selected Roblox as the age/parent-control product model;
+   classification/territories and consent/retention implementation
    remain open. This milestone is not complete.
 3. **Multiplayer completion and continuity/platform acceptance:** multiplayer
    remains a v1 target; its proposed deferral was not approved. Complete the four
@@ -151,8 +153,12 @@ Preset-only report/block controls, two-way match exclusion, Durable Object
 eviction/hibernation and duplicate-session replacement now pass automated
 acceptance. A versioned trusted-claim seam now fails closed for missing or stale
 family-policy decisions and independently enforces battle, trading and preset-
-message permissions. The protected compatibility pool accepts 32 simultaneous
-sessions, forms 16 isolated matches in automated acceptance and returns a
+message permissions. Preferred future `trusted_registry` mode now reads time-
+limited, revocable, pseudonymous D1 decisions; no decision has been issued and
+the protected configuration remains unchanged. Reports are centralized in D1
+with 180-day retention while local shard copies support retry. The protected
+compatibility pool accepts 32 simultaneous sessions, forms 16 isolated matches
+in automated acceptance and returns a
 recoverable `503` at the explicit guardrail. This closes basic protected-pool
 load behavior. A deterministic versioned shard router is now implemented with
 a fail-closed activation interlock: the live `protected-v1` compatibility pool
@@ -166,8 +172,8 @@ remote service binding and requires an exact generation confirmation for writes.
 Its live status-only acceptance changed no data. The isolated Access-protected
 two-shard canary is now deployed on a dedicated non-public hostname; both empty
 shards pass private status acceptance and anonymous requests are denied by
-Access. Authenticated multi-client/saturation/latency acceptance, central report
-retention, reviewed family claim issuance/revocation and representative
+Access. Authenticated multi-client/saturation/latency acceptance, the reviewed
+family consent/decision process and representative
 human/device acceptance remain open. See `MULTIPLAYER_SHARD_MIGRATION.md` and
 `PROJECT_HANDOFF.md` for exact versions/evidence.
 

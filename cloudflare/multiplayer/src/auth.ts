@@ -57,6 +57,9 @@ export function readFirebaseProtocol(request: Request): string {
 export async function verifyFirebaseSession(
   token: string,
   env: AuthEnv,
+  capabilityResolver?: (
+    uid: string,
+  ) => Promise<SessionCapabilities | undefined>,
 ): Promise<VerifiedSession> {
   if (token.length > 10_000) throw new Error("identity token too large");
   const protectedHeader = decodeProtectedHeader(token);
@@ -74,7 +77,10 @@ export async function verifyFirebaseSession(
   });
   validateFirebaseClaims(payload);
 
-  const capabilities = capabilitiesFor(payload, env.CAPABILITY_MODE);
+  const capabilities =
+    env.CAPABILITY_MODE === "trusted_registry"
+      ? ((await capabilityResolver?.(payload.sub!)) ?? deniedCapabilities())
+      : capabilitiesFor(payload, env.CAPABILITY_MODE);
   if (!capabilities.onlineBattle && !capabilities.trading) {
     throw new Error("hosted online capabilities are not enabled");
   }
@@ -157,17 +163,21 @@ function capabilitiesFor(
     capabilities.policyVersion !== trustedCapabilityPolicyVersion ||
     capabilities.decision !== "allow"
   ) {
-    return {
-      onlineBattle: false,
-      profileDiscovery: false,
-      presetMessages: false,
-      trading: false,
-    };
+    return deniedCapabilities();
   }
   return {
     onlineBattle: capabilities.onlineBattle === true,
     profileDiscovery: capabilities.profileDiscovery === true,
     presetMessages: capabilities.presetMessages === true,
     trading: capabilities.trading === true,
+  };
+}
+
+function deniedCapabilities(): SessionCapabilities {
+  return {
+    onlineBattle: false,
+    profileDiscovery: false,
+    presetMessages: false,
+    trading: false,
   };
 }

@@ -14,7 +14,7 @@ const capabilities = JSON.stringify({
 });
 
 describe("multiplayer generation migration", () => {
-  it("keeps the operator bridge hidden without its service-binding protocol", async () => {
+  it("keeps migration operations off the public HTTP surface", async () => {
     const hidden = await exports.default.fetch(
       new Request("https://example.com/__migration", {
         method: "POST",
@@ -22,7 +22,7 @@ describe("multiplayer generation migration", () => {
       }),
     );
     expect(hidden.status).toBe(404);
-    const visible = await exports.default.fetch(
+    const stillHidden = await exports.default.fetch(
       new Request("https://example.com/__migration", {
         method: "POST",
         headers: {
@@ -31,7 +31,14 @@ describe("multiplayer generation migration", () => {
         body: JSON.stringify({ generation: "bridge-test", action: "status" }),
       }),
     );
-    expect(await visible.json()).toMatchObject({ mode: "active", drained: true });
+    expect(stillHidden.status).toBe(404);
+    await expect(
+      exports.MultiplayerOperator.migrationCall(
+        "bridge-test",
+        "status",
+        {},
+      ),
+    ).resolves.toMatchObject({ mode: "active", drained: true });
   });
 
   it("drains through explicit modes and refuses new sessions", async () => {

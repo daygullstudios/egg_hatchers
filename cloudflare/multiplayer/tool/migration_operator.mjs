@@ -192,30 +192,13 @@ async function importManifest(service, options) {
 }
 
 async function migrationCall(service, generation, action, payload = {}) {
-  const response = await service.fetch(
-    "https://private-binding.invalid/__migration",
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Nestarium-Migration-Binding": "private-binding-v1",
-      },
-      body: JSON.stringify({ generation, action, ...payload }),
-    },
-  );
-  const responseText = await response.text();
-  let result;
   try {
-    result = JSON.parse(responseText);
-  } catch {
+    return await service.migrationCall(generation, action, payload);
+  } catch (error) {
     throw new Error(
-      `migration binding returned ${response.status}: ${responseText.slice(0, 160)}`,
+      error instanceof Error ? error.message : "migration operation failed",
     );
   }
-  if (!response.ok) {
-    throw new Error(result?.error ?? `migration operation failed (${response.status})`);
-  }
-  return result;
 }
 
 function parseArguments(values) {

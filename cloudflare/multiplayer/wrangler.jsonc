@@ -26,6 +26,17 @@
       }
     ]
   },
+  "d1_databases": [
+    {
+      "binding": "SAFETY_AUTHORITY",
+      "database_name": "nestarium-safety-authority",
+      "database_id": "d11be133-8f76-4f86-b676-14a1d7bb42a9",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": {
+    "crons": ["17 6 * * *"]
+  },
   "migrations": [
     {
       "tag": "v1",
