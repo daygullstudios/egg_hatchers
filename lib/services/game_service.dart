@@ -523,7 +523,7 @@ class GameService extends ChangeNotifier {
 
   /// Returns and clears a pending quest completion notification message.
   String? consumePendingQuestNotification() {
-    if (_questNotificationDeferred) return null;
+    if (isQuestNotificationDeferred) return null;
     final message = _pendingQuestNotification;
     _pendingQuestNotification = null;
     return message;
@@ -538,7 +538,15 @@ class GameService extends ChangeNotifier {
     return message;
   }
 
-  bool get isQuestNotificationDeferred => _questNotificationDeferred;
+  final Set<Object> _customEditors = {};
+  void holdEditorQuestNotifications(Object editor) =>
+      _customEditors.add(editor);
+  void releaseEditorQuestNotifications(Object editor) {
+    _customEditors.remove(editor);
+  }
+
+  bool get isQuestNotificationDeferred =>
+      _questNotificationDeferred || _customEditors.isNotEmpty;
 
   String? consumePendingMasteryNotification() {
     if (_pendingMasteryNotifications.isEmpty) return null;

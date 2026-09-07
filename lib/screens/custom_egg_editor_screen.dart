@@ -14,9 +14,9 @@ import '../utils/custom_egg_logic.dart';
 import '../utils/format_utils.dart';
 import '../utils/snackbar_utils.dart';
 import '../widgets/game_background.dart';
+import '../widgets/custom_content_action.dart';
 import '../widgets/game_sprite.dart';
 import '../widgets/phone_width_layout.dart';
-import '../widgets/quest_notification_listener.dart';
 
 /// Form for creating or editing a custom egg.
 class CustomEggEditorScreen extends StatefulWidget {
@@ -40,7 +40,9 @@ class CustomEggEditorScreen extends StatefulWidget {
 }
 
 class _CustomEggEditorScreenState extends State<CustomEggEditorScreen> {
-  static const _scrollStorageKey = PageStorageKey<String>('custom_egg_editor_scroll');
+  static const _scrollStorageKey = PageStorageKey<String>(
+    'custom_egg_editor_scroll',
+  );
 
   late final CustomEgg _draft;
   late final TextEditingController _nameController;
@@ -51,6 +53,17 @@ class _CustomEggEditorScreenState extends State<CustomEggEditorScreen> {
   late final Map<String, int> _animalWeights;
   late final ValueNotifier<int> _costInputRevision;
   late bool _isEnabled;
+  late final Object _session;
+
+  bool get _dirty =>
+      _nameController.text != _draft.name ||
+      _emojiController.text != _draft.emoji ||
+      _costController.text != '${_draft.cost}' ||
+      _buildDraftEgg().toJson().toString() != _draft.toJson().toString();
+
+  void _onDraftTextChanged() {
+    if (mounted) setState(() {});
+  }
 
   bool get _isEditing => widget.existing != null;
 
@@ -70,6 +83,15 @@ class _CustomEggEditorScreenState extends State<CustomEggEditorScreen> {
     _selectedAnimalIds = Set<String>.from(_draft.selectedAnimalIds);
     _animalWeights = Map<String, int>.from(_draft.animalWeights);
     _isEnabled = _draft.isEnabled;
+    _session = widget.customEggs.sessionToken;
+    widget.game.holdEditorQuestNotifications(this);
+    for (final controller in [
+      _nameController,
+      _emojiController,
+      _costController,
+    ]) {
+      controller.addListener(_onDraftTextChanged);
+    }
   }
 
   void _onCostTextChanged() {
@@ -78,6 +100,7 @@ class _CustomEggEditorScreenState extends State<CustomEggEditorScreen> {
 
   @override
   void dispose() {
+    widget.game.releaseEditorQuestNotifications(this);
     _costController.removeListener(_onCostTextChanged);
     _costInputRevision.dispose();
     _scrollController.dispose();
@@ -125,7 +148,9 @@ class _CustomEggEditorScreenState extends State<CustomEggEditorScreen> {
     final unlockedDraft = draft.copyWith(
       selectedAnimalIds: _unlockedSelectedIds,
       animalWeights: Map.fromEntries(
-        _animalWeights.entries.where((e) => _unlockedSelectedIds.contains(e.key)),
+        _animalWeights.entries.where(
+          (e) => _unlockedSelectedIds.contains(e.key),
+        ),
       ),
     );
     if (_unlockedSelectedIds.isEmpty) return 1;
@@ -162,10 +187,7 @@ class _CustomEggEditorScreenState extends State<CustomEggEditorScreen> {
       widgets.add(
         Padding(
           padding: const EdgeInsets.only(top: 8, bottom: 4),
-          child: Text(
-            egg.name,
-            style: GameTheme.sectionTitle(theme, size: 13),
-          ),
+          child: Text(egg.name, style: GameTheme.sectionTitle(theme, size: 13)),
         ),
       );
       widgets.addAll(
@@ -180,10 +202,7 @@ class _CustomEggEditorScreenState extends State<CustomEggEditorScreen> {
       widgets.add(
         Padding(
           padding: const EdgeInsets.only(top: 8, bottom: 4),
-          child: Text(
-            'Other',
-            style: GameTheme.sectionTitle(theme, size: 13),
-          ),
+          child: Text('Other', style: GameTheme.sectionTitle(theme, size: 13)),
         ),
       );
       widgets.addAll(
@@ -352,15 +371,10 @@ class _CustomEggEditorScreenState extends State<CustomEggEditorScreen> {
     }
 
     final draft = _buildDraftEgg();
-    if (cost < draft.minimumCostFor(
-      _lifetimeCoins,
-      rebirthLevel: _rebirthLevel,
-    )) {
+    if (cost <
+        draft.minimumCostFor(_lifetimeCoins, rebirthLevel: _rebirthLevel)) {
       _showError(
-        'Cost must be at least ${formatCoins(draft.minimumCostFor(
-          _lifetimeCoins,
-          rebirthLevel: _rebirthLevel,
-        ))} '
+        'Cost must be at least ${formatCoins(draft.minimumCostFor(_lifetimeCoins, rebirthLevel: _rebirthLevel))} '
         'coins for these animals.',
       );
       return;
@@ -373,7 +387,12 @@ class _CustomEggEditorScreenState extends State<CustomEggEditorScreen> {
       cost: cost,
     );
 
-    await widget.customEggs.saveEgg(egg);
+    final saved = await runCustomContentAction(
+      context,
+      title: 'Saving custom egg',
+      action: () => widget.customEggs.saveEgg(egg, expectedSession: _session),
+    );
+    if (!saved || !mounted) return;
     if (!_isEditing) {
       widget.game.recordCustomEggCreated();
     }
@@ -403,232 +422,235 @@ class _CustomEggEditorScreenState extends State<CustomEggEditorScreen> {
         final theme = widget.preferences.selectedTheme;
         final draft = _buildDraftEgg();
 
-        return QuestNotificationListener(
-          game: widget.game,
-          preferences: widget.preferences,
+        return CustomDraftScope(
+          dirty: _dirty,
+          isDirty: () => _dirty,
           child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: PhoneWidthAppBar.widget(
-            titleWidget: Text(
-              _isEditing ? '✏️ Edit Egg' : '🥚 New Egg',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+            backgroundColor: Colors.transparent,
+            appBar: PhoneWidthAppBar.widget(
+              titleWidget: Text(
+                _isEditing ? '✏️ Edit Egg' : '🥚 New Egg',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+              backgroundColor: theme.appBarColor,
+              foregroundColor: Colors.white,
+              automaticallyImplyLeading: false,
+              leading: const CustomDraftBackButton(),
             ),
-            backgroundColor: theme.appBarColor,
-            foregroundColor: Colors.white,
-          ),
-          body: GameBackground(
-            theme: theme,
-            child: PhoneWidthLayout(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView(
-                      key: _scrollStorageKey,
-                      controller: _scrollController,
-                      keyboardDismissBehavior:
-                          ScrollViewKeyboardDismissBehavior.onDrag,
-                      padding: EdgeInsets.zero,
-                      children: [
-                            _FieldCard(
-                              theme: theme,
-                              child: TextField(
-                                controller: _nameController,
-                                maxLength: CustomEgg.maxNameLength,
-                                style: TextStyle(
-                                  color: theme.cardTextPrimaryColor,
-                                ),
-                                decoration: _inputDecoration(
-                                  theme,
-                                  'Egg name',
-                                  hint: 'My Custom Egg',
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            _FieldCard(
-                              theme: theme,
-                              child: TextField(
-                                controller: _emojiController,
-                                maxLength: 4,
-                                style: const TextStyle(fontSize: 28),
-                                decoration: _inputDecoration(
-                                  theme,
-                                  'Egg emoji',
-                                  hint: '🥚',
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Container(
-                              decoration: GameTheme.cardDecoration(theme),
-                              padding: const EdgeInsets.all(14),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Minimum cost: 🪙 ${formatCoins(_minimumCost)}',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                      color: theme.cardTextPrimaryColor,
-                                    ),
-                                  ),
-                                  if (_unlockedSelectedIds.isEmpty)
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 6),
-                                      child: Text(
-                                        'Select unlocked animals to calculate minimum cost.',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: theme.cardTextSecondaryColor,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            _FieldCard(
-                              theme: theme,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  TextField(
-                                    controller: _costController,
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly,
-                                    ],
-                                    style: TextStyle(
-                                      color: theme.cardTextPrimaryColor,
-                                    ),
-                                    decoration: _inputDecoration(
-                                      theme,
-                                      'Cost (coins)',
-                                      hint: '1000',
-                                    ),
-                                  ),
-                                  _costValidationWarning(theme),
-                                  const SizedBox(height: 10),
-                                  OutlinedButton.icon(
-                                    onPressed: _unlockedSelectedIds.isEmpty
-                                        ? null
-                                        : _applyMinimumCost,
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: theme.primaryColor,
-                                      side: BorderSide(
-                                        color: theme.primaryColor,
-                                      ),
-                                    ),
-                                    icon: const Icon(Icons.price_check_rounded),
-                                    label: const Text('Use Minimum Cost'),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Container(
-                              decoration: GameTheme.cardDecoration(theme),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: SwitchListTile(
-                                  title: Text(
-                                    'Enabled in shop',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: theme.cardTextPrimaryColor,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    _isEnabled
-                                        ? 'Visible in the Egg Shop'
-                                        : 'Saved but hidden from shop',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: theme.cardTextSecondaryColor,
-                                    ),
-                                  ),
-                                  value: _isEnabled,
-                                  activeThumbColor: theme.primaryColor,
-                                  onChanged: (value) =>
-                                      setState(() => _isEnabled = value),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Select animals & hatch weights',
-                              style: GameTheme.sectionTitle(theme, size: 15),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Selected animals: '
-                              '${_selectedAnimalIds.length} / '
-                              '${CustomEgg.maxSelectedAnimals}',
+            body: GameBackground(
+              theme: theme,
+              child: PhoneWidthLayout(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ListView(
+                        key: _scrollStorageKey,
+                        controller: _scrollController,
+                        keyboardDismissBehavior:
+                            ScrollViewKeyboardDismissBehavior.onDrag,
+                        padding: EdgeInsets.zero,
+                        children: [
+                          _FieldCard(
+                            theme: theme,
+                            child: TextField(
+                              controller: _nameController,
+                              maxLength: CustomEgg.maxNameLength,
                               style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: _tooManyAnimals
-                                    ? Colors.red.shade600
-                                    : theme.cardTextSecondaryColor,
+                                color: theme.cardTextPrimaryColor,
+                              ),
+                              decoration: _inputDecoration(
+                                theme,
+                                'Egg name',
+                                hint: 'My Custom Egg',
                               ),
                             ),
-                            if (_tooManyAnimals)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  'Remove extra animals before saving.',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.red.shade600,
-                                  ),
-                                ),
-                              ),
-                            if (_lockedSelectedIds.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  '${_lockedSelectedIds.length} locked animal(s) '
-                                  'selected — remove before saving.',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: theme.secondaryColor,
-                                  ),
-                                ),
-                              ),
-                            const SizedBox(height: 8),
-                            ..._animalListWidgets(draft, theme),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: FilledButton.icon(
-                          onPressed: _save,
-                          style: GameTheme.filledButton(
-                            theme,
-                            color: theme.primaryColor,
-                            height: 52,
                           ),
-                          icon: const Icon(Icons.save_rounded),
-                          label: const Text(
-                            'Save Custom Egg',
+                          const SizedBox(height: 12),
+                          _FieldCard(
+                            theme: theme,
+                            child: TextField(
+                              controller: _emojiController,
+                              maxLength: 4,
+                              style: const TextStyle(fontSize: 28),
+                              decoration: _inputDecoration(
+                                theme,
+                                'Egg emoji',
+                                hint: '🥚',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            decoration: GameTheme.cardDecoration(theme),
+                            padding: const EdgeInsets.all(14),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Minimum cost: 🪙 ${formatCoins(_minimumCost)}',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: theme.cardTextPrimaryColor,
+                                  ),
+                                ),
+                                if (_unlockedSelectedIds.isEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      'Select unlocked animals to calculate minimum cost.',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: theme.cardTextSecondaryColor,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _FieldCard(
+                            theme: theme,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                TextField(
+                                  controller: _costController,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  style: TextStyle(
+                                    color: theme.cardTextPrimaryColor,
+                                  ),
+                                  decoration: _inputDecoration(
+                                    theme,
+                                    'Cost (coins)',
+                                    hint: '1000',
+                                  ),
+                                ),
+                                _costValidationWarning(theme),
+                                const SizedBox(height: 10),
+                                OutlinedButton.icon(
+                                  onPressed: _unlockedSelectedIds.isEmpty
+                                      ? null
+                                      : _applyMinimumCost,
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: theme.primaryColor,
+                                    side: BorderSide(color: theme.primaryColor),
+                                  ),
+                                  icon: const Icon(Icons.price_check_rounded),
+                                  label: const Text('Use Minimum Cost'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            decoration: GameTheme.cardDecoration(theme),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: SwitchListTile(
+                                title: Text(
+                                  'Enabled in shop',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: theme.cardTextPrimaryColor,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  _isEnabled
+                                      ? 'Visible in the Egg Shop'
+                                      : 'Saved but hidden from shop',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: theme.cardTextSecondaryColor,
+                                  ),
+                                ),
+                                value: _isEnabled,
+                                activeThumbColor: theme.primaryColor,
+                                onChanged: (value) =>
+                                    setState(() => _isEnabled = value),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Select animals & hatch weights',
+                            style: GameTheme.sectionTitle(theme, size: 15),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Selected animals: '
+                            '${_selectedAnimalIds.length} / '
+                            '${CustomEgg.maxSelectedAnimals}',
                             style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: _tooManyAnimals
+                                  ? Colors.red.shade600
+                                  : theme.cardTextSecondaryColor,
                             ),
+                          ),
+                          if (_tooManyAnimals)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                'Remove extra animals before saving.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.red.shade600,
+                                ),
+                              ),
+                            ),
+                          if (_lockedSelectedIds.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                '${_lockedSelectedIds.length} locked animal(s) '
+                                'selected — remove before saving.',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: theme.secondaryColor,
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 8),
+                          ..._animalListWidgets(draft, theme),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: FilledButton.icon(
+                        onPressed: _save,
+                        style: GameTheme.filledButton(
+                          theme,
+                          color: theme.primaryColor,
+                          height: 52,
+                        ),
+                        icon: const Icon(Icons.save_rounded),
+                        label: const Text(
+                          'Save Custom Egg',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
+          ),
         );
       },
     );
@@ -725,8 +747,7 @@ class _AnimalWeightTile extends StatelessWidget {
                 title: Row(
                   children: [
                     GameSprite(
-                      customSprite:
-                          customSprites.getDisplaySprite(animal.id),
+                      customSprite: customSprites.getDisplaySprite(animal.id),
                       animalId: animal.id,
                       spritePath: animal.spritePath,
                       fallbackEmoji: animal.emoji,

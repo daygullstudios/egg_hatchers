@@ -15,6 +15,7 @@ import '../utils/snackbar_utils.dart';
 import '../widgets/builtin_sprite_preview_sheet.dart';
 import '../widgets/custom_sprite_preview.dart';
 import '../widgets/game_background.dart';
+import '../widgets/custom_content_action.dart';
 import '../widgets/game_primary_navigation.dart';
 import '../widgets/phone_width_layout.dart';
 import 'sprite_editor_screen.dart';
@@ -95,6 +96,7 @@ class _CustomSpritesScreenState extends State<CustomSpritesScreen> {
     BuildContext context,
     BackgroundTheme theme,
   ) async {
+    final session = customSprites.sessionToken;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -111,7 +113,8 @@ class _CustomSpritesScreenState extends State<CustomSpritesScreen> {
         ),
         content: Text(
           'This will delete all custom animal sprites and restore the '
-          'original sprites. This cannot be undone.',
+          'original sprites. This cannot be undone. Earned coins and '
+          'rating-claim history are kept; resetting art does not award them again.',
           style: TextStyle(
             color: theme.cardTextSecondaryColor,
             fontSize: 14,
@@ -142,9 +145,13 @@ class _CustomSpritesScreenState extends State<CustomSpritesScreen> {
 
     if (confirmed != true || !context.mounted) return;
 
-    await customSprites.resetAllCustomSprites();
-    await spriteRating.clearAllClaims();
-    if (!context.mounted) return;
+    final saved = await runCustomContentAction(
+      context,
+      title: 'Resetting custom animals',
+      action: () =>
+          customSprites.resetAllCustomSprites(expectedSession: session),
+    );
+    if (!saved || !context.mounted) return;
 
     showGameSnackBar(
       context,

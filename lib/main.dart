@@ -620,6 +620,13 @@ class _NestariumAppState extends State<NestariumApp>
       _referenceOverlay.isInitialized;
 
   Future<void> _stageImport(SaveImportPreview preview) async {
+    if (hasOpenCustomDrafts ||
+        _customEggs.isSaving ||
+        _customSprites.isSaving) {
+      throw const SaveImportNotStartedException(
+        'Finish saving or explicitly discard your custom draft before importing.',
+      );
+    }
     if (_deviceSettings.hasUnsavedChanges || _deviceSettings.isSaving) {
       throw const SaveImportNotStartedException(
         'Finish saving your settings before importing. Use Settings unsaved to retry.',

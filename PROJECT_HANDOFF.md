@@ -2,7 +2,60 @@
 
 Updated: 2026-09-07
 
-## Checked device settings and session recovery — current implementation checkpoint
+## Custom-editor draft recovery and checked content — current implementation checkpoint
+
+Custom egg/sprite save, delete and reset now check backend acceptance and fresh
+read-back before publishing saved lists or success feedback. The installed
+preference backend, account keys and existing empty-player/migration boundaries
+are retained. Per-key queues and supported-browser leases reject changed loaded
+baselines. An uncertain already-applied write is checked before another mutation;
+egg edits merge against that checked copy without dropping another custom egg,
+unknown fields or malformed list entries. Unreadable whole egg documents cannot
+be replaced by an empty parsed list; wrong stored types still enter the existing
+player-load recovery. Legacy copying and its completion marker are checked too.
+
+Editors retain drawings/form text after failures, with scrollable Retry / Return
+to screen guidance. An eight-second watch explains a slow operation; it does not
+cancel or duplicate the actual write. Header and system Back share an explicit
+discard confirmation, including Back immediately after typing. Draft exit warnings
+compose with settings/progress warnings. Quest navigation notices wait while an
+editor is open; import preflight rejects open unsaved drafts/in-flight custom
+writes before freezing runtime writers. Operations capture their original player
+namespace; stale editor tokens and late account-switch results cannot publish into
+the next player. Sprite reset now asks before removing a saved drawing or draft.
+
+Bulk sprite reset publishes each verified removal and stops with a partial-result
+message on failure. Retrying checks remaining entries, not an atomic rollback.
+Resetting art no longer clears rating-claim history: already-earned rewards are
+kept and cannot be claimed again merely by resetting/recreating the same art.
+The separate rating/reward writer is not yet a verified transaction.
+
+Validation: clean Flutter 3.47.2 analysis (47.6s), full **784-test** Flutter suite,
+including **27 custom-content failure/UX tests**, and **twelve isolated Chrome
+tests** pass. Coverage includes rejected/thrown/uncertain/lying writes and removals,
+read outages, stale copies, partial reset, retained text/drawing, rapid Back,
+account switching, legacy adoption boundaries and unknown-field preservation.
+Recovery controls fit 320x360, 390x844 and 1440x900 at 200% text. Browser tests use
+the actual installed storage backend and verify no duplicate uncertain retry.
+Release web build passes (61.8s; Wasm dry run); bundle SHA-256
+`b8dfcc170226d19da5af27482dac4ca832a6d69e9438f99792bfa595b3ccaac9`.
+The required three playtest tests and Wrangler 4.129.0 dry run pass after the
+release build. Brand audit: **729 classified**, none unclassified. Deployment
+and live acceptance will be recorded in the following receipt.
+Failure injection uses disposable mocks/browser storage only.
+Drafts are held in memory, not durable autosaves: force-close, refresh, eviction
+or hardware failure can still lose them. An external-edit conflict is blocked,
+not silently merged or overwritten. Old builds do not honor the new leases.
+
+**Next:** remaining auxiliary writers (sprite-rating claims/reference unlocks
+and preference-like metadata), then checked player-directory/profile writes and
+removal. Keep failure recovery understandable before further infrastructure work.
+Representative child/teen/adult usability, native full-disk/offline/device QA,
+child-compatible identity, policy/provider readiness, trusted cloud erasure and
+the coordinated protected new-hostname cutover remain open. No public hostname,
+Firebase/provider/credentials, billing/mail, store or sibling-app changes.
+
+## Checked device settings and session recovery — preceding implementation checkpoint
 
 All ten device settings now check backend acceptance and fresh read-back using
 the installed preference backend, not its optimistic cache. The app shares one

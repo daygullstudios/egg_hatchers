@@ -13,6 +13,7 @@ import '../theme/game_theme.dart';
 import '../utils/format_utils.dart';
 import '../utils/snackbar_utils.dart';
 import '../widgets/game_background.dart';
+import '../widgets/custom_content_action.dart';
 import '../widgets/game_sprite.dart';
 import '../widgets/phone_width_layout.dart';
 import 'custom_egg_editor_screen.dart';
@@ -83,6 +84,7 @@ class _CustomEggsScreenState extends State<CustomEggsScreen> {
     BackgroundTheme theme,
     CustomEgg egg,
   ) async {
+    final session = customEggs.sessionToken;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -125,8 +127,12 @@ class _CustomEggsScreenState extends State<CustomEggsScreen> {
 
     if (confirmed != true || !context.mounted) return;
 
-    await customEggs.deleteEgg(egg.id);
-    if (!context.mounted) return;
+    final saved = await runCustomContentAction(
+      context,
+      title: 'Deleting custom egg',
+      action: () => customEggs.deleteEgg(egg.id, expectedSession: session),
+    );
+    if (!saved || !context.mounted) return;
 
     showGameSnackBar(
       context,

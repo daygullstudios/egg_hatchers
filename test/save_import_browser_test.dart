@@ -21,9 +21,58 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_web/shared_preferences_web.dart';
 import 'package:web/web.dart' as web;
 import 'helpers/save_import_fixture.dart';
+import 'package:egg_hatchers/models/custom_egg.dart';
+import 'package:egg_hatchers/services/custom_egg_service.dart';
+import 'package:egg_hatchers/services/custom_content_store.dart';
 
 void main() {
   SharedPreferencesPlugin.registerWith(null);
+  test(
+    'browser custom eggs verify uncertain writes and reject external changes',
+    () async {
+      const key = 'customEggs.account.mock-custom-browser';
+      final storage = _UncertainCheckpointStorage({key});
+      final eggs = CustomEggService(storage: storage);
+      const egg = CustomEgg(
+        id: 'sample',
+        name: 'Sample',
+        emoji: '⭐',
+        cost: 1000,
+        selectedAnimalIds: ['chicken'],
+      );
+      try {
+        await eggs.initialize(accountId: 'mock-custom-browser');
+        storage.uncertain = true;
+        await expectLater(
+          eggs.saveEgg(egg),
+          throwsA(isA<CustomContentException>()),
+        );
+        expect(eggs.allEggs, isEmpty);
+        final attempts = storage.writes;
+        storage.uncertain = false;
+        await eggs.saveEgg(egg);
+        expect(storage.writes, attempts);
+        final outside = CustomEgg.listToJsonString([
+          egg.copyWith(name: 'Other tab'),
+        ]);
+        web.window.localStorage.setItem('flutter.$key', jsonEncode(outside));
+        await expectLater(
+          eggs.deleteEgg(egg.id),
+          throwsA(isA<CustomContentException>()),
+        );
+        expect((await storage.readAll())[key], outside);
+        final owner = Object();
+        setDraftExitGuard(owner, true);
+        setUnsavedExitGuard(false);
+        expect(hasOpenCustomDrafts, true);
+        setDraftExitGuard(owner, false);
+        expect(hasOpenCustomDrafts, false);
+      } finally {
+        eggs.dispose();
+        await storage.remove(key);
+      }
+    },
+  );
   test(
     'browser settings ignore optimistic cache and retry uncertain writes without repeating them',
     () async {

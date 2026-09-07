@@ -88,10 +88,16 @@ Automated passes are necessary but are not proof of player comprehension.
    action across routes without pausing gameplay. Retry verifies uncertain writes
    without repeating them; mute does not wait for storage. Pending settings block
    normal save transfer before writer pause/staging, with safe cancellation.
-   **Next: custom-editor draft recovery and checked custom-data writes.**
-   Custom egg/sprite editors need retained drafts, and bulk resets need truthful
-   partial-failure handling before any success message. Auxiliary preferences and
-   profile/directory deletion remain separate acceptance work.
+   Custom egg/sprite writes and removals now verify backend acceptance/read-back
+   before publishing. Editors retain drafts after failures, offer non-overlapping
+   retry and ask before discarding; reset confirms its scope and reports partial
+   results. Egg records preserve unknown fields and the new-player empty namespace;
+   account tokens prevent stale editors writing to the next player. Art reset keeps
+   rating-claim history. Draft exit warnings compose with progress/settings warnings;
+   import preflight and quest notices respect the active editor. These are memory
+   drafts, not durable autosaves or automatic conflict replacement.
+   **Next: auxiliary writers**, especially rating claims/reference unlocks and
+   preference-like metadata, followed by checked profile/directory writes/removal.
    Native recovery and representative human acceptance
    remain open. `PROJECT_HANDOFF.md` owns exact validation/live evidence. Trusted cloud erasure
    and child-compatible identity remain separate, deliberately authorized work.

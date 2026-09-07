@@ -9,13 +9,13 @@ import '../services/game_service.dart';
 import '../services/sprite_rating_service.dart';
 import '../services/sprite_reference_overlay_service.dart';
 import '../theme/game_theme.dart';
-import '../navigation/app_page_route.dart';
 import '../utils/format_utils.dart';
 import '../utils/snackbar_utils.dart';
 import '../utils/sprite_rating_logic.dart';
 import '../utils/ui_sound.dart';
 import '../widgets/custom_sprite_preview.dart';
 import '../widgets/game_background.dart';
+import '../widgets/custom_content_action.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/pixel_sprite.dart';
 
@@ -65,6 +65,7 @@ class _SpriteEditorScreenState extends State<SpriteEditorScreen> {
 
   late CustomSpriteData _data;
   late int _canvasSize;
+  late final Object _session;
   int? _selectedColor = SpritePalette.colors.first;
   SpriteEditorTool _tool = SpriteEditorTool.pencil;
   int _brushSize = 1;
@@ -86,6 +87,14 @@ class _SpriteEditorScreenState extends State<SpriteEditorScreen> {
         widget.customSprites.getSprite(widget.animal.id) ??
         CustomSpriteData.empty();
     _canvasSize = _data.size;
+    _session = widget.customSprites.sessionToken;
+    widget.game.holdEditorQuestNotifications(this);
+  }
+
+  @override
+  void dispose() {
+    widget.game.releaseEditorQuestNotifications(this);
+    super.dispose();
   }
 
   int get _maxCanvasSize => widget.game.maxCustomSpriteGridSize;
@@ -356,8 +365,17 @@ class _SpriteEditorScreenState extends State<SpriteEditorScreen> {
   }
 
   Future<void> _save() async {
-    await widget.customSprites.saveSprite(widget.animal.id, _data);
-    if (!mounted) return;
+    final snapshot = _data.copyWith();
+    final saved = await runCustomContentAction(
+      context,
+      title: 'Saving custom animal',
+      action: () => widget.customSprites.saveSprite(
+        widget.animal.id,
+        snapshot,
+        expectedSession: _session,
+      ),
+    );
+    if (!saved || !mounted) return;
 
     final reference = SpriteReferenceData.referenceFor(widget.animal.id);
     if (reference != null && _data.hasVisiblePixels) {
@@ -384,8 +402,39 @@ class _SpriteEditorScreenState extends State<SpriteEditorScreen> {
   }
 
   Future<void> _reset() async {
-    await widget.customSprites.resetSprite(widget.animal.id);
-    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => AlertDialog(
+        scrollable: true,
+        title: const Text('Restore original animal?'),
+        content: const Text(
+          'This removes the saved custom drawing and the current draft. '
+          'Earned coins and rating-claim history are kept.',
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.pop(dialog, false),
+            icon: const Icon(Icons.close_rounded),
+            label: const Text('Cancel'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(dialog, true),
+            icon: const Icon(Icons.restore_rounded),
+            label: const Text('Restore original'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final saved = await runCustomContentAction(
+      context,
+      title: 'Restoring original animal',
+      action: () => widget.customSprites.resetSprite(
+        widget.animal.id,
+        expectedSession: _session,
+      ),
+    );
+    if (!saved || !mounted) return;
     _clearHistory();
     setState(() {
       _data = _emptyCanvas();
@@ -431,8 +480,9 @@ class _SpriteEditorScreenState extends State<SpriteEditorScreen> {
   Widget build(BuildContext context) {
     final theme = widget.theme;
 
-    return ReturnToCustomSpritesPopScope(
-      theme: theme,
+    return CustomDraftScope(
+      dirty: _hasUnsavedChanges,
+      isDirty: () => _hasUnsavedChanges,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: PhoneWidthAppBar.widget(
@@ -443,10 +493,7 @@ class _SpriteEditorScreenState extends State<SpriteEditorScreen> {
           backgroundColor: theme.appBarColor,
           foregroundColor: Colors.white,
           automaticallyImplyLeading: false,
-          leading: ReturnToCustomSpritesBackButton(
-            theme: theme,
-            color: Colors.white,
-          ),
+          leading: const CustomDraftBackButton(),
         ),
         body: ListenableBuilder(
           listenable: Listenable.merge([
