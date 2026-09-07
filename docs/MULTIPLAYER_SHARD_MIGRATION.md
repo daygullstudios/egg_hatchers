@@ -1,8 +1,8 @@
 # Nestarium multiplayer shard and roster migration
 
 Status: protected routing, private per-player migration RPC, central moderation
-retention and isolated empty two-shard canary implemented; public activation
-blocked.
+retention and authenticated two-shard canary capacity acceptance complete;
+public activation blocked.
 Updated: 2026-09-07.
 
 ## Compatibility boundary
@@ -123,9 +123,23 @@ Canary Worker version `f79e6564-f3cd-4db2-8477-2c103e257b59` owns a dedicated
 custom domain and a separate Durable Object namespace. Both `canary-v1-shard-00` and
 `canary-v1-shard-01` report active, empty and drained; anonymous health requests
 receive Access 302. No source data was exported or imported and no migration
-mode changed. The following remain prerequisites:
+mode changed.
 
-- authenticated multi-client canary behavior, saturation and measured latency/cost;
+Authenticated acceptance on September 7 used two real Flutter browser clients
+plus a bounded in-browser harness. Both real clients connected, matched and
+entered the same server-owned battle on shard 0. With those two sockets already
+present, shard 0 admitted 30 of 33 same-shard harness attempts (32 total), formed
+16 total matches and rejected the remainder. Empty shard 1 admitted 32, formed
+16 matches and rejected its 33rd. Burst open latency measured p50/p95/max at
+1,429/4,532/4,670 ms for shard 0 and 1,425/4,134/4,493 ms for shard 1. All 73
+disposable Auth identities were deleted, the project returned to its two pre-test
+accounts, the reconnect grace expired, and both canary shards returned to active,
+empty and drained. Current Cloudflare pricing puts this 68-upgrade, low-message
+run well inside the account-level monthly Worker and Durable Object inclusions;
+it is not a public traffic or invoice forecast.
+
+The following remain prerequisites:
+
 - representative human/device/network acceptance;
 - reviewed family consent/decision authority and public hostname authorization.
 

@@ -172,15 +172,17 @@ remote service binding and requires an exact generation confirmation for writes.
 Its live status-only acceptance changed no data. The isolated Access-protected
 two-shard canary is now deployed on a dedicated non-public hostname; both empty
 shards pass private status acceptance and anonymous requests are denied by
-Access. Authenticated multi-client/saturation/latency acceptance, the reviewed
-family consent/decision process and representative
-human/device acceptance remain open. See `MULTIPLAYER_SHARD_MIGRATION.md` and
+Access. Authenticated multi-client behavior and 32-session per-shard saturation
+now pass on the live canary, with measured burst WebSocket-open p95 below 4.6
+seconds and full cleanup back to two pre-test Firebase accounts. The reviewed
+family consent/decision process and representative human/device/network acceptance
+remain open. See `MULTIPLAYER_SHARD_MIGRATION.md` and
 `PROJECT_HANDOFF.md` for exact versions/evidence.
 
 The final two-unit engineering burn-down is complete as of September 7: central
 safety/capability authority, then consolidated public-origin readiness and
 accurate policy copy. No further implementation unit is authorized before the
-remaining external review, provider, canary-load, representative device/person
+remaining external review, provider, representative device/person/network
 and final-publication gates. This does not mark the four delivery batches or six
 release milestones complete; it records the requested stopping point and keeps
 open acceptance work from becoming an indefinite automatic coding backlog.

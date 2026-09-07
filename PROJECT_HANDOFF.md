@@ -36,9 +36,9 @@ router/interlock, migration design, private per-player migration RPC, encrypted
 local operator and isolated Access-protected two-shard canary are also complete.
 Central report retention and a D1-backed family-capability issuance/revocation
 boundary are now implemented without enabling public capabilities. Authenticated
-canary load/latency acceptance, the actual reviewed consent/guardian decision,
-and representative human/device acceptance remain open. Do not call either
-batch complete.
+two-client and bounded per-shard canary load/latency acceptance now pass. The
+actual reviewed consent/guardian decision and representative human/device/network
+acceptance remain open. Do not call either batch complete.
 
 The capability/capacity tail now supports `trusted_registry` for a future public
 Worker. It reads a versioned, time-limited server-side D1 decision keyed only by
@@ -99,6 +99,32 @@ DNS resolves, anonymous `/ws/health` receives Access 302, and private read-only
 operator checks show both `canary-v1-shard-00` and `canary-v1-shard-01` active,
 empty and drained. It has its own Worker/Durable Object namespace and cannot
 read `protected-v1`; no player export/import or migration-mode mutation ran.
+
+Live authenticated canary acceptance on 2026-09-07 used a temporary, undeployed
+Flutter build pointed at the isolated hostname. Two distinct local browser origins
+restored separate anonymous Firebase identities, connected through the existing
+Cloudflare Access tester session, matched into one server-owned battle and appeared
+only on `canary-v1-shard-00`. A bounded browser harness then created tokens only in
+memory and targeted 33 disposable identities to each deterministic shard. Shard 0
+already contained the two real clients, so it admitted 30 harness sockets for 32
+total, formed 15 harness matches plus the existing match, and rejected the next
+three. Shard 1 admitted 32, formed 16 matches and rejected the 33rd. Aggregate
+WebSocket-open latency was p50 1,429 ms / p95 4,532 ms / max 4,670 ms on shard 0
+and p50 1,425 ms / p95 4,134 ms / max 4,493 ms on shard 1 during the simultaneous
+burst. All 71 harness identities and both Flutter app-test identities were deleted;
+an Auth export confirmed the project returned to its two pre-test accounts. After
+the 30-second reconnect window, private status showed both shards active, empty
+and drained. The temporary harness and sensitive export were removed.
+
+This run used 68 WebSocket upgrade attempts plus a bounded number of messages.
+Under Cloudflare's current Standard pricing, Worker WebSocket upgrades count as
+requests while routed messages do not; Durable Objects separately include one
+million monthly requests and bill WebSocket messages at their documented ratio.
+The run is far below the shared account's included allocations, so its modeled
+incremental charge is zero if the account has not already exhausted those account-
+wide inclusions. This is a bounded cost model, not an invoice or representative
+public-traffic forecast. The Worker/canary versions, Access policy, routes, D1,
+player authority and migration modes were unchanged.
 
 The current settlement checkpoint persists one Durable Object receipt per UID
 and match, server-owned online rating, fixed hosted rewards and an explicit
@@ -293,8 +319,8 @@ capability registry, then passed its exact allowlisted build, 11 public-site tes
 Wrangler dry run, and Chrome plus isolated-browser semantic review. The guarded
 release check correctly still refuses publication. There is no remaining approved
 engineering unit before the external gates: reviewed family identity/consent and
-final policy, Google/provider cross-origin recovery, authenticated canary load/
-latency, representative people/devices/networks, and owner public/store release
+final policy, Google/provider cross-origin recovery, representative people/devices/
+networks, and owner public/store release
 authorization. These are acceptance or decision gates, not grounds to invent
 another implementation batch or move current player data.
 The workplan records four bounded multiplayer packages: authenticated hosting;
