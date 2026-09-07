@@ -40,8 +40,18 @@ the actual installed storage backend and verify no duplicate uncertain retry.
 Release web build passes (61.8s; Wasm dry run); bundle SHA-256
 `b8dfcc170226d19da5af27482dac4ca832a6d69e9438f99792bfa595b3ccaac9`.
 The required three playtest tests and Wrangler 4.129.0 dry run pass after the
-release build. Brand audit: **729 classified**, none unclassified. Deployment
-and live acceptance will be recorded in the following receipt.
+release build. Brand audit: **729 classified**, none unclassified. Implementation
+**`92ff02f`** is committed/pushed on main. Protected playtest deployment is
+**100% version `96cb9eba-925e-46fa-9bbd-74d9873c1e6e`**, created
+`2026-09-07T07:33:37.927Z`, on the unchanged protected custom-domain route.
+Unauthenticated requests remain **302 to Cloudflare Access**. External Chrome
+refresh preserves two normal chickens, one golden chicken and +4/sec income
+(508,674 coins first Hatchery read, increasing), Music off / SFX on,
+Hatchery Default / Classic and unresolved **Choose progress / Compare saves**.
+The custom list still shows 0/54 customized. The untouched Shadow Phoenix editor
+opens the new readable portrait reset confirmation; Cancel preserves it and Back
+returns to the persistent custom list. No art was drawn/saved/reset, no reward
+was claimed and no real save was selected. The tab is returned to Hatchery.
 Failure injection uses disposable mocks/browser storage only.
 Drafts are held in memory, not durable autosaves: force-close, refresh, eviction
 or hardware failure can still lose them. An external-edit conflict is blocked,
