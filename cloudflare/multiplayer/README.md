@@ -73,6 +73,14 @@ the router refuses to shard `protected-v1`. This does not migrate or copy roster
 data. The required drain, manifest, export/import, canary and rollback sequence
 is specified in `../../docs/MULTIPLAYER_SHARD_MIGRATION.md`.
 
+Private Durable Object RPC now supports generation status/mode transitions,
+paginated player UID listing, checked per-player export and transactional,
+idempotent import. A generation must move through `draining` and reach zero open
+sockets/battles/trades before it can become `read_only`; new sessions are refused
+during maintenance. These methods are not exposed by the public Worker handler.
+Operator manifest/artifact orchestration and a separate protected multi-shard
+canary are still required before any migration can run.
+
 ## Verify
 
 ```powershell

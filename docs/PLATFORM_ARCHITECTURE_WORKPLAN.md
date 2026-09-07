@@ -158,10 +158,12 @@ load behavior. A deterministic versioned shard router is now implemented with
 a fail-closed activation interlock: the live `protected-v1` compatibility pool
 still maps to its exact existing Durable Object, while any future multi-shard
 topology requires a new immutable generation and an explicit migration-ready
-mode. No roster data or public route has moved. Export/import, drain/read-only
-controls and a protected multi-shard canary remain before activation; reviewed
-family claim issuance/revocation and representative human/device acceptance
-also remain open. See `MULTIPLAYER_SHARD_MIGRATION.md` and
+mode. Private Durable Object RPC now supplies explicit drain/read-only controls,
+paginated per-player export and transactional idempotent import with SHA-256
+checksums and manifest receipts. No roster data or public route has moved. A
+private operator manifest/artifact runner and protected multi-shard canary remain
+before activation; reviewed family claim issuance/revocation and representative
+human/device acceptance also remain open. See `MULTIPLAYER_SHARD_MIGRATION.md` and
 `PROJECT_HANDOFF.md` for exact versions/evidence.
 
 Web lifecycle acceptance now includes a versioned selective resume coordinator:

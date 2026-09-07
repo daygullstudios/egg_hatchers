@@ -1,6 +1,7 @@
 # Nestarium multiplayer shard and roster migration
 
-Status: protected routing foundation implemented; public activation blocked.
+Status: protected routing and private per-player migration RPC implemented;
+public activation blocked.
 Updated: 2026-09-07.
 
 ## Compatibility boundary
@@ -59,6 +60,13 @@ The manifest must not contain Firebase tokens, email addresses, display names,
 free text, credentials or private keys. UIDs belong only in the private
 operations record, never public deployment logs or screenshots.
 
+The Durable Object now exposes private RPC for migration mode/status, paginated
+authority UID listing, per-player export and transactional import. Export/import
+is accepted only after the generation reaches drained `read_only` mode. Each
+bundle carries a SHA-256 checksum; a `(manifest ID, UID)` receipt makes the same
+import idempotent and rejects a conflicting rerun. The public Worker handler does
+not expose these operations as HTTP routes.
+
 ## Cutover sequence
 
 1. **Create, do not repurpose, a generation.** Select a new non-public name such
@@ -95,11 +103,11 @@ operations record, never public deployment logs or screenshots.
 
 ## Required implementation before activation
 
-The deterministic router and activation interlock are complete. The following
-are deliberately not implemented by this foundation and remain prerequisites:
+The deterministic router, activation interlock, queue drain/read-only control,
+paginated export and idempotent checked import are complete. The following are
+deliberately not implemented and remain prerequisites:
 
-- private paginated export/import RPC and manifest/checksum tooling;
-- queue drain/read-only generation controls;
+- private operator manifest orchestration and encrypted artifact handling;
 - central moderation-report destination and retention procedure;
 - protected multi-shard canary configuration and measured latency/cost;
 - representative human/device/network acceptance;

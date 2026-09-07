@@ -26,6 +26,21 @@ import {
   matchmakingShardCount,
   routeMatchmakingPool,
 } from "./pool_routing";
+import {
+  assertMigrationIdentifier,
+  assertPlayerAuthorityExport,
+  playerAuthorityChecksum,
+  type ArenaAccountMigrationRow,
+  type GenerationMode,
+  type InventoryAccountMigrationRow,
+  type InventoryGrantMigrationRow,
+  type InventoryMigrationRow,
+  type PlayerAuthorityExport,
+  type PlayerAuthorityImportResult,
+  type PlayerBlockMigrationRow,
+  type SettlementMigrationRow,
+  type TradeReceiptMigrationRow,
+} from "./migration";
 
 type SocketAttachment = {
   uid: string;
@@ -165,6 +180,14 @@ const reportRetentionMs = 180 * 24 * 60 * 60 * 1000;
 // promise. Production must use an approved sharding/data-migration plan rather
 // than silently pushing the single compatibility pool beyond this boundary.
 const protectedPoolSessionLimit = 32;
+
+export type GenerationMigrationStatus = {
+  mode: GenerationMode;
+  activeSockets: number;
+  activeBattles: number;
+  activeTrades: number;
+  drained: boolean;
+};
 
 export default {
   async fetch(request, env): Promise<Response> {
@@ -367,7 +390,24 @@ export class MatchmakingPool extends DurableObject<Env> {
       );
       CREATE INDEX IF NOT EXISTS player_reports_daily
         ON player_reports(reporter_uid, report_day, created_at);
+      CREATE TABLE IF NOT EXISTS generation_control (
+        singleton INTEGER PRIMARY KEY CHECK(singleton = 1),
+        mode TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS migration_imports (
+        manifest_id TEXT NOT NULL,
+        uid TEXT NOT NULL,
+        source_generation TEXT NOT NULL,
+        checksum TEXT NOT NULL,
+        imported_at INTEGER NOT NULL,
+        PRIMARY KEY(manifest_id, uid)
+      );
     `);
+    this.ctx.storage.sql.exec(
+      "INSERT OR IGNORE INTO generation_control (singleton, mode, updated_at) VALUES (1, 'active', ?)",
+      Date.now(),
+    );
     this.ensureColumn("settlements", "roster_reward_json", "TEXT");
   }
 
@@ -388,6 +428,12 @@ export class MatchmakingPool extends DurableObject<Env> {
     }
     if (!capabilities.onlineBattle && !capabilities.trading) {
       return new Response("Forbidden", { status: 403 });
+    }
+    if (this.generationMode() !== "active") {
+      return new Response("Protected multiplayer is draining for maintenance", {
+        status: 503,
+        headers: { "Cache-Control": "no-store", "Retry-After": "10" },
+      });
     }
 
     const activeSockets = this.ctx
@@ -471,6 +517,16 @@ export class MatchmakingPool extends DurableObject<Env> {
       data = JSON.parse(message) as Record<string, unknown>;
     } catch {
       sendError(socket, "Invalid multiplayer message.");
+      return;
+    }
+    if (
+      this.generationMode() !== "active" &&
+      (data.type === "queue" || data.type === "queueTrade")
+    ) {
+      sendError(
+        socket,
+        "Protected multiplayer is draining for maintenance. Try again shortly.",
+      );
       return;
     }
     switch (data.type) {
@@ -1864,6 +1920,349 @@ export class MatchmakingPool extends DurableObject<Env> {
         );
       }
     }
+  }
+
+  getGenerationMigrationStatus(): GenerationMigrationStatus {
+    const activeSockets = this.ctx
+      .getWebSockets()
+      .filter((socket) => socket.readyState === WebSocket.OPEN).length;
+    const activeBattles = this.rowCount(
+      "SELECT COUNT(*) AS count FROM battles WHERE status IN ('waiting', 'active', 'reconnecting')",
+    );
+    const activeTrades = this.rowCount(
+      "SELECT COUNT(*) AS count FROM trades WHERE status = 'active'",
+    );
+    return {
+      mode: this.generationMode(),
+      activeSockets,
+      activeBattles,
+      activeTrades,
+      drained:
+        activeSockets === 0 && activeBattles === 0 && activeTrades === 0,
+    };
+  }
+
+  setGenerationMigrationMode(mode: GenerationMode): GenerationMigrationStatus {
+    if (mode !== "active" && mode !== "draining" && mode !== "read_only") {
+      throw new Error("invalid generation migration mode");
+    }
+    const current = this.generationMode();
+    if (current === mode) return this.getGenerationMigrationStatus();
+    if (current === "active" && mode === "read_only") {
+      throw new Error("the generation must enter draining mode first");
+    }
+    if (current === "read_only" && mode === "draining") {
+      throw new Error("a read-only generation cannot resume draining");
+    }
+
+    if (mode === "draining" || mode === "read_only") {
+      this.closeIdleSocketsForMigration();
+    }
+    if (mode === "read_only") {
+      const status = this.getGenerationMigrationStatus();
+      if (!status.drained) {
+        throw new Error("the generation still has active multiplayer work");
+      }
+    }
+    this.ctx.storage.sql.exec(
+      "UPDATE generation_control SET mode = ?, updated_at = ? WHERE singleton = 1",
+      mode,
+      Date.now(),
+    );
+    return this.getGenerationMigrationStatus();
+  }
+
+  async exportPlayerAuthority(
+    uid: string,
+    sourceGeneration: string,
+  ): Promise<PlayerAuthorityExport> {
+    assertMigrationIdentifier(uid, "migration uid");
+    assertMigrationIdentifier(sourceGeneration, "source generation", 80);
+    const status = this.getGenerationMigrationStatus();
+    if (status.mode !== "read_only" || !status.drained) {
+      throw new Error("player authority export requires a drained read-only generation");
+    }
+
+    const arenaAccount = this.firstRow<ArenaAccountMigrationRow>(
+      "SELECT uid, rating, win_streak, wins, losses, coins_earned, tokens_earned, updated_at FROM arena_accounts WHERE uid = ?",
+      uid,
+    );
+    const inventoryAccount = this.firstRow<InventoryAccountMigrationRow>(
+      "SELECT uid, revision, created_at, updated_at FROM online_inventory_accounts WHERE uid = ?",
+      uid,
+    );
+    const unsigned = {
+      schemaVersion: 1 as const,
+      sourceGeneration,
+      uid,
+      payload: {
+        arenaAccount: arenaAccount ?? null,
+        inventoryAccount: inventoryAccount ?? null,
+        inventory: [
+          ...this.ctx.storage.sql.exec<InventoryMigrationRow>(
+            "SELECT uid, item_key, animal_id, mutation_id, level, quantity, updated_at FROM online_inventory WHERE uid = ? ORDER BY item_key",
+            uid,
+          ),
+        ],
+        grants: [
+          ...this.ctx.storage.sql.exec<InventoryGrantMigrationRow>(
+            "SELECT grant_id, uid, match_id, grant_key, item_json, created_at FROM online_inventory_grants WHERE uid = ? ORDER BY grant_id",
+            uid,
+          ),
+        ],
+        pendingSettlements: [
+          ...this.ctx.storage.sql.exec<SettlementMigrationRow>(
+            "SELECT receipt_id, match_id, uid, won, rating_change, coins, battle_tokens, server_rating, roster_reward_json, acknowledged, created_at FROM settlements WHERE uid = ? AND acknowledged = 0 ORDER BY receipt_id",
+            uid,
+          ),
+        ],
+        pendingTradeReceipts: [
+          ...this.ctx.storage.sql.exec<TradeReceiptMigrationRow>(
+            "SELECT receipt_id, trade_id, uid, sent_json, received_json, acknowledged, created_at FROM trade_receipts WHERE uid = ? AND acknowledged = 0 ORDER BY receipt_id",
+            uid,
+          ),
+        ],
+        blocks: [
+          ...this.ctx.storage.sql.exec<PlayerBlockMigrationRow>(
+            "SELECT blocker_uid, blocked_uid, context_type, context_id, created_at FROM player_blocks WHERE blocker_uid = ? OR blocked_uid = ? ORDER BY blocker_uid, blocked_uid",
+            uid,
+            uid,
+          ),
+        ],
+      },
+    };
+    return {
+      ...unsigned,
+      checksum: await playerAuthorityChecksum(unsigned),
+    };
+  }
+
+  listPlayerAuthorityUids(
+    afterUid = "",
+    requestedLimit = 100,
+  ): { uids: string[]; nextCursor: string | null } {
+    const status = this.getGenerationMigrationStatus();
+    if (status.mode !== "read_only" || !status.drained) {
+      throw new Error("player authority listing requires a drained read-only generation");
+    }
+    if (afterUid) assertMigrationIdentifier(afterUid, "migration cursor");
+    if (
+      !Number.isInteger(requestedLimit) ||
+      requestedLimit < 1 ||
+      requestedLimit > 500
+    ) {
+      throw new Error("invalid player authority page size");
+    }
+    const queries = [
+      "SELECT DISTINCT uid FROM arena_accounts WHERE uid > ? ORDER BY uid LIMIT ?",
+      "SELECT DISTINCT uid FROM online_inventory_accounts WHERE uid > ? ORDER BY uid LIMIT ?",
+      "SELECT DISTINCT uid FROM online_inventory WHERE uid > ? ORDER BY uid LIMIT ?",
+      "SELECT DISTINCT uid FROM online_inventory_grants WHERE uid > ? ORDER BY uid LIMIT ?",
+      "SELECT DISTINCT uid FROM settlements WHERE uid > ? ORDER BY uid LIMIT ?",
+      "SELECT DISTINCT uid FROM trade_receipts WHERE uid > ? ORDER BY uid LIMIT ?",
+      "SELECT DISTINCT blocker_uid AS uid FROM player_blocks WHERE blocker_uid > ? ORDER BY blocker_uid LIMIT ?",
+      "SELECT DISTINCT blocked_uid AS uid FROM player_blocks WHERE blocked_uid > ? ORDER BY blocked_uid LIMIT ?",
+    ];
+    const candidates = new Set<string>();
+    for (const query of queries) {
+      for (const row of this.ctx.storage.sql.exec<{ uid: string }>(
+        query,
+        afterUid,
+        requestedLimit + 1,
+      )) {
+        candidates.add(row.uid);
+      }
+    }
+    const rows = [...candidates].sort();
+    const hasMore = rows.length > requestedLimit;
+    const uids = rows.slice(0, requestedLimit);
+    return {
+      uids,
+      nextCursor: hasMore ? (uids.at(-1) ?? null) : null,
+    };
+  }
+
+  async importPlayerAuthority(
+    manifestId: string,
+    bundle: PlayerAuthorityExport,
+  ): Promise<PlayerAuthorityImportResult> {
+    assertMigrationIdentifier(manifestId, "manifest id");
+    assertPlayerAuthorityExport(bundle);
+    const status = this.getGenerationMigrationStatus();
+    if (status.mode !== "read_only" || !status.drained) {
+      throw new Error("player authority import requires a drained read-only generation");
+    }
+    const { checksum, ...unsigned } = bundle;
+    const actualChecksum = await playerAuthorityChecksum(unsigned);
+    if (checksum !== actualChecksum) {
+      throw new Error("player authority export checksum mismatch");
+    }
+
+    return this.ctx.storage.transactionSync(() => {
+      const existing = this.firstRow<{ checksum: string }>(
+        "SELECT checksum FROM migration_imports WHERE manifest_id = ? AND uid = ?",
+        manifestId,
+        bundle.uid,
+      );
+      if (existing) {
+        if (existing.checksum !== checksum) {
+          throw new Error("manifest already imported with another checksum");
+        }
+        return { uid: bundle.uid, checksum, alreadyImported: true };
+      }
+      if (this.playerHasAuthority(bundle.uid)) {
+        throw new Error("destination already contains player authority");
+      }
+
+      const payload = bundle.payload;
+      if (payload.arenaAccount) {
+        const row = payload.arenaAccount;
+        this.ctx.storage.sql.exec(
+          "INSERT INTO arena_accounts (uid, rating, win_streak, wins, losses, coins_earned, tokens_earned, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          row.uid,
+          row.rating,
+          row.win_streak,
+          row.wins,
+          row.losses,
+          row.coins_earned,
+          row.tokens_earned,
+          row.updated_at,
+        );
+      }
+      if (payload.inventoryAccount) {
+        const row = payload.inventoryAccount;
+        this.ctx.storage.sql.exec(
+          "INSERT INTO online_inventory_accounts (uid, revision, created_at, updated_at) VALUES (?, ?, ?, ?)",
+          row.uid,
+          row.revision,
+          row.created_at,
+          row.updated_at,
+        );
+      }
+      for (const row of payload.inventory) {
+        this.ctx.storage.sql.exec(
+          "INSERT INTO online_inventory (uid, item_key, animal_id, mutation_id, level, quantity, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          row.uid,
+          row.item_key,
+          row.animal_id,
+          row.mutation_id,
+          row.level,
+          row.quantity,
+          row.updated_at,
+        );
+      }
+      for (const row of payload.grants) {
+        this.ctx.storage.sql.exec(
+          "INSERT INTO online_inventory_grants (grant_id, uid, match_id, grant_key, item_json, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+          row.grant_id,
+          row.uid,
+          row.match_id,
+          row.grant_key,
+          row.item_json,
+          row.created_at,
+        );
+      }
+      for (const row of payload.pendingSettlements) {
+        this.ctx.storage.sql.exec(
+          "INSERT INTO settlements (receipt_id, match_id, uid, won, rating_change, coins, battle_tokens, server_rating, roster_reward_json, acknowledged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          row.receipt_id,
+          row.match_id,
+          row.uid,
+          row.won,
+          row.rating_change,
+          row.coins,
+          row.battle_tokens,
+          row.server_rating,
+          row.roster_reward_json,
+          row.acknowledged,
+          row.created_at,
+        );
+      }
+      for (const row of payload.pendingTradeReceipts) {
+        this.ctx.storage.sql.exec(
+          "INSERT INTO trade_receipts (receipt_id, trade_id, uid, sent_json, received_json, acknowledged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          row.receipt_id,
+          row.trade_id,
+          row.uid,
+          row.sent_json,
+          row.received_json,
+          row.acknowledged,
+          row.created_at,
+        );
+      }
+      for (const row of payload.blocks) {
+        this.ctx.storage.sql.exec(
+          "INSERT OR IGNORE INTO player_blocks (blocker_uid, blocked_uid, context_type, context_id, created_at) VALUES (?, ?, ?, ?, ?)",
+          row.blocker_uid,
+          row.blocked_uid,
+          row.context_type,
+          row.context_id,
+          row.created_at,
+        );
+      }
+      this.ctx.storage.sql.exec(
+        "INSERT INTO migration_imports (manifest_id, uid, source_generation, checksum, imported_at) VALUES (?, ?, ?, ?, ?)",
+        manifestId,
+        bundle.uid,
+        bundle.sourceGeneration,
+        checksum,
+        Date.now(),
+      );
+      return { uid: bundle.uid, checksum, alreadyImported: false };
+    });
+  }
+
+  private generationMode(): GenerationMode {
+    return this.ctx.storage.sql
+      .exec<{ mode: GenerationMode }>(
+        "SELECT mode FROM generation_control WHERE singleton = 1",
+      )
+      .one().mode;
+  }
+
+  private closeIdleSocketsForMigration(): void {
+    for (const socket of this.ctx.getWebSockets()) {
+      if (socket.readyState !== WebSocket.OPEN) continue;
+      const attachment = socket.deserializeAttachment() as
+        | SocketAttachment
+        | undefined;
+      if (attachment?.state === "matched" || attachment?.state === "trading") {
+        continue;
+      }
+      sendError(
+        socket,
+        "Protected multiplayer is draining for maintenance. Try again shortly.",
+      );
+      socket.close(1012, "Multiplayer maintenance");
+    }
+  }
+
+  private playerHasAuthority(uid: string): boolean {
+    const tables = [
+      "arena_accounts",
+      "online_inventory_accounts",
+      "online_inventory",
+      "online_inventory_grants",
+      "settlements",
+      "trade_receipts",
+    ];
+    return tables.some(
+      (table) =>
+        this.rowCount(`SELECT COUNT(*) AS count FROM ${table} WHERE uid = ?`, uid) >
+        0,
+    );
+  }
+
+  private firstRow<T extends Record<string, SqlStorageValue>>(
+    query: string,
+    ...bindings: unknown[]
+  ): T | undefined {
+    return [...this.ctx.storage.sql.exec<T>(query, ...bindings)][0];
+  }
+
+  private rowCount(query: string, ...bindings: unknown[]): number {
+    return this.ctx.storage.sql.exec<{ count: number }>(query, ...bindings).one()
+      .count;
   }
 
   private ensureColumn(table: string, column: string, type: string): void {
