@@ -51,58 +51,9 @@ PlayerState? validateTransferredValue(String key, Object value) {
     throw const FormatException('Setting type');
   }
   if (key.startsWith('egg_hatchers_player_state')) {
-    final decoded = jsonDecode(value as String) as Map<String, dynamic>;
-    final envelope = decoded.containsKey('format');
-    if (envelope &&
-        (decoded['format'] != SaveService.progressFormat ||
-            decoded['schemaVersion'] != SaveService.progressSchemaVersion ||
-            decoded['revision'] is! int ||
-            (decoded['revision'] as int) < 0)) {
-      throw const FormatException('Progress envelope');
-    }
-    final raw = envelope
-        ? decoded['playerState'] as Map<String, dynamic>
-        : decoded;
-    final state = PlayerState.fromJson(raw);
-    for (final name in [
-      'bossWins',
-      'hardPhaseWins',
-      'nightmareWins',
-      'eggMastery',
-      'questProgress',
-    ]) {
-      if (raw[name] != null && raw[name] is! Map<String, dynamic>) {
-        throw const FormatException('Progress container');
-      }
-    }
-    if (raw['dailyQuests'] != null && raw['dailyQuests'] is! List ||
-        raw['activeAutoBattle'] != null && raw['activeAutoBattle'] is! Map) {
-      throw const FormatException('Progress container');
-    }
-    if (raw['eggMastery'] case final Map mastery) {
-      if (mastery.values.any((value) => value is! Map<String, dynamic>)) {
-        throw const FormatException('Mastery entry');
-      }
-    }
-    checkTransferredShapes(raw, state.toJson());
-    for (final animal in state.ownedAnimals) {
-      if (animal.animalId.isEmpty || animal.quantity < 1 || animal.level < 1) {
-        throw const FormatException('Animal entry');
-      }
-    }
-    if (state.coins < 0 ||
-        state.lifetimeCoinsEarned < 0 ||
-        state.luckLevel < 1 ||
-        state.rebirthLevel < 0) {
-      throw const FormatException('Progress totals');
-    }
-    if (envelope &&
-        decoded.containsKey('contentFingerprint') &&
-        decoded['contentFingerprint'] !=
-            SaveService.contentFingerprint(state)) {
-      throw const FormatException('Progress checksum');
-    }
-    return state;
+    final snapshot = SaveService.decodeSnapshot(value);
+    if (snapshot == null) throw const FormatException('Progress payload');
+    return snapshot.state;
   }
   if (key == 'customEggs' || key.startsWith('customEggs.account.')) {
     final eggs = jsonDecode(value as String) as List;

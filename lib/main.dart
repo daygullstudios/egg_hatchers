@@ -27,6 +27,8 @@ import 'services/progress_sync_service.dart';
 import 'services/save_storage_lease.dart';
 import 'services/save_transfer_service.dart';
 import 'services/saved_player_directory.dart';
+import 'services/save_service.dart';
+import 'services/progress_recovery_service.dart';
 import 'widgets/save_import_bootstrap.dart';
 import 'widgets/save_import_scope.dart';
 import 'services/sprite_rating_service.dart';
@@ -101,6 +103,9 @@ class _NestariumAppState extends State<NestariumApp>
   var _importFrozen = false;
   var _checkingAccounts = false;
   AccountStartupFailure? _accountStartupFailure;
+  ProgressReadException? _progressFailure;
+  var _startingUp = false;
+  var _rootInitialized = false;
   var _playerSwitchFailed = false;
   var _accountSelectionRevision = 0;
   var _legacyMigrationPending = false;
@@ -124,65 +129,100 @@ class _NestariumAppState extends State<NestariumApp>
   }
 
   Future<void> _initialize() async {
-    if (_checkingAccounts || _importFrozen || !mounted) return;
-    _checkingAccounts = true;
+    if (_startingUp || _importFrozen || !mounted) return;
+    _startingUp = true;
     try {
-      await _accounts.initialize();
-    } catch (error) {
-      if (mounted) {
-        setState(
-          () => _accountStartupFailure = error is AccountStartupException
-              ? error.failure
-              : AccountStartupFailure.storageUnavailable,
-        );
+      _checkingAccounts = true;
+      try {
+        await _accounts.initialize();
+      } catch (error) {
+        if (mounted) {
+          setState(
+            () => _accountStartupFailure = error is AccountStartupException
+                ? error.failure
+                : AccountStartupFailure.storageUnavailable,
+          );
+        }
+        return;
+      } finally {
+        _checkingAccounts = false;
       }
-      return;
+      if (!mounted) return;
+      setState(() => _accountStartupFailure = null);
+      _loadedAccountId = _accounts.account?.id;
+      if (_loadedAccountId == null) {
+        _legacyMigrationPending = _accounts.accounts.isNotEmpty;
+        _progressFailure = null;
+        return;
+      }
+      try {
+        await _game.initialize(
+          accountId: _loadedAccountId,
+          migrateLegacySave: _loadedAccountId != null,
+        );
+        _progressFailure = null;
+        unawaited(_audio.initialize());
+        await _accountProtection.initialize(accountId: _accounts.account?.id);
+        await Future.wait([
+          _preferences.initialize(),
+          _customSprites.initialize(
+            accountId: _loadedAccountId,
+            migrateLegacyData: _loadedAccountId != null,
+          ),
+          _customEggs.initialize(
+            accountId: _loadedAccountId,
+            migrateLegacyData: _loadedAccountId != null,
+          ),
+          _spriteRating.initialize(
+            accountId: _loadedAccountId,
+            migrateLegacyData: _loadedAccountId != null,
+          ),
+          _referenceOverlay.initialize(
+            accountId: _loadedAccountId,
+            migrateLegacyData: _loadedAccountId != null,
+          ),
+        ]);
+      } catch (error) {
+        _holdProgress(
+          error is ProgressReadException
+              ? error
+              : ProgressReadException(
+                  failure: ProgressReadFailure.storageUnavailable,
+                  accountId: _loadedAccountId,
+                ),
+        );
+        return;
+      }
+      _rootInitialized = true;
+      _syncOnlinePresence();
+      if (mounted) setState(() {});
+      unawaited(_configureProgressSync());
     } finally {
-      _checkingAccounts = false;
+      _startingUp = false;
+      if (mounted) setState(() {});
     }
-    if (!mounted) return;
-    setState(() => _accountStartupFailure = null);
-    unawaited(_audio.initialize());
-    await _accountProtection.initialize(accountId: _accounts.account?.id);
-    _loadedAccountId = _accounts.account?.id;
-    _legacyMigrationPending =
-        _loadedAccountId == null && _accounts.accounts.isNotEmpty;
-    await _game.initialize(
-      accountId: _loadedAccountId,
-      migrateLegacySave: _loadedAccountId != null,
-    );
-    await Future.wait([
-      _preferences.initialize(),
-      _customSprites.initialize(
-        accountId: _loadedAccountId,
-        migrateLegacyData: _loadedAccountId != null,
-      ),
-      _customEggs.initialize(
-        accountId: _loadedAccountId,
-        migrateLegacyData: _loadedAccountId != null,
-      ),
-      _spriteRating.initialize(
-        accountId: _loadedAccountId,
-        migrateLegacyData: _loadedAccountId != null,
-      ),
-      _referenceOverlay.initialize(
-        accountId: _loadedAccountId,
-        migrateLegacyData: _loadedAccountId != null,
-      ),
-    ]);
-    _syncOnlinePresence();
-    if (mounted) setState(() {});
-    unawaited(_configureProgressSync());
   }
 
   void _onGameChanged() {
+    if (!_startingUp &&
+        !_switchingAccount &&
+        _accounts.hasAccount &&
+        _loadedAccountId != null &&
+        _game.progressReadFailure != null &&
+        !identical(_progressFailure, _game.progressReadFailure)) {
+      _holdProgress(_game.progressReadFailure!);
+    }
     _syncOnlinePresence();
     if (mounted) setState(() {});
   }
 
   void _onAccountsChanged() {
     if (_importFrozen) return;
-    if (!_game.isInitialized) {
+    if (!_rootInitialized) {
+      if (!_startingUp) {
+        _progressFailure = null;
+        unawaited(_initialize());
+      }
       if (mounted) setState(() {});
       return;
     }
@@ -196,6 +236,7 @@ class _NestariumAppState extends State<NestariumApp>
     }
     _accountSelectionRevision++;
     _playerSwitchFailed = false;
+    _progressFailure = null;
     _loadedAccountId = null;
     _configuredProgressPlayerId = null;
     // Revoke old cloud/presence context before any async transition or income
@@ -238,10 +279,8 @@ class _NestariumAppState extends State<NestariumApp>
         final revision = _accountSelectionRevision;
         bool stillSelected() =>
             mounted && revision == _accountSelectionRevision;
-        var stage = 'identity check';
+        var stage = 'local progress';
         try {
-          await _accountProtection.selectAccount(accountId);
-          if (!stillSelected()) continue;
           final migrateLegacyData =
               _legacyMigrationPending &&
               (_legacyMigrationAccountId == null ||
@@ -254,6 +293,10 @@ class _NestariumAppState extends State<NestariumApp>
             accountId,
             migrateLegacySave: migrateLegacyData,
           );
+          if (!stillSelected()) continue;
+          _progressFailure = null;
+          stage = 'identity check';
+          await _accountProtection.selectAccount(accountId);
           if (!stillSelected()) continue;
           stage = 'local customizations';
           await _loadPlayerCustomizations(accountId, migrateLegacyData);
@@ -269,6 +312,7 @@ class _NestariumAppState extends State<NestariumApp>
           // Do not expose a partly loaded player or create a replacement save.
           _loadedAccountId = null;
           _playerSwitchFailed = true;
+          if (error is ProgressReadException) _holdProgress(error);
           break;
         }
       }
@@ -281,6 +325,43 @@ class _NestariumAppState extends State<NestariumApp>
           unawaited(_configureProgressSync());
         }
       }
+    }
+  }
+
+  void _holdProgress(ProgressReadException error) {
+    // Also stop a runtime that loaded valid progress before a later startup
+    // dependency failed. Do not flush its in-memory state on this path.
+    unawaited(_game.suspendProgressWrites().catchError((Object _) {}));
+    _progressFailure = error;
+    _loadedAccountId = null;
+    _configuredProgressPlayerId = null;
+    unawaited(
+      _progressSync.selectAccount(accountId: null, protectedPlayerId: null),
+    );
+    unawaited(_onlineLobby.disconnect());
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _retryProgress() =>
+      _rootInitialized ? _switchGameAccount() : _initialize();
+
+  Future<void> _stageBackupRestore(ProgressReadException review) async {
+    if (_importFrozen ||
+        _startingUp ||
+        _switchingAccount ||
+        !identical(review, _progressFailure)) {
+      throw StateError('Review this backup again');
+    }
+    _importFrozen = true;
+    await _progressSync.pauseForSaveImport().timeout(
+      const Duration(seconds: 20),
+    );
+    await _game.suspendProgressWrites().timeout(const Duration(seconds: 20));
+    final release = await acquireSaveImportStagingLease();
+    try {
+      await ProgressRecoveryService().stage(review);
+    } finally {
+      await release();
     }
   }
 
@@ -440,6 +521,7 @@ class _NestariumAppState extends State<NestariumApp>
   }
 
   bool get _isReady =>
+      _progressFailure == null &&
       _game.isInitialized &&
       _accounts.isInitialized &&
       _accountProtection.isInitialized &&
@@ -450,15 +532,17 @@ class _NestariumAppState extends State<NestariumApp>
       _referenceOverlay.isInitialized;
 
   Future<void> _stageImport(SaveImportPreview preview) async {
+    final recoveringProgress =
+        _progressFailure != null && !_startingUp && !_switchingAccount;
     final recoveringAccounts =
         _accountStartupFailure != null &&
         !_checkingAccounts &&
         !_accounts.isInitialized &&
         !_game.isInitialized;
     if (_importFrozen ||
-        (!_isReady && !recoveringAccounts) ||
+        (!_isReady && !recoveringAccounts && !recoveringProgress) ||
         _switchingAccount ||
-        _playerSwitchFailed) {
+        (_playerSwitchFailed && !recoveringProgress)) {
       throw const SaveTransferException(
         'The game must restart before importing.',
       );
@@ -470,7 +554,13 @@ class _NestariumAppState extends State<NestariumApp>
       await _progressSync.pauseForSaveImport().timeout(
         const Duration(seconds: 20),
       );
-      await _game.pauseForSaveImport().timeout(const Duration(seconds: 20));
+      if (recoveringProgress) {
+        await _game.suspendProgressWrites().timeout(
+          const Duration(seconds: 20),
+        );
+      } else {
+        await _game.pauseForSaveImport().timeout(const Duration(seconds: 20));
+      }
     }
     unawaited(_onlineLobby.disconnect());
     final release = await acquireSaveImportStagingLease();
@@ -558,6 +648,17 @@ class _NestariumAppState extends State<NestariumApp>
               onRetry: _initialize,
               stageImport: _stageImport,
             )
+          : _progressFailure != null
+          ? SavedPlayerRecoveryScreen(
+              failure: AccountStartupFailure.storageUnavailable,
+              progressFailure: _progressFailure,
+              onRetry: _retryProgress,
+              stageImport: _stageImport,
+              stageBackup: _stageBackupRestore,
+              onChoosePlayer: _accounts.chooseAnotherAccount,
+            )
+          : _accounts.isInitialized && !_accounts.hasAccount && !_startingUp
+          ? AccountOnboardingScreen(accounts: _accounts, game: _game)
           : _playerSwitchFailed
           ? _PlayerSwitchFailureScreen(
               onRetry: () => unawaited(_switchGameAccount()),

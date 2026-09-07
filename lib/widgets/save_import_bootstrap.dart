@@ -102,6 +102,7 @@ class _SaveImportBootstrapState extends State<SaveImportBootstrap> {
     if (_ready) return widget.appBuilder();
     final imported = _result == SaveImportBootResult.imported;
     final recovered = _result == SaveImportBootResult.originalRestored;
+    final backupRestored = _result == SaveImportBootResult.backupRestored;
     return MaterialApp(
       title: 'Nestarium',
       debugShowCheckedModeBanner: false,
@@ -124,6 +125,8 @@ class _SaveImportBootstrapState extends State<SaveImportBootstrap> {
                         ? (_canCancel ? 'Import paused' : 'Startup paused')
                         : imported
                         ? 'Import complete'
+                        : backupRestored
+                        ? 'Local backup restored'
                         : recovered
                         ? 'Original saves restored'
                         : 'Local saves ready',
@@ -139,7 +142,9 @@ class _SaveImportBootstrapState extends State<SaveImportBootstrap> {
                   else ...[
                     Text(
                       _error ??
-                          (imported
+                          (backupRestored
+                              ? 'The reviewed backup is now this player’s local progress. The original copies are retained in a recovery archive. Cloud progress and sign-in were not changed.'
+                              : imported
                               ? 'The imported local players are ready. Cloud accounts were not imported or deleted.'
                               : recovered
                               ? 'The import did not replace your original local players. You can open them now.'

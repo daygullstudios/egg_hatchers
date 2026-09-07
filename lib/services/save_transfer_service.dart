@@ -9,6 +9,7 @@ import 'device_guest_slot_store.dart';
 import 'save_import_storage.dart';
 import 'save_import_validation.dart';
 import 'saved_player_directory.dart';
+import 'progress_recovery_service.dart';
 
 class SaveTransferException implements Exception {
   const SaveTransferException(this.message);
@@ -33,7 +34,7 @@ class SaveImportPreview {
   final bool hasLegacyProgress;
 }
 
-enum SaveImportBootResult { none, imported, originalRestored }
+enum SaveImportBootResult { none, imported, originalRestored, backupRestored }
 
 /// Review/stage while running; replace only at bootstrap under an exclusive
 /// storage lease, before game/auth services start.
@@ -50,6 +51,7 @@ class SaveTransferService {
   static bool _internalKey(String key) => key.startsWith('nestarium.import.');
   static bool _nonTransferable(String key) =>
       _internalKey(key) ||
+      key == ProgressRecoveryService.pendingKey ||
       DeviceGuestSlotStore.ownsKey(key) ||
       key.startsWith('egg_hatchers.sync_checkpoint.');
 
@@ -106,7 +108,9 @@ class SaveTransferService {
   Future<void> stageImport(SaveImportPreview preview) async {
     inspectSave(preview.source);
     final values = await _storage.readAll();
-    if (values.containsKey(pendingKey) || values.containsKey(recoveryKey)) {
+    if (values.containsKey(pendingKey) ||
+        values.containsKey(recoveryKey) ||
+        values.containsKey(ProgressRecoveryService.pendingKey)) {
       throw const SaveTransferException(
         'A previous import needs a restart first.',
       );
@@ -121,13 +125,24 @@ class SaveTransferService {
 
   Future<bool> hasPendingImport() async {
     final all = await _storage.readAll();
-    return all.containsKey(pendingKey) || all.containsKey(recoveryKey);
+    return all.containsKey(pendingKey) ||
+        all.containsKey(recoveryKey) ||
+        all.containsKey(ProgressRecoveryService.pendingKey);
   }
 
   /// Bootstrap only, under an exclusive storage lease. A retained journal
   /// restores originals first; never guess whether an interrupted import won.
   Future<SaveImportBootResult> finishPendingImport() async {
     final all = await _storage.readAll();
+    if (all.containsKey(ProgressRecoveryService.pendingKey)) {
+      if (all.containsKey(pendingKey) || all.containsKey(recoveryKey)) {
+        throw const SaveTransferException(
+          'Conflicting save operations need attention. Do not clear browser data.',
+        );
+      }
+      await ProgressRecoveryService(storage: _storage).finish();
+      return SaveImportBootResult.backupRestored;
+    }
     if (all.containsKey(recoveryKey)) {
       await _restoreOriginal(all[recoveryKey]);
       return SaveImportBootResult.originalRestored;
@@ -186,6 +201,15 @@ class SaveTransferService {
 
   Future<void> cancelPendingImport() async {
     final values = await _storage.readAll();
+    if (values.containsKey(ProgressRecoveryService.pendingKey)) {
+      if (values.containsKey(pendingKey) || values.containsKey(recoveryKey)) {
+        throw const SaveTransferException(
+          'Conflicting save operations need attention. Do not clear browser data.',
+        );
+      }
+      await ProgressRecoveryService(storage: _storage).finish(cancel: true);
+      return;
+    }
     if (values.containsKey(recoveryKey)) {
       await _restoreOriginal(values[recoveryKey]);
     } else {

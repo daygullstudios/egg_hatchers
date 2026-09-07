@@ -59,10 +59,15 @@ Automated passes are necessary but are not proof of player comprehension.
    preserves readable raw values, and reviewed file restore uses checked restart
    bootstrap without flushing a default player. Lifecycle saves cannot run before
    initialization. Valid legacy profiles and pre-account migration remain supported.
-   **Next: fail-closed primary/backup progress-payload loading and truthful
-   recovery status**, then broader offline startup. Distinguish storage/network
-   failure from no saved player; do not treat two unreadable progress copies as
-   a new game. `PROJECT_HANDOFF.md` owns exact validation/live evidence. Trusted cloud erasure
+   Primary/backup progress loading now fails closed instead of treating unreadable
+   copies as a new game or silently restoring a backup. Selected progress is read
+   before identity startup; failed reads/switches/runtime saves pause writers and
+   cloud publication. Web backup review uses two-step confirmation and checked
+   exclusive bootstrap recovery with a retained raw-pair archive, not a full import
+   or identity rotation. Progress reads avoid replacing the shared settings cache.
+   **Next: broader offline startup/storage-outage acceptance**, including dependencies
+   outside progress decoding. Native recovery and representative human acceptance
+   remain open. `PROJECT_HANDOFF.md` owns exact validation/live evidence. Trusted cloud erasure
    and child-compatible identity remain separate, deliberately authorized work.
 2. **Child-compatible account release:** use the confirmed family audience to
    review startup collection and SDK eligibility before enabling provider links.

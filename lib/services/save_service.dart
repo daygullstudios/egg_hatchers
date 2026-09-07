@@ -4,6 +4,24 @@ import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/player_state.dart';
+import 'save_import_storage.dart';
+import 'progress_payload_validation.dart';
+
+enum ProgressReadFailure { unreadable, backupAvailable, storageUnavailable }
+
+class ProgressReadException implements Exception {
+  const ProgressReadException({
+    required this.failure,
+    required this.accountId,
+    this.primary,
+    this.backup,
+    this.backupSnapshot,
+  });
+  final ProgressReadFailure failure;
+  final String? accountId;
+  final Object? primary, backup;
+  final ProgressSaveSnapshot? backupSnapshot;
+}
 
 class ProgressSaveSnapshot {
   const ProgressSaveSnapshot({
@@ -23,7 +41,15 @@ class ProgressSaveSnapshot {
 
 /// Persists and restores player progress using shared_preferences.
 class SaveService {
-  SaveService({this.accountId});
+  SaveService({this.accountId, SaveImportStorage? storage})
+    : _storage =
+          storage ??
+          PreferencesProgressStorage(
+            accountId == null
+                ? _legacySaveKey
+                : '${_legacySaveKey}_account_$accountId',
+          );
+  final SaveImportStorage _storage;
 
   static const _legacySaveKey = 'egg_hatchers_player_state';
   static const _legacyRottenShellTutorialKey =
@@ -43,28 +69,53 @@ class SaveService {
   }
 
   Future<ProgressSaveSnapshot?> loadSnapshot() async {
-    final prefs = await SharedPreferences.getInstance();
-    final primary = _decodeSnapshot(prefs.getString(_saveKey));
-    if (primary != null) return primary;
-
-    final backupJson = prefs.getString(_backupKey);
-    final backup = _decodeSnapshot(backupJson);
-    if (backup != null && backupJson != null) {
-      await prefs.setString(_saveKey, backupJson);
-    }
-    return backup;
+    return _checkPair(await _readPair());
   }
 
-  static ProgressSaveSnapshot? _decodeSnapshot(String? jsonString) {
-    if (jsonString == null) return null;
+  Future<Map<String, Object>> _readPair() async {
+    try {
+      return await _storage.readAll();
+    } catch (_) {
+      throw ProgressReadException(
+        failure: ProgressReadFailure.storageUnavailable,
+        accountId: accountId,
+      );
+    }
+  }
+
+  ProgressSaveSnapshot? _checkPair(Map<String, Object> values) {
+    final primary = values[_saveKey], backup = values[_backupKey];
+    if (primary == null && backup == null) return null;
+    final snapshot = decodeSnapshot(primary);
+    if (snapshot != null) return snapshot;
+    final backupSnapshot = decodeSnapshot(backup);
+    throw ProgressReadException(
+      failure: backupSnapshot == null
+          ? ProgressReadFailure.unreadable
+          : ProgressReadFailure.backupAvailable,
+      accountId: accountId,
+      primary: primary,
+      backup: backup,
+      backupSnapshot: backupSnapshot,
+    );
+  }
+
+  static ProgressSaveSnapshot? decodeSnapshot(Object? jsonString) {
+    if (jsonString is! String) return null;
     try {
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
-      if (json['format'] == progressFormat) {
-        if (json['schemaVersion'] != progressSchemaVersion ||
+      if (json.containsKey('format')) {
+        if (json['format'] != progressFormat ||
+            json['schemaVersion'] != progressSchemaVersion ||
+            json['revision'] is! int ||
+            (json['revision'] as int) < 0 ||
+            (json.containsKey('savedAt') &&
+                (json['savedAt'] is! String ||
+                    DateTime.tryParse(json['savedAt'] as String) == null)) ||
             json['playerState'] is! Map<String, dynamic>) {
           return null;
         }
-        final state = PlayerState.fromJson(
+        final state = parseProgressPayload(
           json['playerState'] as Map<String, dynamic>,
         );
         final revision = (json['revision'] as num?)?.toInt() ?? 0;
@@ -86,7 +137,7 @@ class SaveService {
       }
 
       // Saves written before the progress envelope are the PlayerState JSON.
-      final state = PlayerState.fromJson(json);
+      final state = parseProgressPayload(json);
       return ProgressSaveSnapshot(
         state: state,
         revision: 0,
@@ -131,9 +182,12 @@ class SaveService {
       _write(state, verify: true);
 
   Future<void> _write(PlayerState state, {bool verify = false}) async {
+    // Never let an autosave, migration, or cloud callback overwrite unreadable
+    // progress by treating it as an empty slot. Recovery is a separate action.
     final prefs = await SharedPreferences.getInstance();
-    final currentJson = prefs.getString(_saveKey);
-    final current = _decodeSnapshot(currentJson);
+    final values = await _readPair();
+    final current = _checkPair(values);
+    final currentJson = values[_saveKey] as String?;
     if (current != null) {
       final accepted = await prefs.setString(_backupKey, currentJson!);
       if (verify && !accepted) throw StateError('Backup write rejected');
@@ -161,6 +215,16 @@ class SaveService {
     await prefs.remove(_backupKey);
   }
 
+  static Future<PlayerState?> applyLegacyTutorialChoice(
+    PlayerState? state,
+  ) async {
+    if (state == null) return null;
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_legacyRottenShellTutorialKey) == true
+        ? state.copyWith(rottenShellFinalBattleTutorialCompleted: true)
+        : state;
+  }
+
   /// Moves the old device-wide final-battle tutorial choice into every
   /// existing save before cloud sync can treat it as account-owned progress.
   ///
@@ -180,8 +244,17 @@ class SaveService {
         SaveService(),
         ...accountIds.map((accountId) => SaveService(accountId: accountId)),
       ];
-      for (final service in saveServices) {
-        final state = await service.load();
+      final states = <PlayerState?>[];
+      try {
+        // Preflight all reads before changing any save or consuming the flag.
+        for (final service in saveServices) {
+          states.add(await service.load());
+        }
+      } on ProgressReadException {
+        return;
+      }
+      for (var i = 0; i < saveServices.length; i++) {
+        final service = saveServices[i], state = states[i];
         if (state == null || state.rottenShellFinalBattleTutorialCompleted) {
           continue;
         }

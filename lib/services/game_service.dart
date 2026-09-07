@@ -58,6 +58,9 @@ class GameService extends ChangeNotifier {
   var _pausedForImport = false;
   final _pendingSaves = <Future<void>>{};
   bool _isInitialized = false;
+  bool _progressWritesAllowed = false;
+  ProgressReadException? _progressReadFailure;
+  ProgressReadException? get progressReadFailure => _progressReadFailure;
   String? _pendingQuestNotification;
   bool _questNotificationDeferred = false;
   final List<String> _pendingMasteryNotifications = [];
@@ -369,19 +372,47 @@ class GameService extends ChangeNotifier {
     String? accountId,
     bool migrateLegacySave = false,
   }) async {
-    if (accountId != null) {
-      _activeAccountId = accountId;
-      _saveService = SaveService(accountId: accountId);
-    }
-    var saved = await _saveService.load();
-    if (saved == null && accountId != null && migrateLegacySave) {
-      saved = await SaveService().load();
-      if (saved != null) await _saveService.save(saved);
-    }
-    _loadState(saved);
+    await suspendProgressWrites();
+    final target = accountId == null
+        ? _saveService
+        : SaveService(accountId: accountId);
+    await _loadProgress(target, accountId, migrateLegacySave);
     _isInitialized = true;
     _startIdleTimer();
     notifyListeners();
+  }
+
+  Future<void> _loadProgress(
+    SaveService target,
+    String? accountId,
+    bool migrateLegacySave,
+  ) async {
+    try {
+      var saved = await target.load();
+      if (saved == null && accountId != null && migrateLegacySave) {
+        saved = await SaveService().load();
+        if (saved != null) await target.save(saved);
+      }
+      // Retain the old tutorial decision even if migration of another damaged
+      // player's save is deferred; do not consume the shared marker here.
+      saved = await SaveService.applyLegacyTutorialChoice(saved);
+      _activeAccountId = accountId;
+      _saveService = target;
+      _loadState(saved);
+      _progressReadFailure = null;
+      _progressWritesAllowed = true;
+      // Loading can settle offline battles or mark existing quests notified.
+      // Persist that only after the selected save has passed validation.
+      if (saved != null &&
+          SaveService.contentFingerprint(saved) !=
+              SaveService.contentFingerprint(_state)) {
+        await _saveQuietly();
+        if (_progressReadFailure != null) throw _progressReadFailure!;
+      }
+    } on ProgressReadException catch (error) {
+      _progressReadFailure = error;
+      rethrow;
+    }
   }
 
   void _loadState(PlayerState? saved) {
@@ -406,17 +437,14 @@ class GameService extends ChangeNotifier {
     String accountId, {
     bool migrateLegacySave = false,
   }) async {
-    if (_activeAccountId == accountId) return;
-    if (_activeAccountId != null) await save();
-    _idleTimer?.cancel();
-    _activeAccountId = accountId;
-    _saveService = SaveService(accountId: accountId);
-    var saved = await _saveService.load();
-    if (saved == null && migrateLegacySave) {
-      saved = await SaveService().load();
-      if (saved != null) await _saveService.save(saved);
-    }
-    _loadState(saved);
+    if (_activeAccountId == accountId && _progressWritesAllowed) return;
+    if (_activeAccountId != null && _progressWritesAllowed) await save();
+    await suspendProgressWrites();
+    await _loadProgress(
+      SaveService(accountId: accountId),
+      accountId,
+      migrateLegacySave,
+    );
     _startIdleTimer();
     notifyListeners();
   }
@@ -446,7 +474,7 @@ class GameService extends ChangeNotifier {
 
   void _startIdleTimer() {
     _idleTimer?.cancel();
-    if (_pausedForImport) return;
+    if (_pausedForImport || !_progressWritesAllowed) return;
     _idleTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _tickIdleIncome();
     });
@@ -546,13 +574,20 @@ class GameService extends ChangeNotifier {
   }
 
   Future<void> _saveQuietly() async {
-    if (_pausedForImport) return;
+    if (_pausedForImport || !_progressWritesAllowed) return;
     final accountId = _activeAccountId;
     final pending = _saveService.save(_state);
     _pendingSaves.add(pending);
     try {
       await pending;
-      if (!_pausedForImport) onProgressSaved?.call(accountId);
+      if (!_pausedForImport && _progressWritesAllowed) {
+        onProgressSaved?.call(accountId);
+      }
+    } on ProgressReadException catch (error) {
+      _progressWritesAllowed = false;
+      _idleTimer?.cancel();
+      _progressReadFailure = error;
+      notifyListeners();
     } finally {
       _pendingSaves.remove(pending);
     }
@@ -563,14 +598,22 @@ class GameService extends ChangeNotifier {
     _pausedForImport = true;
     _idleTimer?.cancel();
     await Future.wait(_pendingSaves.toList());
+    if (!_progressWritesAllowed) return;
     _state = _state.copyWith(lastSavedTime: DateTime.now());
     await _saveService.saveForTransfer(_state);
   }
 
   Future<void> save() async {
-    if (_pausedForImport) return;
+    if (_pausedForImport || !_progressWritesAllowed) return;
     _state = _state.copyWith(lastSavedTime: DateTime.now());
     await _saveQuietly();
+  }
+
+  /// Drain a failed/transitioning runtime without writing its in-memory player.
+  Future<void> suspendProgressWrites() async {
+    _progressWritesAllowed = false;
+    _idleTimer?.cancel();
+    await Future.wait(_pendingSaves.toList());
   }
 
   /// Replaces the active in-memory save after a revalidated cloud download.
@@ -579,13 +622,17 @@ class GameService extends ChangeNotifier {
     String accountId,
     PlayerState state,
   ) async {
-    if (_pausedForImport || _activeAccountId != accountId) return false;
+    if (_pausedForImport ||
+        !_progressWritesAllowed ||
+        _activeAccountId != accountId) {
+      return false;
+    }
     _idleTimer?.cancel();
     _loadState(state);
     _startIdleTimer();
     await _saveQuietly();
     notifyListeners();
-    return true;
+    return _progressWritesAllowed && _progressReadFailure == null;
   }
 
   bool isEggUnlocked(Egg egg) {

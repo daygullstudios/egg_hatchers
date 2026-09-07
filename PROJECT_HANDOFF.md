@@ -2,7 +2,72 @@
 
 Updated: 2026-09-06
 
-## Unreadable saved-player recovery — current implementation checkpoint
+## Damaged progress and local-backup recovery — current implementation checkpoint
+
+Primary/backup progress loading is now read-only and fail-closed: only two absent
+copies mean a new save. Malformed payloads, unsupported envelopes, invalid known
+containers/types and checksum mismatches never silently become starting progress.
+A readable older backup is offered for review, not applied automatically. Shared
+decoding keeps file-import review and normal progress loading consistent while
+retaining valid legacy defaults and existing keys/formats.
+
+Startup checks the selected progress before auth identity/gameplay/cloud sync;
+failed switches and runtime read failures stop progress writers, income and cloud
+publication. Recovery offers retry, raw private backup, web file review and the
+local-player picker. No selected player means the picker, not a running default
+game. Deferred legacy tutorial migration preflights every save and retains its
+marker if a payload cannot be read. Valid selected saves still honor that choice.
+
+Web **Review local backup** shows saved time, coins, animals and Rebirth, warns
+about missing recent progress and requires **Restore & restart** after a second
+confirmation. Cancel is the keyboard default; controls fit 320x360 at 200% text.
+The selected raw pair is compared again before staging and at restart. Bootstrap
+requires exclusive updated-tab storage access before Firebase/game initialization.
+It verifies an archive of BOTH original values before replacing only this player's
+primary with its reviewed backup. Other players, settings, active session, device
+identity/generation and cloud ancestry are not replaced/rotated. This is deliberately
+not a full-save import. Completion requires acknowledgment before normal startup.
+
+Checked writes/removals are resumable after failure, including an operation that
+applied but reported failure. Cancellation restores the exact original primary
+(including absent/wrong-type values) if replacement already started. Conflicting
+operations or changed copies pause without guessing. Archives remain on this
+device under `nestarium.progress_recovery.archive.*` and are included in exports;
+they do not survive clearing browser/app data. Keep a separate downloaded backup.
+Pending recovery requests are excluded from exports/imports. Close older game
+tabs explicitly: old builds do not honor storage leases. Native backup application
+and physical-device acceptance remain open; native UI does not promise web-only
+restore actions. Unreadable raw backups may require repair before file import.
+
+The full suite exposed a real cache race: frequent SharedPreferences.reload()
+could hide a concurrent customization write. Progress guards now read only the
+primary/backup pair directly from the installed legacy backend without replacing
+the shared cache. The established `flutter.` prefix/backend are retained; no
+SharedPreferencesAsync/DataStore migration. The already resolved platform-interface
+2.4.2 is now a direct dependency (no package version upgrade). Regression tests
+cover concurrent settings, fresh backup rotation and drained disposable fixtures.
+
+Validation: clean Flutter 3.47.2 analysis and **661 Flutter tests pass**, including restart interruption,
+uncertain writes, stale review, identity/other-save preservation, no cloud upload
+from unreadable progress, root startup/switch/runtime recovery and small layouts.
+All **seven isolated Chrome tests** pass, including real browser storage backup
+repair with disposable data and preserved originals. The final test-style cleanup
+also passes all 23 focused progress-recovery tests. Release web build passes
+(43.1s; Wasm dry run succeeds); main bundle SHA-256
+`881826b3e568a9f4f4d15ea630884ac7c5f0d44444b6b34626ce7b9362ba6664`.
+Playtest **3 tests** and Wrangler **4.129.0** dry run pass in the required order.
+Brand audit: **633 classified** compatibility references, none unclassified.
+Protected deployment/live acceptance is the remaining step of this checkpoint.
+No real player is damaged or restored for QA.
+
+Next: broader offline startup and storage-outage acceptance, including failures
+outside progress decoding; native recovery and representative human comprehension
+testing remain open. Child-compatible identity, trusted cloud erasure, public
+policy approval and coordinated protected new-hostname cutover remain separate.
+No public hostname, provider, Firebase project/rules/credential, billing/mail,
+sibling-product or store setting changed.
+
+## Unreadable saved-player recovery — preceding implementation checkpoint
 
 Startup no longer treats an unreadable player directory as an empty install.
 A read-only preflight rejects malformed/wrong-type entries, duplicate IDs,
@@ -62,7 +127,7 @@ at the Hatchery. No real player is created, removed, damaged or replaced for QA.
 Physical-device and human comprehension acceptance remain open; automated layout
 and isolated mock recovery tests do not substitute for those gates.
 
-Next: fail-closed primary/backup **progress payload** loading and truthful local
+Next at that checkpoint: fail-closed primary/backup **progress payload** loading and truthful local
 recovery status, then broader offline startup acceptance. The normal progress
 loader can still conflate two unreadable payloads with no save; this checkpoint
 specifically protects the player directory, not every possible storage failure.

@@ -12,6 +12,33 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+  test(
+    'unreadable local progress cannot trigger cloud upload or replacement',
+    () async {
+      const key = 'egg_hatchers_player_state_account_mock-damaged';
+      SharedPreferences.setMockInitialValues({key: '{unreadable'});
+      final cloud = _CloudRepository();
+      final sync = ProgressSyncService();
+      addTearDown(sync.dispose);
+      var restores = 0;
+      await sync.selectAccount(
+        accountId: 'mock-damaged',
+        protectedPlayerId: 'mock-identity',
+        cloud: cloud,
+        applyCloud: (_) async {
+          restores++;
+          return true;
+        },
+      );
+      await sync.synchronize();
+      expect(cloud.writes, 0);
+      expect(restores, 0);
+      expect(
+        (await SharedPreferences.getInstance()).getString(key),
+        '{unreadable',
+      );
+    },
+  );
 
   testWidgets(
     'import pause drains a late cloud read without upload or restore',

@@ -2,6 +2,10 @@
 library;
 
 import 'dart:js_interop';
+import 'dart:convert';
+import 'package:egg_hatchers/data/game_data.dart';
+import 'package:egg_hatchers/services/progress_recovery_service.dart';
+import 'package:egg_hatchers/services/save_service.dart';
 import 'package:egg_hatchers/services/account_service.dart';
 import 'package:egg_hatchers/services/saved_player_directory.dart';
 import 'package:egg_hatchers/services/save_import_storage.dart';
@@ -15,6 +19,61 @@ import 'helpers/save_import_fixture.dart';
 
 void main() {
   SharedPreferencesPlugin.registerWith(null);
+  test(
+    'browser backup repair retains damaged originals and identity',
+    () async {
+      final release = await acquireSaveStorageLease(exclusive: true);
+      final storage = PreferencesImportStorage();
+      final key = ProgressRecoveryService.primaryKey('mock-recovery');
+      final backup = jsonEncode(
+        GameData.startingPlayerState().copyWith(coins: 4321).toJson(),
+      );
+      try {
+        await storage.write(key, '{damaged mock progress');
+        await storage.write('${key}_backup', backup);
+        await storage.write('mock-identity-proof', 'not-replaced');
+        final original = await storage.readAll();
+        ProgressReadException? review;
+        try {
+          await SaveService(accountId: 'mock-recovery').load();
+        } on ProgressReadException catch (e) {
+          review = e;
+        }
+        expect(review!.backupSnapshot!.state.coins, 4321);
+        expect(await storage.readAll(), original);
+        await ProgressRecoveryService().stage(review);
+        expect((await storage.readAll())[key], original[key]);
+        expect(
+          await SaveTransferService().finishPendingImport(),
+          SaveImportBootResult.backupRestored,
+        );
+        final restored = await storage.readAll();
+        expect(restored[key], backup);
+        expect(restored['${key}_backup'], backup);
+        expect(restored['mock-identity-proof'], 'not-replaced');
+        final archive = restored.entries.singleWhere(
+          (e) => e.key.startsWith(ProgressRecoveryService.archivePrefix),
+        );
+        expect(
+          jsonDecode(archive.value as String)['primary'],
+          '{damaged mock progress',
+        );
+        expect(
+          (await SaveService(accountId: 'mock-recovery').load())!.coins,
+          4321,
+        );
+      } finally {
+        try {
+          // Disposable Flutter test browser only; never the owner's browser.
+          for (final key in (await storage.readAll()).keys) {
+            await storage.remove(key);
+          }
+        } finally {
+          await release();
+        }
+      }
+    },
+  );
   test(
     'damaged browser directory stays intact until explicitly restored at bootstrap',
     () async {

@@ -240,6 +240,9 @@ void main() {
         found = true;
       }
 
+      // Drain this fixture's asynchronous writes before replacing the mock
+      // preferences backend for the next random seed.
+      await game.suspendProgressWrites();
       game.dispose();
       if (found) break;
     }

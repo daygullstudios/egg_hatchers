@@ -90,7 +90,7 @@ void main() {
     expect(backup['coins'], 12);
   });
 
-  test('corrupt primary save recovers the previous valid snapshot', () async {
+  test('corrupt primary requires review and never repairs on read', () async {
     final saves = SaveService(accountId: accountId);
     await saves.save(GameData.startingPlayerState().copyWith(coins: 321));
     await saves.save(GameData.startingPlayerState().copyWith(coins: 654));
@@ -98,30 +98,53 @@ void main() {
     final preferences = await SharedPreferences.getInstance();
     await preferences.setString(primaryKey, '{not valid json');
 
-    final recovered = await saves.load();
-
-    expect(recovered, isNotNull);
-    expect(recovered!.coins, 321);
-    expect(preferences.getString(primaryKey), preferences.getString(backupKey));
+    await expectLater(
+      saves.load(),
+      throwsA(
+        isA<ProgressReadException>()
+            .having(
+              (e) => e.failure,
+              'failure',
+              ProgressReadFailure.backupAvailable,
+            )
+            .having((e) => e.backupSnapshot!.state.coins, 'backup coins', 321),
+      ),
+    );
+    expect(preferences.getString(primaryKey), '{not valid json');
+    await expectLater(
+      saves.save(GameData.startingPlayerState()),
+      throwsA(isA<ProgressReadException>()),
+    );
+    expect(preferences.getString(primaryKey), '{not valid json');
   });
 
-  test('fingerprint mismatch recovers the previous valid snapshot', () async {
-    final saves = SaveService(accountId: accountId);
-    await saves.save(GameData.startingPlayerState().copyWith(coins: 321));
-    await saves.save(GameData.startingPlayerState().copyWith(coins: 654));
+  test(
+    'fingerprint mismatch requires review and preserves the raw pair',
+    () async {
+      final saves = SaveService(accountId: accountId);
+      await saves.save(GameData.startingPlayerState().copyWith(coins: 321));
+      await saves.save(GameData.startingPlayerState().copyWith(coins: 654));
 
-    final preferences = await SharedPreferences.getInstance();
-    final primary =
-        jsonDecode(preferences.getString(primaryKey)!) as Map<String, dynamic>;
-    primary['playerState']['coins'] = 999999;
-    await preferences.setString(primaryKey, jsonEncode(primary));
+      final preferences = await SharedPreferences.getInstance();
+      final primary =
+          jsonDecode(preferences.getString(primaryKey)!)
+              as Map<String, dynamic>;
+      primary['playerState']['coins'] = 999999;
+      await preferences.setString(primaryKey, jsonEncode(primary));
 
-    final recovered = await saves.loadSnapshot();
-
-    expect(recovered, isNotNull);
-    expect(recovered!.state.coins, 321);
-    expect(preferences.getString(primaryKey), preferences.getString(backupKey));
-  });
+      await expectLater(
+        saves.loadSnapshot(),
+        throwsA(
+          isA<ProgressReadException>().having(
+            (e) => e.backupSnapshot!.state.coins,
+            'backup coins',
+            321,
+          ),
+        ),
+      );
+      expect(preferences.getString(primaryKey), jsonEncode(primary));
+    },
+  );
 
   test('deleting an account removes its primary and backup saves', () async {
     final saves = SaveService(accountId: accountId);

@@ -6,8 +6,10 @@ import 'package:egg_hatchers/models/player_state.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/save_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
   testWidgets(
     'import pause drains pending saves, verifies final state and stops income/autosaves',
     (tester) async {

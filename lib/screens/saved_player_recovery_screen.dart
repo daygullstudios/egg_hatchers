@@ -8,6 +8,8 @@ import '../services/save_transfer_file.dart';
 import '../services/save_transfer_service.dart';
 import '../services/saved_player_directory.dart';
 import '../widgets/save_import_review_dialog.dart';
+import '../services/save_service.dart';
+import '../widgets/local_backup_review_dialog.dart';
 
 /// Recovery tools do not require a loaded player or touch gameplay/identity.
 class SavedPlayerRecoveryScreen extends StatefulWidget {
@@ -23,6 +25,9 @@ class SavedPlayerRecoveryScreen extends StatefulWidget {
     this.restart,
     this.web = kIsWeb,
     this.canImport,
+    this.progressFailure,
+    this.stageBackup,
+    this.onChoosePlayer,
   });
 
   final AccountStartupFailure failure;
@@ -35,6 +40,9 @@ class SavedPlayerRecoveryScreen extends StatefulWidget {
   final VoidCallback? restart;
   final bool web;
   final bool? canImport;
+  final ProgressReadException? progressFailure;
+  final Future<void> Function(ProgressReadException)? stageBackup;
+  final VoidCallback? onChoosePlayer;
 
   @override
   State<SavedPlayerRecoveryScreen> createState() =>
@@ -119,6 +127,28 @@ class _SavedPlayerRecoveryScreenState extends State<SavedPlayerRecoveryScreen> {
     }
   });
 
+  Future<void> _reviewBackup() => _run(() async {
+    if (!(widget.canImport ?? saveImportLockAvailable)) {
+      _status =
+          'Use an updated browser that supports safe recovery. Keep your browser data and an exported backup.';
+      return;
+    }
+    setState(() => _reviewing = true);
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => LocalBackupReviewDialog(
+          review: widget.progressFailure!,
+          stage: widget.stageBackup!,
+          restart: widget.restart ?? reloadAfterSaveImport,
+        ),
+      );
+    } finally {
+      _reviewing = false;
+    }
+  });
+
   @override
   Widget build(BuildContext context) => Scaffold(
     body: SafeArea(
@@ -132,13 +162,24 @@ class _SavedPlayerRecoveryScreenState extends State<SavedPlayerRecoveryScreen> {
               const Icon(Icons.shield_outlined, size: 44),
               const SizedBox(height: 16),
               Text(
-                'Saved players need attention',
+                widget.progressFailure == null
+                    ? 'Saved players need attention'
+                    : 'Progress needs attention',
                 style: Theme.of(context).textTheme.headlineSmall,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Text(
-                widget.failure == AccountStartupFailure.unreadableProfiles
+                widget.progressFailure != null
+                    ? switch (widget.progressFailure!.failure) {
+                        ProgressReadFailure.backupAvailable =>
+                          'The main progress copy could not be opened. A readable local backup is available to review. Gameplay and cloud sync are paused.',
+                        ProgressReadFailure.unreadable =>
+                          'The stored progress copies could not be read. This does not mean you have a new player. Gameplay and cloud sync are paused; no replacement progress was created.',
+                        ProgressReadFailure.storageUnavailable =>
+                          'Local progress could not finish loading. This is not proof that your save is missing. Gameplay and cloud sync are paused.',
+                      }
+                    : widget.failure == AccountStartupFailure.unreadableProfiles
                     ? 'Nestarium could not read your saved player list. It has not created a replacement player or started cloud sync.'
                     : 'Nestarium could not finish checking local player storage. This is not proof that your saves are missing. Cloud sync has not started.',
               ),
@@ -147,8 +188,10 @@ class _SavedPlayerRecoveryScreenState extends State<SavedPlayerRecoveryScreen> {
                 'Do not clear app/browser data or reinstall. Retry first. If this continues, keep a backup before reviewing an older working save file.',
               ),
               const SizedBox(height: 12),
-              const Text(
-                'A backup copies the data that can be read, including the unreadable player list. It does not repair it or include sign-in credentials. Keep it private.',
+              Text(
+                widget.progressFailure == null
+                    ? 'A backup copies the data that can be read, including the unreadable player list. It does not repair it or include sign-in credentials. Keep it private.'
+                    : 'Download backup or Copy backup preserves the stored data, including damaged progress. It does not repair it or include sign-in credentials. Keep it private.',
               ),
               const SizedBox(height: 20),
               FilledButton.icon(
@@ -157,6 +200,26 @@ class _SavedPlayerRecoveryScreenState extends State<SavedPlayerRecoveryScreen> {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Try again'),
               ),
+              if (widget.web &&
+                  widget.progressFailure?.backupSnapshot != null &&
+                  widget.stageBackup != null)
+                FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                  ),
+                  onPressed: _busy ? null : _reviewBackup,
+                  icon: const Icon(Icons.history),
+                  label: const Text('Review local backup'),
+                ),
+              if (widget.onChoosePlayer != null)
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                  ),
+                  onPressed: _busy ? null : widget.onChoosePlayer,
+                  icon: const Icon(Icons.people_outline),
+                  label: const Text('Choose local player'),
+                ),
               if (widget.web)
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
