@@ -53,6 +53,7 @@ class MultiplayerService extends ChangeNotifier {
   MultiplayerEnergySpawn? _energySpawn;
   String? _selfPlayerId;
   bool _matchInterrupted = false;
+  bool _matchResumed = false;
   bool _disposed = false;
 
   MultiplayerConnectionState get state => _state;
@@ -62,6 +63,7 @@ class MultiplayerService extends ChangeNotifier {
   MultiplayerBattleState? get battleState => _battleState;
   MultiplayerEnergySpawn? get energySpawn => _energySpawn;
   bool get matchInterrupted => _matchInterrupted;
+  bool get matchResumed => _matchResumed;
   bool get isConnected =>
       _state != MultiplayerConnectionState.connecting &&
       _state != MultiplayerConnectionState.offline;
@@ -170,6 +172,7 @@ class MultiplayerService extends ChangeNotifier {
     _energySpawn = null;
     _selfPlayerId = player.playerId;
     _matchInterrupted = false;
+    _matchResumed = false;
     _channel!.sink.add(
       jsonEncode({'type': 'queue', 'player': player.toJson()}),
     );
@@ -185,6 +188,7 @@ class MultiplayerService extends ChangeNotifier {
     _energySpawn = null;
     _selfPlayerId = player.playerId;
     _matchInterrupted = false;
+    _matchResumed = false;
     _channel!.sink.add(
       jsonEncode({
         'type': 'joinBattleInvite',
@@ -213,6 +217,7 @@ class MultiplayerService extends ChangeNotifier {
     _energySpawn = null;
     _selfPlayerId = null;
     _matchInterrupted = false;
+    _matchResumed = false;
     if (_channel != null) _setState(MultiplayerConnectionState.ready);
   }
 
@@ -255,6 +260,7 @@ class MultiplayerService extends ChangeNotifier {
         _setState(MultiplayerConnectionState.searching);
       case 'matched':
         _matchInterrupted = false;
+        _matchResumed = data['resumed'] == true;
         _matchId = data['matchId'] as String;
         _opponent = MultiplayerPlayerSnapshot.fromJson(
           Map<String, dynamic>.from(data['opponent'] as Map),
@@ -297,6 +303,7 @@ class MultiplayerService extends ChangeNotifier {
         _energySpawn = null;
         _selfPlayerId = null;
         _matchInterrupted = true;
+        _matchResumed = false;
         _message =
             data['message'] as String? ??
             'The online match ended before it could reconnect.';

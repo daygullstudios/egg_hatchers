@@ -122,6 +122,7 @@ describe("multiplayer edge authentication", () => {
     await expect(resumedMessages.next()).resolves.toMatchObject({
       type: "matched",
       matchId: firstMatch.matchId,
+      resumed: true,
       opponent: { displayName: expect.stringMatching(/^Player [A-F0-9]{6}$/) },
     });
     await expect(resumedMessages.next()).resolves.toMatchObject({

@@ -4,12 +4,15 @@ import 'package:egg_hatchers/main.dart';
 import 'package:egg_hatchers/models/account_protection_state.dart';
 import 'package:egg_hatchers/models/online_lobby.dart';
 import 'package:egg_hatchers/models/player_state.dart';
+import 'package:egg_hatchers/navigation/app_page_route.dart';
 import 'package:egg_hatchers/screens/account_onboarding_screen.dart';
 import 'package:egg_hatchers/screens/main_game_shell.dart';
+import 'package:egg_hatchers/screens/multiplayer_lobby_screen.dart';
 import 'package:egg_hatchers/services/account_protection_service.dart';
 import 'package:egg_hatchers/services/account_service.dart';
 import 'package:egg_hatchers/services/account_storage.dart';
 import 'package:egg_hatchers/services/game_service.dart';
+import 'package:egg_hatchers/services/multiplayer_service.dart';
 import 'package:egg_hatchers/services/online_lobby_service.dart';
 import 'package:egg_hatchers/services/progress_sync_service.dart';
 import 'package:egg_hatchers/services/save_service.dart';
@@ -24,6 +27,51 @@ import 'support/controlled_lobby_channel.dart';
 import 'helpers/save_import_fixture.dart';
 
 void main() {
+  testWidgets('battle URL intent returns to Online Arena after app startup', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final accounts = AccountService();
+    final game = _ControlledGame();
+    final channel = ControlledLobbyChannel()..handshake.complete();
+    final multiplayer = MultiplayerService(
+      serverUri: Uri.parse('ws://127.0.0.1:53218/ws'),
+      channelFactory: (uri, {protocols}) => channel,
+    );
+    await tester.runAsync(() async {
+      await accounts.initialize();
+      await SaveService(accountId: accounts.account!.id).save(
+        PlayerState(
+          coins: 250,
+          ownedAnimals: const [],
+          lastSavedTime: DateTime.now(),
+          lifetimeCoinsEarned: 0,
+          tutorialCompleted: true,
+          tutorialVersionCompleted: 999,
+          lastDailyRewardPopupDismissDate: DailySystemLogic.todayKey(),
+        ),
+      );
+    });
+    await multiplayer.connect();
+
+    await tester.pumpWidget(
+      NestariumApp(
+        accounts: accounts,
+        game: game,
+        accountProtection: _IdentityForSelectedPlayer(),
+        onlineLobby: _PresenceRecorder(),
+        progressSync: _SyncRecorder(),
+        multiplayer: multiplayer,
+        initialRouteIntent: kMultiplayerBattleRouteName,
+      ),
+    );
+    await _pumpFrames(tester);
+
+    expect(find.byType(MultiplayerLobbyScreen), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    channel.finish();
+  });
+
   testWidgets(
     'resume with the same verified identity does not reset the cloud decision context',
     (tester) async {

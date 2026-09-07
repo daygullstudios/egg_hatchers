@@ -24,6 +24,7 @@ import 'services/cloud_connection_service.dart';
 import 'widgets/cloud_connection_scope.dart';
 import 'services/firebase_progress_repository.dart';
 import 'services/game_service.dart';
+import 'services/multiplayer_service.dart';
 import 'services/online_lobby_service.dart';
 import 'services/preferences_service.dart';
 import 'services/progress_sync_service.dart';
@@ -52,9 +53,13 @@ import 'navigation/app_page_route.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final initialRouteIntent = Uri.base.fragment;
   runApp(
     SaveImportBootstrap(
-      appBuilder: (cloud) => NestariumApp(cloudConnection: cloud),
+      appBuilder: (cloud) => NestariumApp(
+        cloudConnection: cloud,
+        initialRouteIntent: initialRouteIntent,
+      ),
       initializeCloud: FirebaseBootstrap.initialize,
     ),
   );
@@ -70,6 +75,8 @@ class NestariumApp extends StatefulWidget {
     this.progressSync,
     this.cloudConnection,
     this.deviceSettings,
+    this.multiplayer,
+    this.initialRouteIntent,
   });
 
   // The app owns these services, including injected instances (except the
@@ -82,6 +89,8 @@ class NestariumApp extends StatefulWidget {
   final ProgressSyncService? progressSync;
   final CloudConnectionService? cloudConnection;
   final DeviceSettingsStore? deviceSettings;
+  final MultiplayerService? multiplayer;
+  final String? initialRouteIntent;
 
   @override
   State<NestariumApp> createState() => _NestariumAppState();
@@ -129,6 +138,9 @@ class _NestariumAppState extends State<NestariumApp>
   var _accountSelectionRevision = 0;
   var _legacyMigrationPending = false;
   String? _legacyMigrationAccountId;
+  late final String _initialRouteIntent =
+      widget.initialRouteIntent ?? Uri.base.fragment;
+  var _initialRouteRecoveryScheduled = false;
 
   @override
   void initState() {
@@ -574,6 +586,7 @@ class _NestariumAppState extends State<NestariumApp>
     _accountProtection.dispose();
     _progressSync.dispose();
     _onlineLobby.dispose();
+    widget.multiplayer?.dispose();
     _game.dispose();
     super.dispose();
   }
@@ -588,6 +601,41 @@ class _NestariumAppState extends State<NestariumApp>
       _customEggs.isInitialized &&
       _spriteRating.isInitialized &&
       _referenceOverlay.isInitialized;
+
+  void _scheduleInitialRouteRecovery(BackgroundTheme theme) {
+    if (_initialRouteRecoveryScheduled ||
+        !_isReady ||
+        !_accounts.hasAccount ||
+        !_accountProtection.isInitialized ||
+        _accountProtection.isChecking ||
+        _accountProtection.state.protectedPlayerId == null ||
+        _initialRouteIntent != kMultiplayerBattleRouteName) {
+      return;
+    }
+    _initialRouteRecoveryScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final account = _accounts.account;
+      final navigator = _navigatorKey.currentState;
+      if (account == null || navigator == null) return;
+      navigator.push(
+        appPageRoute<void>(
+          backgroundColor: theme.scaffoldColor,
+          backgroundTheme: theme,
+          settings: const RouteSettings(name: kMultiplayerArenaRouteName),
+          instantTransition: true,
+          builder: (_) => MultiplayerLobbyScreen(
+            game: _game,
+            preferences: _preferences,
+            customSprites: _customSprites,
+            account: account,
+            multiplayer: widget.multiplayer,
+            lobby: _onlineLobby,
+          ),
+        ),
+      );
+    });
+  }
 
   Future<void> _stageImport(SaveImportPreview preview) async {
     if (hasOpenCustomDrafts ||
@@ -652,6 +700,7 @@ class _NestariumAppState extends State<NestariumApp>
     final theme = _isReady
         ? _preferences.selectedTheme
         : BackgroundThemes.defaultTheme;
+    _scheduleInitialRouteRecovery(theme);
 
     return MaterialApp(
       navigatorKey: _navigatorKey,

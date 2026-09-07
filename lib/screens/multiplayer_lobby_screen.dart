@@ -115,80 +115,90 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
     final opponent = multiplayer.opponent;
     if (opponent == null) return;
     final theme = widget.preferences.selectedTheme;
-    final startBattle = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF111B3D),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: const BorderSide(color: Color(0xFF70D9FF), width: 2),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.flash_on, color: Color(0xFFFFD45C)),
-            SizedBox(width: 8),
-            Text('Opponent found!', style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        content: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: Color(opponent.avatarColorValue),
-                child: Text(
-                  opponent.displayName.characters.first.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 25,
-                    fontWeight: FontWeight.w900,
+    final bool startBattle;
+    if (multiplayer.matchResumed) {
+      startBattle = true;
+    } else {
+      startBattle =
+          await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (dialogContext) => AlertDialog(
+              backgroundColor: const Color(0xFF111B3D),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Color(0xFF70D9FF), width: 2),
+              ),
+              title: const Row(
+                children: [
+                  Icon(Icons.flash_on, color: Color(0xFFFFD45C)),
+                  SizedBox(width: 8),
+                  Text(
+                    'Opponent found!',
+                    style: TextStyle(color: Colors.white),
                   ),
+                ],
+              ),
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: Color(opponent.avatarColorValue),
+                      child: Text(
+                        opponent.displayName.characters.first.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 25,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      opponent.displayName,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      '@${opponent.username}',
+                      style: const TextStyle(
+                        color: Color(0xFF70D9FF),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _SnapshotTeamStrip(
+                      team: opponent.team,
+                      theme: theme,
+                      customSprites: widget.customSprites,
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Your teams are locked in. Collect energy and defeat every animal on the opposing team.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Color(0xFFC5D0FF), height: 1.3),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                opponent.displayName,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
+              actions: [
+                FilledButton.icon(
+                  onPressed: () => Navigator.pop(dialogContext, true),
+                  icon: const Icon(Icons.sports_martial_arts),
+                  label: const Text('BATTLE'),
                 ),
-              ),
-              Text(
-                '@${opponent.username}',
-                style: const TextStyle(
-                  color: Color(0xFF70D9FF),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _SnapshotTeamStrip(
-                team: opponent.team,
-                theme: theme,
-                customSprites: widget.customSprites,
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                'Your teams are locked in. Collect energy and defeat every animal on the opposing team.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFFC5D0FF), height: 1.3),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          FilledButton.icon(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            icon: const Icon(Icons.sports_martial_arts),
-            label: const Text('BATTLE'),
-          ),
-        ],
-      ),
-    );
-    if (!mounted || startBattle != true) return;
+              ],
+            ),
+          ) ??
+          false;
+    }
+    if (!mounted || !startBattle) return;
     final player = MultiplayerPlayerSnapshot.fromPlayer(
       account: widget.account,
       team: _team.map(ArenaLogic.fighterFromOwned).toList(growable: false),

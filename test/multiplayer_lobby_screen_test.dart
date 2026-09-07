@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:egg_hatchers/models/multiplayer.dart';
 import 'package:egg_hatchers/models/owned_animal.dart';
 import 'package:egg_hatchers/models/player_account.dart';
 import 'package:egg_hatchers/screens/multiplayer_lobby_screen.dart';
+import 'package:egg_hatchers/screens/multiplayer_battle_screen.dart';
 import 'package:egg_hatchers/services/custom_sprite_service.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/multiplayer_service.dart';
@@ -9,6 +12,8 @@ import 'package:egg_hatchers/services/preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/controlled_lobby_channel.dart';
 
 void main() {
   final account = PlayerAccount(
@@ -138,4 +143,99 @@ void main() {
     multiplayer.dispose();
     setup.game.dispose();
   });
+
+  testWidgets('a resumed hosted match reopens battle without a stale prompt', (
+    tester,
+  ) async {
+    final setup = await services();
+    final channel = ControlledLobbyChannel()..handshake.complete();
+    final multiplayer = MultiplayerService(
+      serverUri: Uri.parse('ws://127.0.0.1:53218/ws'),
+      channelFactory: (uri, {protocols}) => channel,
+    );
+    await multiplayer.connect();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MultiplayerLobbyScreen(
+          game: setup.game,
+          preferences: setup.preferences,
+          customSprites: setup.sprites,
+          account: account,
+          multiplayer: multiplayer,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    channel.incoming.add(
+      jsonEncode({
+        'type': 'matched',
+        'matchId': 'resumed-match',
+        'resumed': true,
+        'opponent': _opponent().toJson(),
+      }),
+    );
+    channel.incoming.add(
+      jsonEncode({
+        'type': 'battleState',
+        'matchId': 'resumed-match',
+        'revision': 4,
+        'message': 'Players reconnected. Battle resumed.',
+        'self': _combatantState(),
+        'opponent': _combatantState(),
+      }),
+    );
+    expect(multiplayer.state, MultiplayerConnectionState.matched);
+    expect(multiplayer.matchResumed, isTrue);
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(MultiplayerBattleScreen), findsOneWidget);
+    expect(find.text('Opponent found!'), findsNothing);
+    expect(find.text('ONLINE MATCH'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    multiplayer.dispose();
+    channel.finish();
+    setup.game.dispose();
+  });
 }
+
+MultiplayerPlayerSnapshot _opponent() => const MultiplayerPlayerSnapshot(
+  playerId: 'peer-safe-id',
+  displayName: 'Player A1B2C3',
+  username: 'nest-a1b2c3',
+  avatarColorValue: 0xFF5271FF,
+  rating: 1000,
+  team: [
+    MultiplayerFighterSnapshot(
+      animalId: 'chicken',
+      mutationId: 'none',
+      level: 1,
+      power: 1,
+    ),
+    MultiplayerFighterSnapshot(
+      animalId: 'fox',
+      mutationId: 'none',
+      level: 1,
+      power: 8,
+    ),
+    MultiplayerFighterSnapshot(
+      animalId: 'dragon',
+      mutationId: 'none',
+      level: 1,
+      power: 250,
+    ),
+  ],
+);
+
+Map<String, dynamic> _combatantState() => {
+  'health': [205, 277, 882],
+  'activeIndex': 0,
+  'energy': 0,
+  'shield': 0,
+  'energyHits': 0,
+  'energyMisses': 0,
+  'combo': 0,
+  'bestCombo': 0,
+};

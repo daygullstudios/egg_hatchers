@@ -58,12 +58,12 @@ the same Firebase UID resumes the persisted SQLite match state, and expiry
 interrupts without choosing or rewarding a winner. The client preserves
 the match and shows explicit Reconnect/return states.
 
-Validation: Flutter analysis is clean, all **794 Flutter tests** pass, and the
+Validation: Flutter analysis is clean, all **796 Flutter tests** pass, and the
 release web build succeeds including Wasm dry run. Multiplayer Worker typecheck,
 seven Worker/pure-battle tests and both Wrangler dry runs pass. Worker version
-`30183ba0-705a-439b-af67-2e0ffcbbd21d` is routed only at the existing protected
+`15eeab13-094c-47b6-bfca-e3a35e7f8420` is routed only at the existing protected
 `egg-hatchers-playtest.daygullstudios.com/ws*`; static version
-`f25633e5-ea2e-4e12-b626-18e742047038` contains the activated protected client.
+`feffe8f6-f42c-4230-b291-513f00147f4f` contains the activated protected client.
 Live protected acceptance used isolated Chrome and Codex in-app-browser storage,
 creating two distinct disposable Firebase guest identities and private peer
 aliases. Both three-animal teams matched through the deployed Worker, entered the
@@ -74,11 +74,14 @@ A second reload held past the grace window produced `MATCH ENDED` for the peer,
 with rating still 1000 and battle tokens still 0: no false winner or reward was
 created. This closes the functional two-client browser acceptance item.
 
-Reconnect UX is not yet release-polished: a hard refresh returns to Hatchery and
-the player must reopen Battles > Online Arena and accept the restored Battle
-prompt. Preserve the working server recovery while making that route/prompt
-automatic or explicit in the next Batch 2 UX correction. Representative people,
-physical devices and launch-platform networks remain separate acceptance gates.
+The demonstrated reconnect UX defect is corrected: the battle hash is captured
+before asynchronous app/bootstrap work can normalize it, recovery waits for the
+verified Firebase player identity, and the Worker marks a restored match so the
+client reopens the battle without a stale `Opponent found` prompt. A final live
+cold-open replay closed one browser, observed the peer's paused state, reopened
+the exact battle URL and landed directly in the same fight inside the grace
+window. Representative people, physical devices and launch-platform networks
+remain separate acceptance gates.
 Anonymous requests to both `/` and `/ws/health` return Cloudflare Access 302.
 `playnestarium.com` still resolves no public app record. The legal/operational
 family controls remain an acceptance gate.

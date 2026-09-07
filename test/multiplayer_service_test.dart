@@ -113,6 +113,7 @@ void main() {
           'opponent': _player('peer-safe-id', 'Player A1B2C3').toJson(),
         }),
       );
+      expect(service.matchResumed, isFalse);
       channel.incoming.add(
         jsonEncode({
           'type': 'battleState',
@@ -182,6 +183,7 @@ void main() {
         jsonEncode({
           'type': 'matched',
           'matchId': 'resume-match',
+          'resumed': true,
           'opponent': _player('peer-safe-id', 'Player A1B2C3').toJson(),
         }),
       );
@@ -197,6 +199,7 @@ void main() {
       );
 
       expect(service.state, MultiplayerConnectionState.matched);
+      expect(service.matchResumed, isTrue);
       expect(service.battleState?.revision, 2);
       expect(service.matchInterrupted, isFalse);
     },

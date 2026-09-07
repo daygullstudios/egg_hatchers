@@ -633,7 +633,12 @@ export class MatchmakingPool extends DurableObject<Env> {
       player: own,
     };
     socket.serializeAttachment(resumedAttachment);
-    send(socket, { type: "matched", matchId: row.match_id, opponent });
+    send(socket, {
+      type: "matched",
+      matchId: row.match_id,
+      opponent,
+      resumed: true,
+    });
 
     const mutation = resumeBattle(battle, attachment.uid, now);
     if (mutation.changed) battle.revision += 1;
