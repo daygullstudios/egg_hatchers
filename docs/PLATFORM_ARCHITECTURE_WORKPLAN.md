@@ -149,8 +149,14 @@ hosted match per UTC day now grants one server-owned roster copy to both players
 from a rating-gated pool; a unique daily grant row prevents repeat farming.
 Preset-only report/block controls, two-way match exclusion, Durable Object
 eviction/hibernation and duplicate-session replacement now pass automated
-acceptance. Reviewed family capabilities, basic load/capacity and representative
-human/device acceptance remain open. See
+acceptance. A versioned trusted-claim seam now fails closed for missing or stale
+family-policy decisions and independently enforces battle, trading and preset-
+message permissions. The protected compatibility pool accepts 32 simultaneous
+sessions, forms 16 isolated matches in automated acceptance and returns a
+recoverable `503` at the explicit guardrail. This closes basic protected-pool
+load behavior, not public scale: production sharding/migration, reviewed family
+claim issuance/revocation and representative human/device acceptance remain
+open. See
 `PROJECT_HANDOFF.md` for exact versions/evidence.
 
 Web lifecycle acceptance now includes a versioned selective resume coordinator:

@@ -157,13 +157,22 @@ const reconnectGraceMs = 30_000;
 const safetyContextRetentionMs = 60 * 60 * 1000;
 const dailyReportLimit = 10;
 const reportRetentionMs = 180 * 24 * 60 * 60 * 1000;
+// This is a tested protected-playtest guardrail, not a public concurrency
+// promise. Production must use an approved sharding/data-migration plan rather
+// than silently pushing the single compatibility pool beyond this boundary.
+const protectedPoolSessionLimit = 32;
 
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname === "/ws/health") {
       return Response.json(
-        { status: "ok", service: "nestarium-multiplayer", protocol: 1 },
+        {
+          status: "ok",
+          service: "nestarium-multiplayer",
+          protocol: 1,
+          protectedPoolSessionLimit,
+        },
         { headers: jsonHeaders },
       );
     }
@@ -197,7 +206,17 @@ export default {
       JSON.stringify(session.capabilities),
     );
     const pool = env.MATCHMAKING.getByName(env.MATCHMAKING_POOL);
-    return pool.fetch(new Request(request, { headers }));
+    try {
+      return await pool.fetch(new Request(request, { headers }));
+    } catch (error) {
+      console.error("Multiplayer pool unavailable", {
+        reason: error instanceof Error ? error.name : "unknown",
+      });
+      return new Response("Multiplayer temporarily unavailable", {
+        status: 503,
+        headers: { "Cache-Control": "no-store", "Retry-After": "3" },
+      });
+    }
   },
 } satisfies ExportedHandler<Env>;
 
@@ -341,12 +360,37 @@ export class MatchmakingPool extends DurableObject<Env> {
     if (!uid || !rawCapabilities) {
       return new Response("Unauthorized", { status: 401 });
     }
-    const capabilities = JSON.parse(rawCapabilities) as SessionCapabilities;
-    if (!capabilities.onlineBattle) {
+    let capabilities: SessionCapabilities;
+    try {
+      capabilities = JSON.parse(rawCapabilities) as SessionCapabilities;
+    } catch {
+      return new Response("Forbidden", { status: 403 });
+    }
+    if (!capabilities.onlineBattle && !capabilities.trading) {
       return new Response("Forbidden", { status: 403 });
     }
 
-    for (const socket of this.ctx.getWebSockets()) {
+    const activeSockets = this.ctx
+      .getWebSockets()
+      .filter((socket) => socket.readyState === WebSocket.OPEN);
+    const existingSocket = activeSockets.find((socket) => {
+      const attachment = socket.deserializeAttachment() as
+        | SocketAttachment
+        | undefined;
+      return attachment?.uid === uid;
+    });
+    if (!existingSocket && activeSockets.length >= protectedPoolSessionLimit) {
+      console.warn("Rejected multiplayer session", {
+        reason: "protected_pool_capacity",
+        activeSessions: activeSockets.length,
+      });
+      return new Response("Protected multiplayer is currently full", {
+        status: 503,
+        headers: { "Cache-Control": "no-store", "Retry-After": "3" },
+      });
+    }
+
+    for (const socket of activeSockets) {
       const attachment = socket.deserializeAttachment() as
         | SocketAttachment
         | undefined;
@@ -468,6 +512,10 @@ export class MatchmakingPool extends DurableObject<Env> {
     attachment: SocketAttachment,
     value: unknown,
   ): Promise<void> {
+    if (!attachment.capabilities.onlineBattle) {
+      sendError(socket, "Online battles are not enabled for this player.");
+      return;
+    }
     if (attachment.state === "matched") {
       sendError(socket, "Leave the current match before searching again.");
       return;

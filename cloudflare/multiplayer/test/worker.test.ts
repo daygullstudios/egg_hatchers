@@ -3,6 +3,11 @@ import { evictDurableObject } from "cloudflare:test";
 import { SignJWT, importJWK } from "jose";
 import { describe, expect, it } from "vitest";
 
+import {
+  trustedCapabilityPolicyVersion,
+  verifyFirebaseSession,
+} from "../src/auth";
+
 const privateJwk = {
   kty: "RSA",
   n: "x4gEcTeUTeJWc3DAQgeKHZLL2qFdXyjrxHIi7L6UENwJhhD5q8LfXBTXXWk6xD3RFFIDw2l-j0xLOjgMdsQCz5AgYZPd47CR0mBJuZFxI4HZo5gsK-F8_Btf2NxjDgy7ZonXdn9YR3UpAEK3KE7FTSUChKPYnXpWmakliI2Z9B1QW8oYMbPyV5JKq75tfvwIjvC7pIBaJ82kyS9rGD5BQx0FvGWCC0wQNYOsV9CoqUkmSe-QhzCyvRjRb7m0UZGZBd4w4AB6nTRYJTurPWpLscLqAmnSkKJVaVFuJteOfTt9Z_9U3g8T9CoJulZzI-rkRIcFXzBQyEhOc0Q1us_v1w",
@@ -35,6 +40,100 @@ describe("multiplayer edge authentication", () => {
     const token = await tokenFor("tester-a", { projectId: "other-project" });
     const response = await openSocket(token);
     expect(response.status).toBe(401);
+  });
+
+  it("fails closed unless trusted capability claims use the current policy", async () => {
+    const missingDecision = await tokenFor("family-unknown", {
+      claims: {
+        nestariumCapabilities: {
+          onlineBattle: true,
+          trading: true,
+        },
+      },
+    });
+    await expect(
+      verifyFirebaseSession(missingDecision, {
+        FIREBASE_PROJECT_ID: env.FIREBASE_PROJECT_ID,
+        CAPABILITY_MODE: "trusted_claims",
+        FIREBASE_TEST_PUBLIC_JWK_JSON: JSON.stringify(publicJwk()),
+      }),
+    ).rejects.toThrow("hosted online capabilities are not enabled");
+
+    const battleOnly = await tokenFor("family-battle", {
+      claims: {
+        nestariumCapabilities: {
+          policyVersion: trustedCapabilityPolicyVersion,
+          decision: "allow",
+          onlineBattle: true,
+          trading: false,
+          presetMessages: false,
+          profileDiscovery: false,
+        },
+      },
+    });
+    await expect(
+      verifyFirebaseSession(battleOnly, {
+        FIREBASE_PROJECT_ID: env.FIREBASE_PROJECT_ID,
+        CAPABILITY_MODE: "trusted_claims",
+        FIREBASE_TEST_PUBLIC_JWK_JSON: JSON.stringify(publicJwk()),
+      }),
+    ).resolves.toMatchObject({
+      uid: "family-battle",
+      capabilities: {
+        onlineBattle: true,
+        trading: false,
+        presetMessages: false,
+        profileDiscovery: false,
+      },
+    });
+
+    const tradeOnly = await tokenFor("family-trade", {
+      claims: {
+        nestariumCapabilities: {
+          policyVersion: trustedCapabilityPolicyVersion,
+          decision: "allow",
+          onlineBattle: false,
+          trading: true,
+          presetMessages: false,
+          profileDiscovery: false,
+        },
+      },
+    });
+    await expect(
+      verifyFirebaseSession(tradeOnly, {
+        FIREBASE_PROJECT_ID: env.FIREBASE_PROJECT_ID,
+        CAPABILITY_MODE: "trusted_claims",
+        FIREBASE_TEST_PUBLIC_JWK_JSON: JSON.stringify(publicJwk()),
+      }),
+    ).resolves.toMatchObject({
+      uid: "family-trade",
+      capabilities: { onlineBattle: false, trading: true },
+    });
+  });
+
+  it("enforces battle and trade permissions independently after connection", async () => {
+    const response = await openPoolSocket("trade-only-session", {
+      onlineBattle: false,
+      trading: true,
+      presetMessages: false,
+      profileDiscovery: false,
+    });
+    expect(response.status).toBe(101);
+    const socket = response.webSocket!;
+    socket.accept();
+    const received = messages(socket);
+
+    socket.send(JSON.stringify({ type: "queue", player: player("forged") }));
+    await expect(received.next()).resolves.toMatchObject({
+      type: "error",
+      message: expect.stringContaining("Online battles are not enabled"),
+    });
+
+    socket.send(JSON.stringify({ type: "queueTrade" }));
+    await expect(received.next()).resolves.toMatchObject({
+      type: "tradeQueued",
+    });
+    socket.close(1000, "done");
   });
 
   it("matches two verified identities without disclosing supplied names or ids", async () => {
@@ -658,15 +757,68 @@ describe("multiplayer edge authentication", () => {
     secondOpponent.close(1000, "done");
     loser.close(1000, "done");
   });
+
+  it(
+    "accepts and isolates 32 protected sessions, then fails closed at the pool guardrail",
+    async () => {
+      const tokens = await Promise.all(
+        Array.from({ length: 33 }, (_, index) =>
+          tokenFor(`capacity-${index.toString().padStart(2, "0")}`),
+        ),
+      );
+      const responses = await Promise.all(tokens.slice(0, 32).map(openSocket));
+      expect(responses.every((response) => response.status === 101)).toBe(true);
+
+      const sockets = responses.map((response) => response.webSocket!);
+      const inboxes = sockets.map((socket) => {
+        socket.accept();
+        return messages(socket);
+      });
+      const matchIds = new Set<string>();
+      for (let index = 0; index < sockets.length; index += 2) {
+        sockets[index].send(
+          JSON.stringify({ type: "queue", player: player(`load-${index}`) }),
+        );
+        await expect(inboxes[index].next()).resolves.toMatchObject({
+          type: "queued",
+        });
+        sockets[index + 1].send(
+          JSON.stringify({
+            type: "queue",
+            player: player(`load-${index + 1}`),
+          }),
+        );
+        const firstMatch = await inboxes[index].next();
+        const secondMatch = await inboxes[index + 1].next();
+        expect(firstMatch).toMatchObject({ type: "matched" });
+        expect(secondMatch).toMatchObject({
+          type: "matched",
+          matchId: firstMatch.matchId,
+        });
+        matchIds.add(firstMatch.matchId as string);
+      }
+      expect(matchIds).toHaveLength(16);
+
+      const fullResponse = await openSocket(tokens[32]);
+      expect(fullResponse.status).toBe(503);
+      expect(fullResponse.headers.get("Retry-After")).toBe("3");
+
+      for (const socket of sockets) socket.close(1000, "capacity test done");
+    },
+    30_000,
+  );
 });
 
 async function tokenFor(
   uid: string,
-  { projectId = env.FIREBASE_PROJECT_ID }: { projectId?: string } = {},
+  {
+    projectId = env.FIREBASE_PROJECT_ID,
+    claims = {},
+  }: { projectId?: string; claims?: Record<string, unknown> } = {},
 ): Promise<string> {
   const key = await importJWK(privateJwk, "RS256");
   const now = Math.floor(Date.now() / 1000);
-  return new SignJWT({ auth_time: now - 1 })
+  return new SignJWT({ auth_time: now - 1, ...claims })
     .setProtectedHeader({ alg: "RS256", kid: "test-key" })
     .setSubject(uid)
     .setAudience(projectId)
@@ -676,12 +828,43 @@ async function tokenFor(
     .sign(key);
 }
 
+function publicJwk(): JsonWebKey & { kid: string } {
+  return {
+    kty: privateJwk.kty,
+    n: privateJwk.n,
+    e: privateJwk.e,
+    kid: privateJwk.kid,
+    use: privateJwk.use,
+    alg: privateJwk.alg,
+  };
+}
+
 function openSocket(token: string): Promise<Response> {
   return exports.default.fetch(
     new Request("https://example.com/ws", {
       headers: {
         Upgrade: "websocket",
         "Sec-WebSocket-Protocol": `nestarium-v1, firebase-auth.${token}`,
+      },
+    }),
+  );
+}
+
+function openPoolSocket(
+  uid: string,
+  capabilities: {
+    onlineBattle: boolean;
+    profileDiscovery: boolean;
+    presetMessages: boolean;
+    trading: boolean;
+  },
+): Promise<Response> {
+  return env.MATCHMAKING.getByName(env.MATCHMAKING_POOL).fetch(
+    new Request("https://example.com/ws", {
+      headers: {
+        Upgrade: "websocket",
+        "X-Nestarium-Uid": uid,
+        "X-Nestarium-Capabilities": JSON.stringify(capabilities),
       },
     }),
   );

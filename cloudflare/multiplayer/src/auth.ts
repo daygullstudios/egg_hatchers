@@ -28,6 +28,8 @@ export type VerifiedSession = {
   capabilities: SessionCapabilities;
 };
 
+export const trustedCapabilityPolicyVersion = 1;
+
 type AuthEnv = {
   FIREBASE_PROJECT_ID: string;
   CAPABILITY_MODE: string;
@@ -73,8 +75,8 @@ export async function verifyFirebaseSession(
   validateFirebaseClaims(payload);
 
   const capabilities = capabilitiesFor(payload, env.CAPABILITY_MODE);
-  if (!capabilities.onlineBattle) {
-    throw new Error("online battle capability is not enabled");
+  if (!capabilities.onlineBattle && !capabilities.trading) {
+    throw new Error("hosted online capabilities are not enabled");
   }
   return { uid: payload.sub!, capabilities };
 }
@@ -146,6 +148,22 @@ function capabilitiesFor(
     claim && typeof claim === "object"
       ? (claim as Record<string, unknown>)
       : {};
+  // Public sessions must be enabled by a versioned, server-issued policy
+  // decision. An old, partial, locally invented or otherwise unknown claim is
+  // deliberately not authority. The future family-identity service owns claim
+  // issuance and revocation; this Worker only enforces its signed result.
+  if (
+    mode !== "trusted_claims" ||
+    capabilities.policyVersion !== trustedCapabilityPolicyVersion ||
+    capabilities.decision !== "allow"
+  ) {
+    return {
+      onlineBattle: false,
+      profileDiscovery: false,
+      presetMessages: false,
+      trading: false,
+    };
+  }
   return {
     onlineBattle: capabilities.onlineBattle === true,
     profileDiscovery: capabilities.profileDiscovery === true,

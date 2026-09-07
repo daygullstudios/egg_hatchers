@@ -30,9 +30,29 @@ trades are deployed. The first completed hosted match per UTC day now grants
 both participants one server-owned roster animal from a rating-gated pool.
 Preset-only report/block controls and server-enforced matchmaking blocks are
 also deployed. Durable Object eviction/hibernation and duplicate-session
-acceptance now pass automatically. The reviewed family capability model,
-basic load/capacity acceptance and representative human/device acceptance
-remain open. Do not call either batch complete.
+acceptance now pass automatically. The versioned trusted-claim enforcement seam
+and explicit protected-pool capacity behavior are implemented; reviewed family
+claim issuance/revocation, public sharding/migration and representative human/
+device acceptance remain open. Do not call either batch complete.
+
+The capability/capacity tail uses `trusted_claims` for any future public Worker.
+Only a signed `nestariumCapabilities` object with policy version 1 and an explicit
+allow decision is accepted; missing, old or partial decisions fail closed.
+Online battle and trading are separate permissions, and preset trade messages
+remain independently gated. This is an enforcement contract, not a consent
+system: the future reviewed family-identity service must issue and revoke the
+claims. The existing Access-protected mode remains deliberately permissive for
+approved testers and is still not evidence of age or guardian permission.
+
+The existing compatibility pool now admits at most 32 distinct live sessions.
+A replacement socket for the same UID remains recoverable; a 33rd distinct
+session receives `503` with `Retry-After: 3` instead of relying on eventual
+Durable Object overload. Automated acceptance opens 32 sessions, forms 16
+isolated matches with unique match IDs, and proves the guardrail. This closes
+basic protected-pool behavior only. Cloudflare's current guidance describes one
+Durable Object as single-threaded with horizontal scale across objects, so a
+public release still needs an approved shard topology and migration that keeps
+the existing roster namespace intact.
 
 The current settlement checkpoint persists one Durable Object receipt per UID
 and match, server-owned online rating, fixed hosted rewards and an explicit
@@ -96,11 +116,13 @@ now requires `cloudflare/playtest`'s `npm run build:web`, which preserves the
 protected-only feature flags. Final static version
 `d25ea84c-4ff9-47a7-a21d-5f7fc701f8d0` is routed only at the existing protected
 custom domain. Multiplayer Worker version
-`8aeb94f7-3f9a-4559-b53b-8c9ce0da34a8` remains routed only at `/ws*` there.
-Analysis is clean; all 805 Flutter tests and thirteen Worker tests pass, as do Worker
-typecheck/dry-run, release web/Wasm dry run and static tests/dry-run. Anonymous
+`4ccde7b4-be30-47d8-85ba-37264673b030` remains routed only at `/ws*` there.
+The last unchanged Flutter checkpoint remains clean at 805 tests. Sixteen current
+Worker tests pass, as do Worker typecheck/types/dry-run; the preceding release
+web/Wasm and static tests/dry-run remain valid because no Flutter/static asset
+changed in this tail. Anonymous
 requests to both `/` and `/ws/health` still receive Cloudflare Access 302.
-The Nestarium legacy-reference audit classifies 772 retained compatibility
+The Nestarium legacy-reference audit classifies 777 retained compatibility
 occurrences with no unclassified branding.
 
 Desktop/web resilience is now an explicit follow-on acceptance item. Use a
@@ -211,10 +233,11 @@ receipt state, and commits roster trades atomically. The local Dart server remai
 a development sandbox and does not define hosted trust. Global discovery/invites
 stay off; protected trading uses only preset messages and private aliases.
 
-**Next:** finish the reviewed family capability boundary and close basic
-load/capacity plus representative human/device acceptance. The exact reviewed
-family identity/consent mechanism remains an external decision gate; isolated
-backend and platform-readiness work may continue.
+**Next:** design the public multiplayer shard/migration boundary without moving
+the protected roster namespace, then close representative human/device
+acceptance. The exact reviewed family identity/consent and claim-issuance
+mechanism remains an external decision gate; isolated backend and platform-
+readiness work may continue.
 The workplan records four bounded multiplayer packages: authenticated hosting;
 trusted inventory/results/trades; family-safe capabilities; failure recovery and
 integrated acceptance. They fit inside the existing six-milestone finish line.

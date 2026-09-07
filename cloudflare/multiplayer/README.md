@@ -14,6 +14,12 @@ Cloudflare Access application.
 - `protected_playtest` permits authenticated battle matchmaking and the bounded
   preset-message trade flow because Access limits the hostname to approved
   testers. It is not parental consent and does not define public capabilities.
+- Public mode is `trusted_claims`. It accepts only a signed Firebase custom
+  claim with `nestariumCapabilities.policyVersion: 1` and `decision: "allow"`.
+  Missing, old, partial or otherwise unknown policy claims fail closed. Battle
+  and trading are independently enforced; trading does not silently grant
+  battle access, and preset messages remain a separate permission. The future
+  reviewed family-identity service must own claim issuance and revocation.
 - Client player IDs and names are ignored. Peers receive a server-derived test
   alias. Profile discovery and free-text communication remain unavailable.
 - The Online Roster is separate from the offline-first Hatchery Collection. It
@@ -47,9 +53,16 @@ Cloudflare Access application.
   separate replacement test proves a newer socket retires an older session for
   the same Firebase UID.
 
-The one named playtest pool is intentionally a small protected vertical slice,
-not a production capacity or sharding promise. Changing its name would create a
-different roster namespace and therefore requires an explicit migration plan.
+The one named playtest pool is intentionally a small protected vertical slice.
+It now has an explicit 32-session guardrail: a 33rd distinct session receives a
+recoverable `503` plus `Retry-After`, while replacement of an existing UID still
+works. Automated acceptance opens all 32 sessions, forms 16 isolated battle
+matches and proves the fail-closed boundary. This is basic protected-playtest
+acceptance, not a public capacity or latency promise. Cloudflare documents that
+each Durable Object is single-threaded and should scale horizontally across
+objects; a public topology therefore still needs an approved sharding and data-
+migration plan. Changing the current pool name would create a different roster
+namespace and must not happen cosmetically.
 
 ## Verify
 

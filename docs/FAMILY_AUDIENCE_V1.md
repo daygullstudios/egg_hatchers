@@ -6,6 +6,14 @@ controls are still open. This is implementation planning, not legal clearance.
 Do not mark the milestone complete or invite an unrestricted child audience based
 on this document. The protected test is not proof of parental consent.
 
+**Enforcement seam implemented September 7:** the hosted Worker now has a
+versioned `trusted_claims` contract. Missing, stale, partial or non-allow policy
+claims deny all hosted capabilities; battle, trading, preset messages and profile
+discovery are separate booleans, and battle/trade actions are checked server-side.
+This only supplies the fail-closed enforcement endpoint required by F3. It does
+not decide eligibility, collect age, establish guardian authority, issue claims,
+revoke consent, publish the service or complete F1/F2/F4/F5.
+
 ## Confirmed direction and launch target
 
 **Owner-confirmed:** ages 8–12 are actively intended players alongside teens and
