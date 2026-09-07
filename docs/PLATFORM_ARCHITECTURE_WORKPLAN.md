@@ -131,9 +131,12 @@ Execution rules:
   any material increase to the 12–16-unit estimate before extending the scope.
   Do not rerun the full RC matrix for each internal unit.
 
-Current status: **0/4 delivery batches complete; batch 1 is in preparation.**
-The hosted-session work has source/reference inspection only so far; no new
-authenticated backend implementation or deployment is claimed by this update.
+Current status: **0/4 delivery batches complete; batch 1 is active.** Authenticated
+hosted matchmaking foundation is implemented/deployed on the legacy protected
+playtest route, automatic global presence is removed, and the Flutter client is
+prepared to send a restored Firebase ID token. Hosted client release stays off;
+family consent/retention/deletion, live two-account acceptance and full battle/
+settlement remain open. See `PROJECT_HANDOFF.md` for version/test evidence.
 
 ### Historical implementation inventory (not an instruction to continue in order)
 

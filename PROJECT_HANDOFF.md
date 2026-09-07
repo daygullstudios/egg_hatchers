@@ -20,11 +20,39 @@ checks without repeated approval requests. Report meaningful batch checkpoints;
 run normal integration/deployment gates for completed user-facing batches, not
 a full RC matrix per small patch. Reviewable verified commits/pushes still apply.
 
-**Status: 0/4 grouped batches complete; batch 1 preparation only.** The preceding
-hosted-backend continuation inspected source/model references but made no runtime
-changes. Do not report authenticated hosted multiplayer as implemented or deployed.
-This cadence update is documentation-only, not one of the remaining implementation
-units. The protected game version and preceding valid test evidence stay unchanged.
+**Status: 0/4 grouped batches complete; batch 1 is active.** Its hosted-identity
+foundation is now implemented and deployed, but the family identity/consent and
+full battle/settlement gates remain open. Do not call the batch complete.
+
+Application commit `43f2344` adds a separate
+`nestarium-multiplayer-playtest` Worker/Durable Object. `/ws` verifies Firebase
+ID-token signature, Firebase project audience/issuer, expiry, issued/auth times
+and UID before it reaches a session. The Worker replaces submitted player IDs
+and names with a derived test alias, persists matched-session records in SQLite,
+uses WebSocket hibernation attachments, rate/size limits commands and denies
+profile discovery, messages, trades, rewards and other unsupported commands.
+`protected_playtest` permits authenticated matchmaking because the entire legacy
+playtest hostname is Access-protected; this is explicitly not parental consent.
+Production capability mode defaults to trusted token claims and denies unknowns.
+
+The Flutter client now has a read-only Firebase token provider and authenticated
+WebSocket protocol contract, but the hosted release switch remains off until
+server-run battle and trusted settlement are ready together. Local development
+multiplayer is unchanged. Automatic root-level lobby presence was removed, so
+loading/changing a player no longer attempts to publish their account/name/avatar,
+team or collection. Global discovery/invites stay unavailable until their own
+capability/safety package passes. Existing local saves, UIDs, Firebase project,
+Firestore document and package/bundle IDs are unchanged.
+
+Validation: Flutter analysis is clean, all **789 Flutter tests** pass, release
+web build succeeds including Wasm dry run; multiplayer Worker typecheck, three
+Workers-runtime tests and Wrangler dry run pass. Worker version
+`2de0d77f-41b7-4912-87ee-ffd8f4790fd4` is routed only at the existing protected
+`egg-hatchers-playtest.daygullstudios.com/ws*`. Static protected version
+`13bd26d2-6193-4235-b15a-0237a682d04f` contains the client/privacy correction.
+Anonymous requests to both `/` and `/ws/health` return Cloudflare Access 302;
+`playnestarium.com` remains unrouted. Live two-account Firebase matching and the
+legal/operational family controls are still acceptance gates, not claims here.
 
 ## Family-audience requirements — current decision checkpoint
 
@@ -34,11 +62,11 @@ Firebase, Apple and ICO references. **This milestone is not cleared for release.
 Owner-confirmed ages 8–12 plus teens/adults are not the same as an approved legal
 classification, consent process or set of launch territories.
 
-Verified gaps: optional Firebase startup/anonymous identity/core sync have no
-age or guardian-permission boundary; lobby presence is attempted automatically
-after player load, not only after selecting multiplayer. A successful test-server
-connection exposes account/name/avatar, team and collection to peers. The static
-protected deployment does not itself ship that server. No parent/consent/revocation
+Verified gaps: optional Firebase startup/anonymous identity/core sync still have
+no age or guardian-permission boundary. The previous automatic lobby attempt was
+removed in `43f2344`; loading a save no longer publishes a global profile. The
+new protected backend accepts only authenticated matchmaking and derives peer
+aliases, while its Flutter release switch stays off. No parent/consent/revocation
 or cloud-erasure runtime was found. No advertising, purchase, Analytics or
 Crashlytics SDK was found in the dependency/source audit; that is not proof of
 zero provider processing or completed native/network acceptance.
@@ -69,8 +97,10 @@ Firebase socket identity, trusts supplied roster/levels/rating, keeps sessions i
 memory and settles trades/results through client-local updates. This is not a
 from-scratch gameplay project, nor is it ready just by deploying the server.
 
-**Next:** resolve the exact reviewed family identity/consent mechanism and begin
-the hosted identity/session contract plus protected two-client vertical slice.
+**Next:** prove the hosted identity/session contract with two disposable approved
+Firebase accounts, then implement server-run battle/reconnect without enabling
+client-local rewards. In parallel, the exact reviewed family identity/consent
+mechanism remains an external decision gate; isolated backend work may continue.
 The workplan records four bounded multiplayer packages: authenticated hosting;
 trusted inventory/results/trades; family-safe capabilities; failure recovery and
 integrated acceptance. They fit inside the existing six-milestone finish line.
