@@ -695,7 +695,7 @@
     },
     {
       "path": "lib/services/multiplayer_service.dart",
-      "line": 65,
+      "line": 77,
       "references": [
         "EGG_HATCHERS_SERVER_URL"
       ],
@@ -3392,6 +3392,14 @@
     {
       "path": "test/multiplayer_lobby_screen_test.dart",
       "line": 7,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/multiplayer_lobby_screen_test.dart",
+      "line": 8,
       "references": [
         "egg_hatchers"
       ],

@@ -9,6 +9,7 @@ import '../data/audio_assets.dart';
 import '../navigation/app_page_route.dart';
 import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
+import '../services/multiplayer_service.dart';
 import '../services/preferences_service.dart';
 import '../theme/game_theme.dart';
 import '../utils/battle_power_logic.dart';
@@ -745,6 +746,8 @@ class BattlesScreen extends StatelessWidget {
                             _TradingEntryCard(
                               theme: theme,
                               game: game,
+                              serviceAvailable: MultiplayerService
+                                  .defaultServerSupportsTrading,
                               onTap: () => _openOnlineTrading(context, theme),
                             ),
                             const SizedBox(height: 14),
@@ -1302,16 +1305,18 @@ class _TradingEntryCard extends StatelessWidget {
   const _TradingEntryCard({
     required this.theme,
     required this.game,
+    required this.serviceAvailable,
     required this.onTap,
   });
 
   final BackgroundTheme theme;
   final GameService game;
+  final bool serviceAvailable;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final enabled = game.tradableAnimals.isNotEmpty;
+    final enabled = serviceAvailable && game.tradableAnimals.isNotEmpty;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1353,7 +1358,9 @@ class _TradingEntryCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      enabled
+                      !serviceAvailable
+                          ? 'Secure trading is being completed'
+                          : enabled
                           ? '${game.tradableAnimals.length} stacks available'
                           : 'No tradable animals available',
                       style: const TextStyle(
@@ -1365,7 +1372,11 @@ class _TradingEntryCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.white, size: 30),
+              Icon(
+                serviceAvailable ? Icons.chevron_right : Icons.lock_outline,
+                color: Colors.white,
+                size: 30,
+              ),
             ],
           ),
         ),

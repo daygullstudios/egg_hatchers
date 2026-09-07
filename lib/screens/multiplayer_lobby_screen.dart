@@ -549,7 +549,10 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
                       ),
                     ),
                   ),
-                  if (lobby != null) ...[
+                  if (_multiplayer?.supportsPlayerDiscovery == false) ...[
+                    const SizedBox(height: 24),
+                    const _ProtectedMatchmakingNotice(),
+                  ] else if (lobby != null) ...[
                     const SizedBox(height: 24),
                     OnlinePlayerList(
                       players: lobby.players,
@@ -564,6 +567,48 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _ProtectedMatchmakingNotice extends StatelessWidget {
+  const _ProtectedMatchmakingNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF18284D),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF70D9FF)),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.shield_outlined, color: Color(0xFF70D9FF)),
+          SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Protected matchmaking',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  'Opponents use private player aliases. Player discovery and invites stay off during this test.',
+                  style: TextStyle(color: Color(0xFFC5D0FF), height: 1.3),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

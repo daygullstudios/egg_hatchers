@@ -4,6 +4,7 @@ import 'package:egg_hatchers/models/player_account.dart';
 import 'package:egg_hatchers/screens/multiplayer_lobby_screen.dart';
 import 'package:egg_hatchers/services/custom_sprite_service.dart';
 import 'package:egg_hatchers/services/game_service.dart';
+import 'package:egg_hatchers/services/multiplayer_service.dart';
 import 'package:egg_hatchers/services/preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -99,6 +100,42 @@ void main() {
     expect(submitted, isNotNull);
     expect(submitted!.playerId, account.id);
     expect(submitted!.team, hasLength(3));
+    setup.game.dispose();
+  });
+
+  testWidgets('hosted lobby explains protected direct matchmaking', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final setup = await services();
+    final multiplayer = MultiplayerService(
+      serverUri: Uri.parse('wss://playtest.example/ws'),
+      hostedMultiplayerEnabled: false,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MultiplayerLobbyScreen(
+          game: setup.game,
+          preferences: setup.preferences,
+          customSprites: setup.sprites,
+          account: account,
+          multiplayer: multiplayer,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Protected matchmaking'), findsOneWidget);
+    expect(
+      find.textContaining('Player discovery and invites stay off'),
+      findsOneWidget,
+    );
+    expect(find.text('Online Players'), findsNothing);
+    multiplayer.dispose();
     setup.game.dispose();
   });
 }

@@ -30,8 +30,14 @@ class MultiplayerService extends ChangeNotifier {
            identityTokenProvider ?? FirebaseOnlineIdentityTokenProvider(),
        _channelFactory = channelFactory ?? WebSocketChannel.connect,
        _hostedMultiplayerEnabled =
-           hostedMultiplayerEnabled ??
-           const bool.fromEnvironment('NESTARIUM_HOSTED_MULTIPLAYER_ENABLED');
+           hostedMultiplayerEnabled ?? hostedMultiplayerBuildEnabled;
+
+  static const hostedMultiplayerBuildEnabled = bool.fromEnvironment(
+    'NESTARIUM_HOSTED_MULTIPLAYER_ENABLED',
+  );
+  static const hostedTradingBuildEnabled = bool.fromEnvironment(
+    'NESTARIUM_HOSTED_TRADING_ENABLED',
+  );
 
   final Uri serverUri;
   final OnlineIdentityTokenProvider _identityTokenProvider;
@@ -58,6 +64,12 @@ class MultiplayerService extends ChangeNotifier {
       _state != MultiplayerConnectionState.connecting &&
       _state != MultiplayerConnectionState.offline;
   bool get isHostedServer => !isLocalServerUri(serverUri);
+  bool get supportsPlayerDiscovery => !isHostedServer;
+
+  static bool get defaultServerSupportsTrading {
+    final uri = defaultServerUri();
+    return isLocalServerUri(uri) || hostedTradingBuildEnabled;
+  }
 
   static Uri defaultServerUri() {
     const configuredUrl = String.fromEnvironment(

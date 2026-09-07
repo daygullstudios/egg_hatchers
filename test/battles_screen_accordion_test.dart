@@ -49,6 +49,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Auto Battle'), findsOneWidget);
+    expect(find.text('Secure trading is being completed'), findsNothing);
     expect(find.text('Egg Homing'), findsNothing);
     expect(find.text('Battle Limit Break'), findsNothing);
 

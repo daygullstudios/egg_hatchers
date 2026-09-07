@@ -44,8 +44,10 @@ attached.
   browser hardening that does not conflict with Flutter.
 - Firebase will own protected identity and durable progress. Cloudflare does
   not become a second save database.
-- A later multiplayer Worker or Durable Object must be a separate service from
-  this static-delivery project.
+- `../multiplayer` is the separate authenticated Worker/Durable Object for the
+  `/ws*` route. Keep its identity, tests and deployment separate from assets.
+- The protected build command enables hosted test battles. Those matches do not
+  grant coins, tokens or rating until server-owned settlement is released.
 
 ## Local verification
 
