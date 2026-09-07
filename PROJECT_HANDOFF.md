@@ -57,8 +57,14 @@ also passes all 23 focused progress-recovery tests. Release web build passes
 `881826b3e568a9f4f4d15ea630884ac7c5f0d44444b6b34626ce7b9362ba6664`.
 Playtest **3 tests** and Wrangler **4.129.0** dry run pass in the required order.
 Brand audit: **633 classified** compatibility references, none unclassified.
-Protected deployment/live acceptance is the remaining step of this checkpoint.
-No real player is damaged or restored for QA.
+Implementation **`1d15690`** is committed and pushed to main. The verified build
+is deployed at 100% current version **`43fe4bdb-72b3-43bd-a2fd-406c41cfc146`**,
+deployment `2026-09-07T00:51:29.701Z`, on the unchanged protected custom domain.
+Unauthenticated requests remain **302 to Cloudflare Access**. External Chrome
+refresh reopens the existing guest (two normal chickens, one golden chicken,
++4/sec; coins continue increasing). Settings retains **Choose progress / Compare
+saves** without selecting either copy. Navigation works and the tab is left on
+the Hatchery. No real player is created, removed, damaged or restored for QA.
 
 Next: broader offline startup and storage-outage acceptance, including failures
 outside progress decoding; native recovery and representative human comprehension
