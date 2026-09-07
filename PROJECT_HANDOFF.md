@@ -36,7 +36,14 @@ Wasm dry run). Bundle SHA-256:
 `208d849330ef3607845dfee8a57af6b40a5f3c7c2bca04b41d8aebd863c8b387`.
 All three playtest tests and the pinned Wrangler 4.129.0 dry run pass after the
 build; brand audit has 744 classified references and no unclassified branding.
-The completed verified batch is ready for its protected deployment receipt.
+Implementation **`849fcbd`** is committed/pushed on main. The unchanged protected
+playtest custom-domain route now serves **100% version
+`c6913615-bb77-49d2-9065-8f61f0b9b19c`**, deployment
+`2026-09-07T08:00:01.629655Z`. Anonymous requests remain **302 to Cloudflare
+Access**. Live Chrome refresh preserves two normal chickens, one golden chicken,
+level 1 and +4/sec income (514,966 coins first refreshed read). Collection/Fusion
+opens with the repaired header fitting the portrait shell; no fusion, purchase,
+reward claim, save choice or player change was performed. Returned to Hatchery.
 Human comprehension, native/browser platform acceptance and family-audience
 readiness are not claimed by this widget test. Previous storage failure matrices
 remain valid and were not rerun separately; no native build/version/tag/RC dossier.
