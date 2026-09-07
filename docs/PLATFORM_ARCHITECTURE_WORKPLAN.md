@@ -27,7 +27,42 @@ Every touched player flow must make clear: where am I, what can I do next,
 what will it cost/change, can I cancel, and where is my progress saved?
 Automated passes are necessary but are not proof of player comprehension.
 
-### Next priorities, in order
+## Approved six-milestone v1 finish line — 2026-09-07
+
+This is the current execution order, approved by Tony after the credit/scope
+discussion. It supersedes historical "next" work below. Do not turn an open
+hardening inventory into an indefinite pre-release project.
+
+1. **First-player journey:** fresh guest, tutorial, first hatch, visible income,
+   upgrade, Collection/Quests and save/reopen. Fix demonstrated obstacles only.
+   Automated acceptance now passes at 320x568 and 390x844; representative human
+   comprehension remains part of milestone 5, not a claim made by widget tests.
+2. **Family-audience requirements:** close the child-compatible identity,
+   data-collection, privacy and necessary consent decisions for the confirmed
+   ages 8–12 plus teens/adults. Record exact owner/professional review gates;
+   do not infer compliance or enable new SDK collection from a generic approval.
+3. **Continuity/platform acceptance:** verify the account/save and delivery
+   behavior of the actual v1 launch platforms. Use existing valid evidence;
+   native/physical-device steps require the appropriate host and human checks.
+4. **Public Nestarium readiness:** finish provider/support/policy readiness and
+   the coordinated protected hostname/origin-recovery gates. Keep the new public
+   domain unrouted until those gates pass together.
+5. **One consolidated release candidate:** freeze the candidate, run the launch
+   platform/release checks once, and do representative child/teen/adult and device
+   playtesting. Recheck only surfaces invalidated by subsequent corrections.
+6. **Release decision and stop:** resolve only remaining launch blockers, obtain
+   required owner publication/store decisions, publish the approved ready scope,
+   and stop. Optional enhancements go to post-v1, not another automatic workstream.
+
+During implementation use focused checks and sensible related batches. Run the
+repository's required analyze/test/web-build/playtest sequence once at a completed
+user-facing integration checkpoint, not after each small edit. No automatic
+version bumps, tags, native rebuilds or release-candidate dossiers for micro-fixes.
+Auxiliary reward/reference writers and speculative extra robustness are deferred
+unless a demonstrated release-blocking defect makes a specific repair necessary.
+Multiplayer expansion and future events do not silently enlarge this finish line.
+
+### Historical implementation inventory (not an instruction to continue in order)
 
 1. **Save/account trust:** first patch corrects the misleading local Delete
    Account action to Remove local player with exact scope, backup and
@@ -96,7 +131,7 @@ Automated passes are necessary but are not proof of player comprehension.
    rating-claim history. Draft exit warnings compose with progress/settings warnings;
    import preflight and quest notices respect the active editor. These are memory
    drafts, not durable autosaves or automatic conflict replacement.
-   **Next: auxiliary writers**, especially rating claims/reference unlocks and
+   **Deferred inventory: auxiliary writers**, especially rating claims/reference unlocks and
    preference-like metadata, followed by checked profile/directory writes/removal.
    Native recovery and representative human acceptance
    remain open. `PROJECT_HANDOFF.md` owns exact validation/live evidence. Trusted cloud erasure

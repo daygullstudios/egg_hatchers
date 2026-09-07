@@ -2,7 +2,51 @@
 
 Updated: 2026-09-07
 
-## Custom-editor draft recovery and checked content — current implementation checkpoint
+## First-player journey — current bounded implementation checkpoint
+
+Tony approved the six-milestone v1 finish line in
+`docs/PLATFORM_ARCHITECTURE_WORKPLAN.md`: first-player journey; family-audience
+requirements; launch-platform continuity; public Nestarium readiness; one
+consolidated release candidate/human QA; blocker-only fixes and release/stop.
+This explicitly supersedes the earlier automatic auxiliary-writer roadmap.
+Optional robustness/features are post-v1 unless a demonstrated launch blocker.
+
+The new rendered whole-app journey reproduced a small-phone tutorial defect:
+repeated route notifications consumed the sole auto-scroll before it ran, leaving
+Buy & Hatch below the screen and allowing Next to skip the first purchase.
+Scroll is now consumed only by an executing, mounted-target callback; an affordable
+missing purchase target also has an explicit Buy & Hatch fallback. Purchase copy
+states the 100-coin cost and immediate hatch; Shop and return instructions match
+the persistent shell. Back steps no longer offer a second Next button that could
+abandon the next step on another screen. The first Collection visit also exposed
+a narrow Fusion heading overflow, corrected with wrapping title/help/summary.
+
+Focused acceptance: 16 tutorial/journey/visibility tests pass, including complete
+fresh-device journeys at 320x568 and 390x844. They use rendered controls rather
+than service-driven tutorial advancement, buy/hatch one normal chicken, verify
+idle income and upgrade, visit Collection/Quests/Battles, complete the tutorial,
+then rebuild the app over the same disposable preferences. Player ID, animals,
+level, coins and completion survive; welcome does not restart. No real player,
+cloud copy or device settings are changed for these tests. Existing storage/
+identity compatibility and tutorial completion version are unchanged.
+
+Final integration validation: Flutter 3.47.2 analysis is clean (41.1s), all
+**786 Flutter tests** pass, and the release web build passes (45.4s, including
+Wasm dry run). Bundle SHA-256:
+`208d849330ef3607845dfee8a57af6b40a5f3c7c2bca04b41d8aebd863c8b387`.
+All three playtest tests and the pinned Wrangler 4.129.0 dry run pass after the
+build; brand audit has 744 classified references and no unclassified branding.
+The completed verified batch is ready for its protected deployment receipt.
+Human comprehension, native/browser platform acceptance and family-audience
+readiness are not claimed by this widget test. Previous storage failure matrices
+remain valid and were not rerun separately; no native build/version/tag/RC dossier.
+
+**Next milestone:** family-audience requirements: a bounded gap/decision list for
+the intended 8–12, teen and adult audience, followed by only necessary v1 work.
+Stop the current batch after its verified protected deployment. Do not resume
+auxiliary writers or repeat storage failure matrices by default.
+
+## Custom-editor draft recovery and checked content — preceding implementation checkpoint
 
 Custom egg/sprite save, delete and reset now check backend acceptance and fresh
 read-back before publishing saved lists or success feedback. The installed
@@ -57,7 +101,7 @@ Drafts are held in memory, not durable autosaves: force-close, refresh, eviction
 or hardware failure can still lose them. An external-edit conflict is blocked,
 not silently merged or overwritten. Old builds do not honor the new leases.
 
-**Next:** remaining auxiliary writers (sprite-rating claims/reference unlocks
+**Historical next (superseded by the six-milestone plan above):** remaining auxiliary writers (sprite-rating claims/reference unlocks
 and preference-like metadata), then checked player-directory/profile writes and
 removal. Keep failure recovery understandable before further infrastructure work.
 Representative child/teen/adult usability, native full-disk/offline/device QA,

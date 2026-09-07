@@ -70,15 +70,21 @@ class _TutorialSpotlightOverlayState extends State<TutorialSpotlightOverlay> {
         : null;
     final shouldAutoScroll =
         stepKey != null && _lastAutoScrolledStepKey != stepKey;
-    _lastAutoScrolledStepKey = stepKey;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || generation != _measureGeneration) return;
       clearGameSnackBars(context);
 
       final step = service.currentStep;
-      if (shouldAutoScroll && step?.targetId != null) {
-        await TutorialTargets.scrollTargetIntoView(step!.targetId);
+      if (shouldAutoScroll &&
+          step?.targetId != null &&
+          TutorialTargets.keyFor(step!.targetId)?.currentContext != null) {
+        // Only consume this step's scroll after its callback actually runs.
+        // Route and tutorial notifications can supersede a queued callback
+        // before the new screen is laid out. Marking it earlier loses the
+        // only scroll attempt, leaving small-screen purchase targets hidden.
+        _lastAutoScrolledStepKey = stepKey;
+        await TutorialTargets.scrollTargetIntoView(step.targetId);
       }
       if (!mounted || generation != _measureGeneration) return;
 
@@ -198,7 +204,9 @@ class _TutorialSpotlightOverlayState extends State<TutorialSpotlightOverlay> {
         service: service,
         theme: widget.theme,
         text: text,
-        showNext: showNext || showTargetFallback,
+        // A back step must change screen before advancing. Offering Next too
+        // dismisses the guide until the player guesses which screen to open.
+        showNext: (showNext || showTargetFallback) && !showReturn,
         isFinish: step.isFinish,
         onNext: showTargetFallback
             ? () => service.invokeTargetFallback(step)

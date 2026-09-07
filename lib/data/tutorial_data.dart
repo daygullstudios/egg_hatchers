@@ -16,7 +16,7 @@ class TutorialData {
 
   static const finishButtonLabel = 'Start Hatching!';
 
-  static const returnToHatcheryText = 'Tap back to return to the Hatchery!';
+  static const returnToHatcheryText = 'Return to the Hatchery to continue.';
   static const returnToHatcheryFallbackLabel = 'Return to Hatchery';
 
   static const advancedSecretWelcomeTitle = 'Secret Hatchery Guide';
@@ -30,7 +30,7 @@ class TutorialData {
   static const steps = <GuidedTutorialStep>[
     GuidedTutorialStep(
       id: 'shop',
-      text: 'Click the Egg Shop button!',
+      text: 'Open Shop to buy your first egg!',
       targetId: TutorialTargetIds.shopButton,
       fallbackActionLabel: 'Open Shop',
       requiresTargetTap: true,
@@ -39,9 +39,10 @@ class TutorialData {
     ),
     GuidedTutorialStep(
       id: 'buyEgg',
-      text: 'Buy your first egg!',
+      text: 'Buy & Hatch opens your first egg for 100 coins.',
       targetId: TutorialTargetIds.basicEggBuyButton,
-      fallbackText: 'This is where you buy eggs.',
+      fallbackText: 'A Basic Egg costs 100 coins and hatches straight away.',
+      fallbackActionLabel: 'Buy & Hatch',
       requiresTargetTap: true,
       advanceOnAction: TutorialAction.eggPurchased,
       requiredRoute: kShopRouteName,
@@ -58,8 +59,8 @@ class TutorialData {
     ),
     GuidedTutorialStep(
       id: 'hatch',
-      text: 'Now hatch your egg!',
-      fallbackText: 'Eggs hatch into animals that earn coins.',
+      text:
+          'Buy & Hatch opens eggs straight away. Your animals live here in the Hatchery.',
       manualNext: true,
       requiredRoute: kHatcheryRouteName,
     ),

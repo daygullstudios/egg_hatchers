@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:egg_hatchers/data/game_data.dart';
 import 'package:egg_hatchers/data/tutorial_data.dart';
 import 'package:egg_hatchers/models/player_state.dart';
 import 'package:egg_hatchers/navigation/app_page_route.dart';
@@ -17,6 +18,11 @@ void main() {
     expect(TutorialData.startButtonLabel, 'Start');
     expect(TutorialData.exitButtonLabel, 'Exit');
     expect(TutorialData.advancedSecretStartButtonLabel, 'Start');
+    final purchase = TutorialData.steps.firstWhere(
+      (step) => step.id == 'buyEgg',
+    );
+    expect(purchase.text, contains('${GameData.eggs.first.cost} coins'));
+    expect(purchase.fallbackActionLabel, 'Buy & Hatch');
   });
 
   test('missing navigation target opens its screen instead of advancing', () {

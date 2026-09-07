@@ -105,7 +105,10 @@ class _AnimalFusionPanelState extends State<AnimalFusionPanel> {
       owned.mutationId,
       animal,
     );
-    final luckyName = AnimalFusionLogic.luckyResultLabel(owned.mutationId, animal);
+    final luckyName = AnimalFusionLogic.luckyResultLabel(
+      owned.mutationId,
+      animal,
+    );
     final successPct = (AnimalFusionLogic.successChance * 100).round();
     final failPct = (AnimalFusionLogic.failureChance * 100).round();
 
@@ -222,7 +225,9 @@ class _AnimalFusionPanelState extends State<AnimalFusionPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          Wrap(
+            spacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(
                 '⚗️ Fusion',
@@ -245,7 +250,6 @@ class _AnimalFusionPanelState extends State<AnimalFusionPanel> {
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
               ),
-              const Spacer(),
               Text(
                 'Fuse 2 → 1',
                 style: TextStyle(
@@ -302,8 +306,9 @@ class _AnimalFusionPanelState extends State<AnimalFusionPanel> {
                     owned: candidates[index],
                     theme: widget.theme,
                     customSprites: widget.customSprites,
-                    inBattle: widget.game
-                        .isOwnedStackAutoBattling(candidates[index]),
+                    inBattle: widget.game.isOwnedStackAutoBattling(
+                      candidates[index],
+                    ),
                     fusionLocked: _fusionInProgress,
                     onFuse: () => _confirmAndFuse(context, candidates[index]),
                   );
@@ -341,14 +346,21 @@ class _FusionRow extends StatelessWidget {
     final mutation =
         GameData.mutationById(owned.mutationId) ?? GameData.mutations.first;
     final displayName = mutation.fullName(animal);
-    final canFuse = !fusionLocked &&
+    final canFuse =
+        !fusionLocked &&
         AnimalFusionLogic.canFuseStack(owned, inBattle: inBattle);
-    final blockReason =
-        AnimalFusionLogic.blockReasonText(owned, inBattle: inBattle);
-    final successName =
-        AnimalFusionLogic.successResultLabel(owned.mutationId, animal);
-    final luckyName =
-        AnimalFusionLogic.luckyResultLabel(owned.mutationId, animal);
+    final blockReason = AnimalFusionLogic.blockReasonText(
+      owned,
+      inBattle: inBattle,
+    );
+    final successName = AnimalFusionLogic.successResultLabel(
+      owned.mutationId,
+      animal,
+    );
+    final luckyName = AnimalFusionLogic.luckyResultLabel(
+      owned.mutationId,
+      animal,
+    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
