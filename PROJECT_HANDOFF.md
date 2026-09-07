@@ -46,7 +46,16 @@ succeeds); main bundle SHA-256
 `8a6be9cba422e228a890414d2b20f1eae260ca281a3d9426bea2f2fc2b97f92c`.
 Playtest **three tests** and Wrangler **4.129.0** dry run pass in the required
 order. Brand audit: **691 classified** compatibility references, none unclassified.
-Protected deployment receipt and live refresh acceptance follow after publication.
+Implementation **`53c240d`** is committed/pushed to main. The verified release is
+deployed at **100%** current version **`9ba2d779-4510-4b99-a5bf-0098d286756b`**,
+deployment `2026-09-07T06:29:20.375Z`, on the unchanged protected custom domain.
+Unauthenticated requests remain **302 to Cloudflare Access**. External Chrome
+refresh preserves two normal chickens, one golden chicken and +4/sec income
+(493,374 coins on first Hatchery read, increasing). The daily prompt was dismissed
+with Later, not claimed. Settings retains **Choose progress / Compare saves**;
+neither real copy was selected. Visual inspection confirms readable portrait
+layout and reachable account controls. The tab is left on Hatchery. Failure/
+replacement acceptance uses disposable tests, never the real player.
 
 Scope: this is checked sync metadata and truthful retry, not a cloud-authority,
 guest identity, provider, encryption or gameplay-save-format migration. No real
