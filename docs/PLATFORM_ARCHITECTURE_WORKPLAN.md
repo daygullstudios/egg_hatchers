@@ -137,8 +137,11 @@ family consent/retention/deletion remains externally gated. Protected direct
 matchmaking is active; server-run battles and a no-result 30-second reconnect
 window are also deployed as safe independent Batch 2 progress. Automatic global
 presence, discovery/invites, hosted trading and all economy-bearing settlement
-remain off. Live two-account battle/reconnect acceptance and trusted inventory/
-results/trades remain open. See `PROJECT_HANDOFF.md` for exact versions/evidence.
+remain off. Live two-browser matching, authoritative damage, reconnect/pause and
+no-result expiry acceptance now pass on the protected deployment. Reconnect UX
+still requires manual Battles > Online Arena re-entry after a hard refresh.
+Trusted inventory/results/trades and representative human/device acceptance
+remain open. See `PROJECT_HANDOFF.md` for exact versions/evidence.
 
 ### Historical implementation inventory (not an instruction to continue in order)
 

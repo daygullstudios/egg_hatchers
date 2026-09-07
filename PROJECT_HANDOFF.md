@@ -24,8 +24,9 @@ a full RC matrix per small patch. Reviewable verified commits/pushes still apply
 is implemented and live on the protected playtest, while its reviewed family
 identity/consent/retention decisions remain an external gate. Safe independent
 Batch 2 work has begun: server-run battles and reconnect recovery are deployed,
-but trusted inventory, settlement, trades and two-player human acceptance remain
-open. Do not call either batch complete.
+and live two-browser multiplayer acceptance now passes. Trusted inventory,
+settlement, trades and representative human/device acceptance remain open. Do
+not call either batch complete.
 
 Application commit `43f2344` adds a separate
 `nestarium-multiplayer-playtest` Worker/Durable Object. `/ws` verifies Firebase
@@ -63,12 +64,24 @@ seven Worker/pure-battle tests and both Wrangler dry runs pass. Worker version
 `30183ba0-705a-439b-af67-2e0ffcbbd21d` is routed only at the existing protected
 `egg-hatchers-playtest.daygullstudios.com/ws*`; static version
 `f25633e5-ea2e-4e12-b626-18e742047038` contains the activated protected client.
-An existing browser session restored its Firebase identity and displayed
-`Match server connected`; its current two-stack team was left untouched, so no
-queue or match was fabricated. Anonymous requests to both `/` and `/ws/health`
-return Cloudflare Access 302. `playnestarium.com` still resolves no public app
-record. Live two-account matching/reconnect and the legal/operational family
-controls remain acceptance gates, not claims here.
+Live protected acceptance used isolated Chrome and Codex in-app-browser storage,
+creating two distinct disposable Firebase guest identities and private peer
+aliases. Both three-animal teams matched through the deployed Worker, entered the
+same hosted battle, and observed the same server-owned health after a 43-damage
+ability. Reloading one client paused the opponent's battle; returning through
+Battles > Online Arena inside 30 seconds restored the same 234/277 health state.
+A second reload held past the grace window produced `MATCH ENDED` for the peer,
+with rating still 1000 and battle tokens still 0: no false winner or reward was
+created. This closes the functional two-client browser acceptance item.
+
+Reconnect UX is not yet release-polished: a hard refresh returns to Hatchery and
+the player must reopen Battles > Online Arena and accept the restored Battle
+prompt. Preserve the working server recovery while making that route/prompt
+automatic or explicit in the next Batch 2 UX correction. Representative people,
+physical devices and launch-platform networks remain separate acceptance gates.
+Anonymous requests to both `/` and `/ws/health` return Cloudflare Access 302.
+`playnestarium.com` still resolves no public app record. The legal/operational
+family controls remain an acceptance gate.
 
 ## Family-audience requirements — current decision checkpoint
 
