@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "nestarium-multiplayer-canary-operator-local",
+  "main": "tool/operator_noop.ts",
+  "compatibility_date": "2026-09-07",
+  "workers_dev": false,
+  "preview_urls": false,
+  "services": [
+    {
+      "binding": "MULTIPLAYER",
+      "service": "nestarium-multiplayer-canary",
+      "remote": true
+    }
+  ]
+}

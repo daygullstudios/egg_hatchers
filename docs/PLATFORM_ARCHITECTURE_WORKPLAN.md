@@ -160,9 +160,11 @@ still maps to its exact existing Durable Object, while any future multi-shard
 topology requires a new immutable generation and an explicit migration-ready
 mode. Private Durable Object RPC now supplies explicit drain/read-only controls,
 paginated per-player export and transactional idempotent import with SHA-256
-checksums and manifest receipts. No roster data or public route has moved. A
-private operator manifest/artifact runner and protected multi-shard canary remain
-before activation; reviewed family claim issuance/revocation and representative
+checksums and manifest receipts. No roster data or public route has moved. An
+encrypted local operator now orchestrates those primitives through an internal
+remote service binding and requires an exact generation confirmation for writes.
+Its live status-only acceptance changed no data. A protected multi-shard canary
+remains before activation; reviewed family claim issuance/revocation and representative
 human/device acceptance also remain open. See `MULTIPLAYER_SHARD_MIGRATION.md` and
 `PROJECT_HANDOFF.md` for exact versions/evidence.
 

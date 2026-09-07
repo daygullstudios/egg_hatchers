@@ -64,8 +64,15 @@ The Durable Object now exposes private RPC for migration mode/status, paginated
 authority UID listing, per-player export and transactional import. Export/import
 is accepted only after the generation reaches drained `read_only` mode. Each
 bundle carries a SHA-256 checksum; a `(manifest ID, UID)` receipt makes the same
-import idempotent and rejects a conflicting rerun. The public Worker handler does
-not expose these operations as HTTP routes.
+import idempotent and rejects a conflicting rerun. The operator bridge is not
+attached to any public Worker route.
+
+The local operator uses an internal remote service binding rather than a public
+admin hostname. It writes only AES-256-GCM encrypted artifacts, refuses to
+overwrite an existing artifact, takes its passphrase only from the process
+environment and requires exact generation-name confirmation for every mutating
+command. A live read-only status call is part of operator acceptance; no real
+export/import is run merely to test the tool.
 
 ## Cutover sequence
 
@@ -104,10 +111,10 @@ not expose these operations as HTTP routes.
 ## Required implementation before activation
 
 The deterministic router, activation interlock, queue drain/read-only control,
-paginated export and idempotent checked import are complete. The following are
-deliberately not implemented and remain prerequisites:
+paginated export, idempotent checked import and encrypted private operator are
+complete. The following are deliberately not implemented and remain
+prerequisites:
 
-- private operator manifest orchestration and encrypted artifact handling;
 - central moderation-report destination and retention procedure;
 - protected multi-shard canary configuration and measured latency/cost;
 - representative human/device/network acceptance;

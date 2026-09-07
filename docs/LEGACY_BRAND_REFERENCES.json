@@ -21,7 +21,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 193,
+      "line": 203,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -29,7 +29,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1080,
+      "line": 1091,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -37,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1261,
+      "line": 1272,
       "references": [
         "egghatchers.game"
       ],
@@ -45,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1288,
+      "line": 1299,
       "references": [
         "egg_hatchers"
       ],
@@ -53,7 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1368,
+      "line": 1379,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -61,7 +61,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1386,
+      "line": 1397,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -69,7 +69,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1393,
+      "line": 1404,
       "references": [
         "egg_hatchers"
       ],
@@ -150,6 +150,14 @@
     {
       "path": "cloudflare/multiplayer/worker-configuration.d.ts",
       "line": 5,
+      "references": [
+        "egg-hatchers-dev"
+      ],
+      "reason": "Existing Firebase project, app configuration, endpoint, or rules-test target."
+    },
+    {
+      "path": "cloudflare/multiplayer/wrangler.canary.jsonc",
+      "line": 15,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -327,7 +335,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 373,
+      "line": 375,
       "references": [
         "eggHatchers"
       ],
@@ -335,7 +343,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 378,
+      "line": 380,
       "references": [
         "egg_hatchers_player_state_account_"
       ],
@@ -343,7 +351,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 390,
+      "line": 392,
       "references": [
         "egg_hatchers.settings"
       ],
@@ -351,7 +359,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 411,
+      "line": 413,
       "references": [
         "egg_hatchers"
       ],
@@ -359,7 +367,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 481,
+      "line": 483,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -367,7 +375,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 504,
+      "line": 506,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -375,7 +383,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 531,
+      "line": 533,
       "references": [
         "egg_hatchers"
       ],
@@ -383,7 +391,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 572,
+      "line": 574,
       "references": [
         "egg-hatchers-playtest"
       ],

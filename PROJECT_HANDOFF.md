@@ -32,9 +32,9 @@ Preset-only report/block controls and server-enforced matchmaking blocks are
 also deployed. Durable Object eviction/hibernation and duplicate-session
 acceptance now pass automatically. The versioned trusted-claim enforcement seam
 and explicit protected-pool capacity behavior are implemented. The public shard
-router/interlock, migration design and private per-player migration RPC are also
-complete; operator manifest/artifact orchestration, protected multi-shard canary,
-reviewed family claim issuance/revocation and representative human/device
+router/interlock, migration design, private per-player migration RPC and encrypted
+local operator are also complete; protected multi-shard canary, reviewed family
+claim issuance/revocation and representative human/device
 acceptance remain open. Do not call either batch complete.
 
 The capability/capacity tail uses `trusted_claims` for any future public Worker.
@@ -76,6 +76,15 @@ of block rows. SHA-256 checksums detect changed bundles; transactional import
 receipts keyed by manifest ID and UID make a retry idempotent and reject a
 conflicting replay. Sessions, active battles/trades, reports, display names,
 tokens and credentials are not exported. There is no public HTTP admin route.
+
+The local operator connects through a Cloudflare remote service binding, not a
+public hostname. It produces AES-256-GCM encrypted, no-overwrite artifacts;
+accepts the passphrase only through `NESTARIUM_MIGRATION_PASSPHRASE`; verifies
+the aggregate manifest checksum; and requires the exact target generation name
+on every mutating command. Its live status-only acceptance read `protected-v1`
+as active with zero sockets, battles and trades. No drain, freeze, export, import
+or activation command ran. The isolated `canary-v1` two-shard config passes
+Wrangler dry-run but remains unrouted until its Access destination is approved.
 
 The current settlement checkpoint persists one Durable Object receipt per UID
 and match, server-owned online rating, fixed hosted rewards and an explicit
@@ -139,9 +148,10 @@ now requires `cloudflare/playtest`'s `npm run build:web`, which preserves the
 protected-only feature flags. Final static version
 `d25ea84c-4ff9-47a7-a21d-5f7fc701f8d0` is routed only at the existing protected
 custom domain. Multiplayer Worker version
-`bcf6ec29-0041-4e62-9283-c78390a2850b` remains routed only at `/ws*` there.
-The last unchanged Flutter checkpoint remains clean at 805 tests. Twenty-one current
-Worker tests pass, as do Worker typecheck/types/dry-run; the preceding release
+`60921df5-7bbe-4a45-baa3-c879a9ae7f8e` remains routed only at `/ws*` there.
+The last unchanged Flutter checkpoint remains clean at 805 tests. Twenty-two current
+Worker tests and two Node operator tests pass, as do Worker typecheck/types and
+both protected/canary dry-runs; the preceding release
 web/Wasm and static tests/dry-run remain valid because no Flutter/static asset
 changed in this tail. Anonymous
 requests to both `/` and `/ws/health` still receive Cloudflare Access 302.
@@ -256,8 +266,9 @@ receipt state, and commits roster trades atomically. The local Dart server remai
 a development sandbox and does not define hosted trust. Global discovery/invites
 stay off; protected trading uses only preset messages and private aliases.
 
-**Next:** add the private manifest/artifact operator and exercise an empty
-protected multi-shard canary. The exact reviewed family identity/consent and claim-issuance
+**Next:** add `nestarium-mp-canary.daygullstudios.com` to the existing Nestarium
+Access application, deploy the isolated empty two-shard Worker and exercise its
+protected routing/operator acceptance. The exact reviewed family identity/consent and claim-issuance
 mechanism remains an external decision gate; isolated backend and platform-
 readiness work may continue.
 The workplan records four bounded multiplayer packages: authenticated hosting;

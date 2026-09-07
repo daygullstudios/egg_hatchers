@@ -1,0 +1,43 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "nestarium-multiplayer-canary",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-07",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "nestarium-mp-canary.daygullstudios.com/ws*",
+      "zone_name": "daygullstudios.com"
+    }
+  ],
+  "vars": {
+    "FIREBASE_PROJECT_ID": "egg-hatchers-dev",
+    "CAPABILITY_MODE": "protected_playtest",
+    "MATCHMAKING_POOL": "canary-v1",
+    "MATCHMAKING_SHARD_COUNT": "2",
+    "MATCHMAKING_ROUTING_MODE": "sharded_migration_ready"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MATCHMAKING",
+        "class_name": "MatchmakingPool"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["MatchmakingPool"]
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "head_sampling_rate": 1
+    }
+  }
+}

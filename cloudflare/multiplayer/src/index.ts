@@ -180,6 +180,7 @@ const reportRetentionMs = 180 * 24 * 60 * 60 * 1000;
 // promise. Production must use an approved sharding/data-migration plan rather
 // than silently pushing the single compatibility pool beyond this boundary.
 const protectedPoolSessionLimit = 32;
+const migrationBindingProtocol = "private-binding-v1";
 
 export type GenerationMigrationStatus = {
   mode: GenerationMode;
@@ -192,6 +193,9 @@ export type GenerationMigrationStatus = {
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url);
+    if (url.pathname === "/__migration") {
+      return handleMigrationServiceRequest(request, env);
+    }
     if (url.pathname === "/ws/health") {
       let shardCount: number;
       try {
@@ -262,6 +266,46 @@ export default {
     }
   },
 } satisfies ExportedHandler<Env>;
+
+async function handleMigrationServiceRequest(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  if (
+    request.method !== "POST" ||
+    request.headers.get("X-Nestarium-Migration-Binding") !==
+      migrationBindingProtocol
+  ) {
+    return new Response("Not found", { status: 404 });
+  }
+  const bodyText = await request.text();
+  if (bodyText.length > 1_000_000) {
+    return Response.json({ error: "migration request too large" }, { status: 413 });
+  }
+  let body: Record<string, unknown>;
+  try {
+    body = JSON.parse(bodyText) as Record<string, unknown>;
+    assertMigrationIdentifier(String(body.generation ?? ""), "generation", 80);
+  } catch (error) {
+    return Response.json(
+      { error: error instanceof Error ? error.message : "invalid migration request" },
+      { status: 400 },
+    );
+  }
+  const generation = String(body.generation);
+  delete body.generation;
+  const pool = env.MATCHMAKING.getByName(generation);
+  return pool.fetch(
+    new Request("https://private-binding.invalid/__migration", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Nestarium-Migration-Binding": migrationBindingProtocol,
+      },
+      body: JSON.stringify(body),
+    }),
+  );
+}
 
 export class MatchmakingPool extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
@@ -412,6 +456,10 @@ export class MatchmakingPool extends DurableObject<Env> {
   }
 
   async fetch(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+    if (url.pathname === "/__migration") {
+      return this.handleMigrationBindingRequest(request);
+    }
     if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
       return new Response("WebSocket upgrade required", { status: 426 });
     }
@@ -498,6 +546,62 @@ export class MatchmakingPool extends DurableObject<Env> {
       webSocket: client,
       headers: { "Sec-WebSocket-Protocol": "nestarium-v1" },
     });
+  }
+
+  private async handleMigrationBindingRequest(
+    request: Request,
+  ): Promise<Response> {
+    if (
+      request.method !== "POST" ||
+      request.headers.get("X-Nestarium-Migration-Binding") !==
+        migrationBindingProtocol
+    ) {
+      return new Response("Not found", { status: 404 });
+    }
+    let body: Record<string, unknown>;
+    try {
+      body = (await request.json()) as Record<string, unknown>;
+    } catch {
+      return Response.json({ error: "invalid migration request" }, { status: 400 });
+    }
+    try {
+      switch (body.action) {
+        case "status":
+          return Response.json(this.getGenerationMigrationStatus());
+        case "setMode":
+          return Response.json(
+            this.setGenerationMigrationMode(body.mode as GenerationMode),
+          );
+        case "listUids":
+          return Response.json(
+            this.listPlayerAuthorityUids(
+              typeof body.afterUid === "string" ? body.afterUid : "",
+              typeof body.limit === "number" ? body.limit : 100,
+            ),
+          );
+        case "exportPlayer":
+          return Response.json(
+            await this.exportPlayerAuthority(
+              String(body.uid ?? ""),
+              String(body.sourceGeneration ?? ""),
+            ),
+          );
+        case "importPlayer":
+          return Response.json(
+            await this.importPlayerAuthority(
+              String(body.manifestId ?? ""),
+              body.bundle as PlayerAuthorityExport,
+            ),
+          );
+        default:
+          return Response.json({ error: "unsupported migration action" }, { status: 400 });
+      }
+    } catch (error) {
+      return Response.json(
+        { error: error instanceof Error ? error.message : "migration operation failed" },
+        { status: 409 },
+      );
+    }
   }
 
   async webSocketMessage(

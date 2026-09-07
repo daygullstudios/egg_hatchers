@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { env, exports } from "cloudflare:workers";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -14,8 +14,46 @@ const capabilities = JSON.stringify({
 });
 
 describe("multiplayer generation migration", () => {
+  it("keeps the operator bridge hidden without its service-binding protocol", async () => {
+    const hidden = await exports.default.fetch(
+      new Request("https://example.com/__migration", {
+        method: "POST",
+        body: JSON.stringify({ generation: "bridge-test", action: "status" }),
+      }),
+    );
+    expect(hidden.status).toBe(404);
+    const visible = await exports.default.fetch(
+      new Request("https://example.com/__migration", {
+        method: "POST",
+        headers: {
+          "X-Nestarium-Migration-Binding": "private-binding-v1",
+        },
+        body: JSON.stringify({ generation: "bridge-test", action: "status" }),
+      }),
+    );
+    expect(await visible.json()).toMatchObject({ mode: "active", drained: true });
+  });
+
   it("drains through explicit modes and refuses new sessions", async () => {
     const pool = env.MATCHMAKING.getByName("migration-control-v1");
+    const hidden = await pool.fetch(
+      new Request("https://private-binding.invalid/__migration", {
+        method: "POST",
+        body: JSON.stringify({ action: "status" }),
+      }),
+    );
+    expect(hidden.status).toBe(404);
+    const visible = await pool.fetch(
+      new Request("https://private-binding.invalid/__migration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Nestarium-Migration-Binding": "private-binding-v1",
+        },
+        body: JSON.stringify({ action: "status" }),
+      }),
+    );
+    expect(await visible.json()).toMatchObject({ mode: "active", drained: true });
     expect(await pool.setGenerationMigrationMode("draining")).toMatchObject({
       mode: "draining",
       drained: true,

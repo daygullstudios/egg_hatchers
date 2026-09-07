@@ -5,9 +5,12 @@
   "scripts": {
     "types": "wrangler types",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run && node --test tool/operator_node_tests.mjs",
+    "migration:operator": "node tool/migration_operator.mjs",
     "deploy:dry-run": "wrangler deploy --dry-run",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "canary:dry-run": "wrangler deploy --config wrangler.canary.jsonc --dry-run",
+    "canary:deploy": "wrangler deploy --config wrangler.canary.jsonc"
   },
   "engines": {
     "node": ">=20"
