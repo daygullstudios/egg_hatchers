@@ -43,9 +43,9 @@ class PreferencesImportStorage implements SaveImportStorage {
 /// preference cache with an older snapshot and hide those concurrent writes.
 /// Keep the installed backend and its historical `flutter.` prefix; this is not
 /// a migration to SharedPreferencesAsync (different Android backend by default).
-class PreferencesProgressStorage extends PreferencesImportStorage {
-  PreferencesProgressStorage(this.primaryKey);
-  final String primaryKey;
+class PreferencesKeyStorage extends PreferencesImportStorage {
+  PreferencesKeyStorage(Set<String> keys) : keys = Set.unmodifiable(keys);
+  final Set<String> keys;
   @override
   Future<Map<String, Object>> readAll() async {
     const prefix = 'flutter.';
@@ -54,7 +54,7 @@ class PreferencesProgressStorage extends PreferencesImportStorage {
           GetAllParameters(
             filter: PreferencesFilter(
               prefix: prefix,
-              allowList: {'$prefix$primaryKey', '$prefix${primaryKey}_backup'},
+              allowList: {for (final key in keys) '$prefix$key'},
             ),
           ),
         );
@@ -63,4 +63,9 @@ class PreferencesProgressStorage extends PreferencesImportStorage {
         entry.key.substring(prefix.length): entry.value,
     };
   }
+}
+
+class PreferencesProgressStorage extends PreferencesKeyStorage {
+  PreferencesProgressStorage(String primaryKey)
+    : super({primaryKey, '${primaryKey}_backup'});
 }

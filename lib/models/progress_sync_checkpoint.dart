@@ -22,11 +22,16 @@ class ProgressSyncCheckpoint {
   };
 
   static ProgressSyncCheckpoint? tryFromJson(Map<String, dynamic> json) {
-    if (json['schemaVersion'] != 1) return null;
-    final recordedAt = DateTime.tryParse(json['recordedAt'] as String? ?? '');
+    if (json['schemaVersion'] != 1 ||
+        json['cloudRevision'] is! int ||
+        json['contentFingerprint'] is! String ||
+        json['recordedAt'] is! String) {
+      return null;
+    }
+    final recordedAt = DateTime.tryParse(json['recordedAt'] as String);
     final checkpoint = ProgressSyncCheckpoint(
-      contentFingerprint: json['contentFingerprint'] as String? ?? '',
-      cloudRevision: (json['cloudRevision'] as num?)?.toInt() ?? -1,
+      contentFingerprint: json['contentFingerprint'] as String,
+      cloudRevision: json['cloudRevision'] as int,
       recordedAt: recordedAt?.toUtc() ?? DateTime.fromMillisecondsSinceEpoch(0),
     );
     return checkpoint.isValid && recordedAt != null ? checkpoint : null;

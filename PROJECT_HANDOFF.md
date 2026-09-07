@@ -1,8 +1,72 @@
 # Nestarium Project Handoff
 
-Updated: 2026-09-06
+Updated: 2026-09-07
 
-## Checked gameplay saves and held-progress recovery — current implementation checkpoint
+## Checked cloud-sync confirmations — current implementation checkpoint
+
+Cloud-sync ancestry reads now use the installed preference backend directly,
+without accepting optimistic cache values or reloading the shared settings cache.
+Checkpoint writes/removals serialize by player key across store instances, use
+the existing supported-browser write lease, verify acceptance and fresh read-back,
+and reject changes to a loaded baseline. An uncertain operation already present
+in the backend can be verified without another write. Invalid/fractional-revision
+metadata is not accepted as ancestry; raw malformed records are not deleted by a
+read. Existing checkpoint keys/schema and all gameplay/identity contracts remain.
+
+Rejected/read-unavailable confirmations stop automatic cloud changes without
+stopping locally saved gameplay. Settings explains that a cloud operation may
+already have completed and offers **Retry confirmation**, not another overwrite
+choice. Pending checkpoint writes show guidance after eight seconds; retry stays
+disabled while the actual operation is in flight. A comparison dialog switches
+to confirmation guidance and a reachable return-to-Settings action instead of
+leaving obsolete Replace controls active. Feedback fits short/narrow layouts at
+200% text. Raw storage exceptions are not printed by the sync coordinator.
+
+Retry completes only the held acknowledgement, then reassesses fresh local/cloud
+data; it does not replay the earlier upload or restore merely to save metadata.
+New divergence requires a new review. If another writer changed the stored
+record, a subsequent explicit retry abandons only the held acknowledgement and
+reassesses current ancestry instead of overwriting that unexpected record.
+Matching verified ancestry is not rewritten just to refresh its timestamp.
+After confirmation, a fresh local fingerprint must still match before showing
+Cloud copy current. Player switching, disposal, import pause and local-save
+failure invalidate late status callbacks; already-issued writes may finish only
+in their original namespace, not a newly selected player's record.
+
+Validation: clean Flutter 3.47.2 analysis, **732 Flutter tests** and **ten isolated
+Chrome storage/import tests** pass. The new **26-test** failure suite covers
+rejected/thrown/uncertain/lying write and removal results, changed baselines,
+read outages, exact retry, shared-key serialization, cloud upload/choice retry,
+fresh divergence, delayed completion and switch/import/dispose/local-failure
+isolation. Settings and dialog recovery controls pass 320x360, 390x844 and
+1440x900 at 200% text. Chrome confirms direct backend reads ignore a stale
+SharedPreferences cache and uncertain writes retry without another mutation,
+using disposable data only. Release web build passes (40.9s; Wasm dry run
+succeeds); main bundle SHA-256
+`8a6be9cba422e228a890414d2b20f1eae260ca281a3d9426bea2f2fc2b97f92c`.
+Playtest **three tests** and Wrangler **4.129.0** dry run pass in the required
+order. Brand audit: **691 classified** compatibility references, none unclassified.
+Protected deployment receipt and live refresh acceptance follow after publication.
+
+Scope: this is checked sync metadata and truthful retry, not a cloud-authority,
+guest identity, provider, encryption or gameplay-save-format migration. No real
+save is replaced or corrupted for failure QA. Physical full-disk/eviction/native
+and representative human acceptance remain open. The eight-second watch covers
+checkpoint writes, not all possible stalled cloud/network/startup operations.
+
+**Next: settings persistence and custom-editor draft recovery.** Audit confirms
+DeviceSettingsStore discards backend write results; visual/audio preferences can
+look applied without durable saving. CustomEggService/CustomSpriteService publish
+mutations before unchecked persistence, and bulk sprite reset can partially
+apply. Implement checked writes with visible retry and retained editor drafts;
+do not advertise a successful save/delete/reset or clear a draft after failure.
+Profile/directory deletion and other auxiliary preference writers still need
+their own acceptance. Child-compatible identity, trusted cloud erasure,
+policy/provider readiness and protected new-hostname cutover remain separate.
+No public hostname, Firebase provider/project/credential, billing/mail, store or
+sibling-product changes.
+
+## Checked gameplay saves and held-progress recovery — preceding implementation checkpoint
 
 Normal gameplay saves now serialize and check backend acceptance plus fresh
 primary/backup read-back. A loaded-save baseline and per-player Web Lock on
@@ -62,7 +126,7 @@ undone by pausing. Physical disk/quota exhaustion was not forced on real data;
 failure tests use disposable storage. This patch covers gameplay progress writes,
 not every settings/custom-data/checkpoint/directory/deletion write.
 
-**Next: checked failure feedback for remaining settings, custom-data and sync
+**Next at that checkpoint: checked failure feedback for remaining settings, custom-data and sync
 checkpoint writes.** Native recovery and representative human/physical-device
 acceptance remain open. Child-compatible identity, trusted cloud erasure,
 policy/provider readiness and the protected new-hostname cutover remain separate

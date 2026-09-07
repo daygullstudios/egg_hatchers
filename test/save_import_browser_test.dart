@@ -4,6 +4,8 @@ library;
 import 'dart:js_interop';
 import 'dart:convert';
 import 'package:egg_hatchers/data/game_data.dart';
+import 'package:egg_hatchers/models/progress_sync_checkpoint.dart';
+import 'package:egg_hatchers/services/progress_sync_checkpoint_store.dart';
 import 'package:egg_hatchers/services/progress_recovery_service.dart';
 import 'package:egg_hatchers/services/save_service.dart';
 import 'package:egg_hatchers/services/account_service.dart';
@@ -14,12 +16,56 @@ import 'package:egg_hatchers/services/save_transfer_file_web.dart';
 import 'package:egg_hatchers/services/save_transfer_service.dart';
 import 'package:egg_hatchers/services/unsaved_exit_guard.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_web/shared_preferences_web.dart';
 import 'package:web/web.dart' as web;
 import 'helpers/save_import_fixture.dart';
 
 void main() {
   SharedPreferencesPlugin.registerWith(null);
+  test(
+    'browser checkpoints use fresh backend reads and verify uncertain writes',
+    () async {
+      const id = 'mock-checkpoint-browser';
+      const key = 'egg_hatchers.sync_checkpoint.v1.account.$id';
+      final storage = _UncertainCheckpointStorage({key});
+      final store = ProgressSyncCheckpointStore(
+        accountId: id,
+        storage: storage,
+      );
+      ProgressSyncCheckpoint record(int revision) => ProgressSyncCheckpoint(
+        contentFingerprint:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        cloudRevision: revision,
+        recordedAt: DateTime.utc(2026, 9, 7),
+      );
+      try {
+        await store.write(record(1));
+        final prefs = await SharedPreferences.getInstance();
+        final cached = prefs.getString(key);
+        web.window.localStorage.setItem(
+          'flutter.$key',
+          jsonEncode(jsonEncode(record(2).toJson())),
+        );
+        expect(prefs.getString(key), cached);
+        expect((await store.read())!.cloudRevision, 2);
+        storage.uncertain = true;
+        await expectLater(
+          store.write(record(3)),
+          throwsA(isA<CheckpointStorageException>()),
+        );
+        final attempts = storage.writes;
+        storage.uncertain = false;
+        await store.write(record(3));
+        expect(storage.writes, attempts);
+        expect((await store.read())!.cloudRevision, 3);
+        await store.clear();
+        expect(await store.read(), isNull);
+      } finally {
+        await storage.remove(key);
+      }
+    },
+  );
   test(
     'browser progress writes verify failure, retry and per-player locking without removing older progress',
     () async {
@@ -277,4 +323,16 @@ class _RejectingProgressStorage extends PreferencesProgressStorage {
   @override
   Future<bool> write(String key, Object value) =>
       reject ? Future.value(false) : super.write(key, value);
+}
+
+class _UncertainCheckpointStorage extends PreferencesKeyStorage {
+  _UncertainCheckpointStorage(super.keys);
+  bool uncertain = false;
+  int writes = 0;
+  @override
+  Future<bool> write(String key, Object value) async {
+    writes++;
+    final accepted = await super.write(key, value);
+    return uncertain ? false : accepted;
+  }
 }

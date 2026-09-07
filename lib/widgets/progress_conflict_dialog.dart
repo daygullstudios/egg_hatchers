@@ -79,7 +79,29 @@ class _ProgressConflictDialogState extends State<ProgressConflictDialog> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: widget.sync,
+    builder: (context, _) => _build(context),
+  );
+
+  Widget _build(BuildContext context) {
+    if (widget.sync.state.checkpointNeedsAttention) {
+      return AlertDialog(
+        scrollable: true,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        title: const Text('Sync confirmation needed'),
+        content: Text(widget.sync.state.message),
+        actions: [
+          TextButton.icon(
+            key: const ValueKey('save-review-confirmation-settings'),
+            onPressed: () => Navigator.pop(context, false),
+            icon: const Icon(Icons.settings_outlined),
+            label: const Text('Return to Settings'),
+            style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+          ),
+        ],
+      );
+    }
     final review = _review;
     final confirming = _keepDevice != null;
     final colors = Theme.of(context).colorScheme;

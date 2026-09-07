@@ -325,6 +325,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               account: account,
                               protection: protection,
                               syncState: syncState,
+                              onRetrySyncConfirmation:
+                                  progressSync?.retrySyncConfirmation,
                               onCompareSaves: progressSync == null
                                   ? null
                                   : () => showDialog<bool>(
@@ -636,6 +638,7 @@ class _AccountSettings extends StatelessWidget {
     required this.protection,
     required this.syncState,
     required this.onCompareSaves,
+    required this.onRetrySyncConfirmation,
     required this.onProtectWithGoogle,
     required this.theme,
     required this.onSwitch,
@@ -646,6 +649,7 @@ class _AccountSettings extends StatelessWidget {
   final AccountProtectionState protection;
   final ProgressSyncState syncState;
   final VoidCallback? onCompareSaves;
+  final VoidCallback? onRetrySyncConfirmation;
   final VoidCallback? onProtectWithGoogle;
   final BackgroundTheme theme;
   final VoidCallback onSwitch;
@@ -846,6 +850,24 @@ class _AccountSettings extends StatelessWidget {
                   ),
                 ],
               ),
+              if (syncState.checkpointNeedsAttention) ...[
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  key: const ValueKey('settings-retry-sync-confirmation'),
+                  onPressed: syncState.operationPending
+                      ? null
+                      : onRetrySyncConfirmation,
+                  icon: const Icon(Icons.sync_rounded),
+                  label: Text(
+                    syncState.operationPending
+                        ? 'Confirmation in progress'
+                        : 'Retry confirmation',
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(48, 48),
+                  ),
+                ),
+              ],
               if (syncState.hasConflict && onCompareSaves != null) ...[
                 const SizedBox(height: 10),
                 OutlinedButton.icon(

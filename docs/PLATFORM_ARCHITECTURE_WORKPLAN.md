@@ -5,7 +5,7 @@ The 2026-09-06 product rebrand is recorded in `NESTARIUM_MIGRATION.md`.
 unrouted until provider branding and origin-recovery acceptance. Technical
 save/project/bundle identities below remain compatibility contracts.
 
-Updated: 2026-09-06
+Updated: 2026-09-07
 
 ## Goal
 
@@ -78,8 +78,17 @@ Automated passes are necessary but are not proof of player comprehension.
    available when reads hang; it is not a normal import and may need support.
    Pending cloud choices survive without choosing a winner. Updated-tab locks and
    loaded-save baselines reject unexpected copies; exit warnings are best-effort.
-   **Next: checked failure feedback for remaining settings, custom-data and sync
-   checkpoint writes.** Native recovery and representative human acceptance
+   Cloud-sync checkpoint writes/removals now verify backend acceptance and fresh
+   read-back under serialized key ownership. Failure preserves locally saved play
+   but pauses automatic cloud changes. Explicit confirmation retry does not replay
+   an earlier replacement; fresh divergence requires review. Slow writes stay
+   single-flight and late confirmations cannot publish into another player's UI.
+   **Next: checked settings persistence and custom-editor draft recovery.**
+   Settings currently publish optimistic values and ignore rejected writes;
+   custom egg/sprite editors need retained drafts, and bulk resets need truthful
+   partial-failure handling before any success message. Auxiliary preferences and
+   profile/directory deletion remain separate acceptance work.
+   Native recovery and representative human acceptance
    remain open. `PROJECT_HANDOFF.md` owns exact validation/live evidence. Trusted cloud erasure
    and child-compatible identity remain separate, deliberately authorized work.
 2. **Child-compatible account release:** use the confirmed family audience to
