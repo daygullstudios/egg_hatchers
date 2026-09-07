@@ -6,11 +6,13 @@ import 'package:egg_hatchers/models/arena.dart';
 import 'package:egg_hatchers/models/multiplayer.dart';
 import 'package:egg_hatchers/models/player_account.dart';
 import 'package:egg_hatchers/services/multiplayer_service.dart';
+import 'package:egg_hatchers/services/online_identity_token_provider.dart';
 import 'package:egg_hatchers/utils/battle_power_logic.dart';
 import 'package:egg_hatchers/models/owned_animal.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../tool/multiplayer_server.dart';
+import 'support/controlled_lobby_channel.dart';
 
 void main() {
   test('hosted playtest failure keeps Bot Arena as the clear fallback', () {
@@ -18,8 +20,8 @@ void main() {
       MultiplayerService.unavailableMessageFor(
         Uri.parse('wss://egg-hatchers-playtest.daygullstudios.com/ws'),
       ),
-      'Online multiplayer is not available in this web playtest yet. '
-      'Bot Arena is still available.',
+      'Protected online multiplayer is still being completed. '
+      'Bot Arena is available now.',
     );
   });
 
@@ -32,6 +34,79 @@ void main() {
         ),
         'The local match server is not running.',
       );
+    },
+  );
+
+  test(
+    'hosted multiplayer stays fail-closed until its release flag is on',
+    () async {
+      var opened = false;
+      final service = MultiplayerService(
+        serverUri: Uri.parse(
+          'wss://egg-hatchers-playtest.daygullstudios.com/ws',
+        ),
+        identityTokenProvider: _TokenProvider('valid-token'),
+        channelFactory: (uri, {protocols}) {
+          opened = true;
+          return ControlledLobbyChannel();
+        },
+      );
+      addTearDown(service.dispose);
+      await service.connect();
+      expect(opened, isFalse);
+      expect(service.state, MultiplayerConnectionState.offline);
+      expect(service.message, contains('still being completed'));
+    },
+  );
+
+  test(
+    'released hosted multiplayer authenticates in websocket protocols',
+    () async {
+      final channel = ControlledLobbyChannel()..handshake.complete();
+      Uri? openedUri;
+      Iterable<String>? openedProtocols;
+      final service = MultiplayerService(
+        serverUri: Uri.parse(
+          'wss://egg-hatchers-playtest.daygullstudios.com/ws',
+        ),
+        identityTokenProvider: _TokenProvider('firebase-token'),
+        hostedMultiplayerEnabled: true,
+        channelFactory: (uri, {protocols}) {
+          openedUri = uri;
+          openedProtocols = protocols;
+          return channel;
+        },
+      );
+      addTearDown(() {
+        service.dispose();
+        channel.finish();
+      });
+      await service.connect();
+      expect(openedUri, service.serverUri);
+      expect(openedProtocols, ['nestarium-v1', 'firebase-auth.firebase-token']);
+      expect(service.state, MultiplayerConnectionState.ready);
+    },
+  );
+
+  test(
+    'released hosted multiplayer rejects a missing identity token',
+    () async {
+      var opened = false;
+      final service = MultiplayerService(
+        serverUri: Uri.parse(
+          'wss://egg-hatchers-playtest.daygullstudios.com/ws',
+        ),
+        identityTokenProvider: _TokenProvider(null),
+        hostedMultiplayerEnabled: true,
+        channelFactory: (uri, {protocols}) {
+          opened = true;
+          throw StateError('must not open');
+        },
+      );
+      addTearDown(service.dispose);
+      await service.connect();
+      expect(opened, isFalse);
+      expect(service.state, MultiplayerConnectionState.offline);
     },
   );
 
@@ -187,6 +262,15 @@ void main() {
     await _waitFor(() => service.state == MultiplayerConnectionState.ready);
     expect(service.message, 'A full team is required.');
   });
+}
+
+final class _TokenProvider implements OnlineIdentityTokenProvider {
+  const _TokenProvider(this.token);
+
+  final String? token;
+
+  @override
+  Future<String?> getIdToken() async => token;
 }
 
 MultiplayerPlayerSnapshot _player(String id, String name, {int rating = 1000}) {

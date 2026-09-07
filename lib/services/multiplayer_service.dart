@@ -6,6 +6,10 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/multiplayer.dart';
 import '../utils/web_socket_message.dart';
+import 'online_identity_token_provider.dart';
+
+typedef MultiplayerChannelFactory =
+    WebSocketChannel Function(Uri uri, {Iterable<String>? protocols});
 
 enum MultiplayerConnectionState {
   connecting,
@@ -16,10 +20,23 @@ enum MultiplayerConnectionState {
 }
 
 class MultiplayerService extends ChangeNotifier {
-  MultiplayerService({Uri? serverUri})
-    : serverUri = serverUri ?? defaultServerUri();
+  MultiplayerService({
+    Uri? serverUri,
+    OnlineIdentityTokenProvider? identityTokenProvider,
+    MultiplayerChannelFactory? channelFactory,
+    bool? hostedMultiplayerEnabled,
+  }) : serverUri = serverUri ?? defaultServerUri(),
+       _identityTokenProvider =
+           identityTokenProvider ?? FirebaseOnlineIdentityTokenProvider(),
+       _channelFactory = channelFactory ?? WebSocketChannel.connect,
+       _hostedMultiplayerEnabled =
+           hostedMultiplayerEnabled ??
+           const bool.fromEnvironment('NESTARIUM_HOSTED_MULTIPLAYER_ENABLED');
 
   final Uri serverUri;
+  final OnlineIdentityTokenProvider _identityTokenProvider;
+  final MultiplayerChannelFactory _channelFactory;
+  final bool _hostedMultiplayerEnabled;
   WebSocketChannel? _channel;
   StreamSubscription<dynamic>? _subscription;
   MultiplayerConnectionState _state = MultiplayerConnectionState.connecting;
@@ -71,14 +88,14 @@ class MultiplayerService extends ChangeNotifier {
   static String unavailableMessageFor(Uri uri) {
     return isLocalServerUri(uri)
         ? 'The local match server is not running.'
-        : 'Online multiplayer is not available in this web playtest yet. Bot Arena is still available.';
+        : 'Protected online multiplayer is still being completed. Bot Arena is available now.';
   }
 
   Future<void> connect() async {
     if (_channel != null || _disposed) return;
     _setState(MultiplayerConnectionState.connecting);
     try {
-      final channel = WebSocketChannel.connect(serverUri);
+      final channel = await _openChannel();
       _channel = channel;
       await channel.ready.timeout(const Duration(seconds: 3));
       if (_disposed) {
@@ -102,6 +119,21 @@ class MultiplayerService extends ChangeNotifier {
       _message = unavailableMessageFor(serverUri);
       _setState(MultiplayerConnectionState.offline);
     }
+  }
+
+  Future<WebSocketChannel> _openChannel() async {
+    if (isLocalServerUri(serverUri)) return _channelFactory(serverUri);
+    if (!_hostedMultiplayerEnabled) {
+      throw StateError('Hosted multiplayer is not released');
+    }
+    final token = await _identityTokenProvider.getIdToken();
+    if (token == null || token.isEmpty) {
+      throw StateError('A restored cloud identity is required');
+    }
+    return _channelFactory(
+      serverUri,
+      protocols: ['nestarium-v1', 'firebase-auth.$token'],
+    );
   }
 
   Future<void> retry() async {

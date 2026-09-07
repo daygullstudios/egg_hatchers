@@ -5,7 +5,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
 import 'models/background_theme.dart';
-import 'models/multiplayer.dart';
 import 'models/online_lobby.dart';
 import 'screens/account_onboarding_screen.dart';
 import 'screens/saved_player_recovery_screen.dart';
@@ -50,7 +49,6 @@ import 'widgets/online_lobby_scope.dart';
 import 'widgets/progress_sync_scope.dart';
 import 'widgets/tutorial_host.dart';
 import 'navigation/app_page_route.dart';
-import 'utils/arena_logic.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -217,7 +215,6 @@ class _NestariumAppState extends State<NestariumApp>
         return;
       }
       _rootInitialized = true;
-      _syncOnlinePresence();
       if (mounted) setState(() {});
       _startIdentityCheck();
     } finally {
@@ -283,7 +280,6 @@ class _NestariumAppState extends State<NestariumApp>
         !identical(_progressFailure, _game.progressReadFailure)) {
       _holdProgress(_game.progressReadFailure!);
     }
-    _syncOnlinePresence();
     if (mounted) setState(() {});
   }
 
@@ -393,7 +389,6 @@ class _NestariumAppState extends State<NestariumApp>
       if (mounted) {
         setState(() {});
         if (!_playerSwitchFailed) {
-          _syncOnlinePresence();
           _startIdentityCheck();
         }
       }
@@ -495,31 +490,6 @@ class _NestariumAppState extends State<NestariumApp>
       applyCloud: accountId == null
           ? null
           : (state) => _game.replaceProgressFromCloud(accountId, state),
-    );
-  }
-
-  void _syncOnlinePresence() {
-    final account = _accounts.account;
-    if (_importFrozen ||
-        _game.saveNeedsAttention ||
-        !_isReady ||
-        _switchingAccount ||
-        _playerSwitchFailed ||
-        account == null ||
-        account.id != _loadedAccountId) {
-      return;
-    }
-    final team = ArenaLogic.recommendedTeam(_game.state.ownedAnimals)
-        .map(ArenaLogic.fighterFromOwned)
-        .map(MultiplayerFighterSnapshot.fromArenaFighter)
-        .toList(growable: false);
-    _onlineLobby.updatePresence(
-      OnlinePresenceSnapshot(
-        account: account,
-        rating: _game.arenaRating,
-        team: team,
-        animals: _game.state.ownedAnimals,
-      ),
     );
   }
 

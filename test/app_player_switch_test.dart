@@ -147,7 +147,7 @@ void main() {
   });
 
   testWidgets(
-    'overlapping selections load serially and publish only the latest player',
+    'overlapping selections load serially without publishing global presence',
     (tester) async {
       final fixture = await _openFixture(tester, multiplePlayers: true);
       final first = fixture.accounts.accounts.first;
@@ -174,11 +174,9 @@ void main() {
       expect(fixture.game.loads, [first.id, last.id]);
       expect(fixture.game.coins, 2222);
       expect(find.byType(MainGameShell), findsOneWidget);
-      expect(
-        fixture.lobby.presences.every((value) => value.account.id == last.id),
-        isTrue,
-      );
-      expect(fixture.lobby.presences, isNotEmpty);
+      // Account/game transitions no longer publish a global player profile.
+      // Social presence must be entered explicitly after its capability gate.
+      expect(fixture.lobby.presences, isEmpty);
       expect(fixture.sync.selections.where((value) => value.$1 != null), [
         (last.id, 'cloud-${last.id}'),
       ]);
