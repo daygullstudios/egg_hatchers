@@ -71,6 +71,70 @@ features and future events do not silently enlarge this finish line. This
 clarifies required work inside the six milestones, not a claim that all six are
 equally sized or that the remaining work is only a few small patches.
 
+## Four delivery batches — owner-requested execution cadence
+
+Tony requested grouping the estimated 12–16 remaining implementation units into
+larger coherent batches, without stopping for another "proceed" between small
+changes. This changes execution cadence, not product scope or release authority.
+The six milestones above remain acceptance gates; these four batches package the
+remaining work across those gates. Estimates are planning ranges, not a promise
+of a fixed number of commits or turns. Do not count this planning update as a
+completed implementation unit.
+
+1. **Accounts, family controls and hosted foundation (about 4–5 units).** Close
+   the reviewed age/guardian capability contract; implement the corresponding
+   account, cloud-recovery and consent/revocation boundaries; connect verified
+   identity to protected hosted sessions. Preserve existing saves and UIDs.
+   Done: permitted test accounts recover progress and join the same hosted test
+   session; restricted/unknown accounts cannot bypass their capabilities. Work
+   on the isolated hosted foundation while external consent decisions are open,
+   but do not present test allowlisting as parental consent or enable child cloud/
+   social access prematurely. No economy-bearing online rewards/trades yet.
+2. **Complete multiplayer gameplay and its shared economy (about 4–5 units).**
+   Integrate existing battles/invites/preset messages with server-owned inventory,
+   match results, ratings and atomic trades. Finish safe peer disclosure,
+   block/report/abuse controls and disconnect/restart/retry handling.
+   Done: two permitted players complete battles and trades with consistent saved
+   outcomes; forged inventory, replayed results, simultaneous offers and connection
+   loss cannot duplicate rewards or cause one-sided loss. Keep Bot Arena.
+3. **Platform and public Nestarium readiness (about 3–4 units).** Finish the
+   actual launch-platform account/provider and recovery acceptance, mobile-web
+   behavior, accurate policies/support and coordinated protected hostname cutover.
+   Reuse existing mail/domain/build evidence where it remains valid. Apple work
+   stays on the Mac; request one concise human/device sequence when necessary.
+   Done: the selected platforms and protected Nestarium origin pass the stated
+   continuity/protection gates and public release materials match the runtime.
+   This is readiness, not automatic public launch or a store submission.
+4. **One release candidate, blocker fixes and release decision (about 1–2 units).**
+   Freeze the candidate, run the consolidated required release checks and
+   representative child/teen/adult/device QA. Fix demonstrated launch blockers
+   only and recheck affected surfaces. Obtain required final owner publication/
+   store decisions; publish only the authorized scope, then stop. Optional polish,
+   new modes/events and speculative hardening remain outside the release batch.
+
+Execution rules:
+
+- Continue through related implementation, focused tests and corrections without
+  asking for approval already given. A small commit is not a conversational stop.
+  Batch checkpoints are concise progress reports, not automatic permission asks.
+- Keep reviewable commits and automatically push verified intended changes under
+  the Git rules. Use focused checks during development and the required Flutter/
+  protected-deployment sequence at a completed user-facing integration boundary,
+  normally once per coherent batch. Dependency-sensitive backend deployments may
+  need their own focused checkpoint; do not deploy unverified partial behavior
+  just to satisfy a count or skip necessary verification to force one deployment.
+- Stop for a genuine missing owner decision/credential interaction, required
+  professional or physical-device acceptance, meaningful scope/cost expansion,
+  or the final release-authority gate. Exhaust safe independent in-scope work
+  before treating an external dependency as a complete development blocker.
+- Track completed batches and remaining acceptance, not lines changed. Explain
+  any material increase to the 12–16-unit estimate before extending the scope.
+  Do not rerun the full RC matrix for each internal unit.
+
+Current status: **0/4 delivery batches complete; batch 1 is in preparation.**
+The hosted-session work has source/reference inspection only so far; no new
+authenticated backend implementation or deployment is claimed by this update.
+
 ### Historical implementation inventory (not an instruction to continue in order)
 
 1. **Save/account trust:** first patch corrects the misleading local Delete

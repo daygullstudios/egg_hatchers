@@ -2,6 +2,30 @@
 
 Updated: 2026-09-07
 
+## Current execution cadence — four grouped delivery batches
+
+Tony asked to combine the estimated 12–16 implementation units into coherent
+batches without another "proceed" after every small change. The workplan now
+defines four delivery batches with explicit done criteria:
+
+1. Accounts, reviewed family controls and protected authenticated hosting.
+2. Complete multiplayer, trusted results/inventory/trades and recovery/safety.
+3. Launch-platform, provider, policy/support and protected Nestarium-origin readiness.
+4. One consolidated release candidate, blocker fixes and authorized release/stop.
+
+Keep the existing six milestone gates; grouping is not new feature scope or
+permission to bypass consent, human/device QA, public-hostname protection or
+final publication/store decisions. Continue through internal edits and focused
+checks without repeated approval requests. Report meaningful batch checkpoints;
+run normal integration/deployment gates for completed user-facing batches, not
+a full RC matrix per small patch. Reviewable verified commits/pushes still apply.
+
+**Status: 0/4 grouped batches complete; batch 1 preparation only.** The preceding
+hosted-backend continuation inspected source/model references but made no runtime
+changes. Do not report authenticated hosted multiplayer as implemented or deployed.
+This cadence update is documentation-only, not one of the remaining implementation
+units. The protected game version and preceding valid test evidence stay unchanged.
+
 ## Family-audience requirements — current decision checkpoint
 
 Milestone 2 requirements are recorded in `docs/FAMILY_AUDIENCE_V1.md`, with
