@@ -92,6 +92,8 @@ class DeviceGuestSlotStore {
   Future<DeviceGuestSlot> bindFirebaseUid({
     required String accountId,
     required String firebaseUid,
+    int? expectedGeneration,
+    bool Function()? stillCurrent,
   }) async {
     final uid = firebaseUid.trim();
     if (uid.isEmpty) {
@@ -102,7 +104,15 @@ class DeviceGuestSlotStore {
       throw StateError('Only the designated device guest may bind a UID.');
     }
     final preferences = await SharedPreferences.getInstance();
-    await preferences.setString(_firebaseUidKey, uid);
+    if (expectedGeneration != null &&
+            preferences.getInt(_generationKey) != expectedGeneration ||
+        preferences.getString(_accountIdKey) != accountId ||
+        stillCurrent != null && !stillCurrent()) {
+      throw StateError('Device guest changed before identity binding');
+    }
+    if (!await preferences.setString(_firebaseUidKey, uid)) {
+      throw StateError('Device identity could not be saved');
+    }
     return DeviceGuestSlot(
       accountId: current.accountId,
       generation: current.generation,

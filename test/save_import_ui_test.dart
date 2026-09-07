@@ -160,8 +160,9 @@ void main() {
           transfer: transfer,
           initializeCloud: () async {
             cloudStarts++;
+            return true;
           },
-          appBuilder: () => const MaterialApp(home: Text('Game')),
+          appBuilder: (_) => const MaterialApp(home: Text('Game')),
           acquireLease: ({bool exclusive = false}) async {
             leases.add(exclusive ? 'exclusive' : 'shared');
             if (exclusive && otherTab) {
@@ -205,8 +206,9 @@ void main() {
         initializeCloud: () async {
           starts++;
           expect(await transfer.hasPendingImport(), false);
+          return true;
         },
-        appBuilder: () => const MaterialApp(home: Text('Game')),
+        appBuilder: (_) => const MaterialApp(home: Text('Game')),
       ),
     );
     await tester.pumpAndSettle();

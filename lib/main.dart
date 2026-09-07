@@ -19,6 +19,8 @@ import 'services/custom_egg_service.dart';
 import 'services/custom_sprite_service.dart';
 import 'services/firebase_anonymous_auth_gateway.dart';
 import 'services/firebase_bootstrap.dart';
+import 'services/cloud_connection_service.dart';
+import 'widgets/cloud_connection_scope.dart';
 import 'services/firebase_progress_repository.dart';
 import 'services/game_service.dart';
 import 'services/online_lobby_service.dart';
@@ -50,7 +52,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(
     SaveImportBootstrap(
-      appBuilder: () => const NestariumApp(),
+      appBuilder: (cloud) => NestariumApp(cloudConnection: cloud),
       initializeCloud: FirebaseBootstrap.initialize,
     ),
   );
@@ -64,15 +66,18 @@ class NestariumApp extends StatefulWidget {
     this.accountProtection,
     this.onlineLobby,
     this.progressSync,
+    this.cloudConnection,
   });
 
-  // The app owns these services, including injected instances. Keeping the
+  // The app owns these services, including injected instances (except the
+  // bootstrap-owned cloudConnection). Keeping the
   // composition root injectable lets tests exercise real player transitions.
   final AccountService? accounts;
   final GameService? game;
   final AccountProtectionService? accountProtection;
   final OnlineLobbyService? onlineLobby;
   final ProgressSyncService? progressSync;
+  final CloudConnectionService? cloudConnection;
 
   @override
   State<NestariumApp> createState() => _NestariumAppState();
@@ -99,6 +104,7 @@ class _NestariumAppState extends State<NestariumApp>
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   String? _loadedAccountId;
   String? _configuredProgressPlayerId;
+  String? _configuredProgressAccountId;
   var _switchingAccount = false;
   var _importFrozen = false;
   var _checkingAccounts = false;
@@ -106,6 +112,8 @@ class _NestariumAppState extends State<NestariumApp>
   ProgressReadException? _progressFailure;
   var _startingUp = false;
   var _rootInitialized = false;
+  Timer? _localLoadTimer;
+  bool _localLoadSlow = false;
   var _playerSwitchFailed = false;
   var _accountSelectionRevision = 0;
   var _legacyMigrationPending = false;
@@ -126,11 +134,13 @@ class _NestariumAppState extends State<NestariumApp>
     _spriteRating.addListener(_onGameChanged);
     _referenceOverlay.addListener(_onGameChanged);
     _audio.addListener(_onGameChanged);
+    widget.cloudConnection?.addListener(_onCloudConnectionChanged);
   }
 
   Future<void> _initialize() async {
     if (_startingUp || _importFrozen || !mounted) return;
     _startingUp = true;
+    _watchLocalLoad();
     try {
       _checkingAccounts = true;
       try {
@@ -162,7 +172,6 @@ class _NestariumAppState extends State<NestariumApp>
         );
         _progressFailure = null;
         unawaited(_audio.initialize());
-        await _accountProtection.initialize(accountId: _accounts.account?.id);
         await Future.wait([
           _preferences.initialize(),
           _customSprites.initialize(
@@ -196,11 +205,52 @@ class _NestariumAppState extends State<NestariumApp>
       _rootInitialized = true;
       _syncOnlinePresence();
       if (mounted) setState(() {});
-      unawaited(_configureProgressSync());
+      _startIdentityCheck();
     } finally {
+      _localLoadTimer?.cancel();
       _startingUp = false;
       if (mounted) setState(() {});
     }
+  }
+
+  void _watchLocalLoad() {
+    _localLoadTimer?.cancel();
+    _localLoadSlow = false;
+    _localLoadTimer = Timer(const Duration(seconds: 8), () {
+      if (mounted) setState(() => _localLoadSlow = true);
+    });
+  }
+
+  void _onCloudConnectionChanged() {
+    if (widget.cloudConnection?.isAvailable == true) _startIdentityCheck();
+    if (mounted) setState(() {});
+  }
+
+  void _startIdentityCheck() {
+    if (_importFrozen ||
+        !mounted ||
+        !_isReady ||
+        _switchingAccount ||
+        _playerSwitchFailed ||
+        _accounts.account?.id != _loadedAccountId ||
+        widget.cloudConnection != null &&
+            !widget.cloudConnection!.isAvailable) {
+      return;
+    }
+    final accountId = _loadedAccountId;
+    unawaited(
+      _accountProtection
+          .initialize(accountId: accountId)
+          .then((_) async {
+            if (mounted && !_importFrozen && accountId == _loadedAccountId) {
+              await _configureProgressSync();
+            }
+          })
+          .catchError((Object _) {
+            // Optional identity work cannot turn a valid local save into a recovery
+            // failure. Its service owns connection status and retry.
+          }),
+    );
   }
 
   void _onGameChanged() {
@@ -239,6 +289,8 @@ class _NestariumAppState extends State<NestariumApp>
     _progressFailure = null;
     _loadedAccountId = null;
     _configuredProgressPlayerId = null;
+    _configuredProgressAccountId = null;
+    unawaited(_accountProtection.selectAccount(null));
     // Revoke old cloud/presence context before any async transition or income
     // notification can associate the new profile with the old player's save.
     unawaited(
@@ -268,6 +320,7 @@ class _NestariumAppState extends State<NestariumApp>
   Future<void> _switchGameAccount() async {
     if (_importFrozen || _switchingAccount || !mounted) return;
     _switchingAccount = true;
+    _watchLocalLoad();
     _playerSwitchFailed = false;
     setState(() {});
     try {
@@ -295,9 +348,6 @@ class _NestariumAppState extends State<NestariumApp>
           );
           if (!stillSelected()) continue;
           _progressFailure = null;
-          stage = 'identity check';
-          await _accountProtection.selectAccount(accountId);
-          if (!stillSelected()) continue;
           stage = 'local customizations';
           await _loadPlayerCustomizations(accountId, migrateLegacyData);
           if (migrateLegacyData) _legacyMigrationPending = false;
@@ -317,12 +367,13 @@ class _NestariumAppState extends State<NestariumApp>
         }
       }
     } finally {
+      _localLoadTimer?.cancel();
       _switchingAccount = false;
       if (mounted) {
         setState(() {});
         if (!_playerSwitchFailed) {
           _syncOnlinePresence();
-          unawaited(_configureProgressSync());
+          _startIdentityCheck();
         }
       }
     }
@@ -335,6 +386,8 @@ class _NestariumAppState extends State<NestariumApp>
     _progressFailure = error;
     _loadedAccountId = null;
     _configuredProgressPlayerId = null;
+    _configuredProgressAccountId = null;
+    unawaited(_accountProtection.selectAccount(null));
     unawaited(
       _progressSync.selectAccount(accountId: null, protectedPlayerId: null),
     );
@@ -353,6 +406,9 @@ class _NestariumAppState extends State<NestariumApp>
       throw StateError('Review this backup again');
     }
     _importFrozen = true;
+    await _accountProtection.pauseForSaveImport().timeout(
+      const Duration(seconds: 20),
+    );
     await _progressSync.pauseForSaveImport().timeout(
       const Duration(seconds: 20),
     );
@@ -391,6 +447,7 @@ class _NestariumAppState extends State<NestariumApp>
 
   Future<void> _configureProgressSync() {
     if (_importFrozen ||
+        _accountProtection.isChecking ||
         !mounted ||
         !_isReady ||
         _switchingAccount ||
@@ -400,10 +457,15 @@ class _NestariumAppState extends State<NestariumApp>
     }
     final accountId = _loadedAccountId;
     final protectedPlayerId = _accountProtection.state.protectedPlayerId;
+    if (_configuredProgressAccountId == accountId &&
+        _configuredProgressPlayerId == protectedPlayerId) {
+      return Future.value();
+    }
     final cloud = Firebase.apps.isEmpty
         ? null
         : FirebaseProgressRepository(FirebaseFirestore.instance);
     _configuredProgressPlayerId = protectedPlayerId;
+    _configuredProgressAccountId = accountId;
     return _progressSync.selectAccount(
       accountId: accountId,
       protectedPlayerId: protectedPlayerId,
@@ -484,14 +546,9 @@ class _NestariumAppState extends State<NestariumApp>
         _isReady &&
         !_switchingAccount &&
         !_playerSwitchFailed) {
-      final accountId = _loadedAccountId;
-      unawaited(
-        _accountProtection.selectAccount(accountId).then((_) async {
-          if (mounted && accountId == _loadedAccountId) {
-            await _configureProgressSync();
-          }
-        }),
-      );
+      final cloud = widget.cloudConnection;
+      if (cloud != null && !cloud.isAvailable) unawaited(cloud.connect());
+      _startIdentityCheck();
     }
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
@@ -501,10 +558,12 @@ class _NestariumAppState extends State<NestariumApp>
 
   @override
   void dispose() {
+    _localLoadTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _game.removeListener(_onGameChanged);
     _accounts.removeListener(_onAccountsChanged);
     _accountProtection.removeListener(_onProtectionChanged);
+    widget.cloudConnection?.removeListener(_onCloudConnectionChanged);
     _preferences.removeListener(_onGameChanged);
     _customSprites.removeListener(_onGameChanged);
     _customEggs.removeListener(_onGameChanged);
@@ -521,10 +580,10 @@ class _NestariumAppState extends State<NestariumApp>
   }
 
   bool get _isReady =>
+      _rootInitialized &&
       _progressFailure == null &&
       _game.isInitialized &&
       _accounts.isInitialized &&
-      _accountProtection.isInitialized &&
       _preferences.isInitialized &&
       _customSprites.isInitialized &&
       _customEggs.isInitialized &&
@@ -551,6 +610,9 @@ class _NestariumAppState extends State<NestariumApp>
     // including on failure. No old runtime resumes over a pending import.
     _importFrozen = true;
     if (!recoveringAccounts) {
+      await _accountProtection.pauseForSaveImport().timeout(
+        const Duration(seconds: 20),
+      );
       await _progressSync.pauseForSaveImport().timeout(
         const Duration(seconds: 20),
       );
@@ -594,9 +656,12 @@ class _NestariumAppState extends State<NestariumApp>
         fontFamily: 'Roboto',
       ),
       builder: (context, child) {
-        final content = SaveImportScope(
-          stageImport: _stageImport,
-          child: child ?? const SizedBox.shrink(),
+        final content = CloudConnectionScope(
+          notifier: widget.cloudConnection,
+          child: SaveImportScope(
+            stageImport: _stageImport,
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
         if (!_isReady || _switchingAccount || _playerSwitchFailed) {
           return PortraitAppShell(
@@ -665,7 +730,7 @@ class _NestariumAppState extends State<NestariumApp>
               onChoosePlayer: _accounts.chooseAnotherAccount,
             )
           : !_isReady || _switchingAccount
-          ? const _LoadingScreen()
+          ? _LoadingScreen(slow: _localLoadSlow)
           : !_accounts.hasAccount
           ? AccountOnboardingScreen(accounts: _accounts, game: _game)
           : MainGameShell(
@@ -736,7 +801,8 @@ class _PlayerSwitchFailureScreen extends StatelessWidget {
 }
 
 class _LoadingScreen extends StatelessWidget {
-  const _LoadingScreen();
+  const _LoadingScreen({this.slow = false});
+  final bool slow;
 
   @override
   Widget build(BuildContext context) {
@@ -752,7 +818,7 @@ class _LoadingScreen extends StatelessWidget {
             );
 
             return Center(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -773,6 +839,25 @@ class _LoadingScreen extends StatelessWidget {
                         strokeWidth: 3,
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    Text(
+                      slow
+                          ? 'Local player is taking longer to load.'
+                          : 'Loading local player…',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (slow) ...[
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Keep app/browser data. This local check must finish before play can start. Do not reset your save to fix a loading delay.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ],
                   ],
                 ),
               ),

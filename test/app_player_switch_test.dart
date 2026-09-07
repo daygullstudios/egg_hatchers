@@ -25,6 +25,19 @@ import 'helpers/save_import_fixture.dart';
 
 void main() {
   testWidgets(
+    'resume with the same verified identity does not reset the cloud decision context',
+    (tester) async {
+      final fixture = await _openFixture(tester, multiplePlayers: true);
+      final before = fixture.sync.selections.length;
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await _pumpFrames(tester);
+      expect(fixture.sync.selections.length, before);
+      expect(find.byType(MainGameShell), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+  testWidgets(
     'root import freeze prevents lifecycle sync and account reload after preparation failure',
     (tester) async {
       final fixture = await _openFixture(tester, multiplePlayers: true);

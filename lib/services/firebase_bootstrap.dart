@@ -5,9 +5,9 @@ import '../firebase_options.dart';
 
 /// Initializes the isolated Nestarium development Firebase project.
 ///
-/// Authentication may establish an anonymous device identity after bootstrap.
-/// Firestore and cloud progress remain disabled, so local saves are still the
-/// sole gameplay authority until conflict-safe synchronization is implemented.
+/// Optional network capability only. Local save safety/bootstrap must complete
+/// first, but valid local gameplay does not wait for this future. Identity and
+/// conflict-safe sync are configured separately after it succeeds.
 abstract final class FirebaseBootstrap {
   static const projectId = 'egg-hatchers-dev';
 

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../widgets/cloud_connection_scope.dart';
 
 import '../data/realistic_animal_sprites.dart';
 import '../models/animal_sprite_theme.dart';
@@ -247,6 +248,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final shell = MainGameShellScope.maybeOf(context);
         final selectedAnimalTheme = preferences.animalSpriteTheme;
         final account = AccountScope.of(context).account;
+        final cloudConnection = CloudConnectionScope.maybeOf(context);
         final protection =
             AccountProtectionScope.maybeOf(context)?.state ??
             const AccountProtectionState.localOnly();
@@ -295,7 +297,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: 'Account & Saves',
                       summary: account == null
                           ? 'Local save transfer'
-                          : '${account.displayName} · ${protection.label}',
+                          : '${account.displayName} · ${cloudConnection != null && !cloudConnection.isAvailable ? (cloudConnection.isBusy ? 'Connecting to cloud' : 'Cloud unavailable') : protection.label}',
                       expanded:
                           _expandedPanel == _SettingsPanel.accountAndSaves,
                       onTap: () => setState(
@@ -640,6 +642,8 @@ class _AccountSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final connection = CloudConnectionScope.maybeOf(context);
+    final identity = AccountProtectionScope.maybeOf(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -687,54 +691,76 @@ class _AccountSettings extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Container(
-          key: const ValueKey('settings-account-protection-status'),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: theme.scaffoldColor.withValues(alpha: 0.34),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: theme.cardBorderColor),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                protection.isProtected
-                    ? Icons.verified_user_rounded
-                    : Icons.phonelink_lock_outlined,
-                size: 20,
-                color: protection.isProtected
-                    ? Colors.greenAccent.shade400
-                    : theme.primaryColor,
-              ),
-              const SizedBox(width: 9),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      protection.label,
-                      style: TextStyle(
-                        color: theme.cardTextPrimaryColor,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      protection.message ??
-                          'Progress protection status is unavailable.',
-                      style: TextStyle(
-                        color: theme.cardTextSecondaryColor,
-                        fontSize: 12,
-                        height: 1.25,
-                      ),
-                    ),
-                  ],
+        if (connection != null && !connection.isAvailable)
+          CloudConnectionNotice(
+            connection: connection,
+            foregroundColor: theme.cardTextPrimaryColor,
+          )
+        else
+          Container(
+            key: const ValueKey('settings-account-protection-status'),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: theme.scaffoldColor.withValues(alpha: 0.34),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: theme.cardBorderColor),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  protection.isProtected
+                      ? Icons.verified_user_rounded
+                      : Icons.phonelink_lock_outlined,
+                  size: 20,
+                  color: protection.isProtected
+                      ? Colors.greenAccent.shade400
+                      : theme.primaryColor,
                 ),
-              ),
-            ],
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        protection.label,
+                        style: TextStyle(
+                          color: theme.cardTextPrimaryColor,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        protection.message ??
+                            'Progress protection status is unavailable.',
+                        style: TextStyle(
+                          color: theme.cardTextSecondaryColor,
+                          fontSize: 12,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+        if ((connection == null || connection.isAvailable) &&
+            identity != null &&
+            (protection.status == AccountProtectionStatus.error ||
+                protection.status == AccountProtectionStatus.starting)) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: identity.isChecking ? null : identity.retryConnection,
+            style: OutlinedButton.styleFrom(minimumSize: const Size(48, 48)),
+            icon: const Icon(Icons.cloud_sync_outlined),
+            label: Text(
+              identity.isChecking
+                  ? 'Identity check in progress'
+                  : 'Retry cloud identity',
+            ),
+          ),
+        ],
         if (onProtectWithGoogle != null) ...[
           const SizedBox(height: 8),
           FilledButton.icon(

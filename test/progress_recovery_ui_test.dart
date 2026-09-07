@@ -175,8 +175,9 @@ void main() {
           },
           initializeCloud: () async {
             cloud++;
+            return true;
           },
-          appBuilder: () {
+          appBuilder: (_) {
             games++;
             return const SizedBox();
           },
@@ -213,8 +214,9 @@ void main() {
         },
         initializeCloud: () async {
           cloud++;
+          return true;
         },
-        appBuilder: () => const SizedBox(),
+        appBuilder: (_) => const SizedBox(),
       ),
     );
     await tester.pumpAndSettle();

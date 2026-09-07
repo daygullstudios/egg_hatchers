@@ -65,8 +65,14 @@ Automated passes are necessary but are not proof of player comprehension.
    cloud publication. Web backup review uses two-step confirmation and checked
    exclusive bootstrap recovery with a retained raw-pair archive, not a full import
    or identity rotation. Progress reads avoid replacing the shared settings cache.
-   **Next: broader offline startup/storage-outage acceptance**, including dependencies
-   outside progress decoding. Native recovery and representative human acceptance
+   Local-first startup now opens valid local gameplay without waiting for Firebase
+   core or identity restoration. SDK/identity retries are single-flight; delayed
+   results recheck player/slot ownership. Mandatory local checks remain fail-closed,
+   with slow-loading guidance rather than reset/bypass. Import staging drains
+   identity too; same-identity resume retains unresolved cloud decisions. This is
+   not a promise of cold offline web asset delivery or child-auth acceptance.
+   **Next: runtime storage-write failures/quota and truthful unsaved-progress
+   recovery.** Native recovery and representative human acceptance
    remain open. `PROJECT_HANDOFF.md` owns exact validation/live evidence. Trusted cloud erasure
    and child-compatible identity remain separate, deliberately authorized work.
 2. **Child-compatible account release:** use the confirmed family audience to

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../models/account_protection_state.dart';
@@ -45,11 +46,15 @@ class AccountProtectionAttempt {
 /// player identity. Progress synchronization remains in the dedicated sync
 /// services and must not infer cloud authority from a local username.
 class AccountProtectionService extends ChangeNotifier {
-  AccountProtectionService({this.gateway, DeviceGuestSlotStore? guestSlots})
-    : _guestSlots = guestSlots ?? DeviceGuestSlotStore();
+  AccountProtectionService({
+    this.gateway,
+    DeviceGuestSlotStore? guestSlots,
+    this.slowAfter = const Duration(seconds: 8),
+  }) : _guestSlots = guestSlots ?? DeviceGuestSlotStore();
 
   final AccountProtectionGateway? gateway;
   final DeviceGuestSlotStore _guestSlots;
+  final Duration slowAfter;
   AccountProtectionState _state = const AccountProtectionState(
     status: AccountProtectionStatus.starting,
   );
@@ -57,8 +62,23 @@ class AccountProtectionService extends ChangeNotifier {
 
   AccountProtectionState get state => _state;
   bool get isInitialized => _isInitialized;
-  bool get canLinkGoogle => gateway?.canLinkGoogle ?? false;
+  bool get canLinkGoogle => !isChecking && (gateway?.canLinkGoogle ?? false);
   var _selectionRevision = 0;
+  String? _selectedAccountId;
+  Future<void>? _selectionPending;
+  Future<ProtectedPlayerIdentity?>? _gatewayPending;
+  Timer? _slowTimer;
+  bool _disposed = false, _suspended = false;
+  bool get isChecking => _selectionPending != null;
+  Future<void> retryConnection() => selectAccount(_selectedAccountId);
+
+  Future<void> pauseForSaveImport() async {
+    _suspended = true;
+    _selectionRevision++;
+    _slowTimer?.cancel();
+    await _selectionPending;
+    await _gatewayPending;
+  }
 
   Future<void> initialize({String? accountId}) async {
     if (_isInitialized) {
@@ -69,17 +89,87 @@ class AccountProtectionService extends ChangeNotifier {
     _isInitialized = true;
   }
 
-  Future<void> selectAccount(String? accountId) async {
+  Future<void> selectAccount(String? accountId) {
+    if (_disposed || _suspended) return Future.value();
+    if (accountId != null &&
+        _selectedAccountId == accountId &&
+        _selectionPending != null) {
+      return _selectionPending!;
+    }
     final revision = ++_selectionRevision;
+    _slowTimer?.cancel();
+    final samePlayer = accountId == _selectedAccountId;
+    _selectedAccountId = accountId;
+    if (accountId == null) {
+      _setState(const AccountProtectionState.localOnly());
+      return Future.value();
+    }
+    final completion = Completer<void>();
+    _selectionPending = completion.future;
+    if (!samePlayer || _state.protectedPlayerId == null) {
+      _setState(
+        const AccountProtectionState(
+          status: AccountProtectionStatus.starting,
+          message: 'Checking cloud identity. Local play does not need to wait.',
+        ),
+      );
+    }
+    unawaited(
+      _selectAccount(accountId, revision)
+          .catchError((Object _) {
+            _setStateIfCurrent(
+              revision,
+              const AccountProtectionState(
+                status: AccountProtectionStatus.error,
+                message:
+                    'Cloud identity could not be checked. Local play is still available.',
+              ),
+            );
+          })
+          .whenComplete(() {
+            if (identical(_selectionPending, completion.future)) {
+              _selectionPending = null;
+            }
+            completion.complete();
+            if (!_disposed) notifyListeners();
+          }),
+    );
+    return completion.future;
+  }
+
+  Future<void> _selectAccount(String accountId, int revision) async {
+    bool current() =>
+        !_disposed && !_suspended && revision == _selectionRevision;
     final configuredGateway = gateway;
     if (configuredGateway == null || !configuredGateway.isConfigured) {
       _setStateIfCurrent(revision, const AccountProtectionState.localOnly());
       return;
     }
 
+    final slowTimer = Timer(
+      slowAfter,
+      () => _setStateIfCurrent(
+        revision,
+        const AccountProtectionState(
+          status: AccountProtectionStatus.error,
+          message:
+              'Cloud identity is taking longer than expected. You can keep playing locally while the check finishes.',
+        ),
+      ),
+    );
+    _slowTimer = slowTimer;
     try {
+      // Firebase identity operations cannot safely overlap. A timed-out UI does
+      // not cancel a request or authorize a replacement anonymous identity.
+      try {
+        await _gatewayPending;
+      } catch (_) {
+        /* Earlier selection owns its result. */
+      }
+      if (!current()) return;
       final slot = await _guestSlots.read();
-      if (accountId == null || slot == null || slot.accountId != accountId) {
+      if (!current()) return;
+      if (slot == null || slot.accountId != accountId) {
         _setStateIfCurrent(
           revision,
           const AccountProtectionState(
@@ -90,14 +180,34 @@ class AccountProtectionService extends ChangeNotifier {
         return;
       }
 
-      final identity = await configuredGateway.restoreIdentity(
+      final request = configuredGateway.restoreIdentity(
         accountId: accountId,
         expectedPlayerId: slot.firebaseUid,
       );
+      _gatewayPending = request;
+      final ProtectedPlayerIdentity? identity;
+      try {
+        identity = await request;
+      } finally {
+        if (identical(_gatewayPending, request)) _gatewayPending = null;
+      }
+      if (!current()) return;
+      final latest = await _guestSlots.read();
+      if (!current()) return;
+      if (latest?.accountId != slot.accountId ||
+          latest?.generation != slot.generation ||
+          latest?.firebaseUid != slot.firebaseUid ||
+          slot.firebaseUid != null &&
+              identity != null &&
+              identity.playerId != slot.firebaseUid) {
+        throw StateError('Device identity ownership changed during restore');
+      }
       if (identity != null) {
         await _guestSlots.bindFirebaseUid(
           accountId: accountId,
           firebaseUid: identity.playerId,
+          expectedGeneration: slot.generation,
+          stillCurrent: current,
         );
       }
       _setStateIfCurrent(
@@ -112,9 +222,9 @@ class AccountProtectionService extends ChangeNotifier {
             ? AccountProtectionState(
                 status: AccountProtectionStatus.guest,
                 protectedPlayerId: identity.playerId,
-                message: canLinkGoogle
-                    ? 'A cloud copy exists for this device guest. Link Google to recover it on other devices.'
-                    : 'A cloud copy exists for this device guest. Keep a save export before changing browsers or devices.',
+                message: configuredGateway.canLinkGoogle
+                    ? 'Device guest identity connected. Check cloud-save status below; link Google for recovery on other devices.'
+                    : 'Device guest identity connected. Check cloud-save status below. Keep a save export before changing browsers or devices.',
               )
             : AccountProtectionState(
                 status: AccountProtectionStatus.protected,
@@ -123,22 +233,31 @@ class AccountProtectionService extends ChangeNotifier {
                 message: 'Progress protection is active.',
               ),
       );
-    } catch (error, stackTrace) {
-      debugPrint('Account protection startup failed: $error\n$stackTrace');
+    } catch (error) {
+      debugPrint('Account protection startup failed (${error.runtimeType}).');
       _setStateIfCurrent(
         revision,
         const AccountProtectionState(
           status: AccountProtectionStatus.error,
           message:
-              'Progress is still safe on this device. Cloud protection could not be checked.',
+              'Cloud identity could not be checked. Local play is still available. Keep a save export before changing devices.',
         ),
       );
+    } finally {
+      slowTimer.cancel();
     }
   }
 
   Future<AccountProtectionAttempt> protectWithGoogle({
     required String accountId,
   }) async {
+    if (_disposed || _suspended || isChecking) {
+      return const AccountProtectionAttempt(
+        status: AccountProtectionAttemptStatus.failed,
+        message:
+            'Wait for the current identity check before connecting Google.',
+      );
+    }
     final revision = ++_selectionRevision;
     final configuredGateway = gateway;
     final slot = await _guestSlots.read();
@@ -247,11 +366,22 @@ class AccountProtectionService extends ChangeNotifier {
   }
 
   void _setStateIfCurrent(int revision, AccountProtectionState value) {
-    if (revision == _selectionRevision) _setState(value);
+    if (!_disposed && !_suspended && revision == _selectionRevision) {
+      _setState(value);
+    }
   }
 
   void _setState(AccountProtectionState value) {
+    if (_disposed) return;
     _state = value;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _slowTimer?.cancel();
+    _selectionRevision++;
+    super.dispose();
   }
 }

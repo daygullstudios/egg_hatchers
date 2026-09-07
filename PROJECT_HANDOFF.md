@@ -2,7 +2,56 @@
 
 Updated: 2026-09-06
 
-## Damaged progress and local-backup recovery — current implementation checkpoint
+## Local-first startup without cloud waits — current implementation checkpoint
+
+Valid local gameplay no longer waits for Firebase core initialization or restoring
+the cloud identity. Mandatory storage leases, pending import/backup recovery,
+player-directory validation, selected progress and local customizations still
+finish before play. A slow local operation shows keep-data guidance after eight
+seconds, not a reset, bypass or parallel operation. Loading guidance scrolls on
+short screens. Offline/cloud errors are not mislabeled as damaged progress.
+
+Settings separates optional cloud-startup status from identity and cloud-save
+status. Cloud retry is available after a completed failure; pending operations
+stay single-flight even after slow-connection messaging. SDK retry also runs on
+resume. Late SDK success starts identity work only for the currently loaded valid
+player. Identity retries coalesce, serialize gateway requests and recheck selected
+player, device-slot generation and ownership before binding. Disposal, switching
+and import suspension invalidate late results. Existing keys, UIDs, Firebase
+project, SDK/provider settings and save formats remain unchanged. Google linking
+stays disabled by the existing release flag; this is not child-auth acceptance.
+
+Slow same-player identity rechecks do not reset an unresolved cloud comparison;
+the same verified account/UID is not reconfigured on resume. A completed identity
+failure revokes cloud context. Import/backup staging now suspends and drains
+identity restoration as well as game/cloud writers; a hanging identity prevents
+replacement rather than overlapping it. Guest identity copy no longer implies a
+cloud save has already succeeded: the separate save status remains authoritative.
+
+Validation: clean Flutter 3.47.2 analysis, **684 Flutter tests** and all
+**seven isolated Chrome storage/import tests** pass. New mocked tests exercise
+slow/failed SDK startup with preserved playable/savable local data, late success,
+slow storage/local loads, safe retry, identity switching/generation/disposal/import
+guards, same-identity resume, and 320x360/390x844/1440x900 retry notices at 200% text.
+Final color inheritance follows the selected settings theme; all **26 focused
+startup/settings tests** pass after that style change. Final release web build
+passes (42.4s; Wasm dry run succeeds); main bundle SHA-256
+`a019ce3159c745c7e3e624263e40f03dfd900891308c9938b9019e126d874570`.
+Playtest **3 tests** and Wrangler **4.129.0** dry run pass in the required order.
+Brand audit: **649 classified** compatibility references, none unclassified.
+The protected deployment and non-destructive live acceptance receipt follows.
+
+Scope: this is offline-tolerant Flutter startup once app code and local storage
+are available, not a promise of first-ever/cold offline web loading. Cloudflare
+Access and initial assets still need appropriate network/cache availability; no
+service worker or Access bypass was introduced. **Next: runtime storage-write
+failures/quota and truthful unsaved-progress recovery.** Native recovery and
+representative human/physical-device acceptance remain open. Child-compatible
+identity, trusted cloud erasure, public policies/provider readiness and protected
+new-hostname cutover remain separate gates. No public route, mail/billing,
+production credential, sibling-product or store setting changes.
+
+## Damaged progress and local-backup recovery — preceding implementation checkpoint
 
 Primary/backup progress loading is now read-only and fail-closed: only two absent
 copies mean a new save. Malformed payloads, unsupported envelopes, invalid known
@@ -66,7 +115,7 @@ refresh reopens the existing guest (two normal chickens, one golden chicken,
 saves** without selecting either copy. Navigation works and the tab is left on
 the Hatchery. No real player is created, removed, damaged or restored for QA.
 
-Next: broader offline startup and storage-outage acceptance, including failures
+Next at that checkpoint: broader offline startup and storage-outage acceptance, including failures
 outside progress decoding; native recovery and representative human comprehension
 testing remain open. Child-compatible identity, trusted cloud erasure, public
 policy approval and coordinated protected new-hostname cutover remain separate.
