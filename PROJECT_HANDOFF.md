@@ -329,6 +329,33 @@ integrated acceptance. They fit inside the existing six-milestone finish line.
 Do not declare milestone 2 complete, infer parental consent from generic owner
 approval, or resume deferred auxiliary hardening.
 
+## External acceptance continuation — 2026-09-07
+
+The authenticated canary load gate is closed by the live evidence above. The
+standard protected-playtest web build was regenerated afterward and checked to
+contain no canary hostname, preventing the temporary acceptance target from
+being deployed accidentally.
+
+A fresh authenticated Google/Firebase read found no silent progress: Firebase
+Authentication lists only Anonymous as enabled and Google remains disabled.
+Google Auth Platform has zero OAuth clients, zero test users and no configured
+scopes. The Nestarium name and `support@playnestarium.com` are still correct,
+but Google marks the brand incomplete because homepage, privacy, terms and
+authorized-domain fields remain blank. No provider switch, OAuth credential,
+test-user permission, scope or brand field was changed. Guest-link/recovery
+acceptance therefore correctly waits for approved public information pages and
+domain verification, then a deliberate Web provider/client test release. Do not
+enable the provider merely to bypass that dependency chain.
+
+Physical Android preparation reached a safe partial checkpoint. The wirelessly
+connected SM A166U runs Android 16; `com.egghatchers.game` was absent, so the
+current debug APK built and installed without replacing an existing install or
+save. The phone was locked and dozing at launch, so no visual, touch, persistence
+or network behavior is claimed. The debug app remains installed for the owner to
+unlock and resume this bounded QA. Hosted multiplayer is deliberately off in
+this native build because the current Access-cookie protected backend is a Web
+test surface, not a native/public multiplayer endpoint.
+
 ## First-player journey — preceding bounded implementation checkpoint
 
 Tony approved the six-milestone v1 finish line in

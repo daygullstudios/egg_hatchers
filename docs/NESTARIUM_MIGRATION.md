@@ -174,6 +174,25 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
    screenshots, support/privacy URLs and any console-only titles at the next
    reviewed release. Store records and current listing availability were not
    verified in this task. Do not create records, change bundle IDs or submit.
+
+## September 7 external-gate read-back
+
+- Authenticated Firebase read-back still shows only Anonymous enabled; Google is
+  disabled. Google Auth Platform shows zero OAuth clients, zero test users and
+  zero configured data-access scopes.
+- The Nestarium app name and support address remain correct. Google marks the
+  brand incomplete because homepage, privacy, terms and authorized-domain fields
+  are blank. Those fields depend on the reviewed public information site and
+  verified `playnestarium.com`; no placeholder protected URL was substituted.
+- No provider, client credential, test-user permission, scope or brand field was
+  created or changed. The Web release flag remains off. The correct next order is
+  approved public copy/domain, brand completion, deliberate provider/client test,
+  guest UID preservation, then clean-origin recovery.
+- Android 16 preparation built and installed the current debug APK on the
+  wirelessly connected SM A166U only after confirming the legacy package was not
+  installed. The phone was locked/dozing, so device behavior is not yet accepted.
+  Hosted multiplayer stays off for this native build; the Access-cookie canary is
+  a Web test boundary rather than a native/public endpoint.
    Windows/macOS/Linux package/installer acceptance also remains platform QA.
 6. Review external GitHub display metadata, CI consumers of renamed artifact
    files, and any previously linked Render Blueprint before external updates.
