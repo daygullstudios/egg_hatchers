@@ -2,7 +2,65 @@
 
 Updated: 2026-09-06
 
-## Local-first startup without cloud waits — current implementation checkpoint
+## Checked gameplay saves and held-progress recovery — current implementation checkpoint
+
+Normal gameplay saves now serialize and check backend acceptance plus fresh
+primary/backup read-back. A loaded-save baseline and per-player Web Lock on
+supported browsers stop updated tabs from silently replacing unexpected progress.
+Rejected, thrown, uncertain and delayed writes are not reported as saved. Retry
+accepts only the original values or this attempt's own verified result; an
+already-applied result does not rotate away the older backup. Existing save keys,
+formats, player IDs, account ownership and Firebase identities remain unchanged.
+
+A failed write, or one pending longer than eight seconds, pauses play/income and
+holds the latest in-memory progress. Recovery sits above navigation, dialogs and
+tutorial overlays; hidden controls lose focus and tickers. Autosaves coalesce,
+retry cannot overlap a pending write, and late game callbacks cannot mutate the
+held snapshot. Switching/import and new cloud/presence work are blocked until a
+verified save; pending cloud comparisons survive but require a fresh review.
+Retry resumes the same held progress without reloading or applying offline income
+again. No cloud winner is selected and no automatic restoration is introduced.
+
+The scrollable recovery screen offers retry and a read-only recovery backup that
+substitutes this player's held progress while retaining readable local players,
+settings and custom data. If storage is unreadable or hangs, a separate emergency
+snapshot exports directly from memory. It intentionally is NOT a normal import:
+it omits other players/settings/custom art and may need support-assisted recovery.
+Exports exclude device identity and sync ancestry. Download/copy messages ask
+players to verify a private saved file; Settings no longer announces a normal
+export after a failed progress flush. Controls fit short/narrow and desktop
+portrait layouts at 200% text. Browser exit warnings are best-effort only.
+
+Validation: clean Flutter 3.47.2 analysis, **706 Flutter tests** and **nine
+isolated Chrome storage/import tests** pass. New tests cover rejected/thrown/
+applied-but-reported-failed writes, stale copies, serialized revisions, hanging
+reads, slow writes, no false saved notification, held-state retry, cloud-choice
+invalidation and whole-app recovery above a pushed dialog and active tutorial.
+Responsive cases include 320x360, 390x844 and 1440x900 at 200% text. Chrome checks
+use disposable actual browser storage with an injected rejecting writer, exclusive
+progress locks and exit-listener attach/remove. Final release web build passes
+(40.4s; Wasm dry run succeeds); main bundle SHA-256
+`33fd40221df5a2e9026de98423431d20cbd7ac14835d63708a87fb4ea30c7871`.
+Playtest **three tests** and Wrangler **4.129.0** dry run pass after that build.
+Brand audit: **669 classified** compatibility references, none unclassified.
+Deployment receipt and real-profile refresh acceptance follow below after release.
+
+Limits: read-back is backend verification, not a hardware durability guarantee.
+Forced close/eviction can still lose unexported RAM. Old builds do not honor new
+locks; close other game tabs. Browsers without Web Locks retain baseline checks,
+not an atomic multi-tab guarantee. Already-issued external operations cannot be
+undone by pausing. Physical disk/quota exhaustion was not forced on real data;
+failure tests use disposable storage. This patch covers gameplay progress writes,
+not every settings/custom-data/checkpoint/directory/deletion write.
+
+**Next: checked failure feedback for remaining settings, custom-data and sync
+checkpoint writes.** Native recovery and representative human/physical-device
+acceptance remain open. Child-compatible identity, trusted cloud erasure,
+policy/provider readiness and the protected new-hostname cutover remain separate
+gates. No new public route, provider, mail/billing, store, credential or sibling
+product changes.
+
+## Local-first startup without cloud waits — preceding implementation checkpoint
 
 Valid local gameplay no longer waits for Firebase core initialization or restoring
 the cloud identity. Mandatory storage leases, pending import/backup recovery,
@@ -53,7 +111,7 @@ to Hatchery. No real save, profile or identity was replaced/removed for testing.
 Scope: this is offline-tolerant Flutter startup once app code and local storage
 are available, not a promise of first-ever/cold offline web loading. Cloudflare
 Access and initial assets still need appropriate network/cache availability; no
-service worker or Access bypass was introduced. **Next: runtime storage-write
+service worker or Access bypass was introduced. **Next at that checkpoint: runtime storage-write
 failures/quota and truthful unsaved-progress recovery.** Native recovery and
 representative human/physical-device acceptance remain open. Child-compatible
 identity, trusted cloud erasure, public policies/provider readiness and protected

@@ -44,19 +44,38 @@ import 'sprite_reference_overlay_service.dart';
 
 /// Central game logic: coins, hatching, mutations, idle income, and saving.
 class GameService extends ChangeNotifier {
-  GameService({SaveService? saveService, Random? random})
-    : _saveService = saveService ?? SaveService(),
-      _random = random ?? Random();
+  GameService({
+    SaveService? saveService,
+    Random? random,
+    SaveService Function(String?)? saveFactory,
+  }) : _saveService = saveService ?? SaveService(),
+       _saveFactory = saveFactory ?? ((id) => SaveService(accountId: id)),
+       _random = random ?? Random();
 
   SaveService _saveService;
+  final SaveService Function(String?) _saveFactory;
   final Random _random;
   String? _activeAccountId;
   void Function(String? accountId)? onProgressSaved;
 
-  PlayerState _state = GameData.startingPlayerState();
+  PlayerState _playerState = GameData.startingPlayerState();
+  PlayerState get _state => _playerState;
+  set _state(PlayerState value) {
+    // A late battle/dialog/timer callback must not change the held recovery
+    // snapshot after saving has paused. Recovery commits bypass this setter.
+    if (!saveNeedsAttention) _playerState = value;
+  }
+
   Timer? _idleTimer;
   var _pausedForImport = false;
-  final _pendingSaves = <Future<void>>{};
+  Future<void>? _saveFlight;
+  bool _saveAgain = false, _saveSlow = false, _disposed = false;
+  Timer? _saveWatchdog;
+  ProgressWriteException? _progressWriteFailure;
+  ProgressWriteException? get progressWriteFailure => _progressWriteFailure;
+  bool get saveNeedsAttention => _saveSlow || _progressWriteFailure != null;
+  bool get saveInFlight => _saveFlight != null;
+  String? get activeAccountId => _activeAccountId;
   bool _isInitialized = false;
   bool _progressWritesAllowed = false;
   ProgressReadException? _progressReadFailure;
@@ -372,10 +391,9 @@ class GameService extends ChangeNotifier {
     String? accountId,
     bool migrateLegacySave = false,
   }) async {
+    if (saveNeedsAttention) throw StateError('Save recovery must finish first');
     await suspendProgressWrites();
-    final target = accountId == null
-        ? _saveService
-        : SaveService(accountId: accountId);
+    final target = accountId == null ? _saveService : _saveFactory(accountId);
     await _loadProgress(target, accountId, migrateLegacySave);
     _isInitialized = true;
     _startIdleTimer();
@@ -391,7 +409,6 @@ class GameService extends ChangeNotifier {
       var saved = await target.load();
       if (saved == null && accountId != null && migrateLegacySave) {
         saved = await SaveService().load();
-        if (saved != null) await target.save(saved);
       }
       // Retain the old tutorial decision even if migration of another damaged
       // player's save is deferred; do not consume the shared marker here.
@@ -404,8 +421,9 @@ class GameService extends ChangeNotifier {
       // Loading can settle offline battles or mark existing quests notified.
       // Persist that only after the selected save has passed validation.
       if (saved != null &&
-          SaveService.contentFingerprint(saved) !=
-              SaveService.contentFingerprint(_state)) {
+          (migrateLegacySave ||
+              SaveService.contentFingerprint(saved) !=
+                  SaveService.contentFingerprint(_state))) {
         await _saveQuietly();
         if (_progressReadFailure != null) throw _progressReadFailure!;
       }
@@ -437,19 +455,18 @@ class GameService extends ChangeNotifier {
     String accountId, {
     bool migrateLegacySave = false,
   }) async {
+    if (saveNeedsAttention) throw StateError('Save recovery must finish first');
     if (_activeAccountId == accountId && _progressWritesAllowed) return;
     if (_activeAccountId != null && _progressWritesAllowed) await save();
+    if (saveNeedsAttention) throw StateError('Save recovery must finish first');
     await suspendProgressWrites();
-    await _loadProgress(
-      SaveService(accountId: accountId),
-      accountId,
-      migrateLegacySave,
-    );
+    await _loadProgress(_saveFactory(accountId), accountId, migrateLegacySave);
     _startIdleTimer();
     notifyListeners();
   }
 
   Future<void> deleteAccountSave(String accountId) async {
+    if (saveNeedsAttention) throw StateError('Save recovery must finish first');
     if (_activeAccountId == accountId) {
       _idleTimer?.cancel();
       _activeAccountId = null;
@@ -474,7 +491,9 @@ class GameService extends ChangeNotifier {
 
   void _startIdleTimer() {
     _idleTimer?.cancel();
-    if (_pausedForImport || !_progressWritesAllowed) return;
+    if (_pausedForImport || !_progressWritesAllowed || saveNeedsAttention) {
+      return;
+    }
     _idleTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _tickIdleIncome();
     });
@@ -573,38 +592,109 @@ class GameService extends ChangeNotifier {
     );
   }
 
-  Future<void> _saveQuietly() async {
-    if (_pausedForImport || !_progressWritesAllowed) return;
+  Future<void> _saveQuietly() {
+    if (_pausedForImport || !_progressWritesAllowed || saveNeedsAttention) {
+      return Future.value();
+    }
+    if (_saveFlight != null) {
+      _saveAgain = true;
+      return _saveFlight!;
+    }
+    final complete = Completer<void>();
+    _saveFlight = complete.future;
+    _saveWatchdog = Timer(const Duration(seconds: 8), () {
+      _saveSlow = true;
+      _idleTimer?.cancel();
+      if (!_disposed) notifyListeners();
+    });
+    unawaited(_drainSave(complete));
+    return complete.future;
+  }
+
+  Future<void> _drainSave(
+    Completer<void> complete, {
+    bool retry = false,
+  }) async {
     final accountId = _activeAccountId;
-    final pending = _saveService.save(_state);
-    _pendingSaves.add(pending);
+    var success = false;
     try {
-      await pending;
-      if (!_pausedForImport && _progressWritesAllowed) {
-        onProgressSaved?.call(accountId);
-      }
+      do {
+        _saveAgain = false;
+        if (retry) {
+          await _saveService.retrySave(_state);
+          retry = false;
+        } else {
+          await _saveService.save(_state);
+        }
+      } while (_saveAgain && !_pausedForImport && _progressWritesAllowed);
+      success = true;
     } on ProgressReadException catch (error) {
       _progressWritesAllowed = false;
       _idleTimer?.cancel();
-      _progressReadFailure = error;
-      notifyListeners();
+      if (saveNeedsAttention) {
+        _progressWriteFailure = ProgressWriteException(
+          accountId,
+          ProgressWriteFailure.changed,
+        );
+      } else {
+        _progressReadFailure = error;
+      }
+    } catch (error) {
+      _progressWritesAllowed = false;
+      _idleTimer?.cancel();
+      _progressWriteFailure = error is ProgressWriteException
+          ? error
+          : ProgressWriteException(accountId, ProgressWriteFailure.unavailable);
     } finally {
-      _pendingSaves.remove(pending);
+      _saveWatchdog?.cancel();
+      final wasHeld = saveNeedsAttention;
+      _saveSlow = false;
+      _saveFlight = null;
+      if (success) {
+        _progressWriteFailure = null;
+        if (wasHeld && !_pausedForImport && !_disposed) {
+          _progressWritesAllowed = true;
+          _startIdleTimer();
+        }
+        if (!_pausedForImport && _progressWritesAllowed && !_disposed) {
+          onProgressSaved?.call(accountId);
+        }
+      }
+      complete.complete();
+      if (!_disposed) notifyListeners();
     }
+  }
+
+  Future<void> retryProgressSave() {
+    if (_saveFlight != null) return _saveFlight!;
+    if (_progressWriteFailure == null || _pausedForImport || _disposed) {
+      return Future.value();
+    }
+    final complete = Completer<void>();
+    _saveFlight = complete.future;
+    // Do not reload or reapply offline income over this held in-memory state.
+    _playerState = _state.copyWith(lastSavedTime: DateTime.now());
+    unawaited(_drainSave(complete, retry: true));
+    notifyListeners();
+    return complete.future;
   }
 
   /// Drain old writes before the bootstrap recovery snapshot is made.
   Future<void> pauseForSaveImport() async {
+    if (saveNeedsAttention) throw StateError('Save recovery must finish first');
     _pausedForImport = true;
     _idleTimer?.cancel();
-    await Future.wait(_pendingSaves.toList());
+    await _saveFlight;
+    if (saveNeedsAttention) throw StateError('Save recovery must finish first');
     if (!_progressWritesAllowed) return;
     _state = _state.copyWith(lastSavedTime: DateTime.now());
     await _saveService.saveForTransfer(_state);
   }
 
   Future<void> save() async {
-    if (_pausedForImport || !_progressWritesAllowed) return;
+    if (_pausedForImport || !_progressWritesAllowed || saveNeedsAttention) {
+      return;
+    }
     _state = _state.copyWith(lastSavedTime: DateTime.now());
     await _saveQuietly();
   }
@@ -613,7 +703,7 @@ class GameService extends ChangeNotifier {
   Future<void> suspendProgressWrites() async {
     _progressWritesAllowed = false;
     _idleTimer?.cancel();
-    await Future.wait(_pendingSaves.toList());
+    await _saveFlight;
   }
 
   /// Replaces the active in-memory save after a revalidated cloud download.
@@ -623,6 +713,7 @@ class GameService extends ChangeNotifier {
     PlayerState state,
   ) async {
     if (_pausedForImport ||
+        saveNeedsAttention ||
         !_progressWritesAllowed ||
         _activeAccountId != accountId) {
       return false;
@@ -632,7 +723,9 @@ class GameService extends ChangeNotifier {
     _startIdleTimer();
     await _saveQuietly();
     notifyListeners();
-    return _progressWritesAllowed && _progressReadFailure == null;
+    return _progressWritesAllowed &&
+        _progressReadFailure == null &&
+        !saveNeedsAttention;
   }
 
   bool isEggUnlocked(Egg egg) {
@@ -3268,6 +3361,8 @@ class GameService extends ChangeNotifier {
   void dispose() {
     _idleTimer?.cancel();
     save();
+    _disposed = true;
+    _saveWatchdog?.cancel();
     super.dispose();
   }
 }

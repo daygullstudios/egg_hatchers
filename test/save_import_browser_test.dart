@@ -12,6 +12,7 @@ import 'package:egg_hatchers/services/save_import_storage.dart';
 import 'package:egg_hatchers/services/save_storage_lease.dart';
 import 'package:egg_hatchers/services/save_transfer_file_web.dart';
 import 'package:egg_hatchers/services/save_transfer_service.dart';
+import 'package:egg_hatchers/services/unsaved_exit_guard.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_web/shared_preferences_web.dart';
 import 'package:web/web.dart' as web;
@@ -19,6 +20,62 @@ import 'helpers/save_import_fixture.dart';
 
 void main() {
   SharedPreferencesPlugin.registerWith(null);
+  test(
+    'browser progress writes verify failure, retry and per-player locking without removing older progress',
+    () async {
+      const id = 'mock-write-failure';
+      final key = ProgressRecoveryService.primaryKey(id);
+      final storage = _RejectingProgressStorage(key);
+      final saves = SaveService(accountId: id, storage: storage);
+      try {
+        await saves.save(GameData.startingPlayerState().copyWith(coins: 321));
+        storage.reject = true;
+        await expectLater(
+          saves.save(GameData.startingPlayerState().copyWith(coins: 999)),
+          throwsA(isA<ProgressWriteException>()),
+        );
+        expect((await saves.load())!.coins, 321);
+        storage.reject = false;
+        await saves.retrySave(
+          GameData.startingPlayerState().copyWith(coins: 999),
+        );
+        final values = await storage.readAll();
+        expect(SaveService.decodeSnapshot(values[key])!.state.coins, 999);
+        expect(
+          SaveService.decodeSnapshot(values['${key}_backup'])!.state.coins,
+          321,
+        );
+        final release = await acquireProgressWriteLease(key);
+        try {
+          await expectLater(
+            acquireProgressWriteLease(key),
+            throwsA(isA<SaveTransferException>()),
+          );
+        } finally {
+          await release();
+        }
+      } finally {
+        await storage.remove(key);
+        await storage.remove('${key}_backup');
+      }
+    },
+  );
+  test(
+    'browser unsaved-exit guard attaches and releases without permanently trapping navigation',
+    () {
+      setUnsavedExitGuard(true);
+      final held = web.Event('beforeunload', web.EventInit(cancelable: true));
+      web.window.dispatchEvent(held);
+      expect(held.defaultPrevented, true);
+      setUnsavedExitGuard(false);
+      final resumed = web.Event(
+        'beforeunload',
+        web.EventInit(cancelable: true),
+      );
+      web.window.dispatchEvent(resumed);
+      expect(resumed.defaultPrevented, false);
+    },
+  );
   test(
     'browser backup repair retains damaged originals and identity',
     () async {
@@ -212,4 +269,12 @@ void main() {
       await next();
     },
   );
+}
+
+class _RejectingProgressStorage extends PreferencesProgressStorage {
+  _RejectingProgressStorage(super.primaryKey);
+  bool reject = false;
+  @override
+  Future<bool> write(String key, Object value) =>
+      reject ? Future.value(false) : super.write(key, value);
 }

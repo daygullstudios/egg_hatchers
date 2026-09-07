@@ -22,6 +22,13 @@ Future<Future<void> Function()> acquireSaveStorageLease({
 Future<Future<void> Function()> acquireSaveImportStagingLease() =>
     _acquire('nestarium-local-save-import-stage', exclusive: true);
 
+// Coordinate updated tabs without conflicting with the shared runtime lease.
+// Older browsers keep their existing storage support and baseline checks.
+Future<Future<void> Function()> acquireProgressWriteLease(String key) async =>
+    saveImportLockAvailable
+    ? _acquire('nestarium-progress-write:$key', exclusive: true)
+    : () async {};
+
 Future<Future<void> Function()> _acquire(
   String name, {
   required bool exclusive,

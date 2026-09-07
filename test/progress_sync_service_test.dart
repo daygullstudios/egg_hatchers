@@ -13,6 +13,53 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
   test(
+    'local save failure invalidates review but preserves the unresolved cloud choice',
+    () async {
+      final fixture = await _reviewFixture();
+      addTearDown(fixture.sync.dispose);
+      final oldReview = (await fixture.sync.prepareConflictReview())!;
+      final reads = fixture.cloud.reads;
+      fixture.sync.setLocalPersistencePaused(true);
+      fixture.sync.localProgressSaved('review_player');
+      await fixture.sync.synchronize();
+      expect(await fixture.sync.keepThisDevice(oldReview), false);
+      expect(await fixture.sync.useCloud(oldReview), false);
+      expect(fixture.cloud.writes, 0);
+      expect(fixture.cloud.reads, reads);
+      fixture.sync.setLocalPersistencePaused(false);
+      expect(fixture.sync.state.hasConflict, true);
+      expect(await fixture.sync.keepThisDevice(oldReview), false);
+      expect(await fixture.sync.prepareConflictReview(), isNotNull);
+    },
+  );
+  testWidgets(
+    'local failure invalidates an in-flight cloud read before it can restore or upload',
+    (tester) async {
+      final local = SaveService(accountId: 'guest_local');
+      await local.save(GameData.startingPlayerState());
+      final gate = Completer<void>();
+      final cloud = _CloudRepository()..readGate = gate;
+      final sync = ProgressSyncService();
+      addTearDown(sync.dispose);
+      var restores = 0;
+      final selection = sync.selectAccount(
+        accountId: 'guest_local',
+        protectedPlayerId: 'mock-identity',
+        cloud: cloud,
+        applyCloud: (_) async {
+          restores++;
+          return true;
+        },
+      );
+      await tester.pump();
+      sync.setLocalPersistencePaused(true);
+      gate.complete();
+      await selection;
+      expect(cloud.writes, 0);
+      expect(restores, 0);
+    },
+  );
+  test(
     'unreadable local progress cannot trigger cloud upload or replacement',
     () async {
       const key = 'egg_hatchers_player_state_account_mock-damaged';

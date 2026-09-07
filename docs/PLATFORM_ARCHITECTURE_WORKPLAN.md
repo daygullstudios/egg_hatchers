@@ -71,8 +71,15 @@ Automated passes are necessary but are not proof of player comprehension.
    with slow-loading guidance rather than reset/bypass. Import staging drains
    identity too; same-identity resume retains unresolved cloud decisions. This is
    not a promise of cold offline web asset delivery or child-auth acceptance.
-   **Next: runtime storage-write failures/quota and truthful unsaved-progress
-   recovery.** Native recovery and representative human acceptance
+   Gameplay writes now serialize and verify primary/backup backend acceptance and
+   read-back. Failed or slow writes hold the current progress behind a recovery
+   screen, pause play/income/cloud changes and offer checked retry plus a read-only
+   full backup when storage is readable. A memory-only emergency snapshot remains
+   available when reads hang; it is not a normal import and may need support.
+   Pending cloud choices survive without choosing a winner. Updated-tab locks and
+   loaded-save baselines reject unexpected copies; exit warnings are best-effort.
+   **Next: checked failure feedback for remaining settings, custom-data and sync
+   checkpoint writes.** Native recovery and representative human acceptance
    remain open. `PROJECT_HANDOFF.md` owns exact validation/live evidence. Trusted cloud erasure
    and child-compatible identity remain separate, deliberately authorized work.
 2. **Child-compatible account release:** use the confirmed family audience to

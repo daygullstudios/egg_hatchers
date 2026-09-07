@@ -6,6 +6,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/player_state.dart';
 import 'save_import_storage.dart';
 import 'progress_payload_validation.dart';
+import 'save_storage_lease.dart';
+
+enum ProgressWriteFailure { unavailable, changed }
+
+class ProgressWriteException implements Exception {
+  const ProgressWriteException(this.accountId, this.failure);
+  final String? accountId;
+  final ProgressWriteFailure failure;
+}
+
+class _ProgressWriteAttempt {
+  const _ProgressWriteAttempt(this.primary, this.backup, this.proposed);
+  final Object? primary, backup;
+  final String proposed;
+  bool accepts(Map<String, Object> values, String key) =>
+      (values[key] == primary || values[key] == proposed) &&
+      (values['${key}_backup'] == backup ||
+          primary != null && values['${key}_backup'] == primary);
+}
 
 enum ProgressReadFailure { unreadable, backupAvailable, storageUnavailable }
 
@@ -50,6 +69,11 @@ class SaveService {
                 : '${_legacySaveKey}_account_$accountId',
           );
   final SaveImportStorage _storage;
+  Future<void> _writeTail = Future.value();
+  _ProgressWriteAttempt? _failedAttempt;
+  bool _writeBlocked = false;
+  bool _hasBaseline = false;
+  Object? _baselinePrimary;
 
   static const _legacySaveKey = 'egg_hatchers_player_state';
   static const _legacyRottenShellTutorialKey =
@@ -69,7 +93,11 @@ class SaveService {
   }
 
   Future<ProgressSaveSnapshot?> loadSnapshot() async {
-    return _checkPair(await _readPair());
+    final values = await _readPair();
+    final snapshot = _checkPair(values);
+    _baselinePrimary = values[_saveKey];
+    _hasBaseline = true;
+    return snapshot;
   }
 
   Future<Map<String, Object>> _readPair() async {
@@ -176,37 +204,108 @@ class SaveService {
     return value;
   }
 
-  Future<void> save(PlayerState state) => _write(state);
+  Future<void> save(PlayerState state) => _enqueueWrite(state);
 
-  Future<void> saveForTransfer(PlayerState state) =>
-      _write(state, verify: true);
+  Future<void> saveForTransfer(PlayerState state) => _enqueueWrite(state);
 
-  Future<void> _write(PlayerState state, {bool verify = false}) async {
+  Future<void> retrySave(PlayerState state) =>
+      _enqueueWrite(state, retry: true);
+
+  Future<void> _enqueueWrite(PlayerState state, {bool retry = false}) {
+    final work = _writeTail.then((_) => _write(state, retry: retry));
+    _writeTail = work.catchError((Object _) {});
+    return work;
+  }
+
+  Future<void> _write(PlayerState state, {required bool retry}) async {
     // Never let an autosave, migration, or cloud callback overwrite unreadable
     // progress by treating it as an empty slot. Recovery is a separate action.
-    final prefs = await SharedPreferences.getInstance();
-    final values = await _readPair();
-    final current = _checkPair(values);
-    final currentJson = values[_saveKey] as String?;
-    if (current != null) {
-      final accepted = await prefs.setString(_backupKey, currentJson!);
-      if (verify && !accepted) throw StateError('Backup write rejected');
-    }
-    final jsonString = jsonEncode({
-      'format': progressFormat,
-      'schemaVersion': progressSchemaVersion,
-      'revision': (current?.revision ?? 0) + 1,
-      'savedAt': DateTime.now().toUtc().toIso8601String(),
-      'contentFingerprint': contentFingerprint(state),
-      'playerState': state.toJson(),
-    });
-    final accepted = await prefs.setString(_saveKey, jsonString);
-    if (verify) {
-      await prefs.reload();
-      if (!accepted || prefs.getString(_saveKey) != jsonString) {
-        throw StateError('Final local save could not be verified');
+    Future<void> Function()? release;
+    try {
+      if (_writeBlocked && !retry) {
+        throw ProgressWriteException(
+          accountId,
+          ProgressWriteFailure.unavailable,
+        );
       }
+      release = await acquireProgressWriteLease(_saveKey);
+      final values = await _readPair();
+      final current = _checkPair(values);
+      final failed = _failedAttempt;
+      if (retry && failed != null) {
+        if (!failed.accepts(values, _saveKey)) {
+          throw ProgressWriteException(accountId, ProgressWriteFailure.changed);
+        }
+        // The backend may have applied the write before reporting an error.
+        // Confirm it without rotating away the last known older backup.
+        if (values[_saveKey] == failed.proposed &&
+            decodeSnapshot(failed.proposed)?.contentFingerprint ==
+                contentFingerprint(state)) {
+          _saved(values[_saveKey]);
+          return;
+        }
+      } else if (_hasBaseline && values[_saveKey] != _baselinePrimary) {
+        throw ProgressWriteException(accountId, ProgressWriteFailure.changed);
+      } else if (retry && !_hasBaseline) {
+        throw ProgressWriteException(accountId, ProgressWriteFailure.changed);
+      }
+      final currentJson = values[_saveKey] as String?;
+      final jsonString = jsonEncode({
+        'format': progressFormat,
+        'schemaVersion': progressSchemaVersion,
+        'revision': (current?.revision ?? 0) + 1,
+        'savedAt': DateTime.now().toUtc().toIso8601String(),
+        'contentFingerprint': contentFingerprint(state),
+        'playerState': state.toJson(),
+      });
+      _failedAttempt = _ProgressWriteAttempt(
+        currentJson,
+        values[_backupKey],
+        jsonString,
+      );
+      if (current != null) {
+        if (!await _storage.write(_backupKey, currentJson!)) {
+          throw ProgressWriteException(
+            accountId,
+            ProgressWriteFailure.unavailable,
+          );
+        }
+        final checked = await _readPair();
+        if (checked[_backupKey] != currentJson ||
+            checked[_saveKey] != currentJson) {
+          throw ProgressWriteException(accountId, ProgressWriteFailure.changed);
+        }
+      }
+      if (!await _storage.write(_saveKey, jsonString)) {
+        throw ProgressWriteException(
+          accountId,
+          ProgressWriteFailure.unavailable,
+        );
+      }
+      final checked = await _readPair();
+      if (checked[_saveKey] != jsonString ||
+          current != null && checked[_backupKey] != currentJson) {
+        throw ProgressWriteException(accountId, ProgressWriteFailure.changed);
+      }
+      _saved(jsonString);
+    } on ProgressReadException catch (error) {
+      _writeBlocked = true;
+      if (error.failure != ProgressReadFailure.storageUnavailable) rethrow;
+      throw ProgressWriteException(accountId, ProgressWriteFailure.unavailable);
+    } catch (error) {
+      _writeBlocked = true;
+      if (error is ProgressWriteException) rethrow;
+      throw ProgressWriteException(accountId, ProgressWriteFailure.unavailable);
+    } finally {
+      await release?.call();
     }
+  }
+
+  void _saved(Object? primary) {
+    _baselinePrimary = primary;
+    _hasBaseline = true;
+    _failedAttempt = null;
+    _writeBlocked = false;
   }
 
   Future<void> delete() async {

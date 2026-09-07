@@ -9,6 +9,7 @@ import 'models/multiplayer.dart';
 import 'models/online_lobby.dart';
 import 'screens/account_onboarding_screen.dart';
 import 'screens/saved_player_recovery_screen.dart';
+import 'screens/unsaved_progress_screen.dart';
 import 'screens/main_game_shell.dart';
 import 'screens/multiplayer_lobby_screen.dart';
 import 'screens/online_trading_screen.dart';
@@ -31,6 +32,7 @@ import 'services/save_transfer_service.dart';
 import 'services/saved_player_directory.dart';
 import 'services/save_service.dart';
 import 'services/progress_recovery_service.dart';
+import 'services/unsaved_exit_guard.dart';
 import 'widgets/save_import_bootstrap.dart';
 import 'widgets/save_import_scope.dart';
 import 'services/sprite_rating_service.dart';
@@ -107,6 +109,7 @@ class _NestariumAppState extends State<NestariumApp>
   String? _configuredProgressAccountId;
   var _switchingAccount = false;
   var _importFrozen = false;
+  var _saveAttentionHeld = false;
   var _checkingAccounts = false;
   AccountStartupFailure? _accountStartupFailure;
   ProgressReadException? _progressFailure;
@@ -228,6 +231,7 @@ class _NestariumAppState extends State<NestariumApp>
 
   void _startIdentityCheck() {
     if (_importFrozen ||
+        _game.saveNeedsAttention ||
         !mounted ||
         !_isReady ||
         _switchingAccount ||
@@ -254,6 +258,12 @@ class _NestariumAppState extends State<NestariumApp>
   }
 
   void _onGameChanged() {
+    if (_saveAttentionHeld != _game.saveNeedsAttention) {
+      _saveAttentionHeld = _game.saveNeedsAttention;
+      setUnsavedExitGuard(_saveAttentionHeld);
+      _progressSync.setLocalPersistencePaused(_saveAttentionHeld);
+      if (_saveAttentionHeld) unawaited(_onlineLobby.disconnect());
+    }
     if (!_startingUp &&
         !_switchingAccount &&
         _accounts.hasAccount &&
@@ -267,7 +277,7 @@ class _NestariumAppState extends State<NestariumApp>
   }
 
   void _onAccountsChanged() {
-    if (_importFrozen) return;
+    if (_importFrozen || _game.saveNeedsAttention) return;
     if (!_rootInitialized) {
       if (!_startingUp) {
         _progressFailure = null;
@@ -447,6 +457,7 @@ class _NestariumAppState extends State<NestariumApp>
 
   Future<void> _configureProgressSync() {
     if (_importFrozen ||
+        _game.saveNeedsAttention ||
         _accountProtection.isChecking ||
         !mounted ||
         !_isReady ||
@@ -479,6 +490,7 @@ class _NestariumAppState extends State<NestariumApp>
   void _syncOnlinePresence() {
     final account = _accounts.account;
     if (_importFrozen ||
+        _game.saveNeedsAttention ||
         !_isReady ||
         _switchingAccount ||
         _playerSwitchFailed ||
@@ -501,7 +513,7 @@ class _NestariumAppState extends State<NestariumApp>
   }
 
   void _openOnlineSession(OnlineSessionLaunch launch) {
-    if (_importFrozen) return;
+    if (_importFrozen || _game.saveNeedsAttention) return;
     _onlineLobby.clearSessionLaunch();
     final account = _accounts.account;
     final navigator = _navigatorKey.currentState;
@@ -557,7 +569,11 @@ class _NestariumAppState extends State<NestariumApp>
   }
 
   @override
+  Future<bool> didPopRoute() async => _game.saveNeedsAttention;
+
+  @override
   void dispose() {
+    setUnsavedExitGuard(false);
     _localLoadTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _game.removeListener(_onGameChanged);
@@ -591,6 +607,9 @@ class _NestariumAppState extends State<NestariumApp>
       _referenceOverlay.isInitialized;
 
   Future<void> _stageImport(SaveImportPreview preview) async {
+    if (_game.saveNeedsAttention) {
+      throw StateError('Save or export held progress before importing');
+    }
     final recoveringProgress =
         _progressFailure != null && !_startingUp && !_switchingAccount;
     final recoveringAccounts =
@@ -656,6 +675,39 @@ class _NestariumAppState extends State<NestariumApp>
         fontFamily: 'Roboto',
       ),
       builder: (context, child) {
+        Widget guardProgress(Widget surface) => Stack(
+          fit: StackFit.expand,
+          children: [
+            Offstage(
+              offstage: _game.saveNeedsAttention,
+              child: TickerMode(
+                enabled: !_game.saveNeedsAttention,
+                child: ExcludeFocus(
+                  excluding: _game.saveNeedsAttention,
+                  child: surface,
+                ),
+              ),
+            ),
+            if (_game.saveNeedsAttention)
+              Positioned.fill(
+                child: UnsavedProgressScreen(
+                  game: _game,
+                  account: _accounts.accounts
+                      .where((a) => a.id == _game.activeAccountId)
+                      .firstOrNull,
+                  onRetry: () async {
+                    await _game.retryProgressSave();
+                    if (!mounted || _game.saveNeedsAttention) return;
+                    if (_accounts.account?.id != _loadedAccountId) {
+                      _onAccountsChanged();
+                    } else {
+                      _startIdentityCheck();
+                    }
+                  },
+                ),
+              ),
+          ],
+        );
         final content = CloudConnectionScope(
           notifier: widget.cloudConnection,
           child: SaveImportScope(
@@ -663,37 +715,43 @@ class _NestariumAppState extends State<NestariumApp>
             child: child ?? const SizedBox.shrink(),
           ),
         );
-        if (!_isReady || _switchingAccount || _playerSwitchFailed) {
+        if (!_isReady ||
+            (_switchingAccount || _playerSwitchFailed) &&
+                !_game.saveNeedsAttention) {
           return PortraitAppShell(
-            child: AppThemeBackground(theme: theme, child: content),
+            child: guardProgress(
+              AppThemeBackground(theme: theme, child: content),
+            ),
           );
         }
         return PortraitAppShell(
-          child: AppThemeBackground(
-            theme: theme,
-            child: AudioScope(
-              audio: _audio,
-              child: AudioUnlockListener(
+          child: guardProgress(
+            AppThemeBackground(
+              theme: theme,
+              child: AudioScope(
                 audio: _audio,
-                child: AccountScope(
-                  accounts: _accounts,
-                  child: AccountProtectionScope(
-                    protection: _accountProtection,
-                    child: ProgressSyncScope(
-                      sync: _progressSync,
-                      child: OnlineLobbyScope(
-                        lobby: _onlineLobby,
-                        child: OnlineLobbyHost(
+                child: AudioUnlockListener(
+                  audio: _audio,
+                  child: AccountScope(
+                    accounts: _accounts,
+                    child: AccountProtectionScope(
+                      protection: _accountProtection,
+                      child: ProgressSyncScope(
+                        sync: _progressSync,
+                        child: OnlineLobbyScope(
                           lobby: _onlineLobby,
-                          onSessionReady: _openOnlineSession,
-                          child: CoinBalanceScope(
-                            coins: _game.coins,
-                            child: AnimalSpriteThemeScope(
-                              theme: _preferences.animalSpriteTheme,
-                              child: TutorialHost(
-                                game: _game,
-                                theme: theme,
-                                child: content,
+                          child: OnlineLobbyHost(
+                            lobby: _onlineLobby,
+                            onSessionReady: _openOnlineSession,
+                            child: CoinBalanceScope(
+                              coins: _game.coins,
+                              child: AnimalSpriteThemeScope(
+                                theme: _preferences.animalSpriteTheme,
+                                child: TutorialHost(
+                                  game: _game,
+                                  theme: theme,
+                                  child: content,
+                                ),
                               ),
                             ),
                           ),

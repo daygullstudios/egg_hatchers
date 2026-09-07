@@ -50,6 +50,33 @@ class ProgressSyncService extends ChangeNotifier {
   var _syncing = false;
   var _rerunRequested = false;
   var _pausedForImport = false;
+  var _localPersistencePaused = false;
+
+  /// Preserve a pending choice, but invalidate cloud work while local writes
+  /// are unverified. This is not permission to upload an in-memory-only save.
+  void setLocalPersistencePaused(bool paused) {
+    if (_localPersistencePaused == paused) return;
+    _localPersistencePaused = paused;
+    _selectionRevision++;
+    _timer?.cancel();
+    _activeReview = null;
+    _rerunRequested = false;
+    if (paused) {
+      _setState(
+        const ProgressSyncState(
+          status: ProgressSyncStatus.error,
+          message: 'Local saving needs attention. Cloud changes are paused.',
+        ),
+      );
+    } else if (_conflict != null) {
+      _setConflict(
+        'This device and the cloud contain different progress. Compare saves before choosing.',
+      );
+    } else {
+      localProgressSaved(_accountId);
+    }
+  }
+
   Completer<void>? _importDrain;
 
   /// Permanently quiesce this runtime; only a fresh app may resume syncing.
@@ -100,6 +127,7 @@ class ProgressSyncService extends ChangeNotifier {
 
   bool get _isConfigured =>
       !_pausedForImport &&
+      !_localPersistencePaused &&
       _accountId != null &&
       _protectedPlayerId != null &&
       _local != null &&

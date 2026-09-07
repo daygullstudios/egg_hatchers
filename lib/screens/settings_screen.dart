@@ -124,7 +124,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _exportSave(BuildContext context) async {
     try {
       await game.save();
-      if (!context.mounted) return;
+      if (!context.mounted ||
+          game.saveNeedsAttention ||
+          game.progressReadFailure != null) {
+        return;
+      }
       final accountId = AccountScope.of(context).account?.id;
       final contents = await _saveTransfer.exportSave(
         activeAccountId: accountId,
@@ -135,15 +139,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
         UiSound.confirm(context);
         showGameSnackBar(
           context,
-          message: 'Save exported successfully!',
+          message:
+              'Download requested. Check that your save file was downloaded.',
           backgroundColor: preferences.selectedTheme.primaryColor,
         );
       }
-    } catch (error) {
+    } catch (_) {
       if (context.mounted) {
         showGameSnackBar(
           context,
-          message: 'Save export failed: $error',
+          message:
+              'Could not export the save. Keep app/browser data and try again.',
           backgroundColor: Colors.redAccent,
         );
       }
@@ -153,7 +159,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _copySave(BuildContext context) async {
     try {
       await game.save();
-      if (!context.mounted) return;
+      if (!context.mounted ||
+          game.saveNeedsAttention ||
+          game.progressReadFailure != null) {
+        return;
+      }
       final contents = await _saveTransfer.exportSave(
         activeAccountId: AccountScope.of(context).account?.id,
       );
@@ -166,11 +176,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
           backgroundColor: preferences.selectedTheme.primaryColor,
         );
       }
-    } catch (error) {
+    } catch (_) {
       if (context.mounted) {
         showGameSnackBar(
           context,
-          message: 'Could not copy save: $error',
+          message:
+              'Could not copy the save. Keep app/browser data and try again.',
           backgroundColor: Colors.redAccent,
         );
       }

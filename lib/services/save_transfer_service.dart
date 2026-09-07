@@ -63,6 +63,45 @@ class SaveTransferService {
     }, activeAccountId);
   }
 
+  /// Export stored profiles/customizations with this player's latest in-memory
+  /// progress. Read-only: never flush a failing save to make a backup.
+  Future<String> exportWithUnsavedProgress({
+    required PlayerAccount account,
+    required PlayerState progress,
+  }) async {
+    final all = await _storage.readAll();
+    final players = SavedPlayerDirectory.read(all);
+    if (!players.any((player) => player.id == account.id)) {
+      throw const SaveTransferException(
+        'The player directory changed. Keep an emergency snapshot instead.',
+      );
+    }
+    final key = ProgressRecoveryService.primaryKey(account.id);
+    final values = {
+      for (final entry in all.entries)
+        if (!_nonTransferable(entry.key)) entry.key: entry.value,
+      key: jsonEncode(progress.toJson()),
+    };
+    final source = _encodeDocument(values, account.id);
+    inspectSave(source);
+    return source;
+  }
+
+  /// Always available from memory when the storage backend cannot be read.
+  /// Deliberately not a normal import: that would erase omitted players/art.
+  static String emergencyProgressSnapshot({
+    required PlayerAccount? account,
+    required PlayerState progress,
+  }) => const JsonEncoder.withIndent('  ').convert({
+    'format': 'nestarium_emergency_progress',
+    'version': 1,
+    'exportedAt': DateTime.now().toUtc().toIso8601String(),
+    'notice':
+        'Progress snapshot only. Not a full save import. Keep original app/browser data; restoring may require support. Other players, settings, custom art and sign-in are not included.',
+    'player': account?.toJson(),
+    'playerState': progress.toJson(),
+  });
+
   SaveImportPreview inspectSave(String source) {
     try {
       final document = _decodeDocument(source);
