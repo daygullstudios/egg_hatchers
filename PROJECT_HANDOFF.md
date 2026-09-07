@@ -2,7 +2,46 @@
 
 Updated: 2026-09-07
 
-## First-player journey — current bounded implementation checkpoint
+## Family-audience requirements — current decision checkpoint
+
+Milestone 2 requirements are recorded in `docs/FAMILY_AUDIENCE_V1.md`, with
+source evidence and current FTC (including May 2026 guidance), Google Play/API,
+Firebase, Apple and ICO references. **This milestone is not cleared for release.**
+Owner-confirmed ages 8–12 plus teens/adults are not the same as an approved legal
+classification, consent process or set of launch territories.
+
+Verified gaps: optional Firebase startup/anonymous identity/core sync have no
+age or guardian-permission boundary; lobby presence is attempted automatically
+after player load, not only after selecting multiplayer. A successful test-server
+connection exposes account/name/avatar, team and collection to peers. The static
+protected deployment does not itself ship that server. No parent/consent/revocation
+or cloud-erasure runtime was found. No advertising, purchase, Analytics or
+Crashlytics SDK was found in the dependency/source audit; that is not proof of
+zero provider processing or completed native/network acceptance.
+
+Recommendation awaiting owner approval: full local game immediately, optional
+parent-managed child cloud saves/recovery in v1, and no public multiplayer/social
+sharing until its separate authority/safety gates pass. Keep Bot Arena and all
+existing compatibility/save/UID contracts. Local-only child cloud deferral is an
+explicit alternative, not a silent reduction of the save-continuity promise.
+Owner/professional review must determine classification, territories, provider
+eligibility, consent method, and retention/deletion operations before enabling
+the new model. Ordinary Google sign-in is not proof of guardian consent.
+
+Corrected the **unpublished** privacy/terms drafts to state confirmed audience
+intent, actual automatic connection attempts, and missing child controls. All
+draft markers, false policy/hostname approval gates and unrouted public config
+remain intact; `audienceDecisionRecorded: true` records intent only. Ten focused
+public-site tests pass, including continued refusal to publish. No Flutter/runtime
+change, game rebuild/deploy, repeated RC matrix, cloud deletion, billing, provider,
+store or public-hostname action. The preceding protected game version stays live.
+
+**Next:** obtain the child-cloud/public-social v1 scope decision and qualified
+classification/consent review, then implement the documented bounded privacy/
+identity workstream. Do not declare milestone 2 complete, infer parental consent
+from generic owner approval, or resume deferred auxiliary hardening.
+
+## First-player journey — preceding bounded implementation checkpoint
 
 Tony approved the six-milestone v1 finish line in
 `docs/PLATFORM_ARCHITECTURE_WORKPLAN.md`: first-player journey; family-audience
@@ -48,7 +87,7 @@ Human comprehension, native/browser platform acceptance and family-audience
 readiness are not claimed by this widget test. Previous storage failure matrices
 remain valid and were not rerun separately; no native build/version/tag/RC dossier.
 
-**Next milestone:** family-audience requirements: a bounded gap/decision list for
+**Historical next (addressed by the decision checkpoint above):** family-audience requirements: a bounded gap/decision list for
 the intended 8–12, teen and adult audience, followed by only necessary v1 work.
 Stop the current batch after its verified protected deployment. Do not resume
 auxiliary writers or repeat storage failure matrices by default.

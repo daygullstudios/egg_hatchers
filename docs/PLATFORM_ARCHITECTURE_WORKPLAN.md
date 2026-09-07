@@ -41,6 +41,9 @@ hardening inventory into an indefinite pre-release project.
    data-collection, privacy and necessary consent decisions for the confirmed
    ages 8–12 plus teens/adults. Record exact owner/professional review gates;
    do not infer compliance or enable new SDK collection from a generic approval.
+   Requirements/source review is recorded in `FAMILY_AUDIENCE_V1.md`. Runtime
+   controls are not implemented; child-cloud v1 scope, classification/territories
+   and consent/retention decisions are open. This milestone is not complete.
 3. **Continuity/platform acceptance:** verify the account/save and delivery
    behavior of the actual v1 launch platforms. Use existing valid evidence;
    native/physical-device steps require the appropriate host and human checks.
