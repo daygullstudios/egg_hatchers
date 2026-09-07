@@ -39,7 +39,16 @@ passes (42.4s; Wasm dry run succeeds); main bundle SHA-256
 `a019ce3159c745c7e3e624263e40f03dfd900891308c9938b9019e126d874570`.
 Playtest **3 tests** and Wrangler **4.129.0** dry run pass in the required order.
 Brand audit: **649 classified** compatibility references, none unclassified.
-The protected deployment and non-destructive live acceptance receipt follows.
+Implementation **`8a94b58`** is committed/pushed to main. The verified build is
+deployed at 100% current version **`fab1c0f7-9984-441a-8e34-629ce74daea7`**,
+deployment `2026-09-07T01:21:17.718Z`, on the unchanged protected custom domain.
+Unauthenticated requests remain **302 to Cloudflare Access**. External Chrome
+refresh reopens the existing guest's two normal chickens, one golden chicken and
++4/sec income (419,346 coins immediately after refresh, increasing). Settings
+shows the new truthful guest-identity wording and retains **Choose progress /
+Compare saves**; neither copy is selected. Visual inspection confirms readable
+status text and reachable controls within the portrait shell. The tab is returned
+to Hatchery. No real save, profile or identity was replaced/removed for testing.
 
 Scope: this is offline-tolerant Flutter startup once app code and local storage
 are available, not a promise of first-ever/cold offline web loading. Cloudflare

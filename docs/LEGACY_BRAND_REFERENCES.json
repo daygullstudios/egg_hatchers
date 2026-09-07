@@ -21,7 +21,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 489,
+      "line": 503,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -29,7 +29,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 670,
+      "line": 684,
       "references": [
         "egghatchers.game"
       ],
@@ -37,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 697,
+      "line": 711,
       "references": [
         "egg_hatchers"
       ],
@@ -45,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 774,
+      "line": 788,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -53,7 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 792,
+      "line": 806,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -61,7 +61,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 799,
+      "line": 813,
       "references": [
         "egg_hatchers"
       ],
