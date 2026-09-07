@@ -163,9 +163,12 @@ paginated per-player export and transactional idempotent import with SHA-256
 checksums and manifest receipts. No roster data or public route has moved. An
 encrypted local operator now orchestrates those primitives through an internal
 remote service binding and requires an exact generation confirmation for writes.
-Its live status-only acceptance changed no data. A protected multi-shard canary
-remains before activation; reviewed family claim issuance/revocation and representative
-human/device acceptance also remain open. See `MULTIPLAYER_SHARD_MIGRATION.md` and
+Its live status-only acceptance changed no data. The isolated Access-protected
+two-shard canary is now deployed on a dedicated non-public hostname; both empty
+shards pass private status acceptance and anonymous requests are denied by
+Access. Authenticated multi-client/saturation/latency acceptance, central report
+retention, reviewed family claim issuance/revocation and representative
+human/device acceptance remain open. See `MULTIPLAYER_SHARD_MIGRATION.md` and
 `PROJECT_HANDOFF.md` for exact versions/evidence.
 
 Web lifecycle acceptance now includes a versioned selective resume coordinator:

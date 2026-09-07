@@ -7,8 +7,8 @@
   "preview_urls": false,
   "routes": [
     {
-      "pattern": "nestarium-mp-canary.daygullstudios.com/ws*",
-      "zone_name": "daygullstudios.com"
+      "pattern": "nestarium-mp-canary.daygullstudios.com",
+      "custom_domain": true
     }
   ],
   "vars": {

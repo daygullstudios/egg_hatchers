@@ -1,7 +1,7 @@
 # Nestarium multiplayer shard and roster migration
 
-Status: protected routing and private per-player migration RPC implemented;
-public activation blocked.
+Status: protected routing, private per-player migration RPC and isolated empty
+two-shard canary implemented; public activation blocked.
 Updated: 2026-09-07.
 
 ## Compatibility boundary
@@ -79,10 +79,12 @@ export/import is run merely to test the tool.
 1. **Create, do not repurpose, a generation.** Select a new non-public name such
    as `public-v1` and an immutable shard count. Keep the protected route on
    `protected-v1`.
-2. **Canary empty data first.** Deploy the new configuration only on a separate
-   Access-protected hostname. Verify authentication, capability denial, matching,
-   trade atomicity, reconnect, rate limits, 32-session per-shard saturation and
-   cost/latency. Do not attach `playnestarium.com`.
+2. **Canary empty data first.** The new configuration is deployed only on the
+   separate Access-protected `nestarium-mp-canary.daygullstudios.com` hostname.
+   Empty-shard status and the Access denial boundary pass. Still verify
+   authenticated routing, capability denial, matching, trade atomicity,
+   reconnect, rate limits, 32-session per-shard saturation and cost/latency.
+   Do not attach `playnestarium.com`.
 3. **Freeze new source activity.** Stop new battle/trade queues, allow active
    battles and trades to finish or expire, and confirm zero active rows. A route
    flip is not a substitute for a drain.
@@ -111,12 +113,16 @@ export/import is run merely to test the tool.
 ## Required implementation before activation
 
 The deterministic router, activation interlock, queue drain/read-only control,
-paginated export, idempotent checked import and encrypted private operator are
-complete. The following are deliberately not implemented and remain
-prerequisites:
+paginated export, idempotent checked import, encrypted private operator and
+Access-protected empty two-shard canary are complete. Canary Worker version
+`f593529b-6aba-4d28-a87f-c29053b8add3` owns a dedicated custom domain and a
+separate Durable Object namespace. Both `canary-v1-shard-00` and
+`canary-v1-shard-01` report active, empty and drained; anonymous health requests
+receive Access 302. No source data was exported or imported and no migration
+mode changed. The following remain prerequisites:
 
 - central moderation-report destination and retention procedure;
-- protected multi-shard canary configuration and measured latency/cost;
+- authenticated multi-client canary behavior, saturation and measured latency/cost;
 - representative human/device/network acceptance;
 - reviewed family claim issuance/revocation and public hostname authorization.
 

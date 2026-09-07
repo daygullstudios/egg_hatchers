@@ -32,10 +32,11 @@ Preset-only report/block controls and server-enforced matchmaking blocks are
 also deployed. Durable Object eviction/hibernation and duplicate-session
 acceptance now pass automatically. The versioned trusted-claim enforcement seam
 and explicit protected-pool capacity behavior are implemented. The public shard
-router/interlock, migration design, private per-player migration RPC and encrypted
-local operator are also complete; protected multi-shard canary, reviewed family
-claim issuance/revocation and representative human/device
-acceptance remain open. Do not call either batch complete.
+router/interlock, migration design, private per-player migration RPC, encrypted
+local operator and isolated Access-protected two-shard canary are also complete;
+authenticated canary load/latency acceptance, central report retention, reviewed
+family claim issuance/revocation and representative human/device acceptance
+remain open. Do not call either batch complete.
 
 The capability/capacity tail uses `trusted_claims` for any future public Worker.
 Only a signed `nestariumCapabilities` object with policy version 1 and an explicit
@@ -78,13 +79,18 @@ conflicting replay. Sessions, active battles/trades, reports, display names,
 tokens and credentials are not exported. There is no public HTTP admin route.
 
 The local operator connects through a Cloudflare remote service binding, not a
-public hostname. It produces AES-256-GCM encrypted, no-overwrite artifacts;
+public admin hostname. It produces AES-256-GCM encrypted, no-overwrite artifacts;
 accepts the passphrase only through `NESTARIUM_MIGRATION_PASSPHRASE`; verifies
 the aggregate manifest checksum; and requires the exact target generation name
 on every mutating command. Its live status-only acceptance read `protected-v1`
 as active with zero sockets, battles and trades. No drain, freeze, export, import
-or activation command ran. The isolated `canary-v1` two-shard config passes
-Wrangler dry-run but remains unrouted until its Access destination is approved.
+or activation command ran. The isolated `canary-v1` two-shard Worker is now live
+at the dedicated custom domain `nestarium-mp-canary.daygullstudios.com`. The
+existing Nestarium Access application lists it as a third destination. Public
+DNS resolves, anonymous `/ws/health` receives Access 302, and private read-only
+operator checks show both `canary-v1-shard-00` and `canary-v1-shard-01` active,
+empty and drained. It has its own Worker/Durable Object namespace and cannot
+read `protected-v1`; no player export/import or migration-mode mutation ran.
 
 The current settlement checkpoint persists one Durable Object receipt per UID
 and match, server-owned online rating, fixed hosted rewards and an explicit
@@ -154,9 +160,12 @@ Worker tests and two Node operator tests pass, as do Worker typecheck/types and
 both protected/canary dry-runs; the preceding release
 web/Wasm and static tests/dry-run remain valid because no Flutter/static asset
 changed in this tail. Anonymous
-requests to both `/` and `/ws/health` still receive Cloudflare Access 302.
-The Nestarium legacy-reference audit classifies 777 retained compatibility
-occurrences with no unclassified branding.
+requests to both `/` and `/ws/health` still receive Cloudflare Access 302. The
+compatibility Worker remains version `60921df5-7bbe-4a45-baa3-c879a9ae7f8e`;
+isolated canary Worker version `f593529b-6aba-4d28-a87f-c29053b8add3` owns only
+its dedicated Access-protected custom domain. The Nestarium legacy-reference
+audit classifies the retained compatibility occurrences with no unclassified
+branding.
 
 Desktop/web resilience is now an explicit follow-on acceptance item. Use a
 versioned selective resume checkpoint (route and meaningful substate, safe
@@ -266,11 +275,12 @@ receipt state, and commits roster trades atomically. The local Dart server remai
 a development sandbox and does not define hosted trust. Global discovery/invites
 stay off; protected trading uses only preset messages and private aliases.
 
-**Next:** add `nestarium-mp-canary.daygullstudios.com` to the existing Nestarium
-Access application, deploy the isolated empty two-shard Worker and exercise its
-protected routing/operator acceptance. The exact reviewed family identity/consent and claim-issuance
-mechanism remains an external decision gate; isolated backend and platform-
-readiness work may continue.
+**Next:** centralize moderation-report export/retention and finish the reviewed
+family capability issuance/revocation boundary without exposing a public origin.
+The exact family identity/consent mechanism remains an external decision gate;
+isolated backend and platform-readiness work may continue. Authenticated
+multi-client canary behavior, saturation and latency/cost measurement remain
+acceptance gates rather than grounds to move current player data.
 The workplan records four bounded multiplayer packages: authenticated hosting;
 trusted inventory/results/trades; family-safe capabilities; failure recovery and
 integrated acceptance. They fit inside the existing six-milestone finish line.

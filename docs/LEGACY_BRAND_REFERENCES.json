@@ -21,7 +21,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 203,
+      "line": 212,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -29,7 +29,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1091,
+      "line": 1101,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -37,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1272,
+      "line": 1282,
       "references": [
         "egghatchers.game"
       ],
@@ -45,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1299,
+      "line": 1309,
       "references": [
         "egg_hatchers"
       ],
@@ -53,7 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1379,
+      "line": 1389,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -61,7 +61,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1397,
+      "line": 1407,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -69,7 +69,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1404,
+      "line": 1414,
       "references": [
         "egg_hatchers"
       ],
@@ -319,7 +319,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 177,
+      "line": 182,
       "references": [
         "egghatchers.game"
       ],
@@ -327,7 +327,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 187,
+      "line": 192,
       "references": [
         "egg_hatchers"
       ],
@@ -335,7 +335,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 375,
+      "line": 378,
       "references": [
         "eggHatchers"
       ],
@@ -343,7 +343,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 380,
+      "line": 383,
       "references": [
         "egg_hatchers_player_state_account_"
       ],
@@ -351,7 +351,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 392,
+      "line": 395,
       "references": [
         "egg_hatchers.settings"
       ],
@@ -359,7 +359,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 413,
+      "line": 416,
       "references": [
         "egg_hatchers"
       ],
@@ -367,7 +367,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 483,
+      "line": 486,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -375,7 +375,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 506,
+      "line": 509,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -383,7 +383,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 533,
+      "line": 536,
       "references": [
         "egg_hatchers"
       ],
@@ -391,7 +391,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 574,
+      "line": 577,
       "references": [
         "egg-hatchers-playtest"
       ],

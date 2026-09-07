@@ -78,8 +78,10 @@ paginated player UID listing, checked per-player export and transactional,
 idempotent import. A generation must move through `draining` and reach zero open
 sockets/battles/trades before it can become `read_only`; new sessions are refused
 during maintenance. These methods are not exposed by the public Worker handler.
-A separate protected multi-shard canary is still required before any migration
-can run.
+A separate Access-protected multi-shard canary is deployed for empty-topology
+acceptance. It remains isolated from the compatibility generation; no migration
+may run until the remaining report-retention, family-policy, measured-load and
+representative acceptance gates are complete.
 
 The checked-in local operator now reaches the deployed Worker only through a
 remote Cloudflare service binding. It can inspect status, explicitly drain/
@@ -94,10 +96,23 @@ commands against `protected-v1` outside a recorded migration window.
 npm run migration:operator -- status wrangler.operator.protected.jsonc protected-v1
 ```
 
-`wrangler.canary.jsonc` stages an isolated two-shard `canary-v1` Worker at
-`nestarium-mp-canary.daygullstudios.com`. Dry-run is safe; do not deploy until
-the hostname is present in Cloudflare Access. The canary uses a separate Worker
-and Durable Object namespace and cannot read `protected-v1`.
+`wrangler.canary.jsonc` deploys the isolated two-shard `canary-v1` Worker at the
+dedicated custom domain `nestarium-mp-canary.daygullstudios.com`. The hostname
+is a destination in the existing Nestarium Access application. The canary uses
+a separate Worker and Durable Object namespace and cannot read `protected-v1`.
+Its dedicated Worker custom domain deliberately owns DNS and all paths on that
+host; the application protocol still serves health at `/ws/health` and sockets
+at `/ws`.
+
+Read-only acceptance for both empty shards:
+
+```powershell
+npm run migration:operator -- status wrangler.operator.canary.jsonc canary-v1-shard-00
+npm run migration:operator -- status wrangler.operator.canary.jsonc canary-v1-shard-01
+```
+
+Do not drain, freeze, export, import or activate either generation as a routine
+canary check.
 
 ## Verify
 

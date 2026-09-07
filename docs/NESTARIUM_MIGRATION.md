@@ -98,8 +98,9 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
   cloud-sync behavior and existing protected-identity restoration remain.
 - Access application `2ed23c5f-4d30-42e9-83c4-90b4e24c2135` is now **Nestarium
   private playtest**, retaining its single existing tester policy and 24-hour
-  session. It protects both the old hostname and the staged
-  `playtest.playnestarium.com`. API writes returned error 1010 without changes;
+  session. It protects the old hostname, staged `playtest.playnestarium.com`,
+  and isolated `nestarium-mp-canary.daygullstudios.com` backend canary. API
+  writes returned error 1010 without changes;
   the authenticated dashboard completed the update, verified by API read-back.
 - Access's eager cookie redirects initially sent an approved login through the
   unrouted staged hostname. Corrected by setting this app's **Eager redirect
@@ -118,6 +119,10 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
   reserved for the later public product surface. Access configuration alone
   does not publish the game. Ordinary deployment tests reject a new-domain
   route until this gate is deliberately revised.
+- The separate multiplayer canary is intentionally routed only at its legacy
+  Daygull Studios test hostname. It does not attach, redirect or publish either
+  `playtest.playnestarium.com` or `playnestarium.com`, and its isolated Durable
+  Object namespace contains no migrated player data.
 
 ## Hostname cutover and owner/platform actions
 
