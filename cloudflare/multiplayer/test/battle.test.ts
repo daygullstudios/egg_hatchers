@@ -4,8 +4,11 @@ import {
   authoritativeFighter,
   collectEnergy,
   createBattle,
+  expireReconnect,
   markReady,
+  pauseBattle,
   processBattleClock,
+  resumeBattle,
   stateFor,
   useAbility,
 } from "../src/battle";
@@ -70,5 +73,34 @@ describe("server-run battle", () => {
       lastActor: "opponent",
       winner: "opponent",
     });
+  });
+
+  it("pauses battle clocks for reconnect and expires without a winner", () => {
+    const fighter = authoritativeFighter("chicken", "none", 1)!;
+    const battle = createBattle(
+      "match-reconnect",
+      "first-uid",
+      "Player FIRST",
+      [fighter, fighter, fighter],
+      "second-uid",
+      "Player SECOND",
+      [fighter, fighter, fighter],
+    );
+    markReady(battle, "first-uid", 1_000);
+    markReady(battle, "second-uid", 1_000);
+    expect(battle.players[0].nextSpawnAt).toBe(1_550);
+
+    expect(pauseBattle(battle, "first-uid", 1_200, 31_200).changed).toBe(true);
+    expect(processBattleClock(battle, 20_000).changed).toBe(false);
+    expect(resumeBattle(battle, "first-uid", 11_200).message).toContain(
+      "resumed",
+    );
+    expect(battle.players[0].nextSpawnAt).toBe(11_550);
+
+    pauseBattle(battle, "first-uid", 12_000, 42_000);
+    expect(expireReconnect(battle, 41_999).changed).toBe(false);
+    expect(expireReconnect(battle, 42_000).changed).toBe(true);
+    expect(battle.finished).toBe(true);
+    expect(battle.winnerUid).toBeUndefined();
   });
 });

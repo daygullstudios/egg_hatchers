@@ -9,10 +9,13 @@ import {
   authoritativeFighter,
   collectEnergy,
   createBattle,
+  expireReconnect,
   forfeitBattle,
   markReady,
   nextBattleEventAt,
+  pauseBattle,
   processBattleClock,
+  resumeBattle,
   stateFor,
   switchFighter,
   useAbility,
@@ -23,7 +26,7 @@ import {
 type SocketAttachment = {
   uid: string;
   capabilities: SessionCapabilities;
-  state: "ready" | "queued" | "matched";
+  state: "ready" | "queued" | "matched" | "replaced";
   queuedAt?: number;
   player?: PlayerSnapshot;
   matchId?: string;
@@ -52,6 +55,8 @@ const jsonHeaders = {
   "Content-Type": "application/json; charset=utf-8",
   "Cache-Control": "no-store",
 };
+
+const reconnectGraceMs = 30_000;
 
 export default {
   async fetch(request, env): Promise<Response> {
@@ -105,10 +110,14 @@ export class MatchmakingPool extends DurableObject<Env> {
         first_uid TEXT NOT NULL,
         second_uid TEXT NOT NULL,
         status TEXT NOT NULL,
+        first_player_json TEXT,
+        second_player_json TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       )
     `);
+    this.ensureColumn("sessions", "first_player_json", "TEXT");
+    this.ensureColumn("sessions", "second_player_json", "TEXT");
     this.ctx.storage.sql.exec(`
       CREATE TABLE IF NOT EXISTS battles (
         match_id TEXT PRIMARY KEY,
@@ -139,6 +148,12 @@ export class MatchmakingPool extends DurableObject<Env> {
         | SocketAttachment
         | undefined;
       if (attachment?.uid === uid) {
+        socket.serializeAttachment({
+          ...attachment,
+          state: "replaced",
+          matchId: undefined,
+          peerUid: undefined,
+        } satisfies SocketAttachment);
         socket.close(4001, "A newer multiplayer session was opened");
       }
     }
@@ -154,6 +169,7 @@ export class MatchmakingPool extends DurableObject<Env> {
     };
     server.serializeAttachment(attachment);
     this.ctx.acceptWebSocket(server);
+    await this.resumeSession(server, attachment);
     return new Response(null, {
       status: 101,
       webSocket: client,
@@ -202,12 +218,12 @@ export class MatchmakingPool extends DurableObject<Env> {
     }
   }
 
-  webSocketClose(socket: WebSocket): void {
-    this.remove(socket);
+  async webSocketClose(socket: WebSocket): Promise<void> {
+    await this.remove(socket);
   }
 
-  webSocketError(socket: WebSocket): void {
-    this.remove(socket);
+  async webSocketError(socket: WebSocket): Promise<void> {
+    await this.remove(socket);
   }
 
   private async queue(
@@ -286,10 +302,12 @@ export class MatchmakingPool extends DurableObject<Env> {
     firstSocket.serializeAttachment(matchedFirst);
     secondSocket.serializeAttachment(matchedSecond);
     this.ctx.storage.sql.exec(
-      "INSERT INTO sessions (match_id, first_uid, second_uid, status, created_at, updated_at) VALUES (?, ?, ?, 'matched', ?, ?)",
+      "INSERT INTO sessions (match_id, first_uid, second_uid, status, first_player_json, second_player_json, created_at, updated_at) VALUES (?, ?, ?, 'matched', ?, ?, ?, ?)",
       matchId,
       first.uid,
       second.uid,
+      JSON.stringify(first.player),
+      JSON.stringify(second.player),
       now,
       now,
     );
@@ -337,6 +355,17 @@ export class MatchmakingPool extends DurableObject<Env> {
     const battle = this.readBattle(attachment.matchId);
     if (!battle || battle.finished) {
       sendError(socket, "That protected test match has ended.");
+      return;
+    }
+    if ((battle.disconnectedUids?.length ?? 0) > 0 && data.type !== "leave") {
+      send(
+        socket,
+        stateFor(
+          battle,
+          attachment.uid,
+          "The battle is paused while a player reconnects.",
+        ),
+      );
       return;
     }
     const now = Date.now();
@@ -387,10 +416,17 @@ export class MatchmakingPool extends DurableObject<Env> {
   async alarm(): Promise<void> {
     const now = Date.now();
     const rows = this.ctx.storage.sql.exec<{ state_json: string }>(
-      "SELECT state_json FROM battles WHERE status = 'active'",
+      "SELECT state_json FROM battles WHERE status IN ('active', 'reconnecting')",
     );
     for (const row of rows) {
       const battle = JSON.parse(row.state_json) as BattleSession;
+      const expired = expireReconnect(battle, now);
+      if (expired.changed) {
+        battle.revision += 1;
+        this.writeBattle(battle);
+        this.endInterruptedBattle(battle, expired.message!);
+        continue;
+      }
       const mutation = processBattleClock(battle, now);
       if (!mutation.changed) continue;
       this.sendBattleNotices(mutation);
@@ -406,7 +442,7 @@ export class MatchmakingPool extends DurableObject<Env> {
   private readBattle(matchId: string): BattleSession | undefined {
     const row = [
       ...this.ctx.storage.sql.exec<{ state_json: string }>(
-        "SELECT state_json FROM battles WHERE match_id = ? AND status IN ('waiting', 'active')",
+        "SELECT state_json FROM battles WHERE match_id = ? AND status IN ('waiting', 'active', 'reconnecting')",
         matchId,
       ),
     ][0];
@@ -415,10 +451,14 @@ export class MatchmakingPool extends DurableObject<Env> {
 
   private writeBattle(battle: BattleSession): void {
     const status = battle.finished
-      ? "finished"
-      : battle.started
-        ? "active"
-        : "waiting";
+      ? battle.winnerUid === undefined
+        ? "interrupted"
+        : "finished"
+      : (battle.disconnectedUids?.length ?? 0) > 0
+        ? "reconnecting"
+        : battle.started
+          ? "active"
+          : "waiting";
     const nextEventAt = nextBattleEventAt(battle) ?? null;
     const now = Date.now();
     this.ctx.storage.sql.exec(
@@ -483,7 +523,7 @@ export class MatchmakingPool extends DurableObject<Env> {
   private async scheduleNextAlarm(): Promise<void> {
     let earliest: number | undefined;
     const rows = this.ctx.storage.sql.exec<{ next_event_at: number | null }>(
-      "SELECT next_event_at FROM battles WHERE status = 'active' AND next_event_at IS NOT NULL",
+      "SELECT next_event_at FROM battles WHERE status IN ('active', 'reconnecting') AND next_event_at IS NOT NULL",
     );
     for (const row of rows) {
       if (row.next_event_at === null) continue;
@@ -513,37 +553,132 @@ export class MatchmakingPool extends DurableObject<Env> {
     send(socket, { type: "ready" });
   }
 
-  private remove(socket: WebSocket): void {
+  private async remove(socket: WebSocket): Promise<void> {
     const attachment = socket.deserializeAttachment() as
       | SocketAttachment
       | undefined;
-    if (!attachment?.matchId) return;
-    this.ctx.storage.sql.exec(
-      "UPDATE sessions SET status = 'interrupted', updated_at = ? WHERE match_id = ? AND status IN ('matched', 'waiting', 'active')",
-      Date.now(),
-      attachment.matchId,
+    if (!attachment?.matchId || attachment.state !== "matched") return;
+    const battle = this.readBattle(attachment.matchId);
+    if (!battle || battle.finished) return;
+    const now = Date.now();
+    const mutation = pauseBattle(
+      battle,
+      attachment.uid,
+      now,
+      now + reconnectGraceMs,
     );
-    this.ctx.storage.sql.exec(
-      "UPDATE battles SET status = 'interrupted', next_event_at = NULL, updated_at = ? WHERE match_id = ? AND status IN ('waiting', 'active')",
-      Date.now(),
-      attachment.matchId,
+    if (!mutation.changed) return;
+    battle.revision += 1;
+    this.writeBattle(battle);
+    const peer = this.socketForUid(attachment.peerUid ?? "");
+    if (peer) {
+      send(
+        peer,
+        stateFor(battle, attachment.peerUid!, mutation.message!),
+      );
+    }
+    await this.scheduleNextAlarm();
+  }
+
+  private async resumeSession(
+    socket: WebSocket,
+    attachment: SocketAttachment,
+  ): Promise<boolean> {
+    const row = [
+      ...this.ctx.storage.sql.exec<{
+        match_id: string;
+        first_uid: string;
+        second_uid: string;
+        first_player_json: string | null;
+        second_player_json: string | null;
+      }>(
+        "SELECT match_id, first_uid, second_uid, first_player_json, second_player_json FROM sessions WHERE (first_uid = ? OR second_uid = ?) AND status = 'reconnecting' ORDER BY updated_at DESC LIMIT 1",
+        attachment.uid,
+        attachment.uid,
+      ),
+    ][0];
+    if (!row) return false;
+    const battle = this.readBattle(row.match_id);
+    if (!battle || !(battle.disconnectedUids ?? []).includes(attachment.uid)) {
+      return false;
+    }
+    const now = Date.now();
+    if (
+      battle.reconnectDeadline === undefined ||
+      battle.reconnectDeadline <= now
+    ) {
+      const expired = expireReconnect(battle, now);
+      if (expired.changed) {
+        battle.revision += 1;
+        this.writeBattle(battle);
+        this.endInterruptedBattle(battle, expired.message!);
+      }
+      return false;
+    }
+
+    const first = row.first_uid === attachment.uid;
+    const own = parseStoredPlayer(
+      first ? row.first_player_json : row.second_player_json,
     );
-    const peer = this.ctx.getWebSockets().find((candidate) => {
-      const other = candidate.deserializeAttachment() as
-        | SocketAttachment
-        | undefined;
-      return other?.uid === attachment.peerUid;
-    });
-    if (!peer) return;
-    const peerAttachment = peer.deserializeAttachment() as SocketAttachment;
-    peer.serializeAttachment({
-      ...peerAttachment,
-      state: "ready",
-      matchId: undefined,
-      peerUid: undefined,
-      player: undefined,
-    } satisfies SocketAttachment);
-    sendError(peer, "The other player left the protected test session.");
+    const opponent = parseStoredPlayer(
+      first ? row.second_player_json : row.first_player_json,
+    );
+    if (!own || !opponent) return false;
+    const peerUid = first ? row.second_uid : row.first_uid;
+    const resumedAttachment: SocketAttachment = {
+      ...attachment,
+      state: "matched",
+      matchId: row.match_id,
+      peerUid,
+      player: own,
+    };
+    socket.serializeAttachment(resumedAttachment);
+    send(socket, { type: "matched", matchId: row.match_id, opponent });
+
+    const mutation = resumeBattle(battle, attachment.uid, now);
+    if (mutation.changed) battle.revision += 1;
+    this.writeBattle(battle);
+    if ((battle.disconnectedUids?.length ?? 0) === 0) {
+      this.broadcastBattle(battle, mutation.message ?? "Battle resumed.");
+    } else {
+      send(
+        socket,
+        stateFor(
+          battle,
+          attachment.uid,
+          mutation.message ?? "Waiting for the other player.",
+        ),
+      );
+    }
+    await this.scheduleNextAlarm();
+    return true;
+  }
+
+  private endInterruptedBattle(battle: BattleSession, message: string): void {
+    for (const player of battle.players) {
+      const socket = this.socketForUid(player.uid);
+      if (!socket) continue;
+      const attachment = socket.deserializeAttachment() as SocketAttachment;
+      socket.serializeAttachment({
+        ...attachment,
+        state: "ready",
+        matchId: undefined,
+        peerUid: undefined,
+        player: undefined,
+      } satisfies SocketAttachment);
+      send(socket, { type: "matchInterrupted", message });
+    }
+  }
+
+  private ensureColumn(table: string, column: string, type: string): void {
+    const columns = [
+      ...this.ctx.storage.sql.exec<{ name: string }>(`PRAGMA table_info(${table})`),
+    ];
+    if (!columns.some((entry) => entry.name === column)) {
+      this.ctx.storage.sql.exec(
+        `ALTER TABLE ${table} ADD COLUMN ${column} ${type}`,
+      );
+    }
   }
 }
 
@@ -645,4 +780,27 @@ function send(socket: WebSocket, value: Record<string, unknown>): void {
 
 function sendError(socket: WebSocket, message: string): void {
   send(socket, { type: "error", message });
+}
+
+function parseStoredPlayer(value: string | null): PlayerSnapshot | undefined {
+  if (!value) return undefined;
+  try {
+    const player = JSON.parse(value) as Record<string, unknown>;
+    const normalized = parsePlayerSnapshot(player);
+    const playerId = safeIdentifier(player.playerId);
+    const username = safeIdentifier(player.username);
+    const displayName = player.displayName;
+    if (
+      !normalized ||
+      !playerId ||
+      !username ||
+      typeof displayName !== "string" ||
+      !/^Player [A-F0-9]{6}$/.test(displayName)
+    ) {
+      return undefined;
+    }
+    return { ...normalized, playerId, username, displayName };
+  } catch {
+    return undefined;
+  }
 }

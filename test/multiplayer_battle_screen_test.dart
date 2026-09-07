@@ -172,6 +172,75 @@ void main() {
     expect(game.arenaRating, ratingBefore);
     expect(game.battleTokens, tokensBefore);
   });
+
+  testWidgets('dropped hosted battle offers a clear reconnect action', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final channel = ControlledLobbyChannel()..handshake.complete();
+    final multiplayer = MultiplayerService(
+      serverUri: Uri.parse('wss://egg-hatchers-playtest.daygullstudios.com/ws'),
+      identityTokenProvider: const _TokenProvider(),
+      hostedMultiplayerEnabled: true,
+      channelFactory: (uri, {protocols}) => channel,
+    );
+    final player = _player('local-player', 'Local Player');
+    final opponent = _player('peer-safe-id', 'Player A1B2C3');
+    final game = GameService();
+    final preferences = PreferencesService();
+    final sprites = CustomSpriteService();
+    await tester.runAsync(() async {
+      await Future.wait([
+        game.initialize(),
+        preferences.initialize(),
+        sprites.initialize(),
+      ]);
+      await multiplayer.connect();
+      multiplayer.findMatch(player);
+      channel.incoming.add(
+        _message({
+          'type': 'matched',
+          'matchId': 'hosted-match',
+          'opponent': opponent.toJson(),
+        }),
+      );
+      channel.incoming.add(
+        _message({
+          'type': 'battleState',
+          'matchId': 'hosted-match',
+          'revision': 1,
+          'message': 'Battle ready',
+          'self': _combatantState([100, 100, 100]),
+          'opponent': _combatantState([100, 100, 100]),
+        }),
+      );
+    });
+    addTearDown(() {
+      multiplayer.dispose();
+      game.dispose();
+      channel.finish();
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MultiplayerBattleScreen(
+          multiplayer: multiplayer,
+          game: game,
+          player: player,
+          opponent: opponent,
+          customSprites: sprites,
+          preferences: preferences,
+        ),
+      ),
+    );
+    await tester.pump();
+    channel.finish();
+    await tester.pump();
+
+    expect(find.text('BATTLE PAUSED'), findsOneWidget);
+    expect(find.text('RECONNECT'), findsOneWidget);
+    expect(find.textContaining('within 30 seconds'), findsOneWidget);
+  });
 }
 
 final class _TokenProvider implements OnlineIdentityTokenProvider {

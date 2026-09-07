@@ -52,6 +52,7 @@ class MultiplayerService extends ChangeNotifier {
   MultiplayerBattleState? _battleState;
   MultiplayerEnergySpawn? _energySpawn;
   String? _selfPlayerId;
+  bool _matchInterrupted = false;
   bool _disposed = false;
 
   MultiplayerConnectionState get state => _state;
@@ -60,6 +61,7 @@ class MultiplayerService extends ChangeNotifier {
   String? get message => _message;
   MultiplayerBattleState? get battleState => _battleState;
   MultiplayerEnergySpawn? get energySpawn => _energySpawn;
+  bool get matchInterrupted => _matchInterrupted;
   bool get isConnected =>
       _state != MultiplayerConnectionState.connecting &&
       _state != MultiplayerConnectionState.offline;
@@ -130,7 +132,9 @@ class MultiplayerService extends ChangeNotifier {
         await failedChannel?.sink.close();
       } catch (_) {}
       if (_disposed) return;
-      _message = unavailableMessageFor(serverUri);
+      _message = isHostedServer && _matchId != null
+          ? 'Could not reconnect. Try again before the 30-second recovery window ends.'
+          : unavailableMessageFor(serverUri);
       _setState(MultiplayerConnectionState.offline);
     }
   }
@@ -165,6 +169,7 @@ class MultiplayerService extends ChangeNotifier {
     _battleState = null;
     _energySpawn = null;
     _selfPlayerId = player.playerId;
+    _matchInterrupted = false;
     _channel!.sink.add(
       jsonEncode({'type': 'queue', 'player': player.toJson()}),
     );
@@ -179,6 +184,7 @@ class MultiplayerService extends ChangeNotifier {
     _battleState = null;
     _energySpawn = null;
     _selfPlayerId = player.playerId;
+    _matchInterrupted = false;
     _channel!.sink.add(
       jsonEncode({
         'type': 'joinBattleInvite',
@@ -206,10 +212,16 @@ class MultiplayerService extends ChangeNotifier {
     _battleState = null;
     _energySpawn = null;
     _selfPlayerId = null;
+    _matchInterrupted = false;
     if (_channel != null) _setState(MultiplayerConnectionState.ready);
   }
 
-  void enterBattle() => _sendMatchMessage('ready');
+  void enterBattle({String? selfPlayerId}) {
+    if (selfPlayerId != null && selfPlayerId.isNotEmpty) {
+      _selfPlayerId = selfPlayerId;
+    }
+    _sendMatchMessage('ready');
+  }
 
   void collectEnergy(int spawnId) {
     _sendMatchMessage('collectEnergy', {'spawnId': spawnId});
@@ -242,6 +254,7 @@ class MultiplayerService extends ChangeNotifier {
             'Waiting for a nearby-ranked player...';
         _setState(MultiplayerConnectionState.searching);
       case 'matched':
+        _matchInterrupted = false;
         _matchId = data['matchId'] as String;
         _opponent = MultiplayerPlayerSnapshot.fromJson(
           Map<String, dynamic>.from(data['opponent'] as Map),
@@ -277,6 +290,17 @@ class MultiplayerService extends ChangeNotifier {
       case 'error':
         _message = data['message'] as String? ?? 'Matchmaking failed.';
         _setState(MultiplayerConnectionState.ready);
+      case 'matchInterrupted':
+        _opponent = null;
+        _matchId = null;
+        _battleState = null;
+        _energySpawn = null;
+        _selfPlayerId = null;
+        _matchInterrupted = true;
+        _message =
+            data['message'] as String? ??
+            'The online match ended before it could reconnect.';
+        _setState(MultiplayerConnectionState.ready);
     }
   }
 
@@ -284,12 +308,18 @@ class MultiplayerService extends ChangeNotifier {
     if (_disposed) return;
     _subscription = null;
     _channel = null;
-    _opponent = null;
-    _matchId = null;
-    _battleState = null;
     _energySpawn = null;
-    _selfPlayerId = null;
-    _message = 'Connection to the match server was lost.';
+    final canResume = isHostedServer && _matchId != null;
+    if (!canResume) {
+      _opponent = null;
+      _matchId = null;
+      _battleState = null;
+      _selfPlayerId = null;
+      _matchInterrupted = false;
+    }
+    _message = canResume
+        ? 'Connection lost. Reconnect within 30 seconds to resume the paused battle.'
+        : 'Connection to the match server was lost.';
     _setState(MultiplayerConnectionState.offline);
   }
 

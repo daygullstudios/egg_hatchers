@@ -33,6 +33,9 @@ export type BattleSession = {
   started: boolean;
   finished: boolean;
   winnerUid?: string;
+  disconnectedUids?: string[];
+  pausedAt?: number;
+  reconnectDeadline?: number;
   players: [BattleCombatant, BattleCombatant];
 };
 
@@ -116,7 +119,13 @@ export function processBattleClock(
   now: number,
   random: RandomSource = Math.random,
 ): BattleMutation {
-  if (!battle.started || battle.finished) return { changed: false };
+  if (
+    !battle.started ||
+    battle.finished ||
+    (battle.disconnectedUids?.length ?? 0) > 0
+  ) {
+    return { changed: false };
+  }
   let changed = false;
   let message: string | undefined;
   const notices: BattleNotice[] = [];
@@ -298,7 +307,87 @@ export function forfeitBattle(
   };
 }
 
+export function pauseBattle(
+  battle: BattleSession,
+  disconnectedUid: string,
+  now: number,
+  reconnectDeadline: number,
+): BattleMutation {
+  if (battle.finished || !playerFor(battle, disconnectedUid)) {
+    return { changed: false };
+  }
+  const disconnected = new Set(battle.disconnectedUids ?? []);
+  if (disconnected.has(disconnectedUid)) return { changed: false };
+  disconnected.add(disconnectedUid);
+  battle.disconnectedUids = [...disconnected];
+  battle.pausedAt ??= now;
+  battle.reconnectDeadline = Math.min(
+    battle.reconnectDeadline ?? reconnectDeadline,
+    reconnectDeadline,
+  );
+  return {
+    changed: true,
+    message: "Opponent reconnecting. The battle is paused.",
+  };
+}
+
+export function resumeBattle(
+  battle: BattleSession,
+  reconnectedUid: string,
+  now: number,
+): BattleMutation {
+  const disconnected = new Set(battle.disconnectedUids ?? []);
+  if (!disconnected.delete(reconnectedUid)) return { changed: false };
+  battle.disconnectedUids = [...disconnected];
+  if (disconnected.size > 0) {
+    return {
+      changed: true,
+      message: "Reconnected. Waiting for the other player.",
+    };
+  }
+
+  const pausedAt = battle.pausedAt;
+  if (pausedAt !== undefined) {
+    const pausedFor = Math.max(0, now - pausedAt);
+    for (const player of battle.players) {
+      if (player.nextSpawnAt !== undefined) player.nextSpawnAt += pausedFor;
+      if (player.spawnExpiresAt !== undefined) {
+        player.spawnExpiresAt += pausedFor;
+      }
+    }
+  }
+  battle.pausedAt = undefined;
+  battle.reconnectDeadline = undefined;
+  return { changed: true, message: "Players reconnected. Battle resumed." };
+}
+
+export function expireReconnect(
+  battle: BattleSession,
+  now: number,
+): BattleMutation {
+  if (
+    battle.finished ||
+    (battle.disconnectedUids?.length ?? 0) === 0 ||
+    battle.reconnectDeadline === undefined ||
+    battle.reconnectDeadline > now
+  ) {
+    return { changed: false };
+  }
+  clearClock(battle);
+  battle.finished = true;
+  battle.disconnectedUids = [];
+  battle.pausedAt = undefined;
+  battle.reconnectDeadline = undefined;
+  return {
+    changed: true,
+    message: "The match ended because a player did not reconnect.",
+  };
+}
+
 export function nextBattleEventAt(battle: BattleSession): number | undefined {
+  if ((battle.disconnectedUids?.length ?? 0) > 0) {
+    return battle.reconnectDeadline;
+  }
   if (!battle.started || battle.finished) return undefined;
   const values = battle.players.flatMap((player) =>
     [player.nextSpawnAt, player.spawnExpiresAt].filter(

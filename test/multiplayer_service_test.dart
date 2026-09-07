@@ -131,6 +131,78 @@ void main() {
   );
 
   test(
+    'hosted match preserves identity and resumes after a dropped socket',
+    () async {
+      final firstChannel = ControlledLobbyChannel()..handshake.complete();
+      final resumedChannel = ControlledLobbyChannel()..handshake.complete();
+      var opened = 0;
+      final service = MultiplayerService(
+        serverUri: Uri.parse(
+          'wss://egg-hatchers-playtest.daygullstudios.com/ws',
+        ),
+        identityTokenProvider: _TokenProvider('firebase-token'),
+        hostedMultiplayerEnabled: true,
+        channelFactory: (uri, {protocols}) =>
+            opened++ == 0 ? firstChannel : resumedChannel,
+      );
+      addTearDown(() {
+        service.dispose();
+        firstChannel.finish();
+        resumedChannel.finish();
+      });
+      await service.connect();
+      service.findMatch(_player('local-player', 'Local Player'));
+      firstChannel.incoming.add(
+        jsonEncode({
+          'type': 'matched',
+          'matchId': 'resume-match',
+          'opponent': _player('peer-safe-id', 'Player A1B2C3').toJson(),
+        }),
+      );
+      firstChannel.incoming.add(
+        jsonEncode({
+          'type': 'battleState',
+          'matchId': 'resume-match',
+          'revision': 1,
+          'message': 'Battle started',
+          'self': _combatantState(),
+          'opponent': _combatantState(),
+        }),
+      );
+      firstChannel.finish();
+      await _waitFor(() => service.state == MultiplayerConnectionState.offline);
+
+      expect(service.matchId, 'resume-match');
+      expect(service.opponent?.playerId, 'peer-safe-id');
+      expect(service.battleState, isNotNull);
+      expect(service.message, contains('within 30 seconds'));
+
+      await service.retry();
+      resumedChannel.incoming.add(
+        jsonEncode({
+          'type': 'matched',
+          'matchId': 'resume-match',
+          'opponent': _player('peer-safe-id', 'Player A1B2C3').toJson(),
+        }),
+      );
+      resumedChannel.incoming.add(
+        jsonEncode({
+          'type': 'battleState',
+          'matchId': 'resume-match',
+          'revision': 2,
+          'message': 'Players reconnected. Battle resumed.',
+          'self': _combatantState(),
+          'opponent': _combatantState(),
+        }),
+      );
+
+      expect(service.state, MultiplayerConnectionState.matched);
+      expect(service.battleState?.revision, 2);
+      expect(service.matchInterrupted, isFalse);
+    },
+  );
+
+  test(
     'released hosted multiplayer rejects a missing identity token',
     () async {
       var opened = false;

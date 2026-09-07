@@ -695,7 +695,7 @@
     },
     {
       "path": "lib/services/multiplayer_service.dart",
-      "line": 77,
+      "line": 79,
       "references": [
         "EGG_HATCHERS_SERVER_URL"
       ],
@@ -3342,6 +3342,14 @@
       "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
     },
     {
+      "path": "test/multiplayer_battle_screen_test.dart",
+      "line": 182,
+      "references": [
+        "egg-hatchers-playtest"
+      ],
+      "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
+    },
+    {
       "path": "test/multiplayer_lobby_screen_test.dart",
       "line": 1,
       "references": [
@@ -3519,7 +3527,15 @@
     },
     {
       "path": "test/multiplayer_service_test.dart",
-      "line": 139,
+      "line": 141,
+      "references": [
+        "egg-hatchers-playtest"
+      ],
+      "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
+    },
+    {
+      "path": "test/multiplayer_service_test.dart",
+      "line": 211,
       "references": [
         "egg-hatchers-playtest"
       ],

@@ -97,7 +97,7 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       AudioScope.maybeOf(context)?.playMusic(MusicTrack.bossBattle);
-      widget.multiplayer.enterBattle();
+      widget.multiplayer.enterBattle(selfPlayerId: widget.player.playerId);
     });
   }
 
@@ -248,9 +248,23 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
   Widget build(BuildContext context) {
     final state = widget.multiplayer.battleState;
     if (state == null) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF07131C),
-        body: _WaitingForPlayer(),
+      return Scaffold(
+        backgroundColor: const Color(0xFF07131C),
+        body: widget.multiplayer.matchInterrupted
+            ? _InterruptedBattle(
+                message:
+                    widget.multiplayer.message ??
+                    'The online match ended before it could reconnect.',
+                onReturn: _continue,
+              )
+            : widget.multiplayer.state == MultiplayerConnectionState.offline
+            ? _ConnectionRecoveryOverlay(
+                message:
+                    widget.multiplayer.message ??
+                    'Connection lost. The battle is paused.',
+                onRetry: widget.multiplayer.retry,
+              )
+            : const _WaitingForPlayer(),
       );
     }
     final playerTeam = _playerTeam;
@@ -260,6 +274,8 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
     final abilities = ArenaAbilityData.forAnimal(playerFighter.animalId);
     final spawn = widget.multiplayer.energySpawn;
     final finished = state.finished;
+    final connectionLost =
+        widget.multiplayer.state == MultiplayerConnectionState.offline;
 
     return PopScope(
       canPop: finished,
@@ -434,7 +450,134 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                   onContinue: _continue,
                 ),
               ),
+            if (connectionLost)
+              Positioned.fill(
+                child: _ConnectionRecoveryOverlay(
+                  message:
+                      widget.multiplayer.message ??
+                      'Connection lost. The battle is paused.',
+                  onRetry: widget.multiplayer.retry,
+                ),
+              ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InterruptedBattle extends StatelessWidget {
+  const _InterruptedBattle({required this.message, required this.onReturn});
+
+  final String message;
+  final VoidCallback onReturn;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 330),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.link_off_rounded,
+                  color: Color(0xFFFFD45C),
+                  size: 42,
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'MATCH ENDED',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFFC5D0FF),
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                FilledButton.icon(
+                  key: const ValueKey('multiplayer-return-button'),
+                  onPressed: onReturn,
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  label: const Text('RETURN TO ARENA'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConnectionRecoveryOverlay extends StatelessWidget {
+  const _ConnectionRecoveryOverlay({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: const Color(0xE607131C),
+      child: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 330),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.wifi_off_rounded,
+                    color: Color(0xFFFFD45C),
+                    size: 42,
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'BATTLE PAUSED',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xFFC5D0FF),
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  FilledButton.icon(
+                    key: const ValueKey('multiplayer-reconnect-button'),
+                    onPressed: onRetry,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('RECONNECT'),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

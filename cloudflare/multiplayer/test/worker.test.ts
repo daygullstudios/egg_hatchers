@@ -85,6 +85,56 @@ describe("multiplayer edge authentication", () => {
     first.close(1000, "done");
     second.close(1000, "done");
   });
+
+  it("pauses and resumes a server-run battle after a verified reconnect", async () => {
+    const firstToken = await tokenFor("reconnect-a");
+    const secondToken = await tokenFor("reconnect-b");
+    const firstResponse = await openSocket(firstToken);
+    const secondResponse = await openSocket(secondToken);
+    const first = firstResponse.webSocket!;
+    const second = secondResponse.webSocket!;
+    first.accept();
+    second.accept();
+    const firstMessages = messages(first);
+    const secondMessages = messages(second);
+
+    first.send(JSON.stringify({ type: "queue", player: player("first") }));
+    await firstMessages.next();
+    second.send(JSON.stringify({ type: "queue", player: player("second") }));
+    const firstMatch = await firstMessages.next();
+    const secondMatch = await secondMessages.next();
+    first.send(JSON.stringify({ type: "ready", matchId: firstMatch.matchId }));
+    second.send(JSON.stringify({ type: "ready", matchId: secondMatch.matchId }));
+    await firstMessages.next();
+    await secondMessages.next();
+
+    first.close(1000, "network drop");
+    await expect(secondMessages.next()).resolves.toMatchObject({
+      type: "battleState",
+      message: expect.stringContaining("paused"),
+    });
+
+    const resumedResponse = await openSocket(firstToken);
+    expect(resumedResponse.status).toBe(101);
+    const resumed = resumedResponse.webSocket!;
+    resumed.accept();
+    const resumedMessages = messages(resumed);
+    await expect(resumedMessages.next()).resolves.toMatchObject({
+      type: "matched",
+      matchId: firstMatch.matchId,
+      opponent: { displayName: expect.stringMatching(/^Player [A-F0-9]{6}$/) },
+    });
+    await expect(resumedMessages.next()).resolves.toMatchObject({
+      type: "battleState",
+      message: expect.stringContaining("resumed"),
+    });
+    await expect(secondMessages.next()).resolves.toMatchObject({
+      type: "battleState",
+      message: expect.stringContaining("resumed"),
+    });
+    resumed.close(1000, "done");
+    second.close(1000, "done");
+  });
 });
 
 async function tokenFor(
