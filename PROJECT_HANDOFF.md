@@ -40,7 +40,17 @@ fresh settings reads and no duplicate uncertain retry using disposable storage.
 Release web build passes (40.8s; Wasm dry run succeeds); main bundle SHA-256
 `b71c071eb392f9fc0ec4c734fedce7224476121a598c4e06431d2d808ad0613b`.
 Required playtest three tests and Wrangler 4.129.0 dry run pass after the build.
-Deployment and live acceptance are recorded in the receipt below when completed.
+Brand audit: **711 classified** compatibility references, none unclassified.
+Implementation **`0826c5a`** is committed/pushed to main. The verified build is
+deployed at **100%** current version **`85c69ebe-f05c-4ad0-8113-8e4d203fc7df`**,
+deployment `2026-09-07T06:55:17.315Z`, on the unchanged protected custom-domain
+route. Unauthenticated requests remain **302 to Cloudflare Access**. External
+Chrome refresh preserves two normal chickens, one golden chicken and +4/sec
+income (499,494 coins on first Hatchery read, increasing). Settings retains
+Music off / SFX on, Hatchery Default / Classic and **Choose progress / Compare
+saves**. No real choice, preference or player data was changed for QA. Portrait
+layout remains constrained and readable; the tab is returned to Hatchery.
+Injected failure acceptance is disposable/mock-only, not a real quota outage.
 
 **Next: custom-editor draft recovery and checked custom-data writes.** Custom
 egg/sprite save/delete/reset still publish before unchecked persistence; bulk
