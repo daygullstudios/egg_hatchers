@@ -19,11 +19,13 @@ or cloud-erasure runtime was found. No advertising, purchase, Analytics or
 Crashlytics SDK was found in the dependency/source audit; that is not proof of
 zero provider processing or completed native/network acceptance.
 
-Recommendation awaiting owner approval: full local game immediately, optional
-parent-managed child cloud saves/recovery in v1, and no public multiplayer/social
-sharing until its separate authority/safety gates pass. Keep Bot Arena and all
-existing compatibility/save/UID contracts. Local-only child cloud deferral is an
-explicit alternative, not a silent reduction of the save-continuity promise.
+Owner follow-up: use Roblox as the age/parent-control product model. The proposed
+post-release multiplayer deferral was not approved; multiplayer remains a v1
+target. Separate permission to play from discovery/profile/communication/trading
+permissions, with stricter child defaults and linked parent controls. Keep preset-
+only messages, Bot Arena and all compatibility/save/UID contracts. Do not copy
+Roblox's biometric/ID collection or assume its legal classification applies here.
+Local-only child saves or a solo-only launch require explicit scope decisions.
 Owner/professional review must determine classification, territories, provider
 eligibility, consent method, and retention/deletion operations before enabling
 the new model. Ordinary Google sign-in is not proof of guardian consent.
@@ -36,10 +38,22 @@ public-site tests pass, including continued refusal to publish. No Flutter/runti
 change, game rebuild/deploy, repeated RC matrix, cloud deletion, billing, provider,
 store or public-hostname action. The preceding protected game version stays live.
 
-**Next:** obtain the child-cloud/public-social v1 scope decision and qualified
-classification/consent review, then implement the documented bounded privacy/
-identity workstream. Do not declare milestone 2 complete, infer parental consent
-from generic owner approval, or resume deferred auxiliary hardening.
+**Multiplayer assessment:** existing local-server tests exercise matchmaking,
+shared server-run combat, invitations, preset messages and confirmed trades.
+The protected Worker serves only static web assets. The Dart server lacks verified
+Firebase socket identity, trusts supplied roster/levels/rating, keeps sessions in
+memory and settles trades/results through client-local updates. This is not a
+from-scratch gameplay project, nor is it ready just by deploying the server.
+
+**Next:** resolve the exact reviewed family identity/consent mechanism and begin
+the hosted identity/session contract plus protected two-client vertical slice.
+The workplan records four bounded multiplayer packages: authenticated hosting;
+trusted inventory/results/trades; family-safe capabilities; failure recovery and
+integrated acceptance. They fit inside the existing six-milestone finish line.
+No repeat Flutter build/test/deployment for this documentation-only correction;
+the preceding valid 786-test checkpoint and protected version remain unchanged.
+Do not declare milestone 2 complete, infer parental consent from generic owner
+approval, or resume deferred auxiliary hardening.
 
 ## First-player journey — preceding bounded implementation checkpoint
 

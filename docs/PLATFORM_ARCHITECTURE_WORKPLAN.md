@@ -42,9 +42,12 @@ hardening inventory into an indefinite pre-release project.
    ages 8–12 plus teens/adults. Record exact owner/professional review gates;
    do not infer compliance or enable new SDK collection from a generic approval.
    Requirements/source review is recorded in `FAMILY_AUDIENCE_V1.md`. Runtime
-   controls are not implemented; child-cloud v1 scope, classification/territories
-   and consent/retention decisions are open. This milestone is not complete.
-3. **Continuity/platform acceptance:** verify the account/save and delivery
+   controls are not implemented. Tony selected Roblox as the age/parent-control
+   product model; classification/territories and consent/retention implementation
+   remain open. This milestone is not complete.
+3. **Multiplayer completion and continuity/platform acceptance:** multiplayer
+   remains a v1 target; its proposed deferral was not approved. Complete the four
+   bounded packages under phase 5 below, then verify account/save and delivery
    behavior of the actual v1 launch platforms. Use existing valid evidence;
    native/physical-device steps require the appropriate host and human checks.
 4. **Public Nestarium readiness:** finish provider/support/policy readiness and
@@ -63,7 +66,10 @@ user-facing integration checkpoint, not after each small edit. No automatic
 version bumps, tags, native rebuilds or release-candidate dossiers for micro-fixes.
 Auxiliary reward/reference writers and speculative extra robustness are deferred
 unless a demonstrated release-blocking defect makes a specific repair necessary.
-Multiplayer expansion and future events do not silently enlarge this finish line.
+Finish existing multiplayer for release; additional multiplayer modes/social
+features and future events do not silently enlarge this finish line. This
+clarifies required work inside the six milestones, not a claim that all six are
+equally sized or that the remaining work is only a few small patches.
 
 ### Historical implementation inventory (not an instruction to continue in order)
 
@@ -479,16 +485,56 @@ being told to start a server on their own device.
 
 ### 5. Make multiplayer durable and authoritative
 
-- Replace process-memory presence and rooms with durable session state.
-- Add reconnect leases, idempotent commands, server clocks, match IDs, and
-  replay protection.
-- Put trades, rewards, and rating changes behind trusted transactions.
-- Retain preset-only messages, reporting controls, rate limits, and moderation
-  hooks.
+**September 7 source assessment:** existing matchmaking, direct invitations,
+server-run combat, preset messages and confirmed trade flows are implemented.
+`test/multiplayer_service_test.dart` exercises two clients against the real local
+Dart server, including shared energy/damage state and invalid-animal rejection;
+`test/online_lobby_service_test.dart` covers invitations/messages and confirmed
+trades. These are part of the preceding passing 786-test checkpoint, not evidence
+of a production multiplayer deployment. No repeat full suite is needed for this
+documentation assessment.
 
-Exit gate: server restart, dropped connection, duplicate command, concurrent
-trade, and malicious-client tests pass. Bot Arena remains until separately
-approved for removal.
+The actual gaps are bounded into four completion packages:
+
+1. **Hosted authenticated sessions:** the playtest Wrangler configuration serves
+   static assets only; it does not deploy `tool/multiplayer_server.dart`. That
+   server upgrades WebSockets without Firebase-token verification and accepts
+   client-supplied player IDs. Connect the hosted backend to canonical verified
+   identity and server-checked capabilities, preserving current UIDs/save owners.
+   Acceptance: two authorized remote clients can match; forged/expired identity
+   or disallowed capability cannot join, and old-client paths cannot bypass it.
+2. **Trusted inventory and settlement:** the server recalculates battle power,
+   but trusts supplied animals/levels/rating/inventory after shape/range checks.
+   Battles calculate/apply rewards in the Flutter screen; trade completion sends
+   separate messages for clients to apply locally. Implement authoritative,
+   replay-safe match results and atomic trades over an approved inventory
+   baseline. Reading an otherwise client-writable cloud save does not make it
+   authoritative. Preserve existing progress; do not reset players to solve this.
+   Acceptance: forged inventory, duplicate result delivery and concurrent offers
+   cannot mint rewards/animals or cause one-sided loss.
+3. **Family-safe participation:** integrate the Roblox-informed capability/parent
+   model in `FAMILY_AUDIENCE_V1.md`; separate gameplay from public discovery,
+   profile disclosure, messaging and trading. Enforce safe names, minimum peer
+   disclosure, block/report handling and practical abuse limits. No free-text
+   chat/voice, public-art expansion or new social modes. Acceptance: restricted
+   accounts cannot bypass capabilities through lobby startup, invites, deep links,
+   reconnects or another profile; allowed family play works with preset messages.
+4. **Failure recovery and one integrated acceptance:** current rooms/trades are
+   in memory and a battle disconnect immediately awards the opponent a win.
+   Define reconnect/forfeit/restart behavior and durable, idempotent settlement.
+   Test dropped connections, server restart, duplicate commands, concurrent
+   trades, basic abuse/load limits and two-device play using disposable accounts.
+   Reuse focused checks while implementing; join the single consolidated RC
+   milestone rather than repeating a full release matrix after every patch.
+
+These are substantive backend/integration packages, not four tiny edits or a
+calendar estimate. Next implementation starts with the hosted identity/session
+contract and a protected two-client vertical slice, not more unrelated local-save
+hardening. Verify the existing studio backend model before choosing the hosting
+runtime; this assessment does not authorize or perform a provider migration.
+Exit gate: all four package acceptances pass for the defined launch scope. Bot
+Arena remains until separately approved for removal. Any proposal to defer
+multiplayer or trading must be an explicit owner scope decision, not a silent cut.
 
 ### 6. Production hardening
 

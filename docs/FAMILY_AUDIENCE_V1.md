@@ -6,20 +6,33 @@ controls are still open. This is implementation planning, not legal clearance.
 Do not mark the milestone complete or invite an unrestricted child audience based
 on this document. The protected test is not proof of parental consent.
 
-## Confirmed direction and recommended launch boundary
+## Confirmed direction and launch target
 
 **Owner-confirmed:** ages 8–12 are actively intended players alongside teens and
 adults. Keep the approachable animal-collection game and meaningful local play.
 Do not relabel it 13+ to avoid this work or assume that advanced child testers
 change privacy obligations. The six-milestone finish line remains in force.
 
-**Recommendation, awaiting owner approval:** full local play immediately;
-optional parent-managed cloud save/recovery for children as part of v1; no public
-multiplayer/social sharing until its separate authority and child-safety gates
-pass. Keep Bot Arena. Local-only child saves could shorten v1, but would postpone
-cross-device recovery and weaken the save-continuity promise; do not silently
-choose that tradeoff. Parent-managed means a separate permission/ownership model,
-not simply borrowing an adult's Google login.
+**Owner direction, September 7 follow-up:** use Roblox as the age/parent-control
+product model. The owner challenged multiplayer deferral; that was an unapproved
+recommendation, not an agreed launch decision. Keep multiplayer as a v1 target
+and complete its bounded authority/safety work before release. Do not silently
+replace it with a solo-only launch. Bot Arena still stays until its removal is
+separately approved. Preserve useful local play and the cloud-recovery objective;
+local-only child saves would be an explicit scope change, not the default.
+
+Roblox's June 2026 rollout separates age-appropriate game access from communication
+permissions, uses stricter defaults for younger players, and provides linked
+parent controls. Adopt those principles for Nestarium, including parent control
+of relevant child social capabilities, rather than excluding children from all
+multiplayer. Roblox uses additional age checks for communication; its account
+bands and settings vary by region. Its legal classification, verification provider
+and camera/ID collection are not automatically ours. Nestarium remains preset-
+message only: do not add open chat, voice or a biometric verification dependency
+merely to copy Roblox. Parent-managed means a separate permission/ownership model,
+not borrowing an adult's login. Exact consent/age-assurance implementation remains
+subject to the review below. [Roblox age-based accounts, June 16, 2026](https://about.roblox.com/newsroom/2026/06/age-based-roblox-kids-and-select-accounts-now-globally-available),
+[Roblox parent accounts](https://en.help.roblox.com/hc/en-us/articles/30428248050068-Parental-Controls-FAQ)
 
 **Professional review required:** determine whether Nestarium is primarily
 child-directed or qualifies for COPPA's mixed-audience subset. Our intended
@@ -108,12 +121,15 @@ recovery route must not make Google the only way to obtain a core feature.
 
 ### F3 — Keep public presence and sharing off until independently ready
 
-Recommended v1 boundary: local collection, solo bosses and Bot Arena; no automatic
-public presence, discoverable profiles, peer invitations/trades or public art.
-Do not remove Bot Arena or discard existing multiplayer code. If public
-multiplayer is required at v1, it needs explicit scope approval and authenticated
-server authority, child-safe names/discovery, adult social controls, safety
-notices, abuse/report/block handling and appropriate consent before disclosure.
+Multiplayer remains a v1 target; this is a readiness gate, not a post-release
+deferral. Until it passes, do not enable automatic public presence, discoverable
+profiles, peer invitations/trades or public art. Preserve the existing multiplayer
+code and Bot Arena. Public multiplayer needs authenticated server authority,
+child-safe names/discovery, adult social controls, safety notices,
+abuse/report/block handling and appropriate consent before disclosure.
+Distinguish permission to play a battle from permission to expose a profile,
+communicate or trade. Use the bounded multiplayer completion packages in
+`PLATFORM_ARCHITECTURE_WORKPLAN.md`, not an unlimited social-platform feature list.
 Preset chat alone is insufficient. Google Play's social-feature requirements
 cover applicable sharing features, including adult controls and adult action
 before children exchange personal information. [Play Families policy](https://support.google.com/googleplay/android-developer/answer/9893335?hl=en)
@@ -156,16 +172,18 @@ requirements in the release review. No category or rating is selected here.
 
 ## Exact decisions and stopping point
 
-1. **Owner:** approve parent-managed child cloud saves in v1 versus explicitly
-   deferring that feature; confirm the recommended no-public-multiplayer v1 scope.
+1. **Owner direction recorded:** Roblox-informed age/parent controls and
+   multiplayer as a release target. A solo-only release or local-only child save
+   boundary would require a separate explicit scope decision; neither is approved.
 2. **Owner + qualified child-privacy counsel (or an appropriate reviewed safe
    harbor service):** classify the actual intended/likely audience, select launch
    territories, approve minimum age/region handling, SDK/provider eligibility,
    consent method and operational retention/deletion plan. Signing a support
    account's Cloud terms did not settle these product/legal decisions.
 3. **Then implementation:** F1/F2/F4 as one planned family-identity workstream,
-   retaining every compatibility identity/save. F3 remains disabled until its
-   own gate passes; F5 feeds the existing platform/public-readiness milestones.
+   retaining every compatibility identity/save. Complete F3's bounded multiplayer
+   work for the release target; keep public exposure off until its gate passes.
+   F5 feeds the existing platform/public-readiness milestones.
 
 Acceptance must demonstrate a fresh unknown user makes no optional identity,
 sync or lobby calls; a restricted player can complete/save/reopen the local
