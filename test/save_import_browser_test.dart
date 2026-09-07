@@ -2,6 +2,8 @@
 library;
 
 import 'dart:js_interop';
+import 'package:egg_hatchers/services/account_service.dart';
+import 'package:egg_hatchers/services/saved_player_directory.dart';
 import 'package:egg_hatchers/services/save_import_storage.dart';
 import 'package:egg_hatchers/services/save_storage_lease.dart';
 import 'package:egg_hatchers/services/save_transfer_file_web.dart';
@@ -13,6 +15,55 @@ import 'helpers/save_import_fixture.dart';
 
 void main() {
   SharedPreferencesPlugin.registerWith(null);
+  test(
+    'damaged browser directory stays intact until explicitly restored at bootstrap',
+    () async {
+      final release = await acquireSaveStorageLease(exclusive: true);
+      final storage = PreferencesImportStorage();
+      final accounts = AccountService();
+      try {
+        await storage.write('playerAccounts', '{damaged mock directory');
+        final original = await storage.readAll();
+        await expectLater(
+          accounts.initialize(),
+          throwsA(isA<AccountStartupException>()),
+        );
+        expect(accounts.hasAccount, false);
+        expect(await storage.readAll(), original);
+        final transfer = SaveTransferService();
+        final recoveryBackup = await transfer.exportSave();
+        expect(recoveryBackup, contains('{damaged mock directory'));
+        await transfer.stageImport(transfer.inspectSave(importFixture()));
+        expect(
+          (await storage.readAll())['playerAccounts'],
+          '{damaged mock directory',
+        );
+        expect(
+          await transfer.finishPendingImport(),
+          SaveImportBootResult.imported,
+        );
+        await accounts.initialize();
+        expect(accounts.account!.id, 'imported');
+        expect(
+          transfer
+              .inspectSave(await transfer.exportSave())
+              .progress['imported']!
+              .coins,
+          420,
+        );
+      } finally {
+        accounts.dispose();
+        try {
+          // Only this disposable Flutter test browser's mock data is removed.
+          for (final key in (await storage.readAll()).keys) {
+            await storage.remove(key);
+          }
+        } finally {
+          await release();
+        }
+      }
+    },
+  );
   test('browser chooser reads a selected file and cleans up once', () async {
     final picked = pickSaveFile();
     final input =

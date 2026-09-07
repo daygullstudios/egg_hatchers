@@ -8,6 +8,7 @@ import 'models/background_theme.dart';
 import 'models/multiplayer.dart';
 import 'models/online_lobby.dart';
 import 'screens/account_onboarding_screen.dart';
+import 'screens/saved_player_recovery_screen.dart';
 import 'screens/main_game_shell.dart';
 import 'screens/multiplayer_lobby_screen.dart';
 import 'screens/online_trading_screen.dart';
@@ -25,6 +26,7 @@ import 'services/preferences_service.dart';
 import 'services/progress_sync_service.dart';
 import 'services/save_storage_lease.dart';
 import 'services/save_transfer_service.dart';
+import 'services/saved_player_directory.dart';
 import 'widgets/save_import_bootstrap.dart';
 import 'widgets/save_import_scope.dart';
 import 'services/sprite_rating_service.dart';
@@ -97,6 +99,8 @@ class _NestariumAppState extends State<NestariumApp>
   String? _configuredProgressPlayerId;
   var _switchingAccount = false;
   var _importFrozen = false;
+  var _checkingAccounts = false;
+  AccountStartupFailure? _accountStartupFailure;
   var _playerSwitchFailed = false;
   var _accountSelectionRevision = 0;
   var _legacyMigrationPending = false;
@@ -120,8 +124,25 @@ class _NestariumAppState extends State<NestariumApp>
   }
 
   Future<void> _initialize() async {
+    if (_checkingAccounts || _importFrozen || !mounted) return;
+    _checkingAccounts = true;
+    try {
+      await _accounts.initialize();
+    } catch (error) {
+      if (mounted) {
+        setState(
+          () => _accountStartupFailure = error is AccountStartupException
+              ? error.failure
+              : AccountStartupFailure.storageUnavailable,
+        );
+      }
+      return;
+    } finally {
+      _checkingAccounts = false;
+    }
+    if (!mounted) return;
+    setState(() => _accountStartupFailure = null);
     unawaited(_audio.initialize());
-    await _accounts.initialize();
     await _accountProtection.initialize(accountId: _accounts.account?.id);
     _loadedAccountId = _accounts.account?.id;
     _legacyMigrationPending =
@@ -375,7 +396,9 @@ class _NestariumAppState extends State<NestariumApp>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (_importFrozen) return;
+    // Even a background event during failed startup must not save the default
+    // in-memory player over an unreadable pre-account save.
+    if (_importFrozen || !_isReady) return;
     if (state == AppLifecycleState.resumed &&
         _isReady &&
         !_switchingAccount &&
@@ -427,8 +450,13 @@ class _NestariumAppState extends State<NestariumApp>
       _referenceOverlay.isInitialized;
 
   Future<void> _stageImport(SaveImportPreview preview) async {
+    final recoveringAccounts =
+        _accountStartupFailure != null &&
+        !_checkingAccounts &&
+        !_accounts.isInitialized &&
+        !_game.isInitialized;
     if (_importFrozen ||
-        !_isReady ||
+        (!_isReady && !recoveringAccounts) ||
         _switchingAccount ||
         _playerSwitchFailed) {
       throw const SaveTransferException(
@@ -438,10 +466,12 @@ class _NestariumAppState extends State<NestariumApp>
     // From this point the confirmation stays modal and permits only restart,
     // including on failure. No old runtime resumes over a pending import.
     _importFrozen = true;
-    await _progressSync.pauseForSaveImport().timeout(
-      const Duration(seconds: 20),
-    );
-    await _game.pauseForSaveImport().timeout(const Duration(seconds: 20));
+    if (!recoveringAccounts) {
+      await _progressSync.pauseForSaveImport().timeout(
+        const Duration(seconds: 20),
+      );
+      await _game.pauseForSaveImport().timeout(const Duration(seconds: 20));
+    }
     unawaited(_onlineLobby.disconnect());
     final release = await acquireSaveImportStagingLease();
     try {
@@ -522,7 +552,13 @@ class _NestariumAppState extends State<NestariumApp>
           ),
         );
       },
-      home: _playerSwitchFailed
+      home: _accountStartupFailure != null
+          ? SavedPlayerRecoveryScreen(
+              failure: _accountStartupFailure!,
+              onRetry: _initialize,
+              stageImport: _stageImport,
+            )
+          : _playerSwitchFailed
           ? _PlayerSwitchFailureScreen(
               onRetry: () => unawaited(_switchGameAccount()),
               onChoosePlayer: _accounts.chooseAnotherAccount,

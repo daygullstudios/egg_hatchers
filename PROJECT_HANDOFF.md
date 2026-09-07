@@ -2,7 +2,65 @@
 
 Updated: 2026-09-06
 
-## Save-import safety — current implementation checkpoint
+## Unreadable saved-player recovery — current implementation checkpoint
+
+Startup no longer treats an unreadable player directory as an empty install.
+A read-only preflight rejects malformed/wrong-type entries, duplicate IDs,
+incomplete legacy profiles, unreadable device identity types and missing player
+ownership when account-scoped data remains. On those failures the directory,
+progress, custom data, identity and active session are left untouched. No guest
+is invented, migrations do not run, and auth identity/game/cloud sync/presence do
+not start. Firebase core initialization is still owned by the earlier bootstrap.
+Storage read/write failures are distinguished from unreadable profiles and are
+not presented as proof that no save exists. First-directory writes are checked
+and read back before a player becomes active. Retry reloads storage and coalesces
+overlapping requests; profile mutation methods require completed initialization.
+
+Valid old names/IDs and standalone legacy profiles remain compatible. Existing
+valid directory formatting/unknown fields are retained unless a legacy profile
+must actually be added. Pre-account device-wide progress still receives its
+first guest through the existing migration; generation-only tombstones do not
+block genuinely empty installs. Already known player directories do not cause
+unrelated orphan records to be erased or assigned to another player.
+
+The portrait recovery screen offers **Try again**, read-only **Download backup**
+(web), **Copy backup**, and web **Review saved file** using the existing two-step
+import confirmation. A recovery backup retains unreadable profile strings as-is,
+is not promised to be repaired/restorable, and excludes sign-in/device identity
+just like normal exports. Download status asks users to check their saved file.
+Native file import is not advertised as implemented. Error messages do not echo
+platform/file contents. Controls scroll and remain at least 48px at 320x360/200%.
+File chooser cancellation and review/cancel never mutate local data.
+
+Confirmed recovery imports use the same staging lease and checked restart
+bootstrap as Settings. They skip runtime flush because no player/game was loaded;
+even failed staging keeps the root frozen. Lifecycle background saves are now
+gated on completed initialization, preventing a default in-memory state from
+overwriting older saves while startup is paused. Import review and account startup
+share the same player-directory validator.
+
+Validation: clean full Flutter 3.47.2 analysis and **625 Flutter tests**.
+New mocked tests cover storage outage/write/read-back failure and retry, malformed
+and partially valid directories, original bytes/session/identity preservation,
+legacy compatibility, responsive recovery/backup/cancellation, and whole-app
+startup/lifecycle/import isolation. **Six isolated Chrome tests** pass, including
+actual browser storage holding a damaged mock directory unchanged until explicit
+checked bootstrap restore, then successful reinitialization of the restored player.
+The final backup-action copy also passes 21 focused import/recovery UI tests.
+Final release web build passes (43.5s, Wasm dry run succeeds); main bundle SHA-256
+`825d4994fd60a4df462a36861379ab64a772e50c4ccf08c3ffa191f981fffbe1`.
+Playtest **3 tests** and Wrangler **4.129.0** dry run pass in the required order.
+Brand inventory: **606** classified references, none unclassified. Deployment/live
+receipt follows; no real player's data is damaged or replaced for QA.
+
+Next: fail-closed primary/backup **progress payload** loading and truthful local
+recovery status, then broader offline startup acceptance. The normal progress
+loader can still conflate two unreadable payloads with no save; this checkpoint
+specifically protects the player directory, not every possible storage failure.
+Child-compatible identity, trusted cloud erasure, public policy approval and
+coordinated new-hostname cutover remain separate gates. No public/store action.
+
+## Save-import safety — preceding implementation checkpoint
 
 Web Settings now validates and previews a file before a second, explicit
 **Import & restart** confirmation. Review/cancel are read-only. The warning names
@@ -62,8 +120,8 @@ Import confirmation/replacement/failure QA uses isolated mocked data only, not t
 real player's browser. Physical-device and human comprehension acceptance remain
 separate gates.
 
-Next: fail-closed unreadable account metadata and truthful startup/recovery status;
-do not silently create a new guest over unreadable saved profiles. Family-account
+The following checkpoint addresses unreadable account metadata and startup
+recovery without a replacement guest (see above). Family-account
 eligibility, public-site policy approval, trusted cloud erasure and coordinated
 new-hostname cutover remain separate gates. No public launch or store action.
 

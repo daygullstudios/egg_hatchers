@@ -11,10 +11,12 @@ class SaveImportReviewDialog extends StatefulWidget {
     required this.preview,
     required this.stageImport,
     required this.restart,
+    this.backupActionLabel = 'Export Save',
   });
   final SaveImportPreview preview;
   final Future<void> Function(SaveImportPreview) stageImport;
   final VoidCallback restart;
+  final String backupActionLabel;
 
   @override
   State<SaveImportReviewDialog> createState() => _SaveImportReviewDialogState();
@@ -106,8 +108,8 @@ class _SaveImportReviewDialogState extends State<SaveImportReviewDialog> {
                 'Cloud accounts are not imported or deleted. This does not transfer a Google sign-in or choose between device and cloud progress.',
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Want to keep this device’s progress? Cancel and Export Save first. A temporary recovery copy protects interrupted imports; it is not a permanent backup.',
+              Text(
+                'Want to keep this device’s progress? Cancel and use ${widget.backupActionLabel} first. A temporary recovery copy protects interrupted imports; it is not a permanent backup.',
               ),
               const SizedBox(height: 12),
               const Text(

@@ -8,6 +8,7 @@ import 'account_session_store.dart';
 import 'device_guest_slot_store.dart';
 import 'save_import_storage.dart';
 import 'save_import_validation.dart';
+import 'saved_player_directory.dart';
 
 class SaveTransferException implements Exception {
   const SaveTransferException(this.message);
@@ -44,7 +45,6 @@ class SaveTransferService {
   static const formatVersion = 1;
   static const pendingKey = 'nestarium.import.pending.v1';
   static const recoveryKey = 'nestarium.import.recovery.v1';
-  static const _accountsKey = 'playerAccounts';
   static const _guestGenerationKey =
       '${DeviceGuestSlotStore.keyPrefix}generation';
   static bool _internalKey(String key) => key.startsWith('nestarium.import.');
@@ -65,7 +65,7 @@ class SaveTransferService {
     try {
       final document = _decodeDocument(source);
       final values = _values(document['preferences']);
-      final players = _players(values);
+      final players = SavedPlayerDirectory.read(values);
       final states = <String, PlayerState>{};
       var legacy = false;
       for (final entry in values.entries) {
@@ -269,43 +269,6 @@ class SaveTransferService {
       );
     }
     return decoded;
-  }
-
-  List<PlayerAccount> _players(Map<String, Object> values) {
-    final raw = values[_accountsKey];
-    final list = raw == null ? <dynamic>[] : jsonDecode(raw as String) as List;
-    final players = <PlayerAccount>[];
-    final ids = <String>{};
-    for (final entry in list) {
-      final json = entry as Map<String, dynamic>;
-      DateTime.parse(json['createdAt'] as String);
-      final player = PlayerAccount.fromJson(json);
-      if (player.id.trim().isEmpty ||
-          player.displayName.trim().isEmpty ||
-          player.username.trim().isEmpty ||
-          !ids.add(player.id)) {
-        throw const FormatException();
-      }
-      players.add(player);
-    }
-    // Pre-directory exports used standalone profile fields.
-    if (values.containsKey('playerAccountId')) {
-      final player = PlayerAccount(
-        id: values['playerAccountId'] as String,
-        displayName: values['playerAccountDisplayName'] as String,
-        username: values['playerAccountUsername'] as String,
-        avatarColorValue:
-            values['playerAccountAvatarColor'] as int? ?? 0xFF5271FF,
-        createdAt: DateTime.parse(values['playerAccountCreatedAt'] as String),
-      );
-      if (player.id.trim().isEmpty ||
-          player.displayName.trim().isEmpty ||
-          player.username.trim().isEmpty) {
-        throw const FormatException();
-      }
-      if (ids.add(player.id)) players.add(player);
-    }
-    return players;
   }
 
   Map<String, Object> _values(Object? raw, {bool includeInternal = false}) {

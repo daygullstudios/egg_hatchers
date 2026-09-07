@@ -10,14 +10,15 @@ import 'account_session_store.dart';
 import 'account_storage.dart';
 import 'device_guest_slot_store.dart';
 import 'save_service.dart';
+import 'saved_player_directory.dart';
+import 'save_import_storage.dart';
 
 class AccountService extends ChangeNotifier {
-  static const _idKey = 'playerAccountId';
-  static const _displayNameKey = 'playerAccountDisplayName';
-  static const _usernameKey = 'playerAccountUsername';
-  static const _avatarColorKey = 'playerAccountAvatarColor';
-  static const _createdAtKey = 'playerAccountCreatedAt';
-  static const _accountsKey = 'playerAccounts';
+  AccountService({SaveImportStorage? startupStorage})
+    : _startupStorage = startupStorage ?? PreferencesImportStorage();
+
+  final SaveImportStorage _startupStorage;
+  static const _accountsKey = SavedPlayerDirectory.key;
 
   static const avatarColors = [
     Color(0xFF5271FF),
@@ -31,82 +32,66 @@ class AccountService extends ChangeNotifier {
   PlayerAccount? _account;
   List<PlayerAccount> _accounts = [];
   bool _isInitialized = false;
+  Future<void>? _initializing;
 
   PlayerAccount? get account => _account;
   List<PlayerAccount> get accounts => List.unmodifiable(_accounts);
   bool get hasAccount => _account != null;
   bool get isInitialized => _isInitialized;
 
-  Future<void> initialize() async {
-    if (_isInitialized) return;
-    final preferences = await SharedPreferences.getInstance();
-    final savedAccounts = preferences.getString(_accountsKey);
-    if (savedAccounts != null) {
-      try {
-        _accounts = (jsonDecode(savedAccounts) as List<dynamic>)
-            .map(
-              (item) => PlayerAccount.fromJson(
-                Map<String, dynamic>.from(item as Map),
-              ),
-            )
-            .toList();
-      } catch (_) {
-        _accounts = [];
-      }
-    }
-    final id = preferences.getString(_idKey);
-    final displayName = preferences.getString(_displayNameKey);
-    final username = preferences.getString(_usernameKey);
-    final createdAt = DateTime.tryParse(
-      preferences.getString(_createdAtKey) ?? '',
+  Future<void> initialize() {
+    if (_isInitialized) return Future<void>.value();
+    return _initializing ??= _initialize().whenComplete(
+      () => _initializing = null,
     );
+  }
 
-    if (id != null &&
-        displayName != null &&
-        username != null &&
-        createdAt != null) {
-      final legacyAccount = PlayerAccount(
-        id: id,
-        displayName: displayName,
-        username: username,
-        avatarColorValue:
-            preferences.getInt(_avatarColorKey) ??
-            avatarColors.first.toARGB32(),
-        createdAt: createdAt,
+  Future<void> _initialize() async {
+    try {
+      // Retry must read the actual storage, not a failed attempt's cached value.
+      final values = await _startupStorage.readAll();
+      final players = SavedPlayerDirectory.read(values);
+      final originalCount = values[_accountsKey] == null
+          ? 0
+          : (jsonDecode(values[_accountsKey] as String) as List).length;
+      if (players.isEmpty) players.add(_createGuestAccount());
+      final encoded = jsonEncode(
+        players.map((player) => player.toJson()).toList(),
       );
-      if (_accounts.every((account) => account.id != legacyAccount.id)) {
-        _accounts.add(legacyAccount);
-        await _saveAccounts(preferences);
-      }
-    }
-
-    if (_accounts.isEmpty) {
-      _accounts.add(_createGuestAccount());
-      await _saveAccounts(preferences);
-    }
-
-    await DeviceGuestSlotStore().ensureForAccounts(_accounts);
-
-    await SaveService.migrateLegacyRottenShellTutorial(
-      _accounts.map((account) => account.id),
-    );
-
-    final forceAccountPicker =
-        kIsWeb && Uri.base.queryParameters['account'] == 'choose';
-    if (!forceAccountPicker) {
-      final activeId = readActiveAccountId();
-      for (final account in _accounts) {
-        if (account.id == activeId) {
-          _account = account;
-          break;
+      if (originalCount != players.length) {
+        if (!await _startupStorage.write(_accountsKey, encoded)) {
+          throw StateError('Player directory could not be saved');
+        }
+        if ((await _startupStorage.readAll())[_accountsKey] != encoded) {
+          throw StateError('Player directory could not be verified');
         }
       }
-      _account ??= _accounts.length == 1 ? _accounts.first : null;
+      await DeviceGuestSlotStore().ensureForAccounts(players);
+      await SaveService.migrateLegacyRottenShellTutorial(
+        players.map((account) => account.id),
+      );
+      PlayerAccount? selected;
+      final forceAccountPicker =
+          kIsWeb && Uri.base.queryParameters['account'] == 'choose';
+      if (!forceAccountPicker) {
+        final activeId = readActiveAccountId();
+        for (final account in players) {
+          if (account.id == activeId) selected = account;
+        }
+        selected ??= players.length == 1 ? players.first : null;
+      }
+      writeActiveAccountId(selected?.id);
+      _accounts = players;
+      _account = selected;
+      _isInitialized = true;
+      notifyListeners();
+    } on AccountStartupException {
+      rethrow;
+    } catch (_) {
+      throw const AccountStartupException(
+        AccountStartupFailure.storageUnavailable,
+      );
     }
-    writeActiveAccountId(_account?.id);
-
-    _isInitialized = true;
-    notifyListeners();
   }
 
   Future<void> createAccount({
@@ -114,6 +99,7 @@ class AccountService extends ChangeNotifier {
     required String username,
     required Color avatarColor,
   }) async {
+    _requireInitialized();
     final cleanDisplayName = displayName.trim();
     final cleanUsername = normalizeUsername(username);
     if (!isDisplayNameValid(cleanDisplayName) ||
@@ -143,6 +129,7 @@ class AccountService extends ChangeNotifier {
   }
 
   void selectAccount(String id) {
+    _requireInitialized();
     PlayerAccount? selected;
     for (final account in _accounts) {
       if (account.id == id) {
@@ -157,12 +144,14 @@ class AccountService extends ChangeNotifier {
   }
 
   void chooseAnotherAccount() {
+    _requireInitialized();
     _account = null;
     writeActiveAccountId(null);
     notifyListeners();
   }
 
   Future<void> deleteAccount(String id) async {
+    _requireInitialized();
     final index = _accounts.indexWhere((account) => account.id == id);
     if (index < 0) return;
     _accounts.removeAt(index);
@@ -186,6 +175,14 @@ class AccountService extends ChangeNotifier {
   bool isUsernameAvailable(String username) {
     final clean = normalizeUsername(username);
     return _accounts.every((account) => account.username != clean);
+  }
+
+  void _requireInitialized() {
+    if (!_isInitialized) {
+      throw StateError(
+        'Saved players must be checked before changing profiles.',
+      );
+    }
   }
 
   Future<void> _saveAccounts(SharedPreferences preferences) {
