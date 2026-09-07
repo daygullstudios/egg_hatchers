@@ -51,6 +51,12 @@ class PlayerState {
     this.arenaLosses = 0,
     this.arenaWinStreak = 0,
     this.arenaBestStreak = 0,
+    this.onlineArenaRating = 1000,
+    this.onlineArenaWins = 0,
+    this.onlineArenaLosses = 0,
+    this.onlineArenaWinStreak = 0,
+    this.onlineArenaBestStreak = 0,
+    this.hostedSettlementReceipts = const [],
   });
 
   final int coins;
@@ -95,6 +101,12 @@ class PlayerState {
   final int arenaLosses;
   final int arenaWinStreak;
   final int arenaBestStreak;
+  final int onlineArenaRating;
+  final int onlineArenaWins;
+  final int onlineArenaLosses;
+  final int onlineArenaWinStreak;
+  final int onlineArenaBestStreak;
+  final List<String> hostedSettlementReceipts;
 
   static PlayerState initial() {
     return PlayerState(
@@ -155,6 +167,12 @@ class PlayerState {
     int? arenaLosses,
     int? arenaWinStreak,
     int? arenaBestStreak,
+    int? onlineArenaRating,
+    int? onlineArenaWins,
+    int? onlineArenaLosses,
+    int? onlineArenaWinStreak,
+    int? onlineArenaBestStreak,
+    List<String>? hostedSettlementReceipts,
   }) {
     return PlayerState(
       coins: coins ?? this.coins,
@@ -221,6 +239,15 @@ class PlayerState {
       arenaLosses: arenaLosses ?? this.arenaLosses,
       arenaWinStreak: arenaWinStreak ?? this.arenaWinStreak,
       arenaBestStreak: arenaBestStreak ?? this.arenaBestStreak,
+      onlineArenaRating: onlineArenaRating ?? this.onlineArenaRating,
+      onlineArenaWins: onlineArenaWins ?? this.onlineArenaWins,
+      onlineArenaLosses: onlineArenaLosses ?? this.onlineArenaLosses,
+      onlineArenaWinStreak:
+          onlineArenaWinStreak ?? this.onlineArenaWinStreak,
+      onlineArenaBestStreak:
+          onlineArenaBestStreak ?? this.onlineArenaBestStreak,
+      hostedSettlementReceipts:
+          hostedSettlementReceipts ?? this.hostedSettlementReceipts,
     );
   }
 
@@ -273,6 +300,12 @@ class PlayerState {
     'arenaLosses': arenaLosses,
     'arenaWinStreak': arenaWinStreak,
     'arenaBestStreak': arenaBestStreak,
+    'onlineArenaRating': onlineArenaRating,
+    'onlineArenaWins': onlineArenaWins,
+    'onlineArenaLosses': onlineArenaLosses,
+    'onlineArenaWinStreak': onlineArenaWinStreak,
+    'onlineArenaBestStreak': onlineArenaBestStreak,
+    'hostedSettlementReceipts': hostedSettlementReceipts,
   };
 
   factory PlayerState.fromJson(Map<String, dynamic> json) {
@@ -359,7 +392,26 @@ class PlayerState {
       arenaLosses: (json['arenaLosses'] as num?)?.toInt() ?? 0,
       arenaWinStreak: (json['arenaWinStreak'] as num?)?.toInt() ?? 0,
       arenaBestStreak: (json['arenaBestStreak'] as num?)?.toInt() ?? 0,
+      onlineArenaRating: (json['onlineArenaRating'] as num?)?.toInt() ?? 1000,
+      onlineArenaWins: (json['onlineArenaWins'] as num?)?.toInt() ?? 0,
+      onlineArenaLosses: (json['onlineArenaLosses'] as num?)?.toInt() ?? 0,
+      onlineArenaWinStreak:
+          (json['onlineArenaWinStreak'] as num?)?.toInt() ?? 0,
+      onlineArenaBestStreak:
+          (json['onlineArenaBestStreak'] as num?)?.toInt() ?? 0,
+      hostedSettlementReceipts: _settlementReceiptsFromJson(
+        json['hostedSettlementReceipts'],
+      ),
     );
+  }
+
+  static List<String> _settlementReceiptsFromJson(Object? raw) {
+    if (raw is! List) return const [];
+    return raw
+        .whereType<String>()
+        .where((value) => value.isNotEmpty && value.length <= 200)
+        .take(100)
+        .toList(growable: false);
   }
 
   static Map<String, EggMasteryProgress> _eggMasteryFromJson(Object? raw) {

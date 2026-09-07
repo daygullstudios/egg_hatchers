@@ -85,7 +85,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('hosted test result cannot grant client-local rewards', (
+  testWidgets('hosted result applies only its server settlement once', (
     tester,
   ) async {
     SharedPreferences.setMockInitialValues({});
@@ -134,6 +134,8 @@ void main() {
     });
     final coinsBefore = game.coins;
     final ratingBefore = game.arenaRating;
+    final winsBefore = game.arenaWins;
+    final streakBefore = game.arenaWinStreak;
     final tokensBefore = game.battleTokens;
 
     await tester.pumpWidget(
@@ -162,15 +164,128 @@ void main() {
       }),
     );
     await tester.pump();
+    channel.incoming.add(
+      _message({
+        'type': 'settlement',
+        'receiptId': 'hosted-match:local-player',
+        'matchId': 'hosted-match',
+        'won': true,
+        'ratingChange': 18,
+        'coins': 250,
+        'battleTokens': 1,
+        'serverRating': 1018,
+      }),
+    );
+    await tester.pump();
 
     expect(find.text('ONLINE VICTORY'), findsOneWidget);
-    expect(
-      find.textContaining('coins, tokens, and rating stay unchanged'),
-      findsOneWidget,
-    );
-    expect(game.coins, coinsBefore);
+    expect(find.textContaining('1018 rating'), findsOneWidget);
+    expect(game.coins, coinsBefore + 250);
     expect(game.arenaRating, ratingBefore);
-    expect(game.battleTokens, tokensBefore);
+    expect(game.arenaWins, winsBefore);
+    expect(game.arenaWinStreak, streakBefore);
+    expect(game.onlineArenaWins, 1);
+    expect(game.onlineArenaWinStreak, 1);
+    expect(game.onlineArenaRating, 1018);
+    expect(game.battleTokens, tokensBefore + 1);
+
+    channel.incoming.add(
+      _message({
+        'type': 'settlement',
+        'receiptId': 'hosted-match:local-player',
+        'matchId': 'hosted-match',
+        'won': true,
+        'ratingChange': 18,
+        'coins': 250,
+        'battleTokens': 1,
+        'serverRating': 1018,
+      }),
+    );
+    await tester.pump();
+    expect(game.coins, coinsBefore + 250);
+    expect(game.battleTokens, tokensBefore + 1);
+  });
+
+  testWidgets('active hosted battle confirms and sends an explicit forfeit', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final channel = ControlledLobbyChannel()..handshake.complete();
+    final multiplayer = MultiplayerService(
+      serverUri: Uri.parse('wss://egg-hatchers-playtest.daygullstudios.com/ws'),
+      identityTokenProvider: const _TokenProvider(),
+      hostedMultiplayerEnabled: true,
+      channelFactory: (uri, {protocols}) => channel,
+    );
+    final player = _player('local-player', 'Local Player');
+    final opponent = _player('peer-safe-id', 'Player A1B2C3');
+    final game = GameService();
+    final preferences = PreferencesService();
+    final sprites = CustomSpriteService();
+    await tester.runAsync(() async {
+      await Future.wait([
+        game.initialize(),
+        preferences.initialize(),
+        sprites.initialize(),
+      ]);
+      await multiplayer.connect();
+      multiplayer.findMatch(player);
+      channel.incoming.add(
+        _message({
+          'type': 'matched',
+          'matchId': 'hosted-match',
+          'opponent': opponent.toJson(),
+        }),
+      );
+      channel.incoming.add(
+        _message({
+          'type': 'battleState',
+          'matchId': 'hosted-match',
+          'revision': 1,
+          'message': 'Battle ready',
+          'self': _combatantState([100, 100, 100]),
+          'opponent': _combatantState([100, 100, 100]),
+        }),
+      );
+    });
+    addTearDown(() {
+      multiplayer.dispose();
+      game.dispose();
+      channel.finish();
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MultiplayerBattleScreen(
+          multiplayer: multiplayer,
+          game: game,
+          player: player,
+          opponent: opponent,
+          customSprites: sprites,
+          preferences: preferences,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('Leave battle'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.text('Forfeit this battle?'), findsOneWidget);
+    expect(find.text('FORFEIT'), findsOneWidget);
+
+    await tester.tap(find.text('FORFEIT'));
+    await tester.pump();
+    final sent = channel.sink.messages
+        .map((message) => jsonDecode(message as String) as Map<String, dynamic>)
+        .toList();
+    expect(
+      sent,
+      contains(
+        containsPair('type', 'leave'),
+      ),
+    );
+    expect(find.text('ONLINE MATCH'), findsOneWidget);
   });
 
   testWidgets('dropped hosted battle offers a clear reconnect action', (

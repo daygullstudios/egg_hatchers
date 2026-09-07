@@ -51,6 +51,7 @@ class MultiplayerService extends ChangeNotifier {
   String? _message;
   MultiplayerBattleState? _battleState;
   MultiplayerEnergySpawn? _energySpawn;
+  MultiplayerSettlement? _settlement;
   String? _selfPlayerId;
   bool _matchInterrupted = false;
   bool _matchResumed = false;
@@ -62,6 +63,7 @@ class MultiplayerService extends ChangeNotifier {
   String? get message => _message;
   MultiplayerBattleState? get battleState => _battleState;
   MultiplayerEnergySpawn? get energySpawn => _energySpawn;
+  MultiplayerSettlement? get settlement => _settlement;
   bool get matchInterrupted => _matchInterrupted;
   bool get matchResumed => _matchResumed;
   bool get isConnected =>
@@ -242,6 +244,17 @@ class MultiplayerService extends ChangeNotifier {
 
   void leaveBattle() => _sendMatchMessage('leave');
 
+  void acknowledgeSettlement(String receiptId) {
+    if (_disposed || _channel == null || receiptId.isEmpty) return;
+    _channel!.sink.add(
+      jsonEncode({'type': 'ackSettlement', 'receiptId': receiptId}),
+    );
+    if (_settlement?.receiptId == receiptId) {
+      _settlement = null;
+      notifyListeners();
+    }
+  }
+
   void _sendMatchMessage(String type, [Map<String, dynamic>? payload]) {
     if (_channel == null || _matchId == null) return;
     _channel!.sink.add(
@@ -291,6 +304,15 @@ class MultiplayerService extends ChangeNotifier {
         final id = (data['id'] as num?)?.toInt();
         if (id == null || _energySpawn?.id == id) {
           _energySpawn = null;
+          notifyListeners();
+        }
+      case 'settlement':
+        try {
+          _settlement = MultiplayerSettlement.fromJson(data);
+          notifyListeners();
+        } catch (_) {
+          _message =
+              'The match result could not be verified. Reconnect to retry.';
           notifyListeners();
         }
       case 'error':

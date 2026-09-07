@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:egg_hatchers/data/game_data.dart';
 import 'package:egg_hatchers/services/save_service.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -69,6 +70,26 @@ void main() {
       SaveService.contentFingerprint(first),
       SaveService.contentFingerprint(second),
     );
+  });
+
+  test('an envelope remains readable after save fields gain defaults', () {
+    final oldPayload = GameData.startingPlayerState().toJson()
+      ..remove('onlineArenaRating')
+      ..remove('hostedSettlementReceipts');
+    final envelope = jsonEncode({
+      'format': SaveService.progressFormat,
+      'schemaVersion': SaveService.progressSchemaVersion,
+      'revision': 4,
+      'savedAt': DateTime.utc(2026, 9, 7).toIso8601String(),
+      'contentFingerprint': _fingerprintForPayload(oldPayload),
+      'playerState': oldPayload,
+    });
+
+    final decoded = SaveService.decodeSnapshot(envelope);
+
+    expect(decoded, isNotNull);
+    expect(decoded!.state.onlineArenaRating, 1000);
+    expect(decoded.state.hostedSettlementReceipts, isEmpty);
   });
 
   test('upgrades a legacy save on the next normal save', () async {
@@ -157,4 +178,26 @@ void main() {
     expect(preferences.containsKey(primaryKey), isFalse);
     expect(preferences.containsKey(backupKey), isFalse);
   });
+}
+
+String _fingerprintForPayload(Map<String, dynamic> payload) {
+  final content = Map<String, dynamic>.from(payload)..remove('lastSavedTime');
+  return sha256
+      .convert(utf8.encode(jsonEncode(_canonicalize(content))))
+      .toString();
+}
+
+Object? _canonicalize(Object? value) {
+  if (value is Map) {
+    final entries = value.entries.toList()
+      ..sort((a, b) => a.key.toString().compareTo(b.key.toString()));
+    return <String, Object?>{
+      for (final entry in entries)
+        entry.key.toString(): _canonicalize(entry.value),
+    };
+  }
+  if (value is List) {
+    return value.map(_canonicalize).toList(growable: false);
+  }
+  return value;
 }

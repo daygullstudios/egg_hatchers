@@ -131,6 +131,42 @@ void main() {
     },
   );
 
+  test('hosted settlement is parsed and acknowledged explicitly', () async {
+    final channel = ControlledLobbyChannel()..handshake.complete();
+    final service = MultiplayerService(
+      serverUri: Uri.parse('wss://egg-hatchers-playtest.daygullstudios.com/ws'),
+      identityTokenProvider: _TokenProvider('firebase-token'),
+      hostedMultiplayerEnabled: true,
+      channelFactory: (uri, {protocols}) => channel,
+    );
+    addTearDown(() {
+      service.dispose();
+      channel.finish();
+    });
+    await service.connect();
+    channel.incoming.add(
+      jsonEncode({
+        'type': 'settlement',
+        'receiptId': 'match-1:player-1',
+        'matchId': 'match-1',
+        'won': true,
+        'ratingChange': 18,
+        'coins': 250,
+        'battleTokens': 1,
+        'serverRating': 1018,
+      }),
+    );
+
+    expect(service.settlement?.receiptId, 'match-1:player-1');
+    expect(service.settlement?.coins, 250);
+    service.acknowledgeSettlement('match-1:player-1');
+    expect(service.settlement, isNull);
+    expect(jsonDecode(channel.sink.messages.last as String), {
+      'type': 'ackSettlement',
+      'receiptId': 'match-1:player-1',
+    });
+  });
+
   test(
     'hosted match preserves identity and resumes after a dropped socket',
     () async {

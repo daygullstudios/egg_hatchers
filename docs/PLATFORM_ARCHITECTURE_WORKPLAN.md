@@ -134,15 +134,24 @@ Execution rules:
 Current status: **0/4 delivery batches complete.** Batch 1's authenticated hosted
 foundation is deployed on the legacy protected playtest route, while reviewed
 family consent/retention/deletion remains externally gated. Protected direct
-matchmaking is active; server-run battles and a no-result 30-second reconnect
-window are also deployed as safe independent Batch 2 progress. Automatic global
-presence, discovery/invites, hosted trading and all economy-bearing settlement
-remain off. Live two-browser matching, authoritative damage, reconnect/pause and
-no-result expiry acceptance now pass on the protected deployment. A cold reopen
-of the battle URL now waits for restored identity and returns directly to the
-same fight without manual Battles > Online Arena navigation or a stale prompt.
-Trusted inventory/results/trades and representative human/device acceptance
-remain open. See `PROJECT_HANDOFF.md` for exact versions/evidence.
+matchmaking is active; server-run battles, a 30-second reconnect window and
+authoritative replay-safe result settlement are deployed as safe independent
+Batch 2 progress. Automatic global presence, discovery/invites and hosted
+trading remain off. Live two-browser matching, authoritative damage,
+reconnect/pause, no-result expiry, confirmed forfeit and exact-once reward
+acceptance now pass on the protected deployment. Hosted online rating and
+win/loss/streak history are isolated from Rival Arena. Trusted inventory and
+atomic trades plus representative human/device acceptance remain open. See
+`PROJECT_HANDOFF.md` for exact versions/evidence.
+
+Web lifecycle acceptance now includes a versioned selective resume coordinator:
+restore meaningful route/substate and safe local drafts/scroll position; use a
+server match ID/reconnect token for multiplayer; reject expired/incompatible
+checkpoints and fall back to Hatchery. Do not serialize process memory or sync
+transient menus through Firestore. Firestore/server storage owns durable player
+and economy truth, Router/URL history owns meaningful browser location, and
+device-local storage owns low-risk presentation state. Validate refresh, crash,
+tab suspension and back/forward behavior across the major launch flows.
 
 ### Historical implementation inventory (not an instruction to continue in order)
 
@@ -585,6 +594,10 @@ The actual gaps are bounded into four completion packages:
    authoritative. Preserve existing progress; do not reset players to solve this.
    Acceptance: forged inventory, duplicate result delivery and concurrent offers
    cannot mint rewards/animals or cause one-sided loss.
+   Server-issued battle settlement, receipt redelivery/acknowledgement and
+   separate online ratings are complete. Fixed hosted coin rewards do not trust
+   submitted team power. Server-owned inventory and atomic trading remain open,
+   so this package is not complete.
 3. **Family-safe participation:** integrate the Roblox-informed capability/parent
    model in `FAMILY_AUDIENCE_V1.md`; separate gameplay from public discovery,
    profile disclosure, messaging and trading. Enforce safe names, minimum peer

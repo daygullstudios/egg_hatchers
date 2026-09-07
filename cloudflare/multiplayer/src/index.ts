@@ -51,6 +51,25 @@ type PlayerSnapshot = {
   team: FighterSnapshot[];
 };
 
+type ArenaAccount = {
+  uid: string;
+  rating: number;
+  win_streak: number;
+  wins: number;
+  losses: number;
+};
+
+type ArenaSettlement = {
+  receipt_id: string;
+  match_id: string;
+  uid: string;
+  won: number;
+  rating_change: number;
+  coins: number;
+  battle_tokens: number;
+  server_rating: number;
+};
+
 const jsonHeaders = {
   "Content-Type": "application/json; charset=utf-8",
   "Cache-Control": "no-store",
@@ -127,6 +146,33 @@ export class MatchmakingPool extends DurableObject<Env> {
         updated_at INTEGER NOT NULL
       )
     `);
+    this.ctx.storage.sql.exec(`
+      CREATE TABLE IF NOT EXISTS arena_accounts (
+        uid TEXT PRIMARY KEY,
+        rating INTEGER NOT NULL,
+        win_streak INTEGER NOT NULL,
+        wins INTEGER NOT NULL,
+        losses INTEGER NOT NULL,
+        coins_earned INTEGER NOT NULL,
+        tokens_earned INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS settlements (
+        receipt_id TEXT PRIMARY KEY,
+        match_id TEXT NOT NULL,
+        uid TEXT NOT NULL,
+        won INTEGER NOT NULL,
+        rating_change INTEGER NOT NULL,
+        coins INTEGER NOT NULL,
+        battle_tokens INTEGER NOT NULL,
+        server_rating INTEGER NOT NULL,
+        acknowledged INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        UNIQUE(match_id, uid)
+      );
+      CREATE INDEX IF NOT EXISTS settlements_pending
+        ON settlements(uid, acknowledged, created_at);
+    `);
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -169,7 +215,8 @@ export class MatchmakingPool extends DurableObject<Env> {
     };
     server.serializeAttachment(attachment);
     this.ctx.acceptWebSocket(server);
-    await this.resumeSession(server, attachment);
+    const resumed = await this.resumeSession(server, attachment);
+    if (!resumed) this.sendPendingSettlements(server, uid);
     return new Response(null, {
       status: 101,
       webSocket: client,
@@ -202,6 +249,9 @@ export class MatchmakingPool extends DurableObject<Env> {
         break;
       case "cancel":
         this.cancel(socket, attachment);
+        break;
+      case "ackSettlement":
+        this.acknowledgeSettlement(socket, attachment, data.receiptId);
         break;
       case "ready":
       case "collectEnergy":
@@ -240,7 +290,11 @@ export class MatchmakingPool extends DurableObject<Env> {
       sendError(socket, "Choose a valid team before matchmaking.");
       return;
     }
-    const player = await peerSafeSnapshot(attachment.uid, suppliedPlayer);
+    const account = this.arenaAccount(attachment.uid);
+    const player = {
+      ...(await peerSafeSnapshot(attachment.uid, suppliedPlayer)),
+      rating: account.rating,
+    };
     const updated: SocketAttachment = {
       ...attachment,
       state: "queued",
@@ -409,7 +463,10 @@ export class MatchmakingPool extends DurableObject<Env> {
       this.broadcastBattle(battle, mutation.message, mutation.actorUid);
     }
     this.writeBattle(battle);
-    if (battle.finished) this.releaseBattleSockets(battle);
+    if (battle.finished) {
+      this.settleBattle(battle);
+      this.releaseBattleSockets(battle);
+    }
     await this.scheduleNextAlarm();
   }
 
@@ -675,6 +732,128 @@ export class MatchmakingPool extends DurableObject<Env> {
     }
   }
 
+  private arenaAccount(uid: string): ArenaAccount {
+    const now = Date.now();
+    this.ctx.storage.sql.exec(
+      "INSERT OR IGNORE INTO arena_accounts (uid, rating, win_streak, wins, losses, coins_earned, tokens_earned, updated_at) VALUES (?, 1000, 0, 0, 0, 0, 0, ?)",
+      uid,
+      now,
+    );
+    return this.ctx.storage.sql
+      .exec<ArenaAccount>(
+        "SELECT uid, rating, win_streak, wins, losses FROM arena_accounts WHERE uid = ?",
+        uid,
+      )
+      .one();
+  }
+
+  private settleBattle(battle: BattleSession): ArenaSettlement[] {
+    if (!battle.winnerUid) return [];
+    const settlements = this.ctx.storage.transactionSync(() => {
+      const existing = this.settlementsForMatch(battle.matchId);
+      if (existing.length > 0) return existing;
+
+      const now = Date.now();
+      const accounts = new Map(
+        battle.players.map((player) => [player.uid, this.arenaAccount(player.uid)]),
+      );
+      for (const player of battle.players) {
+        const account = accounts.get(player.uid)!;
+        const opponent = battle.players.find((entry) => entry.uid !== player.uid)!;
+        const opponentAccount = accounts.get(opponent.uid)!;
+        const won = player.uid === battle.winnerUid;
+        const reward = hostedArenaReward(
+          won,
+          account.rating,
+          opponentAccount.rating,
+          account.win_streak,
+        );
+        const serverRating = clampInteger(
+          account.rating + reward.ratingChange,
+          0,
+          10_000,
+        );
+        const nextStreak = won ? account.win_streak + 1 : 0;
+        const receiptId = `${battle.matchId}:${player.uid}`;
+        this.ctx.storage.sql.exec(
+          "UPDATE arena_accounts SET rating = ?, win_streak = ?, wins = wins + ?, losses = losses + ?, coins_earned = coins_earned + ?, tokens_earned = tokens_earned + ?, updated_at = ? WHERE uid = ?",
+          serverRating,
+          nextStreak,
+          won ? 1 : 0,
+          won ? 0 : 1,
+          reward.coins,
+          reward.battleTokens,
+          now,
+          player.uid,
+        );
+        this.ctx.storage.sql.exec(
+          "INSERT INTO settlements (receipt_id, match_id, uid, won, rating_change, coins, battle_tokens, server_rating, acknowledged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)",
+          receiptId,
+          battle.matchId,
+          player.uid,
+          won ? 1 : 0,
+          reward.ratingChange,
+          reward.coins,
+          reward.battleTokens,
+          serverRating,
+          now,
+        );
+      }
+      return this.settlementsForMatch(battle.matchId);
+    });
+    for (const settlement of settlements) {
+      const socket = this.socketForUid(settlement.uid);
+      if (socket) this.sendSettlement(socket, settlement);
+    }
+    return settlements;
+  }
+
+  private settlementsForMatch(matchId: string): ArenaSettlement[] {
+    return this.ctx.storage.sql
+      .exec<ArenaSettlement>(
+        "SELECT receipt_id, match_id, uid, won, rating_change, coins, battle_tokens, server_rating FROM settlements WHERE match_id = ? ORDER BY uid",
+        matchId,
+      )
+      .toArray();
+  }
+
+  private sendPendingSettlements(socket: WebSocket, uid: string): void {
+    const pending = this.ctx.storage.sql.exec<ArenaSettlement>(
+      "SELECT receipt_id, match_id, uid, won, rating_change, coins, battle_tokens, server_rating FROM settlements WHERE uid = ? AND acknowledged = 0 ORDER BY created_at LIMIT 20",
+      uid,
+    );
+    for (const settlement of pending) this.sendSettlement(socket, settlement);
+  }
+
+  private sendSettlement(socket: WebSocket, settlement: ArenaSettlement): void {
+    send(socket, {
+      type: "settlement",
+      receiptId: settlement.receipt_id,
+      matchId: settlement.match_id,
+      won: settlement.won === 1,
+      ratingChange: settlement.rating_change,
+      coins: settlement.coins,
+      battleTokens: settlement.battle_tokens,
+      serverRating: settlement.server_rating,
+    });
+  }
+
+  private acknowledgeSettlement(
+    socket: WebSocket,
+    attachment: SocketAttachment,
+    value: unknown,
+  ): void {
+    if (typeof value !== "string" || value.length < 1 || value.length > 200) {
+      sendError(socket, "Invalid settlement receipt.");
+      return;
+    }
+    this.ctx.storage.sql.exec(
+      "UPDATE settlements SET acknowledged = 1 WHERE receipt_id = ? AND uid = ?",
+      value,
+      attachment.uid,
+    );
+  }
+
   private ensureColumn(table: string, column: string, type: string): void {
     const columns = [
       ...this.ctx.storage.sql.exec<{ name: string }>(`PRAGMA table_info(${table})`),
@@ -757,6 +936,39 @@ function integerInRange(
     value <= maximum
     ? value
     : undefined;
+}
+
+function hostedArenaReward(
+  won: boolean,
+  playerRating: number,
+  opponentRating: number,
+  currentStreak: number,
+): { ratingChange: number; coins: number; battleTokens: number } {
+  const difference = opponentRating - playerRating;
+  if (!won) {
+    return {
+      ratingChange: -clampInteger(12 - Math.trunc(difference / 25), 6, 18),
+      coins: 0,
+      battleTokens: 0,
+    };
+  }
+  const ratingChange = clampInteger(
+    18 + Math.trunc(difference / 25),
+    12,
+    28,
+  );
+  const nextStreak = currentStreak + 1;
+  return {
+    ratingChange,
+    // Hosted rewards deliberately do not depend on client-supplied fighter power.
+    coins: 250,
+    battleTokens:
+      1 + (opponentRating >= 1250 ? 1 : 0) + (nextStreak % 5 === 0 ? 1 : 0),
+  };
+}
+
+function clampInteger(value: number, minimum: number, maximum: number): number {
+  return Math.max(minimum, Math.min(maximum, Math.trunc(value)));
 }
 
 async function peerSafeSnapshot(

@@ -24,6 +24,7 @@ import '../utils/animal_fusion_logic.dart';
 import '../utils/battle_upgrade_logic.dart';
 import '../utils/luck_logic.dart';
 import '../models/mutation.dart';
+import '../models/multiplayer.dart';
 import '../models/owned_animal.dart';
 import '../models/player_state.dart';
 import '../models/quest.dart';
@@ -352,6 +353,11 @@ class GameService extends ChangeNotifier {
 
   int get battleTokens => _state.battleTokens;
   int get arenaRating => _state.arenaRating;
+  int get onlineArenaRating => _state.onlineArenaRating;
+  int get onlineArenaWins => _state.onlineArenaWins;
+  int get onlineArenaLosses => _state.onlineArenaLosses;
+  int get onlineArenaWinStreak => _state.onlineArenaWinStreak;
+  int get onlineArenaBestStreak => _state.onlineArenaBestStreak;
   int get arenaWins => _state.arenaWins;
   int get arenaLosses => _state.arenaLosses;
   int get arenaWinStreak => _state.arenaWinStreak;
@@ -1907,6 +1913,48 @@ class GameService extends ChangeNotifier {
     _refreshQuestNotifications();
     notifyListeners();
     save();
+  }
+
+  /// Applies a server-issued hosted battle settlement exactly once.
+  ///
+  /// The receipt survives local/cloud saves, so a reconnect can safely redeliver
+  /// the same settlement until the client acknowledges it.
+  Future<bool> applyHostedArenaSettlement(
+    MultiplayerSettlement settlement,
+  ) async {
+    if (_state.hostedSettlementReceipts.contains(settlement.receiptId)) {
+      return !saveNeedsAttention;
+    }
+    if (_pausedForImport || !_progressWritesAllowed || saveNeedsAttention) {
+      return false;
+    }
+    final receipts = [..._state.hostedSettlementReceipts, settlement.receiptId];
+    if (receipts.length > 100) {
+      receipts.removeRange(0, receipts.length - 100);
+    }
+    final nextStreak = settlement.won ? _state.onlineArenaWinStreak + 1 : 0;
+    var progress = _state.questProgress;
+    if (settlement.battleTokens > 0) {
+      progress = progress.copyWith(
+        totalBattleTokensEarned:
+            progress.totalBattleTokensEarned + settlement.battleTokens,
+      );
+    }
+    _state = _state.copyWith(
+      coins: _state.coins + settlement.coins,
+      battleTokens: _state.battleTokens + settlement.battleTokens,
+      questProgress: progress,
+      onlineArenaRating: settlement.serverRating,
+      onlineArenaWins: _state.onlineArenaWins + (settlement.won ? 1 : 0),
+      onlineArenaLosses: _state.onlineArenaLosses + (settlement.won ? 0 : 1),
+      onlineArenaWinStreak: nextStreak,
+      onlineArenaBestStreak: max(_state.onlineArenaBestStreak, nextStreak),
+      hostedSettlementReceipts: receipts,
+    );
+    _refreshQuestNotifications();
+    notifyListeners();
+    await save();
+    return !saveNeedsAttention;
   }
 
   QuestProgress _questProgressAfterBossWin(

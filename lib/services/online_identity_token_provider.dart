@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -16,6 +18,18 @@ final class FirebaseOnlineIdentityTokenProvider
   @override
   Future<String?> getIdToken() async {
     if (auth == null && Firebase.apps.isEmpty) return null;
-    return (auth ?? FirebaseAuth.instance).currentUser?.getIdToken();
+    final firebaseAuth = auth ?? FirebaseAuth.instance;
+    var user = firebaseAuth.currentUser;
+    if (user == null) {
+      try {
+        user = await firebaseAuth
+            .authStateChanges()
+            .firstWhere((candidate) => candidate != null)
+            .timeout(const Duration(seconds: 8));
+      } on TimeoutException {
+        return null;
+      }
+    }
+    return user?.getIdToken();
   }
 }

@@ -69,7 +69,9 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
   var _abilityPlayerAttacks = true;
   ArenaReward? _reward;
   var _rewardApplied = false;
-  var _protectedTestResult = false;
+  var _settlementPending = false;
+  var _settlementApplying = false;
+  var _forfeitRequested = false;
 
   List<ArenaFighter> get _playerTeam =>
       widget.player.team.map(_arenaFighterFromSnapshot).toList(growable: false);
@@ -183,6 +185,7 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
         _applyReward(state);
       }
     }
+    unawaited(_applyHostedSettlementIfReady());
     setState(() {});
   }
 
@@ -194,13 +197,12 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
   }
 
   void _applyReward(MultiplayerBattleState state) {
-    _rewardApplied = true;
     if (widget.multiplayer.isHostedServer) {
-      // Hosted rewards stay disabled until the backend settles them
-      // idempotently. A client-observed winner is never economy authority.
-      _protectedTestResult = true;
+      _settlementPending = true;
+      unawaited(_applyHostedSettlementIfReady());
       return;
     }
+    _rewardApplied = true;
     final won = state.winnerId == widget.player.playerId;
     final reward = ArenaLogic.rewardFor(
       won: won,
@@ -214,6 +216,36 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
     );
     _reward = reward;
     widget.game.applyArenaResult(won: won, reward: reward);
+  }
+
+  Future<void> _applyHostedSettlementIfReady() async {
+    if (!widget.multiplayer.isHostedServer ||
+        _rewardApplied ||
+        _settlementApplying) {
+      return;
+    }
+    final settlement = widget.multiplayer.settlement;
+    if (settlement == null ||
+        settlement.matchId != widget.multiplayer.matchId) {
+      return;
+    }
+    _settlementApplying = true;
+    final persisted = await widget.game.applyHostedArenaSettlement(settlement);
+    _settlementApplying = false;
+    if (!persisted) {
+      if (mounted) setState(() => _settlementPending = false);
+      return;
+    }
+    widget.multiplayer.acknowledgeSettlement(settlement.receiptId);
+    if (!mounted) return;
+    _reward = ArenaReward(
+      ratingChange: settlement.ratingChange,
+      coins: settlement.coins,
+      battleTokens: settlement.battleTokens,
+    );
+    _rewardApplied = true;
+    _settlementPending = false;
+    setState(() {});
   }
 
   void _collectEnergy() {
@@ -232,6 +264,45 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
   void _continue() {
     widget.multiplayer.clearMatch();
     Navigator.pop(context);
+  }
+
+  Future<void> _requestLeave() async {
+    final finished = widget.multiplayer.battleState?.finished ?? false;
+    if (finished) {
+      Navigator.pop(context);
+      return;
+    }
+    if (_forfeitRequested || !mounted) return;
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            backgroundColor: const Color(0xFF111B3D),
+            title: const Text(
+              'Forfeit this battle?',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: const Text(
+              'Leaving counts as a loss. Stay connected while the result is saved.',
+              style: TextStyle(color: Color(0xFFC5D0FF)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('STAY'),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                icon: const Icon(Icons.flag_rounded),
+                label: const Text('FORFEIT'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed || !mounted) return;
+    setState(() => _forfeitRequested = true);
+    widget.multiplayer.leaveBattle();
   }
 
   @override
@@ -279,6 +350,9 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
 
     return PopScope(
       canPop: finished,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) unawaited(_requestLeave());
+      },
       child: Scaffold(
         backgroundColor: const Color(0xFF07131C),
         body: Stack(
@@ -293,7 +367,7 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                     opponent: widget.opponent,
                     playerEnergy: state.self.energy,
                     opponentEnergy: state.opponent.energy,
-                    canLeave: finished,
+                    onLeave: _forfeitRequested ? null : _requestLeave,
                   ),
                   Expanded(
                     child: LayoutBuilder(
@@ -440,14 +514,17 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                 ],
               ),
             ),
-            if (finished && (_reward != null || _protectedTestResult))
+            if (finished)
               Positioned.fill(
                 child: _OnlineResultOverlay(
                   won: state.winnerId == widget.player.playerId,
                   opponentName: widget.opponent.displayName,
                   reward: _reward,
-                  rating: widget.game.arenaRating,
-                  onContinue: _continue,
+                  rating: widget.multiplayer.isHostedServer
+                      ? widget.game.onlineArenaRating
+                      : widget.game.arenaRating,
+                  settlementPending: _settlementPending,
+                  onContinue: _rewardApplied ? _continue : null,
                 ),
               ),
             if (connectionLost)
@@ -627,13 +704,13 @@ class _OnlineBattleTopBar extends StatelessWidget {
     required this.opponent,
     required this.playerEnergy,
     required this.opponentEnergy,
-    required this.canLeave,
+    required this.onLeave,
   });
 
   final MultiplayerPlayerSnapshot opponent;
   final int playerEnergy;
   final int opponentEnergy;
-  final bool canLeave;
+  final VoidCallback? onLeave;
 
   @override
   Widget build(BuildContext context) {
@@ -643,7 +720,7 @@ class _OnlineBattleTopBar extends StatelessWidget {
         children: [
           IconButton(
             tooltip: 'Leave battle',
-            onPressed: canLeave ? () => Navigator.pop(context) : null,
+            onPressed: onLeave,
             icon: const Icon(Icons.close),
             color: Colors.white,
             disabledColor: Colors.white24,
@@ -1128,6 +1205,7 @@ class _OnlineResultOverlay extends StatelessWidget {
     required this.opponentName,
     required this.reward,
     required this.rating,
+    required this.settlementPending,
     required this.onContinue,
   });
 
@@ -1135,7 +1213,8 @@ class _OnlineResultOverlay extends StatelessWidget {
   final String opponentName;
   final ArenaReward? reward;
   final int rating;
-  final VoidCallback onContinue;
+  final bool settlementPending;
+  final VoidCallback? onContinue;
 
   @override
   Widget build(BuildContext context) {
@@ -1207,10 +1286,12 @@ class _OnlineResultOverlay extends StatelessWidget {
                       ],
                     )
                   else
-                    const Text(
-                      'Protected test match — coins, tokens, and rating stay unchanged until secure server settlement is ready.',
+                    Text(
+                      settlementPending
+                          ? 'Verifying your server-issued result…'
+                          : 'The result is waiting for the match server. Reconnect to retry.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Color(0xFFFFD54F),
                         fontWeight: FontWeight.w800,
                         height: 1.3,

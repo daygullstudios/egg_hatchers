@@ -143,15 +143,17 @@ class SaveService {
             json['playerState'] is! Map<String, dynamic>) {
           return null;
         }
-        final state = parseProgressPayload(
-          json['playerState'] as Map<String, dynamic>,
-        );
+        final rawState = json['playerState'] as Map<String, dynamic>;
+        final state = parseProgressPayload(rawState);
         final revision = (json['revision'] as num?)?.toInt() ?? 0;
         if (revision < 0) return null;
         final fingerprint = contentFingerprint(state);
-        if (json.containsKey('contentFingerprint') &&
-            json['contentFingerprint'] != fingerprint) {
-          return null;
+        if (json.containsKey('contentFingerprint')) {
+          final storedFingerprint = json['contentFingerprint'];
+          if (storedFingerprint != fingerprint &&
+              storedFingerprint != _contentFingerprintForPayload(rawState)) {
+            return null;
+          }
         }
         return ProgressSaveSnapshot(
           state: state,
@@ -181,8 +183,11 @@ class SaveService {
   /// Stable identity for gameplay content. Save timestamps are excluded so an
   /// otherwise unchanged local save remains equal to its cloud ancestor.
   static String contentFingerprint(PlayerState state) {
-    final content = Map<String, dynamic>.from(state.toJson())
-      ..remove('lastSavedTime');
+    return _contentFingerprintForPayload(state.toJson());
+  }
+
+  static String _contentFingerprintForPayload(Map<String, dynamic> payload) {
+    final content = Map<String, dynamic>.from(payload)..remove('lastSavedTime');
     final canonicalJson = jsonEncode(_canonicalize(content));
     return sha256.convert(utf8.encode(canonicalJson)).toString();
   }

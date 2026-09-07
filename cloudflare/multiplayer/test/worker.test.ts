@@ -136,6 +136,86 @@ describe("multiplayer edge authentication", () => {
     resumed.close(1000, "done");
     second.close(1000, "done");
   });
+
+  it("settles a hosted result once and redelivers it until acknowledged", async () => {
+    const winnerToken = await tokenFor("settlement-winner");
+    const loserToken = await tokenFor("settlement-loser");
+    const winnerResponse = await openSocket(winnerToken);
+    const loserResponse = await openSocket(loserToken);
+    const winner = winnerResponse.webSocket!;
+    const loser = loserResponse.webSocket!;
+    winner.accept();
+    loser.accept();
+    const winnerMessages = messages(winner);
+    const loserMessages = messages(loser);
+
+    winner.send(JSON.stringify({ type: "queue", player: player("winner") }));
+    await winnerMessages.next();
+    loser.send(JSON.stringify({ type: "queue", player: player("loser") }));
+    const winnerMatch = await winnerMessages.next();
+    const loserMatch = await loserMessages.next();
+    winner.send(JSON.stringify({ type: "ready", matchId: winnerMatch.matchId }));
+    loser.send(JSON.stringify({ type: "ready", matchId: loserMatch.matchId }));
+    await winnerMessages.next();
+    await loserMessages.next();
+
+    loser.send(JSON.stringify({ type: "leave", matchId: loserMatch.matchId }));
+    await expect(winnerMessages.next()).resolves.toMatchObject({
+      type: "battleState",
+      winner: "self",
+    });
+    await expect(loserMessages.next()).resolves.toMatchObject({
+      type: "battleState",
+      winner: "opponent",
+    });
+    const winnerSettlement = await winnerMessages.next();
+    await expect(loserMessages.next()).resolves.toMatchObject({
+      type: "settlement",
+      won: false,
+      ratingChange: -12,
+      coins: 0,
+      battleTokens: 0,
+      serverRating: 988,
+    });
+    expect(winnerSettlement).toMatchObject({
+      type: "settlement",
+      matchId: winnerMatch.matchId,
+      won: true,
+      ratingChange: 18,
+      coins: 250,
+      battleTokens: 1,
+      serverRating: 1018,
+    });
+
+    winner.close(1000, "reconnect before acknowledging");
+    const retryResponse = await openSocket(winnerToken);
+    const retry = retryResponse.webSocket!;
+    retry.accept();
+    const retryMessages = messages(retry);
+    await expect(retryMessages.next()).resolves.toMatchObject({
+      type: "settlement",
+      receiptId: winnerSettlement.receiptId,
+      coins: 250,
+    });
+    retry.send(
+      JSON.stringify({
+        type: "ackSettlement",
+        receiptId: winnerSettlement.receiptId,
+      }),
+    );
+    retry.close(1000, "acknowledged");
+
+    const finalResponse = await openSocket(winnerToken);
+    const finalSocket = finalResponse.webSocket!;
+    finalSocket.accept();
+    const finalMessages = messages(finalSocket);
+    finalSocket.send(
+      JSON.stringify({ type: "queue", player: player("winner-again") }),
+    );
+    await expect(finalMessages.next()).resolves.toMatchObject({ type: "queued" });
+    finalSocket.close(1000, "done");
+    loser.close(1000, "done");
+  });
 });
 
 async function tokenFor(

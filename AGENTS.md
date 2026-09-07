@@ -19,7 +19,7 @@ documented protection, identity, and recovery gates pass.
 ## Playtest deployment
 
 - Every completed, verified user-facing implementation must also be deployed to the protected Cloudflare playtest at `egg-hatchers-playtest.daygullstudios.com` unless the user explicitly says not to deploy it.
-- Build the current release with `flutter build web --release`, then from `cloudflare/playtest` run `npm test`, `npm run deploy:dry-run`, and `npm run deploy`.
+- From `cloudflare/playtest`, build the protected release with `npm run build:web` so required playtest feature flags are preserved, then run `npm test`, `npm run deploy:dry-run`, and `npm run deploy`.
 - Confirm Wrangler reports the protected custom-domain route and a new current version ID. Do not treat a local build or local server refresh as a playtest deployment.
 - Documentation-only and test-only changes do not require a playtest deployment unless they accompany a user-facing implementation.
 

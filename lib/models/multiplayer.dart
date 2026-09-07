@@ -195,3 +195,35 @@ class MultiplayerEnergySpawn {
     );
   }
 }
+
+class MultiplayerSettlement {
+  const MultiplayerSettlement({
+    required this.receiptId,
+    required this.matchId,
+    required this.won,
+    required this.ratingChange,
+    required this.coins,
+    required this.battleTokens,
+    required this.serverRating,
+  });
+
+  final String receiptId;
+  final String matchId;
+  final bool won;
+  final int ratingChange;
+  final int coins;
+  final int battleTokens;
+  final int serverRating;
+
+  factory MultiplayerSettlement.fromJson(Map<String, dynamic> json) {
+    return MultiplayerSettlement(
+      receiptId: json['receiptId'] as String,
+      matchId: json['matchId'] as String,
+      won: json['won'] as bool,
+      ratingChange: (json['ratingChange'] as num).toInt(),
+      coins: (json['coins'] as num).toInt(),
+      battleTokens: (json['battleTokens'] as num).toInt(),
+      serverRating: (json['serverRating'] as num).toInt(),
+    );
+  }
+}

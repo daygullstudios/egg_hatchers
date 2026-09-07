@@ -96,7 +96,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
       MultiplayerPlayerSnapshot.fromPlayer(
         account: widget.account,
         team: _team.map(ArenaLogic.fighterFromOwned).toList(growable: false),
-        rating: widget.game.arenaRating,
+        rating: widget.game.onlineArenaRating,
       );
 
   void _joinDirectRoomIfReady() {
@@ -202,7 +202,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
     final player = MultiplayerPlayerSnapshot.fromPlayer(
       account: widget.account,
       team: _team.map(ArenaLogic.fighterFromOwned).toList(growable: false),
-      rating: widget.game.arenaRating,
+      rating: widget.game.onlineArenaRating,
     );
     await pushThemedAppRoute<void>(
       context,
@@ -472,7 +472,7 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
                 children: [
                   _PlayerBanner(
                     account: widget.account,
-                    rating: widget.game.arenaRating,
+                    rating: widget.game.onlineArenaRating,
                   ),
                   const SizedBox(height: 18),
                   Row(

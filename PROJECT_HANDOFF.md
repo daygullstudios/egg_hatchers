@@ -24,9 +24,50 @@ a full RC matrix per small patch. Reviewable verified commits/pushes still apply
 is implemented and live on the protected playtest, while its reviewed family
 identity/consent/retention decisions remain an external gate. Safe independent
 Batch 2 work has begun: server-run battles and reconnect recovery are deployed,
-and live two-browser multiplayer acceptance now passes. Trusted inventory,
-settlement, trades and representative human/device acceptance remain open. Do
+and live two-browser multiplayer acceptance now passes. Authoritative,
+replay-safe battle settlement is also deployed; trusted inventory, atomic
+trades and representative human/device acceptance remain open. Do
 not call either batch complete.
+
+The current settlement checkpoint persists one Durable Object receipt per UID
+and match, server-owned online rating, fixed hosted rewards and an explicit
+client acknowledgement only after the local/cloud-capable save path completes.
+Unacknowledged receipts are redelivered; the PlayerState receipt ledger makes
+reapplication idempotent. Online rating/wins/losses/streaks are separate from
+Rival Arena history. The server reward intentionally does not scale from the
+still client-supplied roster power; server-owned inventory remains the next
+economy boundary. Hosted trading is still disabled.
+
+Live acceptance on 2026-09-07 matched isolated Chrome and in-app-browser guest
+identities. The in-app client used the new confirmed forfeit path and received
+`-12`, `0` coins, `0` tokens and rating `988`; Chrome received `+18`, `250`
+coins, `1` token and rating `1018`. Both reloaded from the deployed build,
+restored Firebase identity without manual Retry, and retained exactly `988/0`
+and `1018/1`; no settlement replay occurred. The test also found and fixed a
+startup race where hosted WebSockets opened before Firebase finished restoring
+identity, and a save-fingerprint migration regression caused by newly defaulted
+PlayerState fields. Existing older progress now validates against either its
+exact historical payload or its normalized current form without accepting a
+tampered fingerprint.
+
+Deployment safety was corrected after a live reload showed that the generic
+Flutter web build silently compiled hosted playtest multiplayer out. `AGENTS.md`
+now requires `cloudflare/playtest`'s `npm run build:web`, which preserves the
+protected-only feature flag. Final static version
+`2f370769-0eea-4582-ad0d-a1a8bbcfbe65` is routed only at the existing protected
+custom domain. Multiplayer Worker version
+`b968a743-e5fa-4acf-8316-92168199b251` remains routed only at `/ws*` there.
+Analysis is clean; the earlier full 798-test Flutter checkpoint passed, the
+final 25 focused settlement/save/battle tests pass, eight Worker tests pass,
+and release web/Wasm dry run plus static tests/dry-run pass.
+
+Desktop/web resilience is now an explicit follow-on acceptance item. Use a
+versioned selective resume checkpoint (route and meaningful substate, safe
+draft/selection/scroll state, match ID/reconnect token) rather than attempting
+to serialize a Flutter process or placing transient menus in Firestore. Durable
+account/economy/game truth belongs in Firestore/server storage; meaningful web
+location belongs in Router/URL history; low-risk device UI state belongs in
+local browser storage. Invalid/expired checkpoints must fall back cleanly.
 
 Application commit `43f2344` adds a separate
 `nestarium-multiplayer-playtest` Worker/Durable Object. `/ws` verifies Firebase
@@ -1209,7 +1250,10 @@ Import replaces all Nestarium local data on the destination browser. Keep the ex
 
 ## Known unfinished production work
 
-- Multiplayer rooms and presence are held in server memory. Production needs authenticated server accounts, durable database storage, transactional trades, reconnect handling, moderation controls, and abuse protection.
+- Protected matchmaking and battles use authenticated Durable Object/SQLite
+  state with reconnect and idempotent result settlement. Production still needs
+  a trusted inventory baseline, transactional trades, family capabilities,
+  moderation/abuse controls, and representative device/network acceptance.
 - Named local profiles remain local; the designated guest uses anonymous
   Firebase authentication and revisioned cloud sync. Provider recovery is staged.
 - Android release signing is not configured. Follow `README.md` before store publishing.
