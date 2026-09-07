@@ -275,6 +275,78 @@ describe("multiplayer edge authentication", () => {
     second.close(1000, "done");
   });
 
+  it("cancels a disconnected trade without moving either roster", async () => {
+    const firstToken = await tokenFor("trade-disconnect-a");
+    const secondToken = await tokenFor("trade-disconnect-b");
+    const firstResponse = await openSocket(firstToken);
+    const secondResponse = await openSocket(secondToken);
+    const first = firstResponse.webSocket!;
+    const second = secondResponse.webSocket!;
+    first.accept();
+    second.accept();
+    const firstMessages = messages(first);
+    const secondMessages = messages(second);
+
+    first.send(JSON.stringify({ type: "queueTrade" }));
+    await firstMessages.next();
+    second.send(JSON.stringify({ type: "queueTrade" }));
+    const firstState = await firstMessages.next();
+    await secondMessages.next();
+    first.send(
+      JSON.stringify({
+        type: "tradeOffer",
+        tradeId: firstState.tradeId,
+        animal: { animalId: "chicken", mutationId: "none", level: 1 },
+      }),
+    );
+    await firstMessages.next();
+    await secondMessages.next();
+    second.send(
+      JSON.stringify({
+        type: "tradeOffer",
+        tradeId: firstState.tradeId,
+        animal: { animalId: "mouse", mutationId: "none", level: 1 },
+      }),
+    );
+    await firstMessages.next();
+    await secondMessages.next();
+
+    first.close(1000, "network lost before confirmation");
+    await expect(secondMessages.next()).resolves.toMatchObject({
+      type: "tradeCancelled",
+      message: expect.stringContaining("disconnected"),
+    });
+    second.send(JSON.stringify({ type: "getInventory" }));
+    const secondInventory = await secondMessages.next();
+    expect(secondInventory).toMatchObject({
+      type: "onlineInventory",
+      revision: 1,
+    });
+    expect(secondInventory.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ animalId: "mouse", quantity: 2 }),
+      ]),
+    );
+
+    const reconnectedResponse = await openSocket(firstToken);
+    const reconnected = reconnectedResponse.webSocket!;
+    reconnected.accept();
+    const reconnectedMessages = messages(reconnected);
+    reconnected.send(JSON.stringify({ type: "getInventory" }));
+    const firstInventory = await reconnectedMessages.next();
+    expect(firstInventory).toMatchObject({
+      type: "onlineInventory",
+      revision: 1,
+    });
+    expect(firstInventory.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ animalId: "chicken", quantity: 2 }),
+      ]),
+    );
+    reconnected.close(1000, "done");
+    second.close(1000, "done");
+  });
+
   it("pauses and resumes a server-run battle after a verified reconnect", async () => {
     const firstToken = await tokenFor("reconnect-a");
     const secondToken = await tokenFor("reconnect-b");
@@ -358,13 +430,19 @@ describe("multiplayer edge authentication", () => {
       winner: "opponent",
     });
     const winnerSettlement = await winnerMessages.next();
-    await expect(loserMessages.next()).resolves.toMatchObject({
+    const loserSettlement = await loserMessages.next();
+    expect(loserSettlement).toMatchObject({
       type: "settlement",
       won: false,
       ratingChange: -12,
       coins: 0,
       battleTokens: 0,
       serverRating: 988,
+      rosterReward: {
+        mutationId: "none",
+        level: 1,
+        quantity: 1,
+      },
     });
     expect(winnerSettlement).toMatchObject({
       type: "settlement",
@@ -374,6 +452,29 @@ describe("multiplayer edge authentication", () => {
       coins: 250,
       battleTokens: 1,
       serverRating: 1018,
+      rosterReward: {
+        mutationId: "none",
+        level: 1,
+        quantity: 1,
+      },
+    });
+    await expect(winnerMessages.next()).resolves.toMatchObject({
+      type: "onlineInventory",
+      revision: 2,
+      items: expect.arrayContaining([
+        expect.objectContaining({
+          animalId: winnerSettlement.rosterReward.animalId,
+        }),
+      ]),
+    });
+    await expect(loserMessages.next()).resolves.toMatchObject({
+      type: "onlineInventory",
+      revision: 2,
+      items: expect.arrayContaining([
+        expect.objectContaining({
+          animalId: loserSettlement.rosterReward.animalId,
+        }),
+      ]),
     });
 
     winner.close(1000, "reconnect before acknowledging");
@@ -398,11 +499,42 @@ describe("multiplayer edge authentication", () => {
     const finalSocket = finalResponse.webSocket!;
     finalSocket.accept();
     const finalMessages = messages(finalSocket);
+    const secondOpponentResponse = await openSocket(
+      await tokenFor("settlement-second-opponent"),
+    );
+    const secondOpponent = secondOpponentResponse.webSocket!;
+    secondOpponent.accept();
+    const secondOpponentMessages = messages(secondOpponent);
     finalSocket.send(
       JSON.stringify({ type: "queue", player: player("winner-again") }),
     );
     await expect(finalMessages.next()).resolves.toMatchObject({ type: "queued" });
+    secondOpponent.send(
+      JSON.stringify({ type: "queue", player: player("second-opponent") }),
+    );
+    const secondWinnerMatch = await finalMessages.next();
+    const secondLoserMatch = await secondOpponentMessages.next();
+    finalSocket.send(
+      JSON.stringify({ type: "ready", matchId: secondWinnerMatch.matchId }),
+    );
+    secondOpponent.send(
+      JSON.stringify({ type: "ready", matchId: secondLoserMatch.matchId }),
+    );
+    await finalMessages.next();
+    await secondOpponentMessages.next();
+    secondOpponent.send(
+      JSON.stringify({ type: "leave", matchId: secondLoserMatch.matchId }),
+    );
+    await finalMessages.next();
+    await secondOpponentMessages.next();
+    const secondWinnerSettlement = await finalMessages.next();
+    expect(secondWinnerSettlement).toMatchObject({
+      type: "settlement",
+      won: true,
+    });
+    expect(secondWinnerSettlement).not.toHaveProperty("rosterReward");
     finalSocket.close(1000, "done");
+    secondOpponent.close(1000, "done");
     loser.close(1000, "done");
   });
 });

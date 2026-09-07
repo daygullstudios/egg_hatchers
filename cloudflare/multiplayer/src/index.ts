@@ -76,6 +76,7 @@ type ArenaSettlement = {
   coins: number;
   battle_tokens: number;
   server_rating: number;
+  roster_reward_json: string | null;
 };
 
 type OnlineInventoryItem = {
@@ -263,6 +264,17 @@ export class MatchmakingPool extends DurableObject<Env> {
       );
       CREATE INDEX IF NOT EXISTS online_inventory_owner
         ON online_inventory(uid, quantity, item_key);
+      CREATE TABLE IF NOT EXISTS online_inventory_grants (
+        grant_id TEXT PRIMARY KEY,
+        uid TEXT NOT NULL,
+        match_id TEXT NOT NULL,
+        grant_key TEXT NOT NULL,
+        item_json TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        UNIQUE(uid, grant_key)
+      );
+      CREATE INDEX IF NOT EXISTS online_inventory_grants_owner
+        ON online_inventory_grants(uid, created_at);
       CREATE TABLE IF NOT EXISTS trades (
         trade_id TEXT PRIMARY KEY,
         first_uid TEXT NOT NULL,
@@ -287,6 +299,7 @@ export class MatchmakingPool extends DurableObject<Env> {
       CREATE INDEX IF NOT EXISTS trade_receipts_pending
         ON trade_receipts(uid, acknowledged, created_at);
     `);
+    this.ensureColumn("settlements", "roster_reward_json", "TEXT");
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -939,6 +952,12 @@ export class MatchmakingPool extends DurableObject<Env> {
         );
         const nextStreak = won ? account.win_streak + 1 : 0;
         const receiptId = `${battle.matchId}:${player.uid}`;
+        const rosterReward = this.grantDailyRosterReward(
+          player.uid,
+          battle.matchId,
+          account.rating,
+          now,
+        );
         this.ctx.storage.sql.exec(
           "UPDATE arena_accounts SET rating = ?, win_streak = ?, wins = wins + ?, losses = losses + ?, coins_earned = coins_earned + ?, tokens_earned = tokens_earned + ?, updated_at = ? WHERE uid = ?",
           serverRating,
@@ -951,7 +970,7 @@ export class MatchmakingPool extends DurableObject<Env> {
           player.uid,
         );
         this.ctx.storage.sql.exec(
-          "INSERT INTO settlements (receipt_id, match_id, uid, won, rating_change, coins, battle_tokens, server_rating, acknowledged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)",
+          "INSERT INTO settlements (receipt_id, match_id, uid, won, rating_change, coins, battle_tokens, server_rating, roster_reward_json, acknowledged, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)",
           receiptId,
           battle.matchId,
           player.uid,
@@ -960,6 +979,7 @@ export class MatchmakingPool extends DurableObject<Env> {
           reward.coins,
           reward.battleTokens,
           serverRating,
+          rosterReward ? JSON.stringify(onlineItemJson(rosterReward)) : null,
           now,
         );
       }
@@ -967,7 +987,12 @@ export class MatchmakingPool extends DurableObject<Env> {
     });
     for (const settlement of settlements) {
       const socket = this.socketForUid(settlement.uid);
-      if (socket) this.sendSettlement(socket, settlement);
+      if (socket) {
+        this.sendSettlement(socket, settlement);
+        if (settlement.roster_reward_json) {
+          this.sendInventory(socket, settlement.uid);
+        }
+      }
     }
     return settlements;
   }
@@ -975,7 +1000,7 @@ export class MatchmakingPool extends DurableObject<Env> {
   private settlementsForMatch(matchId: string): ArenaSettlement[] {
     return this.ctx.storage.sql
       .exec<ArenaSettlement>(
-        "SELECT receipt_id, match_id, uid, won, rating_change, coins, battle_tokens, server_rating FROM settlements WHERE match_id = ? ORDER BY uid",
+        "SELECT receipt_id, match_id, uid, won, rating_change, coins, battle_tokens, server_rating, roster_reward_json FROM settlements WHERE match_id = ? ORDER BY uid",
         matchId,
       )
       .toArray();
@@ -983,7 +1008,7 @@ export class MatchmakingPool extends DurableObject<Env> {
 
   private sendPendingSettlements(socket: WebSocket, uid: string): void {
     const pending = this.ctx.storage.sql.exec<ArenaSettlement>(
-      "SELECT receipt_id, match_id, uid, won, rating_change, coins, battle_tokens, server_rating FROM settlements WHERE uid = ? AND acknowledged = 0 ORDER BY created_at LIMIT 20",
+      "SELECT receipt_id, match_id, uid, won, rating_change, coins, battle_tokens, server_rating, roster_reward_json FROM settlements WHERE uid = ? AND acknowledged = 0 ORDER BY created_at LIMIT 20",
       uid,
     );
     for (const settlement of pending) this.sendSettlement(socket, settlement);
@@ -999,7 +1024,61 @@ export class MatchmakingPool extends DurableObject<Env> {
       coins: settlement.coins,
       battleTokens: settlement.battle_tokens,
       serverRating: settlement.server_rating,
+      ...(settlement.roster_reward_json
+        ? { rosterReward: JSON.parse(settlement.roster_reward_json) }
+        : {}),
     });
+  }
+
+  private grantDailyRosterReward(
+    uid: string,
+    matchId: string,
+    rating: number,
+    now: number,
+  ): OnlineInventoryItem | undefined {
+    const day = new Date(now).toISOString().slice(0, 10);
+    const grantKey = `daily_match:${day}`;
+    const existing = [
+      ...this.ctx.storage.sql.exec<{ grant_id: string }>(
+        "SELECT grant_id FROM online_inventory_grants WHERE uid = ? AND grant_key = ?",
+        uid,
+        grantKey,
+      ),
+    ][0];
+    if (existing) return undefined;
+
+    const pool = onlineRosterRewardPool(rating);
+    const animalId = pool[stableStringIndex(`${uid}:${grantKey}`, pool.length)];
+    const reward: OnlineInventoryItem = {
+      animalId,
+      mutationId: "none",
+      level: 1,
+      quantity: 1,
+    };
+    this.ctx.storage.sql.exec(
+      "INSERT INTO online_inventory_grants (grant_id, uid, match_id, grant_key, item_json, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+      `${uid}:${grantKey}`,
+      uid,
+      matchId,
+      grantKey,
+      JSON.stringify(onlineItemJson(reward)),
+      now,
+    );
+    this.ctx.storage.sql.exec(
+      "INSERT INTO online_inventory (uid, item_key, animal_id, mutation_id, level, quantity, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?) ON CONFLICT(uid, item_key) DO UPDATE SET quantity = quantity + 1, updated_at = excluded.updated_at",
+      uid,
+      onlineItemKey(reward),
+      reward.animalId,
+      reward.mutationId,
+      reward.level,
+      now,
+    );
+    this.ctx.storage.sql.exec(
+      "UPDATE online_inventory_accounts SET revision = revision + 1, updated_at = ? WHERE uid = ?",
+      now,
+      uid,
+    );
+    return reward;
   }
 
   private acknowledgeSettlement(
@@ -1646,6 +1725,65 @@ const starterOnlineInventory: readonly OnlineInventoryItem[] = [
   { animalId: "mouse", mutationId: "none", level: 1, quantity: 2 },
   { animalId: "rabbit", mutationId: "none", level: 1, quantity: 2 },
 ];
+
+const earlyOnlineRosterRewards = [
+  "chicken",
+  "mouse",
+  "rabbit",
+  "fox",
+  "deer",
+  "bear",
+  "cow",
+  "pig",
+  "sheep",
+  "horse",
+] as const;
+
+const establishedOnlineRosterRewards = [
+  ...earlyOnlineRosterRewards,
+  "tiger",
+  "dragon",
+  "unicorn",
+  "monkey",
+  "parrot",
+  "snake",
+  "gorilla",
+] as const;
+
+const advancedOnlineRosterRewards = [
+  ...establishedOnlineRosterRewards,
+  "fish",
+  "turtle",
+  "dolphin",
+  "shark",
+  "penguin",
+  "seal",
+  "polar_bear",
+  "snow_owl",
+  "raptor",
+  "triceratops",
+  "t_rex",
+  "fossil_dragon",
+  "moon_cat",
+  "star_fox",
+  "alien_slime",
+  "galaxy_dragon",
+] as const;
+
+function onlineRosterRewardPool(rating: number): readonly string[] {
+  if (rating >= 1600) return advancedOnlineRosterRewards;
+  if (rating >= 1250) return establishedOnlineRosterRewards;
+  return earlyOnlineRosterRewards;
+}
+
+function stableStringIndex(value: string, length: number): number {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0) % length;
+}
 
 function onlineItemKey(
   item: Pick<OnlineInventoryItem, "animalId" | "mutationId" | "level">,

@@ -174,11 +174,18 @@ void main() {
         'coins': 250,
         'battleTokens': 1,
         'serverRating': 1018,
+        'rosterReward': {
+          'animalId': 'fox',
+          'mutationId': 'none',
+          'level': 1,
+          'quantity': 1,
+        },
       }),
     );
 
     expect(service.settlement?.receiptId, 'match-1:player-1');
     expect(service.settlement?.coins, 250);
+    expect(service.settlement?.rosterReward?.animalId, 'fox');
     service.acknowledgeSettlement('match-1:player-1');
     expect(service.settlement, isNull);
     expect(jsonDecode(channel.sink.messages.last as String), {

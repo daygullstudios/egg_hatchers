@@ -26,9 +26,11 @@ identity/consent/retention decisions remain an external gate. Safe independent
 Batch 2 work has begun: server-run battles and reconnect recovery are deployed,
 and live two-browser multiplayer acceptance now passes. Authoritative,
 replay-safe battle settlement, a server-owned Online Roster and atomic hosted
-trades are deployed. Controlled roster acquisition/growth, the reviewed family
-capability model, remaining failure/restart acceptance and representative human/
-device acceptance remain open. Do not call either batch complete.
+trades are deployed. The first completed hosted match per UTC day now grants
+both participants one server-owned roster animal from a rating-gated pool.
+The reviewed family capability model, remaining failure/restart acceptance and
+representative human/device acceptance remain open. Do not call either batch
+complete.
 
 The current settlement checkpoint persists one Durable Object receipt per UID
 and match, server-owned online rating, fixed hosted rewards and an explicit
@@ -53,6 +55,13 @@ Rabbit x2 with its retained Mouse x1 hidden. Both saw reciprocal completion
 receipts and acknowledged them. Local Hatchery Collection cards and save payloads
 were not used as trade authority or mutated by hosted completion.
 
+The deployed daily-drop acceptance then completed one confirmed-forfeit match.
+Chrome won at rating 1035 and received Mouse; the isolated client moved to 977
+and received Fox despite the loss. Both result overlays named the daily Online
+Roster drop, fit the mobile portrait frame, persisted the new roster revision
+and acknowledged their settlement. A second same-day reward is denied by a
+unique UID/day grant row; the Worker test covers that replay/farming boundary.
+
 Live acceptance on 2026-09-07 matched isolated Chrome and in-app-browser guest
 identities. The in-app client used the new confirmed forfeit path and received
 `-12`, `0` coins, `0` tokens and rating `988`; Chrome received `+18`, `250`
@@ -69,10 +78,10 @@ Deployment safety was corrected after a live reload showed that the generic
 Flutter web build silently compiled hosted playtest multiplayer out. `AGENTS.md`
 now requires `cloudflare/playtest`'s `npm run build:web`, which preserves the
 protected-only feature flags. Final static version
-`629ec81d-b6fa-4f8d-af94-526a82a825d5` is routed only at the existing protected
+`30ab5b8b-6332-48ba-9456-af7fc5c66fe1` is routed only at the existing protected
 custom domain. Multiplayer Worker version
-`843e9143-8314-419e-b7e8-74b777db3cae` remains routed only at `/ws*` there.
-Analysis is clean; all 803 Flutter tests and ten Worker tests pass, as do Worker
+`b5a7c0c7-499d-4d29-b278-aabee5c15e1b` remains routed only at `/ws*` there.
+Analysis is clean; all 803 Flutter tests and eleven Worker tests pass, as do Worker
 typecheck/dry-run, release web/Wasm dry run and static tests/dry-run. Anonymous
 requests to both `/` and `/ws/health` still receive Cloudflare Access 302.
 The Nestarium legacy-reference audit classifies 772 retained compatibility
@@ -180,22 +189,19 @@ public-site tests pass, including continued refusal to publish. No Flutter/runti
 change, game rebuild/deploy, repeated RC matrix, cloud deletion, billing, provider,
 store or public-hostname action. The preceding protected game version stays live.
 
-**Multiplayer assessment:** existing local-server tests exercise matchmaking,
-shared server-run combat, invitations, preset messages and confirmed trades.
-The protected Worker serves only static web assets. The Dart server lacks verified
-Firebase socket identity, trusts supplied roster/levels/rating, keeps sessions in
-memory and settles trades/results through client-local updates. This is not a
-from-scratch gameplay project, nor is it ready just by deploying the server.
+**Multiplayer assessment:** the protected Worker now verifies Firebase identity,
+owns roster inventory/ratings/results, runs battle state, persists reconnect and
+receipt state, and commits roster trades atomically. The local Dart server remains
+a development sandbox and does not define hosted trust. Global discovery/invites
+stay off; protected trading uses only preset messages and private aliases.
 
-**Next:** add a controlled server-owned Online Roster acquisition/growth path,
-then finish the reviewed family capability boundary and remaining disconnect/
-restart/human-device acceptance. The exact reviewed family identity/consent
-mechanism remains an external decision gate; isolated backend work may continue.
+**Next:** finish the reviewed family capability boundary, add block/report and
+practical abuse controls, and close Durable Object restart plus representative
+human/device acceptance. The exact reviewed family identity/consent mechanism
+remains an external decision gate; isolated backend work may continue.
 The workplan records four bounded multiplayer packages: authenticated hosting;
 trusted inventory/results/trades; family-safe capabilities; failure recovery and
 integrated acceptance. They fit inside the existing six-milestone finish line.
-No repeat Flutter build/test/deployment for this documentation-only correction;
-the preceding valid 786-test checkpoint and protected version remain unchanged.
 Do not declare milestone 2 complete, infer parental consent from generic owner
 approval, or resume deferred auxiliary hardening.
 

@@ -205,6 +205,7 @@ class MultiplayerSettlement {
     required this.coins,
     required this.battleTokens,
     required this.serverRating,
+    this.rosterReward,
   });
 
   final String receiptId;
@@ -214,6 +215,7 @@ class MultiplayerSettlement {
   final int coins;
   final int battleTokens;
   final int serverRating;
+  final OnlineRosterReward? rosterReward;
 
   factory MultiplayerSettlement.fromJson(Map<String, dynamic> json) {
     return MultiplayerSettlement(
@@ -224,6 +226,34 @@ class MultiplayerSettlement {
       coins: (json['coins'] as num).toInt(),
       battleTokens: (json['battleTokens'] as num).toInt(),
       serverRating: (json['serverRating'] as num).toInt(),
+      rosterReward: json['rosterReward'] is Map<String, dynamic>
+          ? OnlineRosterReward.fromJson(
+              json['rosterReward'] as Map<String, dynamic>,
+            )
+          : null,
+    );
+  }
+}
+
+class OnlineRosterReward {
+  const OnlineRosterReward({
+    required this.animalId,
+    required this.mutationId,
+    required this.level,
+    required this.quantity,
+  });
+
+  final String animalId;
+  final String mutationId;
+  final int level;
+  final int quantity;
+
+  factory OnlineRosterReward.fromJson(Map<String, dynamic> json) {
+    return OnlineRosterReward(
+      animalId: json['animalId'] as String,
+      mutationId: json['mutationId'] as String,
+      level: (json['level'] as num).toInt(),
+      quantity: (json['quantity'] as num?)?.toInt() ?? 1,
     );
   }
 }

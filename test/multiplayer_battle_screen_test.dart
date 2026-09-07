@@ -88,6 +88,10 @@ void main() {
   testWidgets('hosted result applies only its server settlement once', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues({});
     final channel = ControlledLobbyChannel()..handshake.complete();
     final multiplayer = MultiplayerService(
@@ -174,11 +178,40 @@ void main() {
         'coins': 250,
         'battleTokens': 1,
         'serverRating': 1018,
+        'rosterReward': {
+          'animalId': 'fox',
+          'mutationId': 'none',
+          'level': 1,
+          'quantity': 1,
+        },
       }),
     );
     await tester.pump();
+    await tester.runAsync(() async {
+      for (var attempt = 0; attempt < 100; attempt++) {
+        if (channel.sink.messages.any(
+          (message) => message is String && message.contains('"ackSettlement"'),
+        )) {
+          return;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      fail('Hosted settlement was not persisted and acknowledged.');
+    });
+    await tester.pump();
 
     expect(find.text('ONLINE VICTORY'), findsOneWidget);
+    expect(find.text('DAILY ONLINE ROSTER DROP'), findsOneWidget);
+    expect(find.text('Fox'), findsOneWidget);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('online-battle-continue')),
+    );
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('online-battle-continue')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
     expect(find.textContaining('1018 rating'), findsOneWidget);
     expect(game.coins, coinsBefore + 250);
     expect(game.arenaRating, ratingBefore);
@@ -199,6 +232,12 @@ void main() {
         'coins': 250,
         'battleTokens': 1,
         'serverRating': 1018,
+        'rosterReward': {
+          'animalId': 'fox',
+          'mutationId': 'none',
+          'level': 1,
+          'quantity': 1,
+        },
       }),
     );
     await tester.pump();
@@ -279,12 +318,7 @@ void main() {
     final sent = channel.sink.messages
         .map((message) => jsonDecode(message as String) as Map<String, dynamic>)
         .toList();
-    expect(
-      sent,
-      contains(
-        containsPair('type', 'leave'),
-      ),
-    );
+    expect(sent, contains(containsPair('type', 'leave')));
     expect(find.text('ONLINE MATCH'), findsOneWidget);
   });
 

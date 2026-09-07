@@ -50,7 +50,8 @@ attached.
   Roster trading. Public/default builds keep both release switches off. Hosted
   results, ratings and rewards are server-set; hosted teams and trades use only
   the separate server-owned Online Roster and never mutate the Hatchery
-  Collection.
+  Collection. The first completed hosted match per UTC day adds one server-owned
+  roster animal for each participant; its settlement receipt is replay-safe.
 
 ## Local verification
 

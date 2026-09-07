@@ -144,10 +144,12 @@ mode; this is test access, not parental consent or a public capability decision.
 Live two-browser matching, authoritative damage, reconnect/pause, no-result
 expiry, confirmed forfeit, exact-once reward acceptance and a reciprocal atomic
 trade now pass on the protected deployment. Hosted online rating and win/loss/
-streak history remain isolated from Rival Arena. Controlled roster acquisition/
-growth, reviewed family capabilities, remaining failure/restart coverage and
-representative human/device acceptance remain open. See `PROJECT_HANDOFF.md`
-for exact versions/evidence.
+streak history remain isolated from Rival Arena. Each UID's first completed
+hosted match per UTC day now grants one server-owned roster copy to both players
+from a rating-gated pool; a unique daily grant row prevents repeat farming.
+Reviewed family capabilities, block/report/abuse controls, remaining failure/
+restart coverage and representative human/device acceptance remain open. See
+`PROJECT_HANDOFF.md` for exact versions/evidence.
 
 Web lifecycle acceptance now includes a versioned selective resume coordinator:
 restore meaningful route/substate and safe local drafts/scroll position; use a
@@ -606,8 +608,12 @@ The actual gaps are bounded into four completion packages:
    preserve one battle copy, increment both revisions and redeliver completion
    receipts until acknowledged. The local Hatchery Collection remains separate
    because its offline/client-writable saves are not safe trade authority.
-   Controlled server-owned roster acquisition/growth and production-scale
-   partitioning remain open, so this package is not complete.
+   The first completed match per server day grants both participants one roster
+   copy from a rating-gated pool inside the same settlement transaction. Unique
+   grant IDs prevent replay/farming, and the scrollable mobile result overlay
+   identifies the drop. The protected vertical slice now passes this package's
+   inventory/settlement/trade acceptance; production-scale partitioning and
+   economy balancing remain launch-capacity/RC checks rather than client trust.
 3. **Family-safe participation:** integrate the Roblox-informed capability/parent
    model in `FAMILY_AUDIENCE_V1.md`; separate gameplay from public discovery,
    profile disclosure, messaging and trading. Enforce safe names, minimum peer
@@ -615,11 +621,13 @@ The actual gaps are bounded into four completion packages:
    chat/voice, public-art expansion or new social modes. Acceptance: restricted
    accounts cannot bypass capabilities through lobby startup, invites, deep links,
    reconnects or another profile; allowed family play works with preset messages.
-4. **Failure recovery and one integrated acceptance:** current rooms/trades are
-   in memory and a battle disconnect immediately awards the opponent a win.
-   Define reconnect/forfeit/restart behavior and durable, idempotent settlement.
-   Test dropped connections, server restart, duplicate commands, concurrent
-   trades, basic abuse/load limits and two-device play using disposable accounts.
+4. **Failure recovery and one integrated acceptance:** hosted sessions, battles,
+   inventories, trades and receipts are Durable Object SQLite state. Battle
+   disconnects pause for 30 seconds and expiry creates no result; confirmed
+   forfeits settle normally. A trade disconnect before both confirmations now has
+   explicit test evidence that both rosters remain unchanged. Finish Durable
+   Object restart/hibernation, duplicate-session, basic abuse/load and two-device
+   play acceptance using disposable accounts.
    Reuse focused checks while implementing; join the single consolidated RC
    milestone rather than repeating a full release matrix after every patch.
 

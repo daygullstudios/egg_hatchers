@@ -17,9 +17,14 @@ Cloudflare Access application.
 - Client player IDs and names are ignored. Peers receive a server-derived test
   alias. Profile discovery and free-text communication remain unavailable.
 - The Online Roster is separate from the offline-first Hatchery Collection. It
-  starts with three server-minted animals, is stored in Durable Object SQLite,
-  and is the only inventory accepted for hosted teams or trades. A client-
+  starts with two copies each of Chicken, Mouse and Rabbit, is stored in Durable
+  Object SQLite, and is the only inventory accepted for hosted teams or trades.
+  A client-
   writable Firestore save is never treated as trusted inventory.
+- Each account's first completed hosted match per UTC day grants one level-1,
+  normal Online Roster animal to both participants. The eligible pool expands
+  at 1250 and 1600 online rating. A unique daily grant row and the existing
+  settlement transaction prevent repeat farming or duplicate delivery.
 - Hosted battles use roster-validated fighters and server-owned ratings/results.
   Hosted trades exchange both roster items in one SQLite transaction, preserve
   pending receipts until acknowledgement, and cancel without moving either item

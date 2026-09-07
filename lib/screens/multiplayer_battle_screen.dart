@@ -68,6 +68,7 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
   var _abilityMutationId = 'none';
   var _abilityPlayerAttacks = true;
   ArenaReward? _reward;
+  OnlineRosterReward? _rosterReward;
   var _rewardApplied = false;
   var _settlementPending = false;
   var _settlementApplying = false;
@@ -243,6 +244,7 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
       coins: settlement.coins,
       battleTokens: settlement.battleTokens,
     );
+    _rosterReward = settlement.rosterReward;
     _rewardApplied = true;
     _settlementPending = false;
     setState(() {});
@@ -520,6 +522,7 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                   won: state.winnerId == widget.player.playerId,
                   opponentName: widget.opponent.displayName,
                   reward: _reward,
+                  rosterReward: _rosterReward,
                   rating: widget.multiplayer.isHostedServer
                       ? widget.game.onlineArenaRating
                       : widget.game.arenaRating,
@@ -1204,6 +1207,7 @@ class _OnlineResultOverlay extends StatelessWidget {
     required this.won,
     required this.opponentName,
     required this.reward,
+    required this.rosterReward,
     required this.rating,
     required this.settlementPending,
     required this.onContinue,
@@ -1212,6 +1216,7 @@ class _OnlineResultOverlay extends StatelessWidget {
   final bool won;
   final String opponentName;
   final ArenaReward? reward;
+  final OnlineRosterReward? rosterReward;
   final int rating;
   final bool settlementPending;
   final VoidCallback? onContinue;
@@ -1222,10 +1227,10 @@ class _OnlineResultOverlay extends StatelessWidget {
       color: Colors.black.withValues(alpha: 0.82),
       child: SafeArea(
         child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 340),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 340),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1297,6 +1302,10 @@ class _OnlineResultOverlay extends StatelessWidget {
                         height: 1.3,
                       ),
                     ),
+                  if (rosterReward case final rosterDrop?) ...[
+                    const SizedBox(height: 18),
+                    _OnlineRosterDrop(reward: rosterDrop),
+                  ],
                   const SizedBox(height: 22),
                   SizedBox(
                     width: double.infinity,
@@ -1316,6 +1325,65 @@ class _OnlineResultOverlay extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _OnlineRosterDrop extends StatelessWidget {
+  const _OnlineRosterDrop({required this.reward});
+
+  final OnlineRosterReward reward;
+
+  @override
+  Widget build(BuildContext context) {
+    final animal = GameData.animalById(reward.animalId);
+    final mutation = GameData.mutationById(reward.mutationId);
+    final mutationLabel = mutation == null || mutation.id == 'none'
+        ? ''
+        : '${mutation.displayName} ';
+    return Container(
+      key: const ValueKey('online-roster-reward'),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF16353B),
+        border: Border.all(color: const Color(0xFF65D6A6), width: 1.5),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Text(animal?.emoji ?? '🐾', style: const TextStyle(fontSize: 34)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'DAILY ONLINE ROSTER DROP',
+                  style: TextStyle(
+                    color: Color(0xFF8DEBC4),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$mutationLabel${animal?.name ?? reward.animalId}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const Text(
+                  'First completed online match today',
+                  style: TextStyle(color: Colors.white70, fontSize: 11),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
