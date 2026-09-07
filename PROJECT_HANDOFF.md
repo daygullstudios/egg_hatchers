@@ -43,7 +43,16 @@ progress locks and exit-listener attach/remove. Final release web build passes
 `33fd40221df5a2e9026de98423431d20cbd7ac14835d63708a87fb4ea30c7871`.
 Playtest **three tests** and Wrangler **4.129.0** dry run pass after that build.
 Brand audit: **669 classified** compatibility references, none unclassified.
-Deployment receipt and real-profile refresh acceptance follow below after release.
+Implementation **`13d4d7c`** is committed/pushed to main. The verified build is
+deployed at **100%** current version **`1cc169c1-c3dc-484a-8c89-73717fec8df6`**,
+deployment `2026-09-07T02:07:09.775Z`, on the unchanged protected custom domain.
+Unauthenticated requests remain **302 to Cloudflare Access**. External Chrome
+refresh preserves the existing guest's two normal chickens, one golden chicken,
++4/sec income and increasing coins (430,306 on first accessible read). Settings
+retains **Choose progress / Compare saves**, with neither copy selected. Visual
+inspection confirms the readable portrait shell and reachable account controls;
+the tab is returned to Hatchery. No real player, save or identity was changed,
+removed, corrupted or replaced for failure QA.
 
 Limits: read-back is backend verification, not a hardware durability guarantee.
 Forced close/eviction can still lose unexported RAM. Old builds do not honor new
