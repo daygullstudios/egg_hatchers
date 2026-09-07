@@ -131,12 +131,14 @@ Execution rules:
   any material increase to the 12–16-unit estimate before extending the scope.
   Do not rerun the full RC matrix for each internal unit.
 
-Current status: **0/4 delivery batches complete; batch 1 is active.** Authenticated
-hosted matchmaking foundation is implemented/deployed on the legacy protected
-playtest route, automatic global presence is removed, and the Flutter client is
-prepared to send a restored Firebase ID token. Hosted client release stays off;
-family consent/retention/deletion, live two-account acceptance and full battle/
-settlement remain open. See `PROJECT_HANDOFF.md` for version/test evidence.
+Current status: **0/4 delivery batches complete.** Batch 1's authenticated hosted
+foundation is deployed on the legacy protected playtest route, while reviewed
+family consent/retention/deletion remains externally gated. Protected direct
+matchmaking is active; server-run battles and a no-result 30-second reconnect
+window are also deployed as safe independent Batch 2 progress. Automatic global
+presence, discovery/invites, hosted trading and all economy-bearing settlement
+remain off. Live two-account battle/reconnect acceptance and trusted inventory/
+results/trades remain open. See `PROJECT_HANDOFF.md` for exact versions/evidence.
 
 ### Historical implementation inventory (not an instruction to continue in order)
 

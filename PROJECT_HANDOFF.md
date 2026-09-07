@@ -20,9 +20,12 @@ checks without repeated approval requests. Report meaningful batch checkpoints;
 run normal integration/deployment gates for completed user-facing batches, not
 a full RC matrix per small patch. Reviewable verified commits/pushes still apply.
 
-**Status: 0/4 grouped batches complete; batch 1 is active.** Its hosted-identity
-foundation is now implemented and deployed, but the family identity/consent and
-full battle/settlement gates remain open. Do not call the batch complete.
+**Status: 0/4 grouped batches complete.** Batch 1's hosted-identity foundation
+is implemented and live on the protected playtest, while its reviewed family
+identity/consent/retention decisions remain an external gate. Safe independent
+Batch 2 work has begun: server-run battles and reconnect recovery are deployed,
+but trusted inventory, settlement, trades and two-player human acceptance remain
+open. Do not call either batch complete.
 
 Application commit `43f2344` adds a separate
 `nestarium-multiplayer-playtest` Worker/Durable Object. `/ws` verifies Firebase
@@ -36,23 +39,36 @@ playtest hostname is Access-protected; this is explicitly not parental consent.
 Production capability mode defaults to trusted token claims and denies unknowns.
 
 The Flutter client now has a read-only Firebase token provider and authenticated
-WebSocket protocol contract, but the hosted release switch remains off until
-server-run battle and trusted settlement are ready together. Local development
-multiplayer is unchanged. Automatic root-level lobby presence was removed, so
+WebSocket protocol contract. Commit `95024af` enables direct hosted test battles
+only in the protected playtest build; normal builds remain fail-closed. The UI
+locks hosted trading and replaces global discovery/invites with an accurate
+protected-matchmaking notice. Local development multiplayer is unchanged.
+Automatic root-level lobby presence was removed, so
 loading/changing a player no longer attempts to publish their account/name/avatar,
 team or collection. Global discovery/invites stay unavailable until their own
 capability/safety package passes. Existing local saves, UIDs, Firebase project,
 Firestore document and package/bundle IDs are unchanged.
 
-Validation: Flutter analysis is clean, all **789 Flutter tests** pass, release
-web build succeeds including Wasm dry run; multiplayer Worker typecheck, three
-Workers-runtime tests and Wrangler dry run pass. Worker version
-`2de0d77f-41b7-4912-87ee-ffd8f4790fd4` is routed only at the existing protected
-`egg-hatchers-playtest.daygullstudios.com/ws*`. Static protected version
-`13bd26d2-6193-4235-b15a-0237a682d04f` contains the client/privacy correction.
-Anonymous requests to both `/` and `/ws/health` return Cloudflare Access 302;
-`playnestarium.com` remains unrouted. Live two-account Firebase matching and the
-legal/operational family controls are still acceptance gates, not claims here.
+Commit `eeb6730` moved combat timing, energy, validated catalog power, ability
+effects, switching and outcomes into the Durable Object. Hosted outcomes still
+cannot grant client-local coins, tokens or rating. Commit `a39b901` adds a
+30-second authenticated reconnect window: both players' battle clock pauses,
+the same Firebase UID resumes the persisted SQLite match state, and expiry
+interrupts without choosing or rewarding a winner. The client preserves
+the match and shows explicit Reconnect/return states.
+
+Validation: Flutter analysis is clean, all **794 Flutter tests** pass, and the
+release web build succeeds including Wasm dry run. Multiplayer Worker typecheck,
+seven Worker/pure-battle tests and both Wrangler dry runs pass. Worker version
+`30183ba0-705a-439b-af67-2e0ffcbbd21d` is routed only at the existing protected
+`egg-hatchers-playtest.daygullstudios.com/ws*`; static version
+`f25633e5-ea2e-4e12-b626-18e742047038` contains the activated protected client.
+An existing browser session restored its Firebase identity and displayed
+`Match server connected`; its current two-stack team was left untouched, so no
+queue or match was fabricated. Anonymous requests to both `/` and `/ws/health`
+return Cloudflare Access 302. `playnestarium.com` still resolves no public app
+record. Live two-account matching/reconnect and the legal/operational family
+controls remain acceptance gates, not claims here.
 
 ## Family-audience requirements — current decision checkpoint
 
