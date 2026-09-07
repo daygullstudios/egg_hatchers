@@ -177,6 +177,14 @@ family consent/decision process and representative
 human/device acceptance remain open. See `MULTIPLAYER_SHARD_MIGRATION.md` and
 `PROJECT_HANDOFF.md` for exact versions/evidence.
 
+The final two-unit engineering burn-down is complete as of September 7: central
+safety/capability authority, then consolidated public-origin readiness and
+accurate policy copy. No further implementation unit is authorized before the
+remaining external review, provider, canary-load, representative device/person
+and final-publication gates. This does not mark the four delivery batches or six
+release milestones complete; it records the requested stopping point and keeps
+open acceptance work from becoming an indefinite automatic coding backlog.
+
 Web lifecycle acceptance now includes a versioned selective resume coordinator:
 restore meaningful route/substate and safe local drafts/scroll position; use a
 server match ID/reconnect token for multiplayer; reject expired/incompatible

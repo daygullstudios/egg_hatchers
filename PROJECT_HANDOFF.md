@@ -287,12 +287,16 @@ receipt state, and commits roster trades atomically. The local Dart server remai
 a development sandbox and does not define hosted trust. Global discovery/invites
 stay off; protected trading uses only preset messages and private aliases.
 
-**Next:** one bounded implementation remains: consolidate platform/public-origin
-readiness and fix only demonstrated release-candidate blockers. The exact family
-identity/consent mechanism remains an external decision gate; the new capability
-registry is enforcement machinery, not consent. Authenticated multi-client
-canary behavior, saturation and latency/cost measurement remain acceptance gates
-rather than grounds to move current player data.
+**Implementation burn-down: 2/2 complete.** The final consolidation updated the
+unpublished privacy draft to the actual central report retention and inactive
+capability registry, then passed its exact allowlisted build, 11 public-site tests,
+Wrangler dry run, and Chrome plus isolated-browser semantic review. The guarded
+release check correctly still refuses publication. There is no remaining approved
+engineering unit before the external gates: reviewed family identity/consent and
+final policy, Google/provider cross-origin recovery, authenticated canary load/
+latency, representative people/devices/networks, and owner public/store release
+authorization. These are acceptance or decision gates, not grounds to invent
+another implementation batch or move current player data.
 The workplan records four bounded multiplayer packages: authenticated hosting;
 trusted inventory/results/trades; family-safe capabilities; failure recovery and
 integrated acceptance. They fit inside the existing six-milestone finish line.

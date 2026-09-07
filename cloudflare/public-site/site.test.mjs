@@ -95,6 +95,15 @@ test('family-audience draft distinguishes intent from controls and requested onl
   assert.match(html.get('terms.html'), /does not establish recorded player assent, verify a parent/);
 });
 
+test('privacy draft accurately describes central reports and the inactive capability registry', () => {
+  const privacy = html.get('privacy.html');
+  assert.match(privacy, /replaces those account identifiers with one-way hashes/);
+  assert.match(privacy, /scheduled for deletion after 180 days/);
+  assert.match(privacy, /capability registry is implemented but inactive/);
+  assert.match(privacy, /does not store a birth date, email, player name, guardian identity or proof of consent/);
+  assert.match(privacy, /No live public capability decision has been issued/);
+});
+
 test('public configuration does not change the protected game route', async () => {
   const playtest = JSON.parse(await readFile(join(root, '../playtest/wrangler.jsonc'), 'utf8'));
   assert.notEqual(config.name, playtest.name);

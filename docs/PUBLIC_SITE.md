@@ -1,6 +1,6 @@
 # Nestarium public information site
 
-## September 6, 2026 checkpoint — local review draft, not deployed
+## September 7, 2026 checkpoint — local review draft, not deployed
 
 `cloudflare/public-site` owns the non-playable Nestarium homepage, support,
 privacy, terms and account/data-request pages. It follows the sibling products'
@@ -116,13 +116,13 @@ npm run dev
 The build writes exactly **11 allowlisted files** into the separate ignored
 `build/nestarium-public-site` directory. Unexpected output files fail the build
 instead of being silently uploaded or deleted. Never substitute `build/web`.
-The 9 focused tests cover the asset boundary, original artwork bytes, document
+The 11 focused tests cover the asset boundary, original artwork bytes, document
 metadata, internal links, approved contacts, no scripts/private links, restrictive
 headers, accurate support copy, draft publication guard and protected-game route.
 
 Verified locally with Wrangler 4.129.0:
 
-- Build, 9/9 tests and deployment dry run pass; no bindings or game code.
+- Build, 11/11 tests and deployment dry run pass; no bindings or game code.
 - `/`, `/support`, `/privacy`, `/terms`, `/delete-account` return HTTP 200.
 - `/main.dart.js`, `/flutter_bootstrap.js`, `/assets/AssetManifest.bin` and an
   unknown route return HTTP 404, not an application-shell fallback.
@@ -135,6 +135,12 @@ Verified locally with Wrangler 4.129.0:
 No Flutter source/platform asset changed, so valid previous game analysis,
 tests and release evidence were not repeated. No playtest deployment is needed
 for an incomplete, unpublished public-site review draft.
+
+The September 7 readiness pass updated the privacy draft to match the deployed
+central moderation store and inactive hosted-capability registry. Chrome and an
+isolated in-app browser both expose the complete heading/link structure and the
+new report-retention and capability text. The publication guard still fails
+closed on the two intended gates below; no public route or live site was created.
 
 ## Publication gates and order
 
