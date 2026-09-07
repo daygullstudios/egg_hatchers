@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:egg_hatchers/models/online_trade.dart';
 import 'package:egg_hatchers/models/owned_animal.dart';
 import 'package:egg_hatchers/models/player_account.dart';
+import 'package:egg_hatchers/models/peer_safety.dart';
 import 'package:egg_hatchers/services/trading_service.dart';
 import 'package:egg_hatchers/services/online_identity_token_provider.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -56,6 +57,13 @@ void main() {
       expect(service.onlineInventoryRevision, 2);
       expect(service.onlineInventory?.single.animalId, 'rabbit');
       expect(service.onlineInventory?.single.quantity, 2);
+
+      service.reportPeer(PeerReportReason.tradeConcern, block: false);
+      expect(jsonDecode(channel.sink.messages.last as String), {
+        'type': 'peerSafety',
+        'action': 'report',
+        'reason': 'trade_concern',
+      });
     },
   );
 

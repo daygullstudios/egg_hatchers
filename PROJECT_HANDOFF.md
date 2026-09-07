@@ -28,9 +28,11 @@ and live two-browser multiplayer acceptance now passes. Authoritative,
 replay-safe battle settlement, a server-owned Online Roster and atomic hosted
 trades are deployed. The first completed hosted match per UTC day now grants
 both participants one server-owned roster animal from a rating-gated pool.
-The reviewed family capability model, remaining failure/restart acceptance and
-representative human/device acceptance remain open. Do not call either batch
-complete.
+Preset-only report/block controls and server-enforced matchmaking blocks are
+also deployed. Durable Object eviction/hibernation and duplicate-session
+acceptance now pass automatically. The reviewed family capability model,
+basic load/capacity acceptance and representative human/device acceptance
+remain open. Do not call either batch complete.
 
 The current settlement checkpoint persists one Durable Object receipt per UID
 and match, server-owned online rating, fixed hosted rewards and an explicit
@@ -62,6 +64,20 @@ Roster drop, fit the mobile portrait frame, persisted the new roster revision
 and acknowledged their settlement. A second same-day reward is denied by a
 unique UID/day grant row; the Worker test covers that replay/farming boundary.
 
+The multiplayer safety checkpoint adds one narrow-phone sheet to active and
+just-completed hosted battles/trades. It accepts four preset reasons and no free
+text or client-selected peer identity. The Durable Object records opaque UIDs,
+reason, activity context and timestamps, deduplicates the same reason/peer/day,
+caps each reporter at ten unique daily reports and opportunistically removes
+reports older than 180 days. Blocks apply in both directions to battle and trade
+matchmaking. A trade block cancels before any Online Roster mutation; a battle
+block does not alter the result. Automated acceptance evicts the live Durable
+Object with hibernated trade sockets, submits the safety action after restoration,
+proves both match queues exclude the blocked pair, and proves a duplicate UID
+socket retires the older session. A user-managed blocked-player list and final
+moderation/deletion operations remain part of policy/operations review rather
+than being falsely presented as complete.
+
 Live acceptance on 2026-09-07 matched isolated Chrome and in-app-browser guest
 identities. The in-app client used the new confirmed forfeit path and received
 `-12`, `0` coins, `0` tokens and rating `988`; Chrome received `+18`, `250`
@@ -78,10 +94,10 @@ Deployment safety was corrected after a live reload showed that the generic
 Flutter web build silently compiled hosted playtest multiplayer out. `AGENTS.md`
 now requires `cloudflare/playtest`'s `npm run build:web`, which preserves the
 protected-only feature flags. Final static version
-`30ab5b8b-6332-48ba-9456-af7fc5c66fe1` is routed only at the existing protected
+`d25ea84c-4ff9-47a7-a21d-5f7fc701f8d0` is routed only at the existing protected
 custom domain. Multiplayer Worker version
-`b5a7c0c7-499d-4d29-b278-aabee5c15e1b` remains routed only at `/ws*` there.
-Analysis is clean; all 803 Flutter tests and eleven Worker tests pass, as do Worker
+`8aeb94f7-3f9a-4559-b53b-8c9ce0da34a8` remains routed only at `/ws*` there.
+Analysis is clean; all 805 Flutter tests and thirteen Worker tests pass, as do Worker
 typecheck/dry-run, release web/Wasm dry run and static tests/dry-run. Anonymous
 requests to both `/` and `/ws/health` still receive Cloudflare Access 302.
 The Nestarium legacy-reference audit classifies 772 retained compatibility
@@ -195,10 +211,10 @@ receipt state, and commits roster trades atomically. The local Dart server remai
 a development sandbox and does not define hosted trust. Global discovery/invites
 stay off; protected trading uses only preset messages and private aliases.
 
-**Next:** finish the reviewed family capability boundary, add block/report and
-practical abuse controls, and close Durable Object restart plus representative
-human/device acceptance. The exact reviewed family identity/consent mechanism
-remains an external decision gate; isolated backend work may continue.
+**Next:** finish the reviewed family capability boundary and close basic
+load/capacity plus representative human/device acceptance. The exact reviewed
+family identity/consent mechanism remains an external decision gate; isolated
+backend and platform-readiness work may continue.
 The workplan records four bounded multiplayer packages: authenticated hosting;
 trusted inventory/results/trades; family-safe capabilities; failure recovery and
 integrated acceptance. They fit inside the existing six-milestone finish line.

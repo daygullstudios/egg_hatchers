@@ -39,6 +39,10 @@ type SocketAttachment = {
   matchId?: string;
   peerUid?: string;
   tradeId?: string;
+  safetyPeerUid?: string;
+  safetyContext?: "battle" | "trade";
+  safetyContextId?: string;
+  safetyContextExpiresAt?: number;
   windowStartedAt: number;
   messageCount: number;
 };
@@ -150,6 +154,9 @@ const jsonHeaders = {
 };
 
 const reconnectGraceMs = 30_000;
+const safetyContextRetentionMs = 60 * 60 * 1000;
+const dailyReportLimit = 10;
+const reportRetentionMs = 180 * 24 * 60 * 60 * 1000;
 
 export default {
   async fetch(request, env): Promise<Response> {
@@ -298,6 +305,29 @@ export class MatchmakingPool extends DurableObject<Env> {
       );
       CREATE INDEX IF NOT EXISTS trade_receipts_pending
         ON trade_receipts(uid, acknowledged, created_at);
+      CREATE TABLE IF NOT EXISTS player_blocks (
+        blocker_uid TEXT NOT NULL,
+        blocked_uid TEXT NOT NULL,
+        context_type TEXT NOT NULL,
+        context_id TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY(blocker_uid, blocked_uid)
+      );
+      CREATE INDEX IF NOT EXISTS player_blocks_reverse
+        ON player_blocks(blocked_uid, blocker_uid);
+      CREATE TABLE IF NOT EXISTS player_reports (
+        report_id TEXT PRIMARY KEY,
+        reporter_uid TEXT NOT NULL,
+        reported_uid TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        context_type TEXT NOT NULL,
+        context_id TEXT NOT NULL,
+        report_day TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        UNIQUE(reporter_uid, reported_uid, reason, report_day)
+      );
+      CREATE INDEX IF NOT EXISTS player_reports_daily
+        ON player_reports(reporter_uid, report_day, created_at);
     `);
     this.ensureColumn("settlements", "roster_reward_json", "TEXT");
   }
@@ -401,6 +431,9 @@ export class MatchmakingPool extends DurableObject<Env> {
       case "ackTrade":
         this.acknowledgeTrade(socket, attachment, data.receiptId);
         break;
+      case "peerSafety":
+        await this.handlePeerSafety(socket, attachment, data);
+        break;
       case "cancel":
         this.cancel(socket, attachment);
         break;
@@ -488,7 +521,11 @@ export class MatchmakingPool extends DurableObject<Env> {
       .filter((candidate) => {
         const attachment =
           candidate.deserializeAttachment() as SocketAttachment;
-        return attachment.state === "queued" && attachment.uid !== exceptUid;
+        return (
+          attachment.state === "queued" &&
+          attachment.uid !== exceptUid &&
+          !this.playersAreBlocked(exceptUid, attachment.uid)
+        );
       })
       .sort((first, second) => {
         const a = first.deserializeAttachment() as SocketAttachment;
@@ -511,6 +548,10 @@ export class MatchmakingPool extends DurableObject<Env> {
       state: "matched",
       matchId,
       peerUid: second.uid,
+      safetyPeerUid: second.uid,
+      safetyContext: "battle",
+      safetyContextId: matchId,
+      safetyContextExpiresAt: now + safetyContextRetentionMs,
       queuedAt: undefined,
     };
     const matchedSecond: SocketAttachment = {
@@ -518,6 +559,10 @@ export class MatchmakingPool extends DurableObject<Env> {
       state: "matched",
       matchId,
       peerUid: first.uid,
+      safetyPeerUid: first.uid,
+      safetyContext: "battle",
+      safetyContextId: matchId,
+      safetyContextExpiresAt: now + safetyContextRetentionMs,
       queuedAt: undefined,
     };
     firstSocket.serializeAttachment(matchedFirst);
@@ -1223,7 +1268,9 @@ export class MatchmakingPool extends DurableObject<Env> {
         const attachment =
           candidate.deserializeAttachment() as SocketAttachment;
         return (
-          attachment.state === "tradeQueued" && attachment.uid !== exceptUid
+          attachment.state === "tradeQueued" &&
+          attachment.uid !== exceptUid &&
+          !this.playersAreBlocked(exceptUid, attachment.uid)
         );
       })
       .sort((first, second) => {
@@ -1263,6 +1310,10 @@ export class MatchmakingPool extends DurableObject<Env> {
       state: "trading",
       tradeId: trade.tradeId,
       peerUid: second.uid,
+      safetyPeerUid: second.uid,
+      safetyContext: "trade",
+      safetyContextId: trade.tradeId,
+      safetyContextExpiresAt: now + safetyContextRetentionMs,
       queuedAt: undefined,
     } satisfies SocketAttachment);
     secondSocket.serializeAttachment({
@@ -1270,6 +1321,10 @@ export class MatchmakingPool extends DurableObject<Env> {
       state: "trading",
       tradeId: trade.tradeId,
       peerUid: first.uid,
+      safetyPeerUid: first.uid,
+      safetyContext: "trade",
+      safetyContextId: trade.tradeId,
+      safetyContextExpiresAt: now + safetyContextRetentionMs,
       queuedAt: undefined,
     } satisfies SocketAttachment);
     this.broadcastTrade(trade, "Choose an animal to offer.");
@@ -1603,6 +1658,146 @@ export class MatchmakingPool extends DurableObject<Env> {
     } satisfies SocketAttachment);
   }
 
+  private playersAreBlocked(firstUid: string, secondUid: string): boolean {
+    const row = [
+      ...this.ctx.storage.sql.exec<{ blocked: number }>(
+        "SELECT 1 AS blocked FROM player_blocks WHERE (blocker_uid = ? AND blocked_uid = ?) OR (blocker_uid = ? AND blocked_uid = ?) LIMIT 1",
+        firstUid,
+        secondUid,
+        secondUid,
+        firstUid,
+      ),
+    ][0];
+    return row?.blocked === 1;
+  }
+
+  private async handlePeerSafety(
+    socket: WebSocket,
+    attachment: SocketAttachment,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    const now = Date.now();
+    const targetUid = attachment.peerUid ?? attachment.safetyPeerUid;
+    const contextType = attachment.safetyContext;
+    const contextId = attachment.safetyContextId;
+    if (
+      !targetUid ||
+      targetUid === attachment.uid ||
+      !contextType ||
+      !contextId ||
+      (attachment.safetyContextExpiresAt ?? 0) < now
+    ) {
+      send(socket, {
+        type: "peerSafetyRecorded",
+        eventId: crypto.randomUUID(),
+        success: false,
+        message: "That player interaction is no longer available to report or block.",
+      });
+      return;
+    }
+
+    const action = data.action;
+    if (action !== "report" && action !== "block") {
+      sendError(socket, "Choose a valid player safety action.");
+      return;
+    }
+
+    const reportDay = new Date(now).toISOString().slice(0, 10);
+    this.ctx.storage.sql.exec(
+      "DELETE FROM player_reports WHERE created_at < ?",
+      now - reportRetentionMs,
+    );
+    let reportRecorded = false;
+    let blocked = false;
+    if (action === "report") {
+      const reason = parsePeerReportReason(data.reason);
+      if (!reason) {
+        sendError(socket, "Choose a report reason.");
+        return;
+      }
+      const reportCount = this.ctx.storage.sql
+        .exec<{ count: number }>(
+          "SELECT COUNT(*) AS count FROM player_reports WHERE reporter_uid = ? AND report_day = ?",
+          attachment.uid,
+          reportDay,
+        )
+        .one().count;
+      const existing = [
+        ...this.ctx.storage.sql.exec<{ report_id: string }>(
+          "SELECT report_id FROM player_reports WHERE reporter_uid = ? AND reported_uid = ? AND reason = ? AND report_day = ? LIMIT 1",
+          attachment.uid,
+          targetUid,
+          reason,
+          reportDay,
+        ),
+      ][0];
+      if (!existing && reportCount >= dailyReportLimit) {
+        send(socket, {
+          type: "peerSafetyRecorded",
+          eventId: crypto.randomUUID(),
+          success: false,
+          message: "Today's report limit has been reached. You can still block this player.",
+        });
+        return;
+      }
+      if (!existing) {
+        this.ctx.storage.sql.exec(
+          "INSERT INTO player_reports (report_id, reporter_uid, reported_uid, reason, context_type, context_id, report_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          crypto.randomUUID(),
+          attachment.uid,
+          targetUid,
+          reason,
+          contextType,
+          contextId,
+          reportDay,
+          now,
+        );
+        reportRecorded = true;
+      }
+    }
+
+    const shouldBlock = action === "block" || data.block === true;
+    if (shouldBlock) {
+      this.ctx.storage.sql.exec(
+        "INSERT OR IGNORE INTO player_blocks (blocker_uid, blocked_uid, context_type, context_id, created_at) VALUES (?, ?, ?, ?, ?)",
+        attachment.uid,
+        targetUid,
+        contextType,
+        contextId,
+        now,
+      );
+      blocked = true;
+    }
+
+    const message = blocked
+      ? reportRecorded
+        ? "Report saved and player blocked. You will not be matched together again."
+        : action === "report"
+          ? "This report was already saved today. Player blocked."
+          : "Player blocked. You will not be matched together again."
+      : reportRecorded
+        ? "Report saved for review."
+        : "This report was already saved today.";
+    send(socket, {
+      type: "peerSafetyRecorded",
+      eventId: crypto.randomUUID(),
+      success: true,
+      reportRecorded,
+      blocked,
+      message,
+    });
+
+    if (blocked && attachment.state === "trading" && attachment.tradeId) {
+      const trade = this.readTrade(attachment.tradeId);
+      if (trade) {
+        await this.cancelActiveTrade(
+          trade,
+          "This trade ended because a player was blocked.",
+        );
+      }
+    }
+  }
+
   private ensureColumn(table: string, column: string, type: string): void {
     const columns = [
       ...this.ctx.storage.sql.exec<{ name: string }>(`PRAGMA table_info(${table})`),
@@ -1885,6 +2080,15 @@ function parseTradeChatTag(value: unknown): string | undefined {
     value === "no" ||
     value === "is_this_fair" ||
     value === "request_animal"
+    ? value
+    : undefined;
+}
+
+function parsePeerReportReason(value: unknown): string | undefined {
+  return value === "disruptive_conduct" ||
+    value === "suspected_cheating" ||
+    value === "trade_concern" ||
+    value === "other_safety_concern"
     ? value
     : undefined;
 }

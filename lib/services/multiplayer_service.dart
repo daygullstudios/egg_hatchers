@@ -6,6 +6,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/multiplayer.dart';
 import '../models/owned_animal.dart';
+import '../models/peer_safety.dart';
 import '../utils/web_socket_message.dart';
 import 'online_identity_token_provider.dart';
 
@@ -53,6 +54,7 @@ class MultiplayerService extends ChangeNotifier {
   MultiplayerBattleState? _battleState;
   MultiplayerEnergySpawn? _energySpawn;
   MultiplayerSettlement? _settlement;
+  PeerSafetyReceipt? _peerSafetyReceipt;
   List<OwnedAnimal>? _onlineInventory;
   int? _onlineInventoryRevision;
   String? _selfPlayerId;
@@ -67,6 +69,7 @@ class MultiplayerService extends ChangeNotifier {
   MultiplayerBattleState? get battleState => _battleState;
   MultiplayerEnergySpawn? get energySpawn => _energySpawn;
   MultiplayerSettlement? get settlement => _settlement;
+  PeerSafetyReceipt? get peerSafetyReceipt => _peerSafetyReceipt;
   List<OwnedAnimal>? get onlineInventory => _onlineInventory == null
       ? null
       : List<OwnedAnimal>.unmodifiable(_onlineInventory!);
@@ -254,6 +257,28 @@ class MultiplayerService extends ChangeNotifier {
 
   void leaveBattle() => _sendMatchMessage('leave');
 
+  void reportPeer(PeerReportReason reason, {required bool block}) {
+    _sendPeerSafety('report', reason: reason, block: block);
+  }
+
+  void blockPeer() => _sendPeerSafety('block');
+
+  void _sendPeerSafety(
+    String action, {
+    PeerReportReason? reason,
+    bool block = false,
+  }) {
+    if (_disposed || _channel == null || !isHostedServer) return;
+    _channel!.sink.add(
+      jsonEncode({
+        'type': 'peerSafety',
+        'action': action,
+        if (reason != null) 'reason': reason.wireName,
+        if (block) 'block': true,
+      }),
+    );
+  }
+
   void acknowledgeSettlement(String receiptId) {
     if (_disposed || _channel == null || receiptId.isEmpty) return;
     _channel!.sink.add(
@@ -340,6 +365,14 @@ class MultiplayerService extends ChangeNotifier {
           notifyListeners();
         } catch (_) {
           _message = 'Your Online Roster could not be verified.';
+          notifyListeners();
+        }
+      case 'peerSafetyRecorded':
+        try {
+          _peerSafetyReceipt = PeerSafetyReceipt.fromJson(data);
+          notifyListeners();
+        } catch (_) {
+          _message = 'The player safety action could not be confirmed.';
           notifyListeners();
         }
       case 'error':

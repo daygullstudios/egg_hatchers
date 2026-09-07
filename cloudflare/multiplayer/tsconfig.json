@@ -11,7 +11,7 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2023",
-    "types": ["./worker-configuration.d.ts"]
+    "types": ["./worker-configuration.d.ts", "@cloudflare/vitest-plugin/types"]
   },
   "include": ["src/**/*.ts", "test/**/*.ts", "vitest.config.ts"]
 }

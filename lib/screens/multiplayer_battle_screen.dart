@@ -17,6 +17,7 @@ import '../utils/arena_ability_visuals.dart';
 import '../utils/arena_logic.dart';
 import '../utils/format_utils.dart';
 import '../utils/game_haptics.dart';
+import '../utils/snackbar_utils.dart';
 import '../widgets/audio_scope.dart';
 import '../widgets/animal_motion.dart';
 import '../widgets/battle_ability_button.dart';
@@ -26,6 +27,7 @@ import '../widgets/battle_hit_feedback.dart';
 import '../widgets/battle_health_bar.dart';
 import '../widgets/battle_fighter_switcher.dart';
 import '../widgets/game_sprite.dart';
+import '../widgets/peer_safety_sheet.dart';
 
 class MultiplayerBattleScreen extends StatefulWidget {
   const MultiplayerBattleScreen({
@@ -73,6 +75,7 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
   var _settlementPending = false;
   var _settlementApplying = false;
   var _forfeitRequested = false;
+  String? _shownSafetyEventId;
 
   List<ArenaFighter> get _playerTeam =>
       widget.player.team.map(_arenaFighterFromSnapshot).toList(growable: false);
@@ -106,6 +109,18 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
 
   void _onMultiplayerChanged() {
     if (!mounted) return;
+    final safetyReceipt = widget.multiplayer.peerSafetyReceipt;
+    if (safetyReceipt != null && safetyReceipt.eventId != _shownSafetyEventId) {
+      _shownSafetyEventId = safetyReceipt.eventId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        showGameSnackBar(
+          context,
+          message: safetyReceipt.message,
+          duration: kGameSnackBarDurationImportant,
+        );
+      });
+    }
     final state = widget.multiplayer.battleState;
     if (state != null && state.revision != _lastRevision) {
       _lastRevision = state.revision;
@@ -307,6 +322,15 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
     widget.multiplayer.leaveBattle();
   }
 
+  void _openPlayerSafety() {
+    showPeerSafetySheet(
+      context: context,
+      opponentName: widget.opponent.displayName,
+      onReport: widget.multiplayer.reportPeer,
+      onBlock: widget.multiplayer.blockPeer,
+    );
+  }
+
   @override
   void dispose() {
     _attackTimer?.cancel();
@@ -370,6 +394,9 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                     playerEnergy: state.self.energy,
                     opponentEnergy: state.opponent.energy,
                     onLeave: _forfeitRequested ? null : _requestLeave,
+                    onSafety: widget.multiplayer.isHostedServer
+                        ? _openPlayerSafety
+                        : null,
                   ),
                   Expanded(
                     child: LayoutBuilder(
@@ -527,6 +554,9 @@ class _MultiplayerBattleScreenState extends State<MultiplayerBattleScreen> {
                       ? widget.game.onlineArenaRating
                       : widget.game.arenaRating,
                   settlementPending: _settlementPending,
+                  onSafety: widget.multiplayer.isHostedServer
+                      ? _openPlayerSafety
+                      : null,
                   onContinue: _rewardApplied ? _continue : null,
                 ),
               ),
@@ -708,12 +738,14 @@ class _OnlineBattleTopBar extends StatelessWidget {
     required this.playerEnergy,
     required this.opponentEnergy,
     required this.onLeave,
+    required this.onSafety,
   });
 
   final MultiplayerPlayerSnapshot opponent;
   final int playerEnergy;
   final int opponentEnergy;
   final VoidCallback? onLeave;
+  final VoidCallback? onSafety;
 
   @override
   Widget build(BuildContext context) {
@@ -772,6 +804,14 @@ class _OnlineBattleTopBar extends StatelessWidget {
               ),
             ],
           ),
+          if (onSafety != null)
+            IconButton(
+              key: const ValueKey('online-battle-player-safety'),
+              tooltip: 'Player safety',
+              onPressed: onSafety,
+              icon: const Icon(Icons.shield_outlined),
+              color: Colors.white,
+            ),
         ],
       ),
     );
@@ -1210,6 +1250,7 @@ class _OnlineResultOverlay extends StatelessWidget {
     required this.rosterReward,
     required this.rating,
     required this.settlementPending,
+    required this.onSafety,
     required this.onContinue,
   });
 
@@ -1219,6 +1260,7 @@ class _OnlineResultOverlay extends StatelessWidget {
   final OnlineRosterReward? rosterReward;
   final int rating;
   final bool settlementPending;
+  final VoidCallback? onSafety;
   final VoidCallback? onContinue;
 
   @override
@@ -1305,6 +1347,15 @@ class _OnlineResultOverlay extends StatelessWidget {
                   if (rosterReward case final rosterDrop?) ...[
                     const SizedBox(height: 18),
                     _OnlineRosterDrop(reward: rosterDrop),
+                  ],
+                  if (onSafety != null) ...[
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      key: const ValueKey('online-result-player-safety'),
+                      onPressed: onSafety,
+                      icon: const Icon(Icons.shield_outlined),
+                      label: const Text('REPORT OR BLOCK PLAYER'),
+                    ),
                   ],
                   const SizedBox(height: 22),
                   SizedBox(

@@ -9,6 +9,7 @@ import 'package:egg_hatchers/services/multiplayer_service.dart';
 import 'package:egg_hatchers/services/online_identity_token_provider.dart';
 import 'package:egg_hatchers/utils/battle_power_logic.dart';
 import 'package:egg_hatchers/models/owned_animal.dart';
+import 'package:egg_hatchers/models/peer_safety.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../tool/multiplayer_server.dart';
@@ -192,6 +193,41 @@ void main() {
       'type': 'ackSettlement',
       'receiptId': 'match-1:player-1',
     });
+  });
+
+  test('hosted battle sends preset player safety actions', () async {
+    final channel = ControlledLobbyChannel()..handshake.complete();
+    final service = MultiplayerService(
+      serverUri: Uri.parse('wss://egg-hatchers-playtest.daygullstudios.com/ws'),
+      identityTokenProvider: _TokenProvider('firebase-token'),
+      hostedMultiplayerEnabled: true,
+      channelFactory: (uri, {protocols}) => channel,
+    );
+    addTearDown(() {
+      service.dispose();
+      channel.finish();
+    });
+    await service.connect();
+
+    service.reportPeer(PeerReportReason.suspectedCheating, block: true);
+    expect(jsonDecode(channel.sink.messages.last as String), {
+      'type': 'peerSafety',
+      'action': 'report',
+      'reason': 'suspected_cheating',
+      'block': true,
+    });
+    channel.incoming.add(
+      jsonEncode({
+        'type': 'peerSafetyRecorded',
+        'eventId': 'safety-1',
+        'success': true,
+        'reportRecorded': true,
+        'blocked': true,
+        'message': 'Report saved and player blocked.',
+      }),
+    );
+    expect(service.peerSafetyReceipt?.eventId, 'safety-1');
+    expect(service.peerSafetyReceipt?.blocked, isTrue);
   });
 
   test(

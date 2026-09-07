@@ -84,11 +84,12 @@ test('draft cannot be deployed, and alternate public aliases remain disabled', a
   await assert.rejects(verifyRelease(), /Publication blocked: policyAndSupportCopyApproved, hostnameAndHeadersVerified/);
 });
 
-test('family-audience draft distinguishes intent from controls and automatic connections', () => {
+test('family-audience draft distinguishes intent from controls and requested online play', () => {
   const privacy = html.get('privacy.html');
   assert.match(privacy, /includes ages 8–12 alongside teens and adults/);
   assert.match(privacy, /automatically attempt to establish a Firebase Authentication identity/);
-  assert.match(privacy, /automatically attempts a lobby connection/);
+  assert.match(privacy, /when a player enters Online Arena or Online Trading/);
+  assert.doesNotMatch(privacy, /automatically attempts a lobby connection/);
   assert.match(privacy, /does not yet implement an age-assessment or parent-permission boundary/);
   assert.doesNotMatch(privacy, /When you join an available online test/);
   assert.match(html.get('terms.html'), /does not establish recorded player assent, verify a parent/);

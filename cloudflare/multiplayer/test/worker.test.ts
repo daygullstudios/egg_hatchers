@@ -1,4 +1,5 @@
 import { env, exports } from "cloudflare:workers";
+import { evictDurableObject } from "cloudflare:test";
 import { SignJWT, importJWK } from "jose";
 import { describe, expect, it } from "vitest";
 
@@ -345,6 +346,126 @@ describe("multiplayer edge authentication", () => {
     );
     reconnected.close(1000, "done");
     second.close(1000, "done");
+  });
+
+  it("records preset reports and persists two-way matchmaking blocks", async () => {
+    const firstToken = await tokenFor("safety-owner-a");
+    const secondToken = await tokenFor("safety-owner-b");
+    const firstResponse = await openSocket(firstToken);
+    const secondResponse = await openSocket(secondToken);
+    const first = firstResponse.webSocket!;
+    const second = secondResponse.webSocket!;
+    first.accept();
+    second.accept();
+    const firstMessages = messages(first);
+    const secondMessages = messages(second);
+
+    first.send(JSON.stringify({ type: "queueTrade" }));
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "tradeQueued",
+    });
+    second.send(JSON.stringify({ type: "queueTrade" }));
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "tradeState",
+    });
+    await expect(secondMessages.next()).resolves.toMatchObject({
+      type: "tradeState",
+    });
+
+    await evictDurableObject(
+      env.MATCHMAKING.getByName(env.MATCHMAKING_POOL),
+    );
+
+    first.send(
+      JSON.stringify({
+        type: "peerSafety",
+        action: "report",
+        reason: "trade_concern",
+        block: true,
+      }),
+    );
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "peerSafetyRecorded",
+      success: true,
+      reportRecorded: true,
+      blocked: true,
+      message: expect.stringContaining("not be matched"),
+    });
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "tradeCancelled",
+      message: expect.stringContaining("blocked"),
+    });
+    await expect(secondMessages.next()).resolves.toMatchObject({
+      type: "tradeCancelled",
+      message: expect.stringContaining("blocked"),
+    });
+
+    first.send(
+      JSON.stringify({
+        type: "peerSafety",
+        action: "report",
+        reason: "trade_concern",
+      }),
+    );
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "peerSafetyRecorded",
+      success: true,
+      reportRecorded: false,
+      blocked: false,
+      message: expect.stringContaining("already saved"),
+    });
+
+    first.send(JSON.stringify({ type: "queueTrade" }));
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "tradeQueued",
+    });
+    second.send(JSON.stringify({ type: "queueTrade" }));
+    await expect(secondMessages.next()).resolves.toMatchObject({
+      type: "tradeQueued",
+    });
+
+    first.send(JSON.stringify({ type: "cancelTrade" }));
+    second.send(JSON.stringify({ type: "cancelTrade" }));
+    await expect(firstMessages.next()).resolves.toMatchObject({ type: "ready" });
+    await expect(secondMessages.next()).resolves.toMatchObject({ type: "ready" });
+
+    first.send(JSON.stringify({ type: "queue", player: player("safety-a") }));
+    await expect(firstMessages.next()).resolves.toMatchObject({ type: "queued" });
+    second.send(JSON.stringify({ type: "queue", player: player("safety-b") }));
+    await expect(secondMessages.next()).resolves.toMatchObject({ type: "queued" });
+
+    first.close(1000, "done");
+    second.close(1000, "done");
+  });
+
+  it("retires a duplicate identity session before accepting its replacement", async () => {
+    const token = await tokenFor("duplicate-session-owner");
+    const firstResponse = await openSocket(token);
+    const first = firstResponse.webSocket!;
+    first.accept();
+    const firstMessages = messages(first);
+    const firstClosed = new Promise<CloseEvent>((resolve) => {
+      first.addEventListener("close", resolve, { once: true });
+    });
+    first.send(JSON.stringify({ type: "queueTrade" }));
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "tradeQueued",
+    });
+
+    const replacementResponse = await openSocket(token);
+    expect(replacementResponse.status).toBe(101);
+    await expect(firstClosed).resolves.toMatchObject({
+      code: 4001,
+      reason: expect.stringContaining("newer multiplayer session"),
+    });
+    const replacement = replacementResponse.webSocket!;
+    replacement.accept();
+    const replacementMessages = messages(replacement);
+    replacement.send(JSON.stringify({ type: "queueTrade" }));
+    await expect(replacementMessages.next()).resolves.toMatchObject({
+      type: "tradeQueued",
+    });
+    replacement.close(1000, "done");
   });
 
   it("pauses and resumes a server-run battle after a verified reconnect", async () => {

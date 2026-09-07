@@ -147,8 +147,10 @@ trade now pass on the protected deployment. Hosted online rating and win/loss/
 streak history remain isolated from Rival Arena. Each UID's first completed
 hosted match per UTC day now grants one server-owned roster copy to both players
 from a rating-gated pool; a unique daily grant row prevents repeat farming.
-Reviewed family capabilities, block/report/abuse controls, remaining failure/
-restart coverage and representative human/device acceptance remain open. See
+Preset-only report/block controls, two-way match exclusion, Durable Object
+eviction/hibernation and duplicate-session replacement now pass automated
+acceptance. Reviewed family capabilities, basic load/capacity and representative
+human/device acceptance remain open. See
 `PROJECT_HANDOFF.md` for exact versions/evidence.
 
 Web lifecycle acceptance now includes a versioned selective resume coordinator:
@@ -621,13 +623,21 @@ The actual gaps are bounded into four completion packages:
    chat/voice, public-art expansion or new social modes. Acceptance: restricted
    accounts cannot bypass capabilities through lobby startup, invites, deep links,
    reconnects or another profile; allowed family play works with preset messages.
+   The isolated safety slice is complete: the server derives the current peer,
+   accepts only four preset report reasons, deduplicates/rate-limits reports and
+   enforces blocks across both future battle and trade matchmaking. Active trade
+   blocks cancel before inventory moves; battle outcomes are unchanged. Final
+   age/guardian capabilities, review/deletion operations and a user-managed
+   blocked-player list remain open.
 4. **Failure recovery and one integrated acceptance:** hosted sessions, battles,
    inventories, trades and receipts are Durable Object SQLite state. Battle
    disconnects pause for 30 seconds and expiry creates no result; confirmed
    forfeits settle normally. A trade disconnect before both confirmations now has
    explicit test evidence that both rosters remain unchanged. Finish Durable
-   Object restart/hibernation, duplicate-session, basic abuse/load and two-device
-   play acceptance using disposable accounts.
+   Object eviction/hibernation and duplicate-session replacement now pass
+   automated Worker acceptance, including a safety action processed after the
+   active socket is hibernated and restored. Basic load/capacity and two-device
+   play acceptance using disposable accounts remain open.
    Reuse focused checks while implementing; join the single consolidated RC
    milestone rather than repeating a full release matrix after every patch.
 

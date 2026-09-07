@@ -16,6 +16,7 @@ import '../widgets/game_sprite.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/online_lobby_scope.dart';
 import '../widgets/online_player_list.dart';
+import '../widgets/peer_safety_sheet.dart';
 
 class OnlineTradingScreen extends StatefulWidget {
   const OnlineTradingScreen({
@@ -47,6 +48,7 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
   var _completionApplied = false;
   var _joinedDirectRoom = false;
   String? _shownCancellation;
+  String? _shownSafetyEventId;
 
   List<OwnedAnimal> get _availableInventory => _trading.isHostedServer
       ? (_trading.onlineInventory ?? const [])
@@ -67,6 +69,18 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
     if (!mounted) return;
     final completion = _trading.completion;
     final cancellation = _trading.cancellationMessage;
+    final safetyReceipt = _trading.peerSafetyReceipt;
+    if (safetyReceipt != null && safetyReceipt.eventId != _shownSafetyEventId) {
+      _shownSafetyEventId = safetyReceipt.eventId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        showGameSnackBar(
+          context,
+          message: safetyReceipt.message,
+          duration: kGameSnackBarDurationImportant,
+        );
+      });
+    }
     if (cancellation != null && cancellation != _shownCancellation) {
       _shownCancellation = cancellation;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -183,6 +197,15 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
         return;
       }
     }
+  }
+
+  void _openPlayerSafety(String opponentName) {
+    showPeerSafetySheet(
+      context: context,
+      opponentName: opponentName,
+      onReport: _trading.reportPeer,
+      onBlock: _trading.blockPeer,
+    );
   }
 
   @override
@@ -318,7 +341,13 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
     return ListView(
       padding: const EdgeInsets.all(14),
       children: [
-        _TraderBanner(account: trade.opponent, opponent: true),
+        _TraderBanner(
+          account: trade.opponent,
+          opponent: true,
+          onSafety: _trading.isHostedServer
+              ? () => _openPlayerSafety(trade.opponent.displayName)
+              : null,
+        ),
         const SizedBox(height: 14),
         _StatusPanel(
           icon: Icons.sync_alt,
@@ -396,6 +425,8 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
 
   Widget _completeView() {
     final completion = _trading.completion!;
+    final opponentName =
+        _trading.trade?.opponent.displayName ?? 'the other player';
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -421,6 +452,15 @@ class _OnlineTradingScreenState extends State<OnlineTradingScreen> {
           confirmed: true,
           customSprites: widget.customSprites,
         ),
+        if (_trading.isHostedServer) ...[
+          const SizedBox(height: 10),
+          TextButton.icon(
+            key: const ValueKey('online-trade-result-player-safety'),
+            onPressed: () => _openPlayerSafety(opponentName),
+            icon: const Icon(Icons.shield_outlined),
+            label: const Text('REPORT OR BLOCK PLAYER'),
+          ),
+        ],
         const SizedBox(height: 22),
         SizedBox(
           height: 52,
@@ -447,9 +487,14 @@ bool _sameAnimal(OwnedAnimal first, OwnedAnimal? second) {
 }
 
 class _TraderBanner extends StatelessWidget {
-  const _TraderBanner({required this.account, this.opponent = false});
+  const _TraderBanner({
+    required this.account,
+    this.opponent = false,
+    this.onSafety,
+  });
   final PlayerAccount account;
   final bool opponent;
+  final VoidCallback? onSafety;
 
   @override
   Widget build(BuildContext context) {
@@ -500,6 +545,14 @@ class _TraderBanner extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
+          if (onSafety != null)
+            IconButton(
+              key: const ValueKey('online-trade-player-safety'),
+              tooltip: 'Player safety',
+              onPressed: onSafety,
+              icon: const Icon(Icons.shield_outlined),
+              color: const Color(0xFF83E6C1),
+            ),
         ],
       ),
     );

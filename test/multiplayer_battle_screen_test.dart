@@ -307,6 +307,18 @@ void main() {
     );
     await tester.pump();
 
+    expect(
+      find.byKey(const ValueKey('online-battle-player-safety')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('online-battle-player-safety')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Player safety'), findsOneWidget);
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
     await tester.tap(find.byTooltip('Leave battle'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));

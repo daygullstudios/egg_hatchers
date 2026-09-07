@@ -6,6 +6,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../models/online_trade.dart';
 import '../models/owned_animal.dart';
+import '../models/peer_safety.dart';
 import '../utils/web_socket_message.dart';
 import 'multiplayer_service.dart';
 import 'online_identity_token_provider.dart';
@@ -47,6 +48,7 @@ class TradingService extends ChangeNotifier {
   List<OwnedAnimal>? _onlineInventory;
   int? _onlineInventoryRevision;
   String? _completionReceiptId;
+  PeerSafetyReceipt? _peerSafetyReceipt;
   final List<TradeChatMessage> _chatMessages = [];
   var _disposed = false;
 
@@ -61,6 +63,7 @@ class TradingService extends ChangeNotifier {
       ? null
       : List<OwnedAnimal>.unmodifiable(_onlineInventory!);
   int? get onlineInventoryRevision => _onlineInventoryRevision;
+  PeerSafetyReceipt? get peerSafetyReceipt => _peerSafetyReceipt;
 
   Future<void> connect() async {
     if (_channel != null || _disposed) return;
@@ -170,6 +173,28 @@ class TradingService extends ChangeNotifier {
 
   void leaveTrade() => _send('leaveTrade');
 
+  void reportPeer(PeerReportReason reason, {required bool block}) {
+    _sendPeerSafety('report', reason: reason, block: block);
+  }
+
+  void blockPeer() => _sendPeerSafety('block');
+
+  void _sendPeerSafety(
+    String action, {
+    PeerReportReason? reason,
+    bool block = false,
+  }) {
+    if (_disposed || _channel == null || !isHostedServer) return;
+    _channel!.sink.add(
+      jsonEncode({
+        'type': 'peerSafety',
+        'action': action,
+        if (reason != null) 'reason': reason.wireName,
+        if (block) 'block': true,
+      }),
+    );
+  }
+
   void acknowledgeCompletion() {
     final receiptId = _completionReceiptId;
     if (receiptId == null || _channel == null) return;
@@ -241,6 +266,14 @@ class TradingService extends ChangeNotifier {
         _message = data['message'] as String? ?? 'The trade was cancelled.';
         _cancellationMessage = _message;
         _setState(TradingConnectionState.ready);
+      case 'peerSafetyRecorded':
+        try {
+          _peerSafetyReceipt = PeerSafetyReceipt.fromJson(data);
+          notifyListeners();
+        } catch (_) {
+          _message = 'The player safety action could not be confirmed.';
+          notifyListeners();
+        }
       case 'error':
         _message = data['message'] as String? ?? 'Trading failed.';
         if (_state == TradingConnectionState.searching) {

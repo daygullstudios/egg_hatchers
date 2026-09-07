@@ -29,9 +29,23 @@ Cloudflare Access application.
   Hosted trades exchange both roster items in one SQLite transaction, preserve
   pending receipts until acknowledgement, and cancel without moving either item
   if a player leaves or disconnects before the commit.
+- Active battle and trade screens expose one preset-only player-safety flow.
+  The server derives the reported peer from the authenticated session rather
+  than accepting a client-supplied account ID. Reports store only opaque UIDs,
+  one approved reason, activity context and timestamps; free text is not
+  accepted. Duplicate same-reason reports are ignored per UTC day and each
+  reporter is limited to ten unique reports per day.
+- A block applies in both directions for future battle and trade matchmaking.
+  Blocking during a trade cancels it before inventory can move; blocking during
+  a battle does not alter its outcome. The safety context remains usable for one
+  hour so the result screen can still report the just-completed interaction.
 - Match, settlement, roster, trade and receipt records are durable SQLite rows.
   Open sockets use Durable Object WebSocket hibernation and serialized
   attachments. Local development WebSockets keep the existing sandbox behavior.
+  Automated acceptance evicts the active Durable Object while a trade socket is
+  hibernated, then records a report/block through the restored attachment. A
+  separate replacement test proves a newer socket retires an older session for
+  the same Firebase UID.
 
 The one named playtest pool is intentionally a small protected vertical slice,
 not a production capacity or sharding promise. Changing its name would create a

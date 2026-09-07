@@ -52,6 +52,10 @@ attached.
   the separate server-owned Online Roster and never mutate the Hatchery
   Collection. The first completed hosted match per UTC day adds one server-owned
   roster animal for each participant; its settlement receipt is replay-safe.
+- Hosted battle and trade interactions include preset-only report and block
+  controls. Peer identity is resolved server-side, blocks apply to both future
+  battle and trade matching, and blocking an active trade cancels before either
+  Online Roster can change.
 
 ## Local verification
 
