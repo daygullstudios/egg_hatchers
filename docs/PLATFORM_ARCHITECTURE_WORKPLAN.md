@@ -617,11 +617,13 @@ The private delivery boundary is now scaffolded in `cloudflare/playtest` as a
 Workers Static Assets application. It deliberately has no public preview URL or
 public preview route. The selected temporary hostname is
 `egg-hatchers-playtest.daygullstudios.com`, protected by a dedicated Cloudflare
-Access application that reuses Railcade's approved-tester policy. The Flutter
+Access application that reuses Railcade's approved-tester policy. That temporary
+hostname was retired after the Nestarium cutover; `playtest.playnestarium.com`
+is now the only routed private game origin. The Flutter
 web build also ships private-cache, no-index, and baseline browser hardening
 headers. This permits private release verification without committing to the
 final product name. Nestarium is now selected; the original origin is retained
-for save continuity until the staged hostname's migration gates pass.
+for save continuity only until the staged hostname's migration gates passed.
 
 The first routed release is deployed. Unauthenticated checks against both the
 app shell and compiled JavaScript are redirected to Cloudflare Access, while

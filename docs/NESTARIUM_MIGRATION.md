@@ -63,11 +63,11 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
 - Firebase project `egg-hatchers-dev`, app IDs, API keys, bucket, default auth
   handler domains, bundle registrations and any OAuth client identifiers stay
   unchanged. Display names can change without replacing these resources.
-- Worker `egg-hatchers-playtest` retains its identity and old hostname while
-  `playtest.playnestarium.com` is now the primary protected origin. This
-  preserves deployment history, rollback, browser saves and sessions.
-  No redirect is installed. Route paths, WebSocket protocol and local port
-  53218 remain stable. Old environment options continue to work.
+- Worker `egg-hatchers-playtest` retains its private resource identity for
+  deployment history and rollback, but its old Daygull hostname was retired on
+  2026-09-08. `playtest.playnestarium.com` is the only protected game origin.
+  No redirect is installed. Route paths, WebSocket protocol, local port 53218,
+  and old environment-option fallbacks remain stable.
 - Durable Object generation `protected-v1` remains an exact compatibility data
   address for existing Online Rosters, receipts and safety state. The versioned
   router deliberately refuses to reinterpret it as a shard prefix. Any public
@@ -101,8 +101,9 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
   cloud-sync behavior and existing protected-identity restoration remain.
 - Access application `2ed23c5f-4d30-42e9-83c4-90b4e24c2135` is now **Nestarium
   private playtest**, retaining its single existing tester policy and 24-hour
-  session. It protects the old hostname, staged `playtest.playnestarium.com`,
-  and isolated `nestarium-mp-canary.daygullstudios.com` backend canary. API
+  session. Its saved dashboard configuration still lists the now-unrouted old
+  hostname alongside `playtest.playnestarium.com` and the isolated
+  `nestarium-mp-canary.daygullstudios.com` backend canary. API
   writes returned error 1010 without changes;
   the authenticated dashboard completed the update, verified by API read-back.
 - Access's eager cookie redirects initially sent an approved login through the
@@ -117,9 +118,8 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
   reviewed Nestarium-specific Access identity is a remaining infrastructure
   action, not a reason to weaken the playtest gate.
 - `playnestarium.com` now serves only the public, non-playable information site.
-  `playtest.playnestarium.com` is the primary private game origin and the legacy
-  Daygull hostname remains a compatibility/recovery origin. Both static and
-  `/ws*` routes are covered by the existing Nestarium Access application;
+  `playtest.playnestarium.com` is the only routed private game origin. Both its
+  static and `/ws*` routes are covered by the existing Nestarium Access application;
   workers.dev and preview aliases remain disabled.
 - The separate multiplayer canary is intentionally routed only at its legacy
   Daygull Studios test hostname. It does not attach, redirect or publish either
@@ -165,13 +165,13 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
    guest linking preserves the UID and cloud document, then prove recovery
    from a second browser. Native OAuth/SHA configuration still needs its own
    acceptance; Apple signing/build/device work remains on the Mac.
-4. The new hostname is routed with Access rejection verified for HTML, compiled
-   assets and `/ws/health`; TLS/public DNS and Firebase authorization are ready,
-   and the old protected origin remains a recovery route. Browser localStorage,
+4. The Nestarium hostname is routed with Access rejection verified for HTML,
+   compiled assets and `/ws/health`; TLS/public DNS and Firebase authorization
+   are ready. The old protected origin was retired without redirect. Browser localStorage,
    IndexedDB and anonymous Firebase credentials do **not** move automatically
    between hostnames. Export/import
    copies local progress/settings only; it does not preserve an anonymous UID.
-   Do not redirect old-origin players or tell them to clear browser data.
+   Do not claim that old-origin browser identity or local data migrated.
 5. Update existing App Store/Google Play product names, descriptions, icons,
    screenshots, support/privacy URLs and any console-only titles at the next
    reviewed release. Store records and current listing availability were not

@@ -14,10 +14,6 @@ test("playtest publishes only to the Access-protected hostname", async () => {
   assert.equal(config.preview_urls, false);
   assert.deepEqual(config.routes, [
     {
-      pattern: "egg-hatchers-playtest.daygullstudios.com",
-      custom_domain: true,
-    },
-    {
       pattern: "playtest.playnestarium.com",
       custom_domain: true,
     },
@@ -29,18 +25,17 @@ test("playtest publishes only to the Access-protected hostname", async () => {
   assert.equal(config.observability?.enabled, true);
 });
 
-test("Nestarium's protected hostname retains the legacy recovery origin", async () => {
+test("Nestarium's protected hostname is the only routed playtest origin", async () => {
   const config = JSON.parse(await readFile(configUrl, "utf8"));
   const identity = JSON.parse(await readFile(identityUrl, "utf8"));
   assert.equal(identity.productName, "Nestarium");
   assert.equal(identity.publicDomain, "playnestarium.com");
   assert.equal(identity.stagedHostnameRouted, true);
+  assert.equal(identity.legacyHostnameRouted, false);
   assert.equal(identity.accessEagerRedirectCookie, false);
   assert.equal(config.name, identity.workerName);
-  assert.deepEqual(config.routes.map(route => route.pattern), [
-    identity.compatibilityPlaytestHostname,
-    identity.activePlaytestHostname,
-  ]);
+  assert.deepEqual(config.routes.map(route => route.pattern), [identity.activePlaytestHostname]);
+  assert.ok(!config.routes.some(route => route.pattern === identity.retiredPlaytestHostname));
   assert.ok(config.routes.every(route => route.pattern !== identity.publicDomain));
   const html = await readFile(new URL("../../../web/index.html", import.meta.url), "utf8");
   const manifest = JSON.parse(await readFile(new URL("../../../web/manifest.json", import.meta.url), "utf8"));
@@ -49,7 +44,7 @@ test("Nestarium's protected hostname retains the legacy recovery origin", async 
   assert.equal(manifest.short_name, identity.productName);
 });
 
-test("both protected hostnames have a matching multiplayer route", async () => {
+test("the protected Nestarium hostname has a matching multiplayer route", async () => {
   const config = JSON.parse(await readFile(configUrl, "utf8"));
   const multiplayer = JSON.parse(
     await readFile(new URL("../../multiplayer/wrangler.jsonc", import.meta.url), "utf8"),

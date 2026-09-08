@@ -2,11 +2,13 @@
 
 This directory is the checked-in Cloudflare delivery boundary for the compiled
 Nestarium Flutter web game. `deployment_identity.json` records its product
-identity, active compatibility origin, staged hostname, and release gates.
+identity, active hostname, retired origin, and release gates.
 
-The playtest publishes to the primary protected Nestarium hostname
-`playtest.playnestarium.com` and retains
-`egg-hatchers-playtest.daygullstudios.com` as a compatibility/recovery origin.
+The playtest publishes only to the protected Nestarium hostname
+`playtest.playnestarium.com`. The former
+`egg-hatchers-playtest.daygullstudios.com` compatibility origin was explicitly
+retired on 2026-09-08 after the owner accepted its origin-scoped save/session
+migration risk.
 `workers_dev` and preview URLs stay disabled, so Cloudflare does not create an
 unprotected alternate game URL.
 
@@ -17,27 +19,20 @@ information site and never serves the Flutter build. Do not add an apex,
 wildcard, preview, or workers.dev game route as a shortcut.
 
 The Worker resource name stays `egg-hatchers-playtest` to retain deployment
-history and rollback continuity. The current browser origin remains available
-without a redirect because browser saves and anonymous credentials are
-origin-scoped. Its self-hosted Cloudflare Access application is
+history, rollback continuity and compatibility identifiers. Its self-hosted
+Cloudflare Access application is
 `2ed23c5f-4d30-42e9-83c4-90b4e24c2135`, displayed as **Nestarium private
 playtest**, and reuses the established approved-tester allow policy. The policy
 itself remains managed in Cloudflare;
 tester email addresses and credentials are never checked into the repository.
 
-Keep this application's **Eager redirect cookie** setting off. Access issues
-authorization cookies when each hostname is visited, and the compatibility
-origin must remain independently recoverable. The tester policy and 24-hour
-session duration remain unchanged.
+Keep this application's **Eager redirect cookie** setting off. The tester policy
+and 24-hour session duration remain unchanged.
 
-The first dual-host Nestarium release is Worker version
-`8dba06c0-c4e5-493d-940a-5fe51dd5547c`. Multiplayer Worker version
-`b9f5966f-bc59-4ef2-8264-920658886c07` owns `/ws*` on both protected hosts.
-Direct unauthenticated requests to `/`, `/main.dart.js`, and `/ws/health` on
-both origins return Cloudflare Access redirects, confirming that the HTML,
-compiled game bundle, and online route are protected. Recursive DNS may take a
-few minutes to replace an earlier negative lookup after the custom domain is
-first attached.
+The legacy hostname retirement release is static Worker version
+`addf225a-6d3f-4d19-9201-11d9d8a7db9c` and multiplayer Worker version
+`7e5a1674-7389-40d8-aefb-0bdce354fdec`. Both now route only through
+`playtest.playnestarium.com`; the old hostname resolves NXDOMAIN.
 
 ## Release boundary
 

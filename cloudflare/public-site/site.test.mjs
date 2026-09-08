@@ -93,7 +93,6 @@ test('release gate approves only the public apex and never the protected game', 
   const playtest = JSON.parse(await readFile(join(root, '../playtest/wrangler.jsonc'), 'utf8'));
   assert.notEqual(config.name, playtest.name);
   assert.deepEqual(playtest.routes, [
-    { pattern: 'egg-hatchers-playtest.daygullstudios.com', custom_domain: true },
     { pattern: 'playtest.playnestarium.com', custom_domain: true },
   ]);
 });

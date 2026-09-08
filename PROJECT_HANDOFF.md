@@ -2,6 +2,33 @@
 
 Updated: 2026-09-08
 
+## Legacy Daygull playtest hostname retired
+
+At the owner's direction on 2026-09-08,
+`egg-hatchers-playtest.daygullstudios.com` was retired rather than retained as a
+compatibility origin. The static and `/ws*` Wrangler routes were removed and
+deployed. Cloudflare public DNS then returned NXDOMAIN and HTTPS could no longer
+resolve the hostname. `playtest.playnestarium.com` remains healthy behind Access
+(anonymous HTTP 302). Current versions are static Worker
+`addf225a-6d3f-4d19-9201-11d9d8a7db9c` and multiplayer Worker
+`7e5a1674-7389-40d8-aefb-0bdce354fdec`.
+
+The retired hostname was also removed from Firebase Authentication's authorized
+domains by a narrow Identity Toolkit update; read-back preserves localhost, the
+two Firebase defaults, `playtest.playnestarium.com`, and `playnestarium.com`.
+Worker resource/package/Firebase IDs and all Durable Object/D1 data remain
+unchanged. There is no redirect, and browser storage, anonymous identity and
+Access cookies from the old origin did not migrate.
+
+One control-plane cleanup remains: Cloudflare Access application
+`2ed23c5f-4d30-42e9-83c4-90b4e24c2135` still lists the dead legacy hostname as
+a destination. Its dashboard edit was staged but deliberately not saved because
+the UI action required a final confirmation, and the browser connection then
+ended. Remove only that destination; preserve `playtest.playnestarium.com`,
+`nestarium-mp-canary.daygullstudios.com`, policy `Tony — Google access`, the
+24-hour session and all other settings. The stale Access entry does not make the
+NXDOMAIN hostname reachable.
+
 ## Disposable Firestore QA reset
 
 On 2026-09-08, with the owner's explicit confirmation that all current
@@ -100,16 +127,13 @@ protected Nestarium hostname migration remain separate gates.
 
 ## Primary protected Nestarium hostname is live
 
-`https://playtest.playnestarium.com/` is now the primary private game origin.
-The existing `https://egg-hatchers-playtest.daygullstudios.com/` remains live
-without redirect as a compatibility/recovery origin because browser storage,
-guest Firebase identity and Access cookies are origin-scoped. The static Worker
-keeps its legacy resource identity and is version
-`8dba06c0-c4e5-493d-940a-5fe51dd5547c`; multiplayer version
-`b9f5966f-bc59-4ef2-8264-920658886c07` owns `/ws*` on both hosts.
+`https://playtest.playnestarium.com/` is now the only routed private game
+origin. The former Daygull compatibility hostname was retired as documented in
+the current checkpoint above. The static Worker keeps its legacy resource
+identity only for deployment and rollback continuity.
 
-Cloudflare public DNS resolves the new host. Anonymous `/`, `/main.dart.js` and
-`/ws/health` requests receive Access 302 on both origins. This PC's ISP gateway
+Cloudflare public DNS resolves the Nestarium host. Anonymous `/`,
+`/main.dart.js` and `/ws/health` requests receive Access 302. This PC's ISP gateway
 continued serving its prior negative DNS cache after OS flush, so authenticated
 visual acceptance on the new host remains pending until that recursive cache
 expires or the network resolver refreshes; direct public-resolver/live-origin

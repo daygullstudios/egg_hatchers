@@ -6,10 +6,6 @@
   "preview_urls": false,
   "routes": [
     {
-      "pattern": "egg-hatchers-playtest.daygullstudios.com",
-      "custom_domain": true
-    },
-    {
       "pattern": "playtest.playnestarium.com",
       "custom_domain": true
     }

@@ -21,7 +21,15 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 9,
+      "line": 8,
+      "references": [
+        "egg-hatchers-playtest"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 36,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -29,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 11,
+      "line": 38,
       "references": [
         "egg_hatchers"
       ],
@@ -37,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 104,
+      "line": 424,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -45,15 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 400,
-      "references": [
-        "egg-hatchers-playtest"
-      ],
-      "reason": "Documented compatibility identity, origin, or migration history."
-    },
-    {
-      "path": "PROJECT_HANDOFF.md",
-      "line": 506,
+      "line": 530,
       "references": [
         "egghatchers.game"
       ],
@@ -61,7 +61,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 562,
+      "line": 586,
       "references": [
         "egg_hatchers"
       ],
@@ -69,7 +69,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1399,
+      "line": 1423,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -77,7 +77,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1580,
+      "line": 1604,
       "references": [
         "egghatchers.game"
       ],
@@ -85,7 +85,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1607,
+      "line": 1631,
       "references": [
         "egg_hatchers"
       ],
@@ -93,7 +93,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1687,
+      "line": 1711,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -101,7 +101,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1705,
+      "line": 1729,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -109,7 +109,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1712,
+      "line": 1736,
       "references": [
         "egg_hatchers"
       ],
@@ -197,15 +197,7 @@
     },
     {
       "path": "cloudflare/multiplayer/wrangler.jsonc",
-      "line": 10,
-      "references": [
-        "egg-hatchers-playtest"
-      ],
-      "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
-    },
-    {
-      "path": "cloudflare/multiplayer/wrangler.jsonc",
-      "line": 19,
+      "line": 15,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -221,7 +213,7 @@
     },
     {
       "path": "cloudflare/playtest/README.md",
-      "line": 19,
+      "line": 21,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -252,14 +244,6 @@
       "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
     },
     {
-      "path": "cloudflare/playtest/test/config_test.mjs",
-      "line": 17,
-      "references": [
-        "egg-hatchers-playtest"
-      ],
-      "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
-    },
-    {
       "path": "cloudflare/playtest/wrangler.jsonc",
       "line": 3,
       "references": [
@@ -268,24 +252,8 @@
       "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
     },
     {
-      "path": "cloudflare/playtest/wrangler.jsonc",
-      "line": 9,
-      "references": [
-        "egg-hatchers-playtest"
-      ],
-      "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
-    },
-    {
       "path": "cloudflare/public-site/build.mjs",
       "line": 42,
-      "references": [
-        "egg-hatchers-playtest"
-      ],
-      "reason": "Existing protected origin/Worker; preserves browser storage and deployment history."
-    },
-    {
-      "path": "cloudflare/public-site/site.test.mjs",
-      "line": 96,
       "references": [
         "egg-hatchers-playtest"
       ],
