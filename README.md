@@ -15,6 +15,12 @@ See [the Nestarium migration record](docs/NESTARIUM_MIGRATION.md) and
 The repository, private Dart package, and persisted technical identifiers keep
 their original names for compatibility; the product name is Nestarium.
 
+The approved launch monetization model is free core play with carefully placed
+banner ads and a **$2.99 lifetime Remove Ads** purchase. The implementation is
+currently dormant: ordinary/playtest builds request no ads and expose no
+checkout until the family, consent, provider, store and release gates in
+[the monetization operations plan](docs/MONETIZATION_AND_AD_OPERATIONS.md) pass.
+
 ## Run the game
 
 ### Importing a save safely

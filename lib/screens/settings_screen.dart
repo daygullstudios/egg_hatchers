@@ -8,6 +8,8 @@ import '../models/account_protection_state.dart';
 import '../models/progress_sync_state.dart';
 import '../models/background_theme.dart';
 import '../models/player_account.dart';
+import '../monetization/monetization_controller.dart';
+import '../monetization/monetization_policy.dart';
 import '../navigation/app_page_route.dart';
 import '../services/account_protection_service.dart';
 import '../services/game_service.dart';
@@ -48,7 +50,13 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-enum _SettingsPanel { accountAndSaves, tutorial, soundAndFeedback, appearance }
+enum _SettingsPanel {
+  accountAndSaves,
+  tutorial,
+  soundAndFeedback,
+  appearance,
+  monetization,
+}
 
 enum _AppearancePanel { backgrounds, animalStyle }
 
@@ -264,6 +272,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _purchaseAdFree(BuildContext context) async {
+    final protected =
+        AccountProtectionScope.maybeOf(context)?.state.isProtected ?? false;
+    final result = await MonetizationController.instance.purchaseAdFree(
+      accountProtected: protected,
+    );
+    if (!context.mounted) return;
+    if (result.success) UiSound.confirm(context);
+    showGameSnackBar(
+      context,
+      message: result.message,
+      backgroundColor: result.success
+          ? preferences.selectedTheme.primaryColor
+          : Colors.redAccent,
+    );
+  }
+
+  Future<void> _restoreAdFree(BuildContext context) async {
+    final protected =
+        AccountProtectionScope.maybeOf(context)?.state.isProtected ?? false;
+    final result = await MonetizationController.instance.restoreAdFree(
+      accountProtected: protected,
+    );
+    if (!context.mounted) return;
+    if (result.success) UiSound.confirm(context);
+    showGameSnackBar(
+      context,
+      message: result.message,
+      backgroundColor: result.success
+          ? preferences.selectedTheme.primaryColor
+          : Colors.redAccent,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -281,6 +323,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         final syncState =
             progressSync?.state ?? const ProgressSyncState.unavailable();
         final audio = AudioScope.of(context);
+        final monetization = MonetizationController.instance;
 
         return ReturnToHatcheryPopScope(
           theme: selected,
@@ -668,6 +711,134 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                             ],
                           ),
+                        ),
+                        ListenableBuilder(
+                          listenable: monetization,
+                          builder: (context, _) {
+                            if (!monetization.purchasesConfigured &&
+                                !monetization.hasAdFree) {
+                              return const SizedBox.shrink();
+                            }
+                            final protectedPurchase =
+                                protection.isProtected && account != null;
+                            final price =
+                                monetization.localizedAdFreePrice ??
+                                NestariumMonetizationPolicy
+                                    .defaultAdFreePriceLabel;
+                            return _SettingsAccordionSection(
+                              key: const ValueKey(
+                                'settings-panel-monetization',
+                              ),
+                              theme: selected,
+                              icon: Icons.block_rounded,
+                              title: 'Ads & Purchases',
+                              summary: monetization.hasAdFree
+                                  ? 'Ad-free forever'
+                                  : 'Remove ads forever · $price',
+                              expanded:
+                                  _expandedPanel == _SettingsPanel.monetization,
+                              onTap: () => setState(
+                                () => _expandedPanel =
+                                    _expandedPanel ==
+                                        _SettingsPanel.monetization
+                                    ? null
+                                    : _SettingsPanel.monetization,
+                              ),
+                              child: monetization.hasAdFree
+                                  ? Row(
+                                      children: [
+                                        Icon(
+                                          Icons.verified_rounded,
+                                          color: selected.primaryColor,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            'Ads are permanently removed for this Nestarium account.',
+                                            style: TextStyle(
+                                              color:
+                                                  selected.cardTextPrimaryColor,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Text(
+                                          'One purchase removes banner ads forever on this protected Nestarium account.',
+                                          style: TextStyle(
+                                            color:
+                                                selected.cardTextSecondaryColor,
+                                          ),
+                                        ),
+                                        if (!protectedPurchase) ...[
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Protect this player before purchasing or restoring so ad removal can be recovered across devices.',
+                                            style: TextStyle(
+                                              color: selected.primaryColor,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                        const SizedBox(height: 12),
+                                        FilledButton.icon(
+                                          key: const ValueKey(
+                                            'settings-purchase-ad-free',
+                                          ),
+                                          onPressed:
+                                              protectedPurchase &&
+                                                  !monetization.entitlementBusy
+                                              ? () => _purchaseAdFree(context)
+                                              : null,
+                                          icon: const Icon(Icons.block_rounded),
+                                          label: Text(
+                                            'Remove Ads Forever · $price',
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          style: GameTheme.filledButton(
+                                            selected,
+                                            color: selected.secondaryColor,
+                                            height: 48,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        OutlinedButton.icon(
+                                          key: const ValueKey(
+                                            'settings-restore-ad-free',
+                                          ),
+                                          onPressed:
+                                              !protectedPurchase ||
+                                                  monetization.entitlementBusy
+                                              ? null
+                                              : () => _restoreAdFree(context),
+                                          icon: const Icon(
+                                            Icons.restore_rounded,
+                                          ),
+                                          label: const Text(
+                                            'Restore Purchase',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor:
+                                                selected.primaryColor,
+                                            minimumSize: const Size.fromHeight(
+                                              46,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            );
+                          },
                         ),
                       ],
                     ),

@@ -16,6 +16,11 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>Nestarium</string>
+	<!-- Google's sample app ID is test-only. Replace it before monetization release. -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<key>GADDelayAppMeasurementInit</key>
+	<true/>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

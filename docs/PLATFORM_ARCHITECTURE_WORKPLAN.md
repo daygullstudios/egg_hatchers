@@ -288,7 +288,13 @@ tab suspension and back/forward behavior across the major launch flows.
 5. **Consequential actions:** preview what fusion, rebirth, imports, trades and
    resets consume, preserve and may lose. Explain probabilities plainly; do
    not rely on color, icons or hover-only help. Review streak/time pressure and
-   any future monetization for the intended ages before adding it.
+   monetization for the intended ages before activating it.
+   The owner has now approved free core play, bounded banners and a $2.99
+   account-scoped lifetime ad-removal product. Its fail-closed code boundary is
+   implemented but activation remains part of the family/provider/platform
+   release batch. See `MONETIZATION_AND_AD_OPERATIONS.md` for placement and
+   activation acceptance; interstitials, rewarded ads and paid random eggs are
+   outside the current release scope.
 6. **Finish external rebrand:** approve truthful public-site policies/support,
    complete provider/identity/recovery acceptance, then coordinate the protected
    hostname cutover. Display-name mail polish follows data safety. Keep store

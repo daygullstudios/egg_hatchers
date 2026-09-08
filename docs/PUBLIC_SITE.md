@@ -88,9 +88,12 @@ Recommended next work, before revising the public policy or enabling accounts:
    accessible without a Google account under Google's policy. Design a reviewed
    non-Google recovery path and parent-managed options; don't simply block
    children from the game or make Google the only way to use important features.
-5. Review random-reward monetization, loss/fusion warnings and daily-pressure
-   mechanics for the intended ages before adding ads or purchases. No paid
-   randomized eggs, advertising SDK or monetization policy was authorized here.
+5. Review random-reward mechanics, loss/fusion warnings and daily-pressure
+   mechanics for the intended ages. The later approved monetization contract is
+   free core play, carefully placed banners and $2.99 lifetime ad removal, with
+   no paid randomized eggs. Its SDK boundary remains dormant pending family,
+   consent, provider, store and disclosure gates; see
+   `MONETIZATION_AND_AD_OPERATIONS.md`.
 6. Implement/test those controls, obtain policy/classification review and
    appropriate family usability testing, then complete public policy/auth gates.
    No child participant, parent contact, enrollment or public launch is authorized
@@ -119,8 +122,10 @@ policy review remains unfinished, not that the owner's audience is unknown.
 - `lib/services/online_lobby_service.dart` and `tool/multiplayer_server.dart`
   establish profile/presence/session sharing for available online tests.
   Custom-sprite copy and storage explicitly say artwork is device-local.
-- `pubspec.yaml` contains no advertising, purchase, Analytics or Crashlytics
-  SDK. This is not a claim that providers keep no technical/security logs.
+- Advertising and purchase SDKs now exist behind a default-off release boundary;
+  the current public site and protected playtest neither request ads nor expose
+  checkout. Analytics and Crashlytics remain absent. Provider behavior must be
+  verified before the privacy text or store disclosures are revised.
 - Google sign-in remains gated off. Public draft language describes the
   current test rather than pretending the eventual recovery path is ready.
 

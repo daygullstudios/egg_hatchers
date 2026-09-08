@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../navigation/app_page_route.dart';
+import '../monetization/monetization_controller.dart';
 import '../services/custom_egg_service.dart';
 import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
@@ -8,6 +9,7 @@ import '../services/preferences_service.dart';
 import '../services/sprite_rating_service.dart';
 import '../services/sprite_reference_overlay_service.dart';
 import '../widgets/game_primary_navigation.dart';
+import '../widgets/monetization_banner_slot.dart';
 import 'battles_screen.dart';
 import 'collection_screen.dart';
 import 'custom_sprites_screen.dart';
@@ -122,7 +124,25 @@ class _MainGameShellState extends State<MainGameShell> {
             _select(MainGameDestination.hatchery);
           }
         },
-        child: IndexedStack(index: _current.index, children: pages),
+        child: Column(
+          children: [
+            Expanded(
+              child: IndexedStack(index: _current.index, children: pages),
+            ),
+            MonetizationBannerSlot(
+              controller: MonetizationController.instance,
+              placementAllowed: switch (_current) {
+                MainGameDestination.hatchery ||
+                MainGameDestination.shop ||
+                MainGameDestination.collection ||
+                MainGameDestination.quests ||
+                MainGameDestination.customAnimals => true,
+                MainGameDestination.battles ||
+                MainGameDestination.settings => false,
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

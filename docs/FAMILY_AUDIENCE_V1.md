@@ -83,13 +83,14 @@ must retain useful play; do not coach them to lie about age. [FTC audience FAQ](
   client deletion is denied; there is no implemented parent-managed cloud-erasure
   endpoint. The draft support process is not evidence that end-to-end erasure,
   identity verification, backup expiry or consent revocation has passed.
-- **Useful low-collection baseline:** no ad, purchase, Analytics or Crashlytics
-  SDK was found in the dependency manifest/lockfile or searched app sources.
-  The owned Android manifest declares Internet, not camera/microphone/location/
-  advertising-ID permissions. Final merged native manifests, transitive SDK
-  behavior and actual network traces remain platform acceptance work, not a
-  blanket "collects nothing" claim. The public information-site draft has no
-  script, form or tracker; hosting, Access and support still process requests.
+- **Dormant monetization boundary:** AdMob/UMP and RevenueCat dependencies are
+  now present behind a default-off build switch, explicit audience treatment,
+  consent, configured-provider and successful-entitlement gates. Ordinary and
+  protected-playtest builds cannot request ads or expose checkout. Native
+  manifests use Google's sample AdMob app IDs only. The reviewed audience
+  decision, provider approval, production IDs/products, disclosures and network
+  acceptance remain open; dependency presence is not release clearance. See
+  `MONETIZATION_AND_AD_OPERATIONS.md`. Analytics and Crashlytics are not added.
 
 ## Five bounded requirements to close before the family release
 

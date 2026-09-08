@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'models/background_theme.dart';
 import 'models/online_lobby.dart';
+import 'monetization/monetization_controller.dart';
 import 'screens/account_onboarding_screen.dart';
 import 'screens/saved_player_recovery_screen.dart';
 import 'screens/unsaved_progress_screen.dart';
@@ -232,6 +233,7 @@ class _NestariumAppState extends State<NestariumApp>
       _rootInitialized = true;
       if (mounted) setState(() {});
       _startIdentityCheck();
+      unawaited(MonetizationController.instance.initialize());
     } finally {
       _localLoadTimer?.cancel();
       _startingUp = false;

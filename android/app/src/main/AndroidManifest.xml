@@ -4,6 +4,14 @@
         android:label="Nestarium"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Google's sample app ID permits test-only initialization. Production
+             monetization remains build-gated and must replace this before release. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3940256099942544~3347511713" />
+        <meta-data
+            android:name="com.google.android.gms.ads.DELAY_APP_MEASUREMENT_INIT"
+            android:value="true" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

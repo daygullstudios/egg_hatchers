@@ -2,6 +2,40 @@
 
 Updated: 2026-09-08
 
+## Monetization decision and dormant implementation
+
+The owner approved free core play, carefully placed anchored banners and a
+**$2.99 lifetime Remove Ads** product. An honest, time-bounded $1.99 launch
+promotion remains optional. Paid randomized eggs, premium currency,
+interstitials and rewarded ads are not approved for launch.
+
+The app now has a central default-off monetization boundary, per-Firebase-UID
+RevenueCat `ad_free` ownership, native AdMob/UMP adaptive banners, exact shell
+placement rules and conditional Settings purchase/restore controls. Unknown
+audience treatment, uncertain entitlement, missing provider configuration,
+consent failure or an owned entitlement suppresses ads. The web provider is
+deliberately unavailable. Google sample app IDs are test-only; there are no real
+ad units, store products, API keys, production requests or checkout in the
+protected build. `docs/MONETIZATION_AND_AD_OPERATIONS.md` owns the price,
+placement and activation contract. Family classification/capabilities,
+provider-console work, real IDs/products, disclosures and sandbox acceptance
+remain Batch 3 gates.
+
+Integration evidence (2026-09-08): Flutter analysis is clean and all **819
+Flutter tests** pass, including six dedicated price, activation, audience,
+entitlement, ownership and placement checks. The protected hosted release and
+Wasm dry run succeeded with monetization approval omitted, followed in order by
+all **4 playtest tests**, Wrangler dry run and deployment. Both protected custom
+domains serve Worker version **`54c1d07a-a4be-494e-9c31-f66fbd015674`** and
+anonymous checks still receive Cloudflare Access 302. The playtest therefore
+contains the dormant boundary but displays no ads, purchase UI or public
+monetization claim.
+
+The Android debug build also succeeds with the registered AdMob and RevenueCat
+plugins, delayed measurement metadata and test-only Google application ID. iOS
+linking and native sandbox purchase/ad acceptance still require the established
+Mac release host at the later provider checkpoint.
+
 ## Public Nestarium preview is live
 
 `https://playnestarium.com/` is now a public, indexable, non-playable preview
@@ -356,9 +390,11 @@ no age or guardian-permission boundary. The previous automatic lobby attempt was
 removed in `43f2344`; loading a save no longer publishes a global profile. The
 new protected backend accepts only authenticated matchmaking and derives peer
 aliases, while its Flutter release switch stays off. No parent/consent/revocation
-or cloud-erasure runtime was found. No advertising, purchase, Analytics or
-Crashlytics SDK was found in the dependency/source audit; that is not proof of
-zero provider processing or completed native/network acceptance.
+or cloud-erasure runtime was found. The later monetization checkpoint added
+default-off AdMob/UMP and RevenueCat boundaries, but they remain unusable until
+the same audience/guardian review plus provider, disclosure and release gates
+pass. Analytics and Crashlytics remain absent. Dependency inspection is not
+proof of zero provider processing or completed native/network acceptance.
 
 Owner follow-up: use Roblox as the age/parent-control product model. The proposed
 post-release multiplayer deferral was not approved; multiplayer remains a v1

@@ -45,6 +45,9 @@ dependencies:
   firebase_auth: ^6.6.1
   cloud_firestore: ^6.9.0
   google_sign_in: 7.2.0
+  # Dormant until the reviewed family/consent and production-provider gates pass.
+  google_mobile_ads: ^9.1.0
+  purchases_flutter: ^10.10.0
 
 dev_dependencies:
   flutter_test:
