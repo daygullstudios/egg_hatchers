@@ -70,6 +70,16 @@ consolidated physical Google Play install/purchase/cancel/restore/reinstall/
 account-recovery pass is queued for the Batch 4 candidate after the device is
 released. This changes order, not the Android release requirement.
 
+**Fresh Samsung QA install (owner override, 2026-09-08):** after Nestarium was
+uninstalled and disposable Firestore progress was cleared, the owner explicitly
+requested a new general-QA sideload on the connected SM-A166U. The existing
+verified Android debug APK (`1.0.0+1`) installed successfully as a fresh package,
+cold-launched into the foreground and retained a live process with no sampled
+Flutter/Android fatal error. This deliberately supersedes the temporary device
+reservation only for the requested Nestarium install. It is not Google Play
+billing acceptance and does not satisfy the later purchase/cancel/restore/
+reinstall gate.
+
 ## Public Nestarium preview is live
 
 `https://playnestarium.com/` is now a public, indexable, non-playable preview
