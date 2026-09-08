@@ -422,11 +422,16 @@ serves version **`41d5948d-a7cb-415f-aa8c-3ef18f60b176`**. A fresh protected
 Chrome load shows the Nestarium portrait shell and Settings route with the
 existing browser save intact. That browser guest truthfully remains pending
 because its cloud is unavailable; no reward, account, import or save choice was
-performed. The latest Android debug APK is built, but the wireless ADB transport
-dropped before its in-place install; the preceding physical run and live
-Firestore evidence remain valid, while final on-screen acceptance of the new
-30-second/status presentation waits for reconnection and does not block the
-verified web deployment.
+performed. After wireless ADB returned, the latest Android debug APK installed
+in place successfully and relaunched the original Guest Hatcher with its animal,
+level, tutorial completion and progress intact. The rendered 1080x2340 Hatchery
+retained the portrait shell and showed continuing +4/sec income. Live Firestore
+then advanced from cloud revision **4284** at 7:13:09 PM Central to **4286** at
+7:14:10 PM, with local revision and coins advancing. Two acknowledged snapshots
+over 61 seconds verify the intended approximately 30-second app cadence. The
+wireless transport dropped again after the evidence capture, but the installed
+app and cloud writes continued; no reinstall, data clear, reward, account,
+import or conflict choice was performed.
 
 ## First-player journey — preceding bounded implementation checkpoint
 
