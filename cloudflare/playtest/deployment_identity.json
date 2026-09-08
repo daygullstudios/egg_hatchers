@@ -8,10 +8,10 @@
   "compatibilityPlaytestHostname": "egg-hatchers-playtest.daygullstudios.com",
   "accessApplicationId": "2ed23c5f-4d30-42e9-83c4-90b4e24c2135",
   "accessEagerRedirectCookie": false,
-  "hostnameReleaseGates": [
-    "Nestarium Google OAuth branding and eligible product support identity",
-    "Provider sign-in and cloud recovery accepted across two browser origins",
-    "Local-only player transfer guidance accepted; old origin remains reachable",
-    "Protection, authorized domains, DNS/TLS and exact release verified together"
+  "hostnameReleaseEvidence": [
+    "Nestarium public identity, support role and public information site are live",
+    "Cloudflare Access and Firebase authorized domains include the primary hostname",
+    "Legacy origin remains reachable for origin-scoped saves and sessions",
+    "Public DNS/TLS and anonymous Access redirects were verified for HTML, assets and WebSocket path"
   ]
 }

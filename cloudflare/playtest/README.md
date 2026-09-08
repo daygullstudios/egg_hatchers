@@ -30,12 +30,14 @@ authorization cookies when each hostname is visited, and the compatibility
 origin must remain independently recoverable. The tester policy and 24-hour
 session duration remain unchanged.
 
-The first routed release is Worker version
-`b95eec09-b6a8-4071-b20b-4bf4d97c9b00`. Direct unauthenticated requests to both
-`/` and `/main.dart.js` return Cloudflare Access redirects, confirming that the
-HTML shell and compiled game bundle are protected. Recursive DNS may take a few
-minutes to replace an earlier negative lookup after the custom domain is first
-attached.
+The first dual-host Nestarium release is Worker version
+`8dba06c0-c4e5-493d-940a-5fe51dd5547c`. Multiplayer Worker version
+`b9f5966f-bc59-4ef2-8264-920658886c07` owns `/ws*` on both protected hosts.
+Direct unauthenticated requests to `/`, `/main.dart.js`, and `/ws/health` on
+both origins return Cloudflare Access redirects, confirming that the HTML,
+compiled game bundle, and online route are protected. Recursive DNS may take a
+few minutes to replace an earlier negative lookup after the custom domain is
+first attached.
 
 ## Release boundary
 

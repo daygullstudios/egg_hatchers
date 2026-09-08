@@ -20,6 +20,25 @@ to use a strict owned-asset allowlist; known product art returns 200 and unknown
 assets remain 404. Public game access, child-account controls, stores and the
 protected Nestarium hostname migration remain separate gates.
 
+## Primary protected Nestarium hostname is live
+
+`https://playtest.playnestarium.com/` is now the primary private game origin.
+The existing `https://egg-hatchers-playtest.daygullstudios.com/` remains live
+without redirect as a compatibility/recovery origin because browser storage,
+guest Firebase identity and Access cookies are origin-scoped. The static Worker
+keeps its legacy resource identity and is version
+`8dba06c0-c4e5-493d-940a-5fe51dd5547c`; multiplayer version
+`b9f5966f-bc59-4ef2-8264-920658886c07` owns `/ws*` on both hosts.
+
+Cloudflare public DNS resolves the new host. Anonymous `/`, `/main.dart.js` and
+`/ws/health` requests receive Access 302 on both origins. This PC's ISP gateway
+continued serving its prior negative DNS cache after OS flush, so authenticated
+visual acceptance on the new host remains pending until that recursive cache
+expires or the network resolver refreshes; direct public-resolver/live-origin
+checks passed. Flutter analysis, all 807 Flutter tests, release web/Wasm dry
+run, four playtest config tests, multiplayer typecheck/28 tests, public-site
+isolation tests and both Wrangler dry runs/deployments passed.
+
 ## Current execution cadence — four grouped delivery batches
 
 Tony asked to combine the estimated 12–16 implementation units into coherent
