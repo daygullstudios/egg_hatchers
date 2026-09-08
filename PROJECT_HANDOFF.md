@@ -2,6 +2,16 @@
 
 Updated: 2026-09-08
 
+## Normal manual-boss music sections
+
+Normal manual boss fights use four sequential sections cut from
+`boss_music.mp3` at 144 BPM. A section plays its lead-in once, then loops the
+exact BandLab-marked range until a boss-life hit advances the music. The loop
+ranges are bars 2-9, 11-17, 19-25 and 25-41. Bosses with other life counts map
+their progress proportionally across the four sections. The former generated
+pulse, percussion and tension overlay tracks were removed. Rotten Shell keeps
+its separate `final_boss_music.mp3` behavior.
+
 ## Legacy Daygull playtest hostname retired
 
 At the owner's direction on 2026-09-08,

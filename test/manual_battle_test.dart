@@ -135,32 +135,44 @@ void main() {
     expect(BossBattleLogic.manualMusicStage(livesRemaining: 0, maxLives: 0), 0);
   });
 
-  test('boss music layers build without restarting the base track', () {
-    expect(AudioService.battleLayerMix(completedStages: 0, totalStages: 7), [
+  test('boss music maps lost lives across four ordered sections', () {
+    expect(
+      AudioService.battleMusicPhase(completedStages: 0, totalStages: 7),
       0,
+    );
+    expect(
+      AudioService.battleMusicPhase(completedStages: 1, totalStages: 7),
       0,
-      0,
-    ]);
+    );
+    expect(
+      AudioService.battleMusicPhase(completedStages: 2, totalStages: 7),
+      1,
+    );
+    expect(
+      AudioService.battleMusicPhase(completedStages: 4, totalStages: 7),
+      2,
+    );
+    expect(
+      AudioService.battleMusicPhase(completedStages: 6, totalStages: 7),
+      3,
+    );
+  });
 
-    final early = AudioService.battleLayerMix(
-      completedStages: 1,
-      totalStages: 7,
-    );
-    final middle = AudioService.battleLayerMix(
-      completedStages: 4,
-      totalStages: 7,
-    );
-    final finalStage = AudioService.battleLayerMix(
-      completedStages: 7,
-      totalStages: 7,
-    );
-
-    expect(early[0], greaterThan(0));
-    expect(early[1], 0);
-    expect(middle[0], 1);
-    expect(middle[1], greaterThan(early[1]));
-    expect(middle[2], greaterThan(0));
-    expect(finalStage, [1, 1, 1]);
+  test('boss music uses the exact BandLab phase loop markers', () {
+    final sections = AudioService.battleMusicSections;
+    expect(sections, hasLength(4));
+    expect(sections[0].start, Duration.zero);
+    expect(sections[0].loopStart.inMicroseconds, 1666667);
+    expect(sections[0].loopEnd.inMicroseconds, 13333333);
+    expect(sections[1].start.inMicroseconds, 13333333);
+    expect(sections[1].loopStart.inMicroseconds, 16666667);
+    expect(sections[1].loopEnd.inMicroseconds, 26666667);
+    expect(sections[2].start.inMicroseconds, 26666667);
+    expect(sections[2].loopStart.inMicroseconds, 30000000);
+    expect(sections[2].loopEnd.inMicroseconds, 40000000);
+    expect(sections[3].start.inMicroseconds, 40000000);
+    expect(sections[3].loopStart.inMicroseconds, 40000000);
+    expect(sections[3].loopEnd.inMicroseconds, 66666667);
   });
 
   test('rage mode applies only to multi-life bosses on last life', () {

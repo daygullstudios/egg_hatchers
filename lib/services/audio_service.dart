@@ -9,7 +9,11 @@ import 'device_settings_store.dart';
 /// Central music/SFX controller with persisted settings and web-safe playback.
 class AudioService extends ChangeNotifier {
   AudioService({DeviceSettingsStore? settingsStore})
-    : _settingsStore = settingsStore ?? DeviceSettingsStore();
+    : _settingsStore = settingsStore ?? DeviceSettingsStore() {
+    _musicPositionSubscription = _musicPlayer.onPositionChanged.listen(
+      _handleMusicPosition,
+    );
+  }
 
   final DeviceSettingsStore _settingsStore;
 
@@ -18,11 +22,34 @@ class AudioService extends ChangeNotifier {
   static const assetPathCooldownMs = 180;
   static const rewardRecentGapMs = 2000;
 
+  /// BandLab bar ranges at 144 BPM. Each section plays from [start], then
+  /// repeats only [loopStart] through [loopEnd] until the next boss-life hit.
+  @visibleForTesting
+  static const battleMusicSections = <BattleMusicSection>[
+    BattleMusicSection(
+      start: Duration.zero,
+      loopStart: Duration(microseconds: 1666667),
+      loopEnd: Duration(microseconds: 13333333),
+    ),
+    BattleMusicSection(
+      start: Duration(microseconds: 13333333),
+      loopStart: Duration(microseconds: 16666667),
+      loopEnd: Duration(microseconds: 26666667),
+    ),
+    BattleMusicSection(
+      start: Duration(microseconds: 26666667),
+      loopStart: Duration(microseconds: 30000000),
+      loopEnd: Duration(microseconds: 40000000),
+    ),
+    BattleMusicSection(
+      start: Duration(microseconds: 40000000),
+      loopStart: Duration(microseconds: 40000000),
+      loopEnd: Duration(microseconds: 66666667),
+    ),
+  ];
+
   final AudioPlayer _musicPlayer = AudioPlayer(playerId: 'music');
-  final List<AudioPlayer> _musicLayerPlayers = List.generate(
-    AudioAssets.musicBossLayers.length,
-    (i) => AudioPlayer(playerId: 'music_layer_$i'),
-  );
+  late final StreamSubscription<Duration> _musicPositionSubscription;
   final List<AudioPlayer> _sfxPlayers = List.generate(
     4,
     (i) => AudioPlayer(playerId: 'sfx_$i'),
@@ -37,15 +64,10 @@ class AudioService extends ChangeNotifier {
   var _userUnlocked = false;
   MusicTrack? _currentTrack;
   MusicTrack? _pendingTrack;
-  List<double> _battleLayerMix = List.filled(
-    AudioAssets.musicBossLayers.length,
-    0,
-  );
-  List<double> _battleLayerVolumes = List.filled(
-    AudioAssets.musicBossLayers.length,
-    0,
-  );
-  var _battleLayerFadeGeneration = 0;
+  var _battleMusicPhase = -1;
+  BattleMusicSection? _battleMusicSection;
+  var _battleLoopSeekInProgress = false;
+  var _battleMusicGeneration = 0;
   var _sfxRoundRobin = 0;
   final Map<Sfx, DateTime> _lastSfxPlayed = {};
   final Map<String, DateTime> _lastAssetPathPlayed = {};
@@ -113,7 +135,6 @@ class AudioService extends ChangeNotifier {
     final saved = _settingsStore.writeMusicVolume(clamped);
     try {
       await _musicPlayer.setVolume(clamped);
-      await _setBattleLayerVolumes(_targetBattleLayerVolumes());
     } catch (_) {}
     return saved;
   }
@@ -153,7 +174,6 @@ class AudioService extends ChangeNotifier {
     final played = await _tryPlayMusicAsset(track.assetPath);
     if (played) {
       _currentTrack = track;
-      await _startBattleMusicLayers(track);
       return;
     }
 
@@ -164,7 +184,6 @@ class AudioService extends ChangeNotifier {
       );
       if (fallbackPlayed) {
         _currentTrack = MusicTrack.bossBattle;
-        await _startBattleMusicLayers(MusicTrack.bossBattle);
       } else {
         _currentTrack = null;
       }
@@ -175,40 +194,64 @@ class AudioService extends ChangeNotifier {
     _currentTrack = null;
   }
 
-  /// Fades in continuous background layers as a boss loses lives.
+  /// Moves normal boss music to the section matching the boss's lost lives.
   Future<void> setBattleMusicStage(
     MusicTrack track, {
     required int completedStages,
     required int totalStages,
   }) async {
-    if (!_musicEnabled || !_userUnlocked || totalStages <= 0) return;
+    if (track != MusicTrack.bossBattle ||
+        !_musicEnabled ||
+        !_userUnlocked ||
+        totalStages <= 0) {
+      return;
+    }
     if (_currentTrack != track) await playMusic(track);
     if (_currentTrack != track) return;
 
-    _battleLayerMix = battleLayerMix(
+    final phase = battleMusicPhase(
       completedStages: completedStages,
       totalStages: totalStages,
     );
-    await _fadeBattleLayersTo(_targetBattleLayerVolumes());
-    _debugLog('layer ${track.name} to stage $completedStages/$totalStages');
+    if (_battleMusicPhase == phase && _battleMusicSection != null) return;
+
+    final generation = ++_battleMusicGeneration;
+    final section = battleMusicSections[phase];
+    _battleMusicPhase = phase;
+    _battleMusicSection = section;
+    _battleLoopSeekInProgress = true;
+    try {
+      await _musicPlayer.setReleaseMode(ReleaseMode.stop);
+      await _musicPlayer.seek(section.start);
+      if (generation != _battleMusicGeneration) return;
+      if (_musicPlayer.state != PlayerState.playing) {
+        await _musicPlayer.resume();
+      }
+      _debugLog(
+        'section ${phase + 1}/${battleMusicSections.length} for '
+        'stage $completedStages/$totalStages',
+      );
+    } catch (e) {
+      debugPrint('Boss music section change failed: $e');
+    } finally {
+      if (generation == _battleMusicGeneration) {
+        _battleLoopSeekInProgress = false;
+      }
+    }
   }
 
   @visibleForTesting
-  static List<double> battleLayerMix({
+  static int battleMusicPhase({
     required int completedStages,
     required int totalStages,
   }) {
-    if (totalStages <= 0) return const [0, 0, 0];
-    final progress = (completedStages / totalStages).clamp(0.0, 1.0);
-    return [
-      _layerProgress(progress, 0.05, 0.30),
-      _layerProgress(progress, 0.20, 0.62),
-      _layerProgress(progress, 0.46, 1.00),
-    ];
+    if (totalStages <= 0) return 0;
+    final activeStage = completedStages.clamp(0, totalStages - 1);
+    return (activeStage * battleMusicSections.length ~/ totalStages).clamp(
+      0,
+      battleMusicSections.length - 1,
+    );
   }
-
-  static double _layerProgress(double progress, double start, double end) =>
-      ((progress - start) / (end - start)).clamp(0.0, 1.0);
 
   void _debugLog(String message) {
     if (kDebugMode) debugPrint('[AUDIO] $message');
@@ -331,78 +374,65 @@ class AudioService extends ChangeNotifier {
     }
   }
 
-  Future<void> _startBattleMusicLayers(MusicTrack track) async {
-    if (track != MusicTrack.bossBattle && track != MusicTrack.finalBoss) return;
-    for (var i = 0; i < _musicLayerPlayers.length; i++) {
-      final player = _musicLayerPlayers[i];
-      try {
-        await player.setReleaseMode(ReleaseMode.loop);
-        await player.setVolume(0);
-        await player.play(AssetSource(AudioAssets.musicBossLayers[i]));
-      } catch (e) {
-        debugPrint('Battle music layer ${i + 1} failed: $e');
+  void _handleMusicPosition(Duration position) {
+    final section = _battleMusicSection;
+    if (_currentTrack != MusicTrack.bossBattle ||
+        section == null ||
+        _battleLoopSeekInProgress ||
+        position < section.loopEnd) {
+      return;
+    }
+    unawaited(_loopBattleMusic(section));
+  }
+
+  Future<void> _loopBattleMusic(BattleMusicSection section) async {
+    final generation = _battleMusicGeneration;
+    _battleLoopSeekInProgress = true;
+    try {
+      await _musicPlayer.seek(section.loopStart);
+      if (generation == _battleMusicGeneration &&
+          _musicPlayer.state != PlayerState.playing) {
+        await _musicPlayer.resume();
       }
-    }
-    await _setBattleLayerVolumes(_targetBattleLayerVolumes());
-  }
-
-  List<double> _targetBattleLayerVolumes() {
-    const volumeCaps = [0.30, 0.24, 0.18];
-    return List.generate(
-      _musicLayerPlayers.length,
-      (i) => _musicVolume * volumeCaps[i] * _battleLayerMix[i],
-    );
-  }
-
-  Future<void> _fadeBattleLayersTo(List<double> target) async {
-    final generation = ++_battleLayerFadeGeneration;
-    final start = List<double>.from(_battleLayerVolumes);
-    const steps = 8;
-    for (var step = 1; step <= steps; step++) {
-      await Future<void>.delayed(const Duration(milliseconds: 45));
-      if (generation != _battleLayerFadeGeneration) return;
-      final t = step / steps;
-      await _setBattleLayerVolumes(
-        List.generate(
-          start.length,
-          (i) => start[i] + (target[i] - start[i]) * t,
-        ),
-      );
-    }
-  }
-
-  Future<void> _setBattleLayerVolumes(List<double> volumes) async {
-    _battleLayerVolumes = List<double>.from(volumes);
-    for (var i = 0; i < _musicLayerPlayers.length; i++) {
-      try {
-        await _musicLayerPlayers[i].setVolume(volumes[i].clamp(0.0, 1.0));
-      } catch (_) {}
+    } catch (e) {
+      debugPrint('Boss music loop seek failed: $e');
+    } finally {
+      if (generation == _battleMusicGeneration) {
+        _battleLoopSeekInProgress = false;
+      }
     }
   }
 
   Future<void> _stopMusic() async {
-    _battleLayerFadeGeneration++;
-    _battleLayerMix = List.filled(_musicLayerPlayers.length, 0);
-    _battleLayerVolumes = List.filled(_musicLayerPlayers.length, 0);
+    _battleMusicGeneration++;
+    _battleMusicPhase = -1;
+    _battleMusicSection = null;
+    _battleLoopSeekInProgress = false;
     try {
       await _musicPlayer.stop();
     } catch (_) {}
-    for (final player in _musicLayerPlayers) {
-      try {
-        await player.stop();
-      } catch (_) {}
-    }
   }
 
   @override
   void dispose() {
+    unawaited(_musicPositionSubscription.cancel());
     _musicPlayer.dispose();
-    for (final player in _musicLayerPlayers) {
-      player.dispose();
-    }
     for (final player in _sfxPlayers) {
       player.dispose();
     }
     super.dispose();
   }
+}
+
+@immutable
+class BattleMusicSection {
+  const BattleMusicSection({
+    required this.start,
+    required this.loopStart,
+    required this.loopEnd,
+  });
+
+  final Duration start;
+  final Duration loopStart;
+  final Duration loopEnd;
 }
