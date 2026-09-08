@@ -1,11 +1,12 @@
 # Nestarium Platform Architecture Workplan
 
 The 2026-09-06 product rebrand is recorded in `NESTARIUM_MIGRATION.md`.
-`playnestarium.com` is selected; its protected playtest hostname is staged but
-unrouted until provider branding and origin-recovery acceptance. Technical
-save/project/bundle identities below remain compatibility contracts.
+`playnestarium.com` is selected; its protected playtest hostname is live behind
+Cloudflare Access while the legacy protected origin remains available for
+browser continuity. Technical save/project/bundle identities below remain
+compatibility contracts.
 
-Updated: 2026-09-07
+Updated: 2026-09-08
 
 ## Goal
 
@@ -47,17 +48,22 @@ hardening inventory into an indefinite pre-release project.
    Tony selected Roblox as the age/parent-control product model;
    classification/territories and consent/retention implementation
    remain open. This milestone is not complete.
-3. **Multiplayer completion and continuity/platform acceptance:** multiplayer
+3. **Multiplayer completion and non-device platform acceptance:** multiplayer
    remains a v1 target; its proposed deferral was not approved. Complete the four
-   bounded packages under phase 5 below, then verify account/save and delivery
-   behavior of the actual v1 launch platforms. Use existing valid evidence;
-   native/physical-device steps require the appropriate host and human checks.
+   bounded packages under phase 5 below, then verify account/save, provider,
+   build and delivery behavior that does not require the reserved Android test
+   device. Continue Android source, console and sandbox preparation, but defer
+   physical Google Play install/purchase/restore acceptance until Grids & Aces
+   releases the only available Android device. Apple work stays on the Mac.
 4. **Public Nestarium readiness:** finish provider/support/policy readiness and
    the coordinated protected hostname/origin-recovery gates. Keep the new public
    domain unrouted until those gates pass together.
 5. **One consolidated release candidate:** freeze the candidate, run the launch
-   platform/release checks once, and do representative child/teen/adult and device
-   playtesting. Recheck only surfaces invalidated by subsequent corrections.
+   platform/release checks once, and do representative child/teen/adult testing.
+   When the shared Android device becomes available, include one consolidated
+   Google Play install, purchase, cancellation, restore, reinstall and account-
+   recovery sequence rather than interrupting Grids & Aces or repeating partial
+   device passes. Recheck only surfaces invalidated by subsequent corrections.
 6. **Release decision and stop:** resolve only remaining launch blockers, obtain
    required owner publication/store decisions, publish the approved ready scope,
    and stop. Optional enhancements go to post-v1, not another automatic workstream.
@@ -103,7 +109,10 @@ completed implementation unit.
    actual launch-platform account/provider and recovery acceptance, mobile-web
    behavior, accurate policies/support and coordinated protected hostname cutover.
    Reuse existing mail/domain/build evidence where it remains valid. Apple work
-   stays on the Mac; request one concise human/device sequence when necessary.
+   stays on the Mac. Complete Android implementation, provider-console setup,
+   store-product drafts and automated/native builds without taking the Samsung
+   away from Grids & Aces; physical Google Play purchase acceptance moves to the
+   consolidated final-device sequence in Batch 4.
    Done: the selected platforms and protected Nestarium origin pass the stated
    continuity/protection gates and public release materials match the runtime.
    This is readiness, not automatic public launch or a store submission.
@@ -113,6 +122,14 @@ completed implementation unit.
    only and recheck affected surfaces. Obtain required final owner publication/
    store decisions; publish only the authorized scope, then stop. Optional polish,
    new modes/events and speculative hardening remain outside the release batch.
+
+**Shared Android-device scheduling (owner direction, 2026-09-08):** Grids & Aces
+currently owns the only physical Android device for Google Play purchase testing.
+This is not a blocker for Nestarium's family controls, multiplayer, web/desktop,
+provider-console work, store-product preparation, Android builds or documentation.
+Do not install Nestarium over that test environment. Queue one concise physical
+Android acceptance pass at the Batch 4 candidate boundary after the device is
+released; if it finds a blocker, repair and repeat only the affected sequence.
 
 Execution rules:
 

@@ -95,6 +95,17 @@ Complete these together at a deliberate monetization release checkpoint:
     the reviewed platforms. A failure on one platform does not authorize a
     weaker fallback there.
 
+### Shared Android-device scheduling
+
+The only physical Android device is temporarily reserved for Grids & Aces Google
+Play purchase testing. Continue Nestarium's family decision, provider-console
+configuration, store-product drafting, Android builds, web work and automated
+acceptance without it. Do not disturb the G&A install/test state. At the final
+candidate boundary, after the device is released, run one consolidated Google
+Play sequence covering install, protected-account purchase, cancellation,
+pending/failure handling, ad removal, restart, restore, reinstall and account
+recovery. A successful emulator or debug APK build does not close that gate.
+
 ## Operations and change control
 
 The protected playtest and public preview must make no claim that ads or paid

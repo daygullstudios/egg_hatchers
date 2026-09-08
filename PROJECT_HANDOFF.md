@@ -36,6 +36,14 @@ plugins, delayed measurement metadata and test-only Google application ID. iOS
 linking and native sandbox purchase/ad acceptance still require the established
 Mac release host at the later provider checkpoint.
 
+**Android test scheduling (owner direction):** Grids & Aces currently has the
+only physical Android device reserved for Google Play purchase testing. Do not
+interrupt or replace that installation. Nestarium continues through family,
+multiplayer, provider/store preparation, web QA and Android build work now; one
+consolidated physical Google Play install/purchase/cancel/restore/reinstall/
+account-recovery pass is queued for the Batch 4 candidate after the device is
+released. This changes order, not the Android release requirement.
+
 ## Public Nestarium preview is live
 
 `https://playnestarium.com/` is now a public, indexable, non-playable preview
