@@ -9,6 +9,10 @@
     {
       "pattern": "egg-hatchers-playtest.daygullstudios.com/ws*",
       "zone_name": "daygullstudios.com"
+    },
+    {
+      "pattern": "playtest.playnestarium.com/ws*",
+      "zone_name": "playnestarium.com"
     }
   ],
   "vars": {

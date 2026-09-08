@@ -4,16 +4,17 @@ This directory is the checked-in Cloudflare delivery boundary for the compiled
 Nestarium Flutter web game. `deployment_identity.json` records its product
 identity, active compatibility origin, staged hostname, and release gates.
 
-The playtest publishes only to
-`egg-hatchers-playtest.daygullstudios.com`. `workers_dev` and preview URLs stay
-disabled, so Cloudflare does not create an unprotected alternate game URL.
+The playtest publishes to the primary protected Nestarium hostname
+`playtest.playnestarium.com` and retains
+`egg-hatchers-playtest.daygullstudios.com` as a compatibility/recovery origin.
+`workers_dev` and preview URLs stay disabled, so Cloudflare does not create an
+unprotected alternate game URL.
 
 The selected public domain is `playnestarium.com`. The new private hostname
-`playtest.playnestarium.com` is staged in Access and Firebase authorized domains
-but has no web DNS/Worker route yet. The apex has mail-only MX/TXT records for
-the staged support identity; those do not publish the game. Keep it unrouted until the gates in
-`deployment_identity.json` are accepted. Do not add an apex, wildcard, preview,
-or workers.dev route as a shortcut.
+`playtest.playnestarium.com` is covered by the existing Nestarium Access
+application and Firebase authorized domains. The apex is a separate public
+information site and never serves the Flutter build. Do not add an apex,
+wildcard, preview, or workers.dev game route as a shortcut.
 
 The Worker resource name stays `egg-hatchers-playtest` to retain deployment
 history and rollback continuity. The current browser origin remains available
@@ -24,10 +25,10 @@ playtest**, and reuses the established approved-tester allow policy. The policy
 itself remains managed in Cloudflare;
 tester email addresses and credentials are never checked into the repository.
 
-Keep this application's **Eager redirect cookie** setting off while any staged
-hostname is unrouted. Access issues authorization cookies when each hostname is
-visited; it must not redirect current players through an unresolved hostname.
-The tester policy and 24-hour session duration remain unchanged.
+Keep this application's **Eager redirect cookie** setting off. Access issues
+authorization cookies when each hostname is visited, and the compatibility
+origin must remain independently recoverable. The tester policy and 24-hour
+session duration remain unchanged.
 
 The first routed release is Worker version
 `b95eec09-b6a8-4071-b20b-4bf4d97c9b00`. Direct unauthenticated requests to both

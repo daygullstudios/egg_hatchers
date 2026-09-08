@@ -17,6 +17,10 @@ test("playtest publishes only to the Access-protected hostname", async () => {
       pattern: "egg-hatchers-playtest.daygullstudios.com",
       custom_domain: true,
     },
+    {
+      pattern: "playtest.playnestarium.com",
+      custom_domain: true,
+    },
   ]);
   assert.deepEqual(config.assets, {
     directory: "../../build/web",
@@ -25,21 +29,33 @@ test("playtest publishes only to the Access-protected hostname", async () => {
   assert.equal(config.observability?.enabled, true);
 });
 
-test("Nestarium's staged domain cannot be exposed by an ordinary deployment", async () => {
+test("Nestarium's protected hostname retains the legacy recovery origin", async () => {
   const config = JSON.parse(await readFile(configUrl, "utf8"));
   const identity = JSON.parse(await readFile(identityUrl, "utf8"));
   assert.equal(identity.productName, "Nestarium");
   assert.equal(identity.publicDomain, "playnestarium.com");
-  assert.equal(identity.stagedHostnameRouted, false);
+  assert.equal(identity.stagedHostnameRouted, true);
   assert.equal(identity.accessEagerRedirectCookie, false);
   assert.equal(config.name, identity.workerName);
-  assert.deepEqual(config.routes.map(route => route.pattern), [identity.activePlaytestHostname]);
-  assert.ok(!config.routes.some(route => route.pattern.includes(identity.publicDomain)));
+  assert.deepEqual(config.routes.map(route => route.pattern), [
+    identity.compatibilityPlaytestHostname,
+    identity.activePlaytestHostname,
+  ]);
+  assert.ok(config.routes.every(route => route.pattern !== identity.publicDomain));
   const html = await readFile(new URL("../../../web/index.html", import.meta.url), "utf8");
   const manifest = JSON.parse(await readFile(new URL("../../../web/manifest.json", import.meta.url), "utf8"));
   assert.match(html, /<title>Nestarium<\/title>/);
   assert.equal(manifest.name, identity.productName);
   assert.equal(manifest.short_name, identity.productName);
+});
+
+test("both protected hostnames have a matching multiplayer route", async () => {
+  const config = JSON.parse(await readFile(configUrl, "utf8"));
+  const multiplayer = JSON.parse(
+    await readFile(new URL("../../multiplayer/wrangler.jsonc", import.meta.url), "utf8"),
+  );
+  const gameHosts = config.routes.map(route => route.pattern);
+  assert.deepEqual(multiplayer.routes.map(route => route.pattern), gameHosts.map(host => `${host}/ws*`));
 });
 
 test("private web responses carry the baseline hardening headers", async () => {

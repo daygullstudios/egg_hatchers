@@ -189,7 +189,7 @@
     },
     {
       "path": "cloudflare/multiplayer/wrangler.jsonc",
-      "line": 15,
+      "line": 19,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -197,7 +197,7 @@
     },
     {
       "path": "cloudflare/playtest/README.md",
-      "line": 8,
+      "line": 9,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -205,7 +205,7 @@
     },
     {
       "path": "cloudflare/playtest/README.md",
-      "line": 18,
+      "line": 19,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -221,7 +221,7 @@
     },
     {
       "path": "cloudflare/playtest/deployment_identity.json",
-      "line": 7,
+      "line": 8,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -269,7 +269,7 @@
     },
     {
       "path": "cloudflare/public-site/site.test.mjs",
-      "line": 95,
+      "line": 96,
       "references": [
         "egg-hatchers-playtest"
       ],

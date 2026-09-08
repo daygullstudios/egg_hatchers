@@ -2,9 +2,10 @@
   "productName": "Nestarium",
   "publicDomain": "playnestarium.com",
   "stagedPlaytestHostname": "playtest.playnestarium.com",
-  "stagedHostnameRouted": false,
+  "stagedHostnameRouted": true,
   "workerName": "egg-hatchers-playtest",
-  "activePlaytestHostname": "egg-hatchers-playtest.daygullstudios.com",
+  "activePlaytestHostname": "playtest.playnestarium.com",
+  "compatibilityPlaytestHostname": "egg-hatchers-playtest.daygullstudios.com",
   "accessApplicationId": "2ed23c5f-4d30-42e9-83c4-90b4e24c2135",
   "accessEagerRedirectCookie": false,
   "hostnameReleaseGates": [
