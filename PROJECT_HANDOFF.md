@@ -2,6 +2,32 @@
 
 Updated: 2026-09-08
 
+## Disposable Firestore QA reset
+
+On 2026-09-08, with the owner's explicit confirmation that all current
+Nestarium cloud progress was disposable test data, the `users` collection in
+the dedicated `egg-hatchers-dev` `(default)` Firestore database was recursively
+cleared. The client-owned documents affected were the recreatable progress
+records at `users/<uid>/products/egg_hatchers`. A separate authenticated,
+read-only Firestore REST query after the operation returned no documents in
+`users`.
+
+The reset did **not** delete Firebase Authentication users or provider links,
+RevenueCat/store purchases or entitlements, Cloudflare multiplayer Durable
+Object/D1 authority and safety records, Firebase configuration, Security Rules,
+indexes, or credentials. The Samsung Nestarium install was already absent, and
+no Nestarium localhost or playtest browser tab was open on this PC when the
+reset ran, preventing an old local save from immediately repopulating the
+collection.
+
+For future owner requests, **“clear all disposable test data from Firestore”**
+means: first verify the named development project and current repository-owned
+progress paths, stop active clients that could re-upload old state, then remove
+only recreatable Firestore test progress and verify the result. It never implies
+deleting Auth identities, purchase/entitlement records, multiplayer authority or
+safety data, production data, or backend configuration. Ask for clarification
+instead of widening the scope if the project or disposable paths are ambiguous.
+
 ## Monetization decision and dormant implementation
 
 The owner approved free core play, carefully placed anchored banners and a

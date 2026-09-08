@@ -21,63 +21,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 68,
-      "references": [
-        "egg-hatchers-playtest"
-      ],
-      "reason": "Documented compatibility identity, origin, or migration history."
-    },
-    {
-      "path": "PROJECT_HANDOFF.md",
-      "line": 364,
-      "references": [
-        "egg-hatchers-playtest"
-      ],
-      "reason": "Documented compatibility identity, origin, or migration history."
-    },
-    {
-      "path": "PROJECT_HANDOFF.md",
-      "line": 470,
-      "references": [
-        "egghatchers.game"
-      ],
-      "reason": "Documented compatibility identity, origin, or migration history."
-    },
-    {
-      "path": "PROJECT_HANDOFF.md",
-      "line": 526,
-      "references": [
-        "egg_hatchers"
-      ],
-      "reason": "Documented compatibility identity, origin, or migration history."
-    },
-    {
-      "path": "PROJECT_HANDOFF.md",
-      "line": 1363,
-      "references": [
-        "egg-hatchers-playtest"
-      ],
-      "reason": "Documented compatibility identity, origin, or migration history."
-    },
-    {
-      "path": "PROJECT_HANDOFF.md",
-      "line": 1544,
-      "references": [
-        "egghatchers.game"
-      ],
-      "reason": "Documented compatibility identity, origin, or migration history."
-    },
-    {
-      "path": "PROJECT_HANDOFF.md",
-      "line": 1571,
-      "references": [
-        "egg_hatchers"
-      ],
-      "reason": "Documented compatibility identity, origin, or migration history."
-    },
-    {
-      "path": "PROJECT_HANDOFF.md",
-      "line": 1651,
+      "line": 9,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -85,7 +29,71 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1669,
+      "line": 11,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 94,
+      "references": [
+        "egg-hatchers-playtest"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 390,
+      "references": [
+        "egg-hatchers-playtest"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 496,
+      "references": [
+        "egghatchers.game"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 552,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 1389,
+      "references": [
+        "egg-hatchers-playtest"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 1570,
+      "references": [
+        "egghatchers.game"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 1597,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 1677,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -93,7 +101,15 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1676,
+      "line": 1695,
+      "references": [
+        "egg-hatchers-dev"
+      ],
+      "reason": "Documented compatibility identity, origin, or migration history."
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "line": 1702,
       "references": [
         "egg_hatchers"
       ],
