@@ -1,6 +1,32 @@
 # Nestarium public information site
 
-## September 7, 2026 checkpoint — local review draft, not deployed
+## September 7, 2026 public launch checkpoint
+
+The safe public information layer is now live and indexable at
+`https://playnestarium.com/`. It is intentionally a non-playable preview, not
+the protected Flutter game. The site uses approved Nestarium artwork, previews
+the collect/mutate/battle loop and planned iOS, Android and web availability,
+and provides support, privacy, website terms and account/data-request pages.
+
+The “Notify me” actions open an addressed email requesting one launch notice;
+there is no signup form, tracking script or subscriber database. Cloudflare
+Email Routing has an enabled exact `launch@playnestarium.com` forward to the
+same verified studio destination used by the existing Nestarium support flow.
+
+Deployment evidence: Worker `nestarium-public-site`, custom domain
+`playnestarium.com`, version `d62054c3-09e5-46b7-8fa4-2c4dbbd0a8d4`. Nine
+focused tests, the guarded build and Wrangler dry run passed. Public resolvers
+returned the Cloudflare anycast addresses; direct live checks returned 200 for
+all five intended pages and 404 for Flutter entry files. The live response has
+the strict CSP and other security headers, contains no playtest link, and was
+visually accepted in Chrome. The protected playtest route was not changed.
+
+The public policy is deliberately scoped to the information site and current
+private test. Public child accounts, parental controls/consent, self-service
+cloud deletion, store submission and playable-hostname cutover remain separate
+release gates; the marketing site does not claim those are complete.
+
+## Historical checkpoint — local review draft before publication
 
 `cloudflare/public-site` owns the non-playable Nestarium homepage, support,
 privacy, terms and account/data-request pages. It follows the sibling products'

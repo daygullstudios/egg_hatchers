@@ -148,15 +148,15 @@ are rebuilt rather than rewritten. Historical commits remain immutable.
    publish an untested support/recovery workflow. See PROJECT_HANDOFF.md for
    the latest evidence, shared-billing decision, and next acceptance steps.
 2. Complete the remaining Google provider/OAuth brand configuration. The
-   Nestarium name and approved support identity are saved in Testing; public
-   homepage/privacy/terms/support pages, consent-screen domain,
+   Nestarium name and approved support identity are saved in Testing; the
+   public homepage/privacy/terms/support pages are now live, while consent-screen domain,
    verification and publishing status remain release gates. The owner explicitly
    intends ages 8–12 alongside teens and adults; plan mixed-audience protections
    and review actual classification/SDK eligibility before policy/auth release.
    This intent is not store-rating or legal clearance. Retain existing project/client IDs
    and Firebase handler URLs. No provider credentials were replaced here.
-   The isolated local website draft, allowlisted build and closed publication
-   gates are documented in `PUBLIC_SITE.md`; no public route was deployed.
+   The isolated allowlisted public site and its verified apex deployment are
+   documented in `PUBLIC_SITE.md`; it contains no playable Flutter bundle.
    Review a Nestarium-specific Access login identity separately from Firebase;
    the current shared Railcade Google identity was intentionally not renamed.
 3. Enable the staged Web Google button in a deliberate provider release; prove

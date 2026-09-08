@@ -2,6 +2,24 @@
 
 Updated: 2026-09-07
 
+## Public Nestarium preview is live
+
+`https://playnestarium.com/` is now a public, indexable, non-playable preview
+with approved Nestarium art, feature/creature previews, planned iOS/Android/web
+availability, launch-notice mail actions, support, privacy, website terms and
+account/data-request pages. The exact `launch@playnestarium.com` Email Routing
+rule forwards to the existing verified studio destination. No form, tracker,
+subscriber database, game bundle, Firebase configuration or playtest link is
+published. Worker version: `d62054c3-09e5-46b7-8fa4-2c4dbbd0a8d4`.
+
+Daygull Studios now says “Three worlds” and presents Nestarium as an equal
+sibling beside Grids & Aces and Railcade, with a live preview link and matching
+one-time launch-notice action. Daygull Worker version:
+`459978b1-21c3-40b4-8c86-66adfdb2b949`. Its static-asset path was also corrected
+to use a strict owned-asset allowlist; known product art returns 200 and unknown
+assets remain 404. Public game access, child-account controls, stores and the
+protected Nestarium hostname migration remain separate gates.
+
 ## Current execution cadence — four grouped delivery batches
 
 Tony asked to combine the estimated 12–16 implementation units into coherent
