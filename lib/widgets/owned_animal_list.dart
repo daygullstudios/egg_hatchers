@@ -28,6 +28,7 @@ class OwnedAnimalList extends StatelessWidget {
     this.entries,
     this.showSectionHeaders = true,
     this.sortEntries = true,
+    this.adaptiveGrid = false,
   });
 
   final GameService game;
@@ -65,6 +66,7 @@ class OwnedAnimalList extends StatelessWidget {
   final List<OwnedAnimal>? entries;
   final bool showSectionHeaders;
   final bool sortEntries;
+  final bool adaptiveGrid;
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +80,52 @@ class OwnedAnimalList extends StatelessWidget {
 
     if (normal.isEmpty && mutated.isEmpty) {
       return const SizedBox.shrink();
+    }
+
+    if (adaptiveGrid) {
+      return ListView(
+        children: [
+          if (normal.isNotEmpty) ...[
+            if (showSectionHeaders) ...[
+              _SectionHeader(
+                title: '🐾 Normal Animals',
+                compact: compact,
+                theme: theme,
+              ),
+              SizedBox(height: separatorHeight),
+            ],
+            _CardWrap(
+              spacing: separatorHeight,
+              children: [
+                for (var i = 0; i < normal.length; i++)
+                  _buildCard(context, normal[i], isFirstCard: i == 0),
+              ],
+            ),
+          ],
+          if (mutated.isNotEmpty) ...[
+            if (normal.isNotEmpty) SizedBox(height: separatorHeight * 2),
+            if (showSectionHeaders) ...[
+              _SectionHeader(
+                title: '✨ Mutated Animals',
+                compact: compact,
+                theme: theme,
+              ),
+              SizedBox(height: separatorHeight),
+            ],
+            _CardWrap(
+              spacing: separatorHeight,
+              children: [
+                for (var i = 0; i < mutated.length; i++)
+                  _buildCard(
+                    context,
+                    mutated[i],
+                    isFirstCard: normal.isEmpty && i == 0,
+                  ),
+              ],
+            ),
+          ],
+        ],
+      );
     }
 
     final children = <Widget>[
@@ -233,6 +281,32 @@ class OwnedAnimalList extends StatelessWidget {
           : null,
       compact: compact,
       customSprites: customSprites,
+    );
+  }
+}
+
+class _CardWrap extends StatelessWidget {
+  const _CardWrap({required this.children, required this.spacing});
+
+  final List<Widget> children;
+  final double spacing;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 760 ? 2 : 1;
+        final width = columns == 1
+            ? constraints.maxWidth
+            : (constraints.maxWidth - spacing) / 2;
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final child in children) SizedBox(width: width, child: child),
+          ],
+        );
+      },
     );
   }
 }

@@ -5,11 +5,12 @@ import 'package:flutter/material.dart';
 import '../models/background_theme.dart';
 import 'phone_width_layout.dart';
 
-/// Hosts the entire app inside its canonical portrait viewport.
+/// Hosts the app inside a bounded, adaptive game viewport.
 ///
-/// Phones remain edge-to-edge. Wider displays get a neutral surround while
-/// routes, overlays, and dialogs all see the constrained width through
-/// [MediaQuery], preventing desktop width from leaking into mobile-first UI.
+/// Phones remain edge-to-edge. Tablet and desktop game routes can opt into the
+/// additional width, while focused routes retain their own phone-width content
+/// constraints. Very wide displays keep a neutral surround and readable line
+/// lengths instead of stretching indefinitely.
 class PortraitAppShell extends StatelessWidget {
   const PortraitAppShell({super.key, required this.child});
 
@@ -27,9 +28,9 @@ class PortraitAppShell extends StatelessWidget {
           final mediaQuery = MediaQuery.of(context);
           final surfaceWidth = math.min(
             constraints.maxWidth,
-            kPhoneMaxContentWidth,
+            kExpandedGameMaxContentWidth,
           );
-          final isWide = constraints.maxWidth > kPhoneMaxContentWidth;
+          final isWide = constraints.maxWidth > kExpandedGameMaxContentWidth;
 
           return Center(
             child: DecoratedBox(

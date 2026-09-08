@@ -132,9 +132,10 @@ class _BottomLeftOnlineCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final phoneLeft = ((width - kPhoneMaxContentWidth) / 2).clamp(0.0, width);
+    final contentWidth = gameContentMaxWidthFor(width);
+    final contentLeft = ((width - contentWidth) / 2).clamp(0.0, width);
     return Positioned(
-      left: phoneLeft + 10,
+      left: contentLeft + 10,
       right: width > kPhoneMaxContentWidth ? null : 10,
       bottom: MediaQuery.paddingOf(context).bottom + 12,
       width: width > kPhoneMaxContentWidth ? 390 : null,

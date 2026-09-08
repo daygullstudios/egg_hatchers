@@ -250,6 +250,7 @@ class _ShopScreenState extends State<ShopScreen> {
               child: Scaffold(
                 backgroundColor: Colors.transparent,
                 appBar: PhoneWidthAppBar(
+                  useGameWidth: shell != null,
                   title: '🛒 Egg Shop',
                   titleStyle: const TextStyle(
                     fontWeight: FontWeight.bold,
@@ -274,33 +275,53 @@ class _ShopScreenState extends State<ShopScreen> {
                 ),
                 body: GameBackground(
                   theme: bg,
-                  child: PhoneWidthLayout(
-                    child: Column(
+                  child: GameWidthLayout(
+                    useGameWidth: shell != null,
+                    builder: (context, layoutClass) => Flex(
+                      direction: layoutClass == GameLayoutClass.expanded
+                          ? Axis.horizontal
+                          : Axis.vertical,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _ShopSectionSelector(
-                          theme: bg,
-                          selected: _selectedSection,
-                          hatcherySummary: _shopSectionSummary(
-                            readyCount: builtInShopEggs
-                                .where(
-                                  (egg) =>
-                                      game.isEggUnlocked(egg) &&
-                                      game.canAfford(egg),
-                                )
-                                .length,
-                            totalCount: builtInShopEggs.length,
+                        SizedBox(
+                          width: layoutClass == GameLayoutClass.expanded
+                              ? 300
+                              : null,
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            child: _ShopSectionSelector(
+                              theme: bg,
+                              selected: _selectedSection,
+                              hatcherySummary: _shopSectionSummary(
+                                readyCount: builtInShopEggs
+                                    .where(
+                                      (egg) =>
+                                          game.isEggUnlocked(egg) &&
+                                          game.canAfford(egg),
+                                    )
+                                    .length,
+                                totalCount: builtInShopEggs.length,
+                              ),
+                              battleSummary: '${game.battleTokens} tokens',
+                              customSummary: customShopEggs.isEmpty
+                                  ? 'Create'
+                                  : '${customShopEggs.length} available',
+                              onSelected: (section) {
+                                if (_selectedSection == section) return;
+                                UiSound.click(context);
+                                setState(() => _selectedSection = section);
+                              },
+                            ),
                           ),
-                          battleSummary: '${game.battleTokens} tokens',
-                          customSummary: customShopEggs.isEmpty
-                              ? 'Create'
-                              : '${customShopEggs.length} available',
-                          onSelected: (section) {
-                            if (_selectedSection == section) return;
-                            UiSound.click(context);
-                            setState(() => _selectedSection = section);
-                          },
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: layoutClass == GameLayoutClass.expanded
+                              ? 16
+                              : 0,
+                          height: layoutClass == GameLayoutClass.expanded
+                              ? 0
+                              : 12,
+                        ),
                         Expanded(
                           child: ListView(
                             key: PageStorageKey<String>(

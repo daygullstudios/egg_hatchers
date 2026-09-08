@@ -336,6 +336,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
               backgroundColor: Colors.transparent,
               extendBody: true,
               appBar: PhoneWidthAppBar(
+                useGameWidth: shell != null,
                 title: '🐣 Nestarium',
                 titleStyle: const TextStyle(
                   fontWeight: FontWeight.bold,
@@ -371,107 +372,137 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
               ),
               body: GameBackground(
                 theme: bg,
-                child: PhoneWidthLayout(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        CoinStatsStrip(
-                          coinsPerSecond: game.coinsPerSecond,
-                          lifetimeCoinsEarned: game.lifetimeCoinsEarned,
-                          theme: bg,
+                child: GameWidthLayout(
+                  useGameWidth: shell != null,
+                  builder: (context, layoutClass) {
+                    void openQuests() {
+                      if (shell != null) {
+                        shell.onSelect(MainGameDestination.quests);
+                        return;
+                      }
+                      openWithThemedTransition(
+                        context,
+                        theme: bg,
+                        icon: '⭐',
+                        label: 'Opening Quests',
+                        settings: const RouteSettings(name: kQuestsRouteName),
+                        builder: (_) =>
+                            QuestsScreen(game: game, preferences: preferences),
+                      );
+                    }
+
+                    final progress = <Widget>[
+                      DailyRewardCard(game: game, theme: bg),
+                      const SizedBox(height: 14),
+                      DailyQuestsSummaryCard(
+                        game: game,
+                        theme: bg,
+                        onOpenQuests: openQuests,
+                      ),
+                      const SizedBox(height: 14),
+                      LuckPanel(game: game, theme: bg),
+                      const SizedBox(height: 14),
+                      RebirthPanel(
+                        key: TutorialTargets.rebirthPanel,
+                        game: game,
+                        theme: bg,
+                      ),
+                    ];
+                    final production = <Widget>[
+                      KeyedSubtree(
+                        key: TutorialTargets.animalsSection,
+                        child: Text(
+                          'Production Snapshot',
+                          style: GameTheme.sectionTitle(bg),
                         ),
-                        const SizedBox(height: 14),
-                        DailyRewardCard(game: game, theme: bg),
-                        const SizedBox(height: 14),
-                        DailyQuestsSummaryCard(
+                      ),
+                      const SizedBox(height: 10),
+                      if (game.ownedAnimals.isEmpty)
+                        _EmptyHatchery(theme: bg)
+                      else
+                        OwnedAnimalList(
                           game: game,
                           theme: bg,
-                          onOpenQuests: () {
-                            if (shell != null) {
-                              shell.onSelect(MainGameDestination.quests);
-                              return;
-                            }
-                            openWithThemedTransition(
-                              context,
-                              theme: bg,
-                              icon: '⭐',
-                              label: 'Opening Quests',
-                              settings: const RouteSettings(
-                                name: kQuestsRouteName,
-                              ),
-                              builder: (_) => QuestsScreen(
-                                game: game,
-                                preferences: preferences,
-                              ),
-                            );
-                          },
+                          compact: true,
+                          embedInParentScroll: true,
+                          customSprites: customSprites,
+                          firstCardUpgradeKey: TutorialTargets.upgradeButton,
+                          entries: hatcheryAnimals,
+                          showSectionHeaders: false,
+                          onUpgrade:
+                              (animalId, mutationId, name, isProtected) =>
+                                  _handleUpgrade(
+                                    context,
+                                    animalId,
+                                    mutationId,
+                                    name,
+                                    isProtected,
+                                  ),
                         ),
-                        const SizedBox(height: 14),
-                        LuckPanel(game: game, theme: bg),
-                        const SizedBox(height: 14),
-                        RebirthPanel(
-                          key: TutorialTargets.rebirthPanel,
-                          game: game,
-                          theme: bg,
-                        ),
-                        const SizedBox(height: 18),
-                        KeyedSubtree(
-                          key: TutorialTargets.animalsSection,
-                          child: Text(
-                            'Production Snapshot',
-                            style: GameTheme.sectionTitle(bg),
-                          ),
-                        ),
+                      if (game.ownedAnimals.isNotEmpty) ...[
                         const SizedBox(height: 10),
-                        if (game.ownedAnimals.isEmpty)
-                          _EmptyHatchery(theme: bg)
-                        else
-                          OwnedAnimalList(
-                            game: game,
-                            theme: bg,
-                            compact: true,
-                            embedInParentScroll: true,
-                            customSprites: customSprites,
-                            firstCardUpgradeKey: TutorialTargets.upgradeButton,
-                            entries: hatcheryAnimals,
-                            showSectionHeaders: false,
-                            onUpgrade:
-                                (animalId, mutationId, name, isProtected) =>
-                                    _handleUpgrade(
-                                      context,
-                                      animalId,
-                                      mutationId,
-                                      name,
-                                      isProtected,
-                                    ),
+                        OutlinedButton.icon(
+                          key: const ValueKey('manage-collection-button'),
+                          onPressed: _openCollection,
+                          icon: const Icon(Icons.collections_bookmark_rounded),
+                          label: Text(
+                            game.ownedAnimals.length > hatcheryAnimals.length
+                                ? 'Manage All ${game.ownedAnimals.length} Stacks'
+                                : 'Manage Collection',
                           ),
-                        if (game.ownedAnimals.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          OutlinedButton.icon(
-                            key: const ValueKey('manage-collection-button'),
-                            onPressed: _openCollection,
-                            icon: const Icon(
-                              Icons.collections_bookmark_rounded,
-                            ),
-                            label: Text(
-                              game.ownedAnimals.length > hatcheryAnimals.length
-                                  ? 'Manage All ${game.ownedAnimals.length} Stacks'
-                                  : 'Manage Collection',
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: bg.cardTextPrimaryColor,
-                              side: BorderSide(color: bg.primaryColor),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: bg.cardTextPrimaryColor,
+                            side: BorderSide(color: bg.primaryColor),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                        ],
-                        SizedBox(
-                          height: MediaQuery.paddingOf(context).bottom + 24,
                         ),
                       ],
-                    ),
-                  ),
+                    ];
+
+                    return SingleChildScrollView(
+                      key: const PageStorageKey<String>('hatchery-scroll'),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          CoinStatsStrip(
+                            coinsPerSecond: game.coinsPerSecond,
+                            lifetimeCoinsEarned: game.lifetimeCoinsEarned,
+                            theme: bg,
+                          ),
+                          const SizedBox(height: 14),
+                          if (layoutClass == GameLayoutClass.expanded)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: progress,
+                                  ),
+                                ),
+                                const SizedBox(width: 18),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: production,
+                                  ),
+                                ),
+                              ],
+                            )
+                          else ...[
+                            ...progress,
+                            const SizedBox(height: 18),
+                            ...production,
+                          ],
+                          SizedBox(
+                            height: MediaQuery.paddingOf(context).bottom + 24,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ),

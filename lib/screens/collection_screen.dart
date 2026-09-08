@@ -297,6 +297,7 @@ class _CollectionScreenState extends State<CollectionScreen> {
               child: Scaffold(
                 backgroundColor: Colors.transparent,
                 appBar: PhoneWidthAppBar(
+                  useGameWidth: shell != null,
                   title: '📚 Collection',
                   titleStyle: const TextStyle(
                     fontWeight: FontWeight.bold,
@@ -321,38 +322,61 @@ class _CollectionScreenState extends State<CollectionScreen> {
                 ),
                 body: GameBackground(
                   theme: bg,
-                  child: PhoneWidthLayout(
-                    child: Column(
+                  child: GameWidthLayout(
+                    useGameWidth: shell != null,
+                    builder: (context, layoutClass) => Flex(
+                      direction: layoutClass == GameLayoutClass.expanded
+                          ? Axis.horizontal
+                          : Axis.vertical,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _CollectionModeSelector(
-                          theme: bg,
-                          selected: _mode,
-                          animalCount: game.ownedAnimals.length,
-                          fusionCount: game.ownedAnimals
-                              .where(
-                                (owned) =>
-                                    owned.quantity >= 2 &&
-                                    owned.mutationId != 'shadow' &&
-                                    owned.mutationId != 'boss',
-                              )
-                              .length,
-                          onSelected: (mode) => setState(() => _mode = mode),
-                        ),
-                        const SizedBox(height: 10),
-                        if (_mode == _CollectionMode.animals)
-                          _CollectionControls(
-                            theme: bg,
-                            mutationFilter: _mutationFilter,
-                            sort: _sort,
-                            onSearchChanged: (value) =>
-                                setState(() => _searchQuery = value),
-                            onMutationFilterChanged: (value) =>
-                                setState(() => _mutationFilter = value),
-                            onSortChanged: (value) =>
-                                setState(() => _sort = value),
+                        SizedBox(
+                          width: layoutClass == GameLayoutClass.expanded
+                              ? 320
+                              : null,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _CollectionModeSelector(
+                                theme: bg,
+                                selected: _mode,
+                                animalCount: game.ownedAnimals.length,
+                                fusionCount: game.ownedAnimals
+                                    .where(
+                                      (owned) =>
+                                          owned.quantity >= 2 &&
+                                          owned.mutationId != 'shadow' &&
+                                          owned.mutationId != 'boss',
+                                    )
+                                    .length,
+                                onSelected: (mode) =>
+                                    setState(() => _mode = mode),
+                              ),
+                              if (_mode == _CollectionMode.animals) ...[
+                                const SizedBox(height: 10),
+                                _CollectionControls(
+                                  theme: bg,
+                                  mutationFilter: _mutationFilter,
+                                  sort: _sort,
+                                  onSearchChanged: (value) =>
+                                      setState(() => _searchQuery = value),
+                                  onMutationFilterChanged: (value) =>
+                                      setState(() => _mutationFilter = value),
+                                  onSortChanged: (value) =>
+                                      setState(() => _sort = value),
+                                ),
+                              ],
+                            ],
                           ),
-                        if (_mode == _CollectionMode.animals)
-                          const SizedBox(height: 10),
+                        ),
+                        SizedBox(
+                          width: layoutClass == GameLayoutClass.expanded
+                              ? 16
+                              : 0,
+                          height: layoutClass == GameLayoutClass.expanded
+                              ? 0
+                              : 10,
+                        ),
                         Expanded(
                           child: _mode == _CollectionMode.fusion
                               ? SingleChildScrollView(
@@ -375,6 +399,8 @@ class _CollectionScreenState extends State<CollectionScreen> {
                                   customSprites: customSprites,
                                   entries: visibleAnimals,
                                   sortEntries: false,
+                                  adaptiveGrid:
+                                      layoutClass == GameLayoutClass.expanded,
                                   showSellButtons: true,
                                   onUpgrade:
                                       (

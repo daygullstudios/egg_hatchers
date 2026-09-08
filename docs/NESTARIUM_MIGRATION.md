@@ -13,7 +13,9 @@ verified active). This is a product rebrand, not a new application/data identity
   remain readable by existing installations and old exports still import.
 - Web title, description, application/PWA names, loading/accessible text,
   Open Graph product metadata, favicon, launcher and maskable icons. The
-  portrait shell, start URL, route paths, and private/no-index headers remain.
+  start URL, route paths, and private/no-index headers remain. The original
+  portrait shell was later superseded by the bounded adaptive game workspace
+  documented in `PROJECT_HANDOFF.md`.
 - Android/iOS display names, macOS application product and scheme/test-host
   references, Linux/Windows window titles and safe Windows file metadata.
   Publisher copyright credits Daygull Studios LLC.

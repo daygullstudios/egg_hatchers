@@ -68,7 +68,11 @@ class GamePrimaryNavigation extends StatelessWidget
         child: Center(
           child: ConstrainedBox(
             key: contentKey,
-            constraints: const BoxConstraints(maxWidth: kPhoneMaxContentWidth),
+            constraints: BoxConstraints(
+              maxWidth: gameContentMaxWidthFor(
+                MediaQuery.sizeOf(context).width,
+              ),
+            ),
             child: SizedBox(
               width: double.infinity,
               height: preferredSize.height,
@@ -80,6 +84,17 @@ class GamePrimaryNavigation extends StatelessWidget
                       shell.game.dailyQuests
                           .where((quest) => quest.isComplete && !quest.claimed)
                           .length;
+                  final layoutClass = gameLayoutClassFor(
+                    MediaQuery.sizeOf(context).width,
+                  );
+                  if (layoutClass == GameLayoutClass.expanded) {
+                    return _DesktopNavigation(
+                      shell: shell,
+                      theme: theme,
+                      hostDestination: hostDestination,
+                      readyCount: readyCount,
+                    );
+                  }
                   return _MobileNavigation(
                     shell: shell,
                     theme: theme,
@@ -93,6 +108,81 @@ class GamePrimaryNavigation extends StatelessWidget
         ),
       ),
     );
+  }
+}
+
+class _DesktopNavigation extends StatelessWidget {
+  const _DesktopNavigation({
+    required this.shell,
+    required this.theme,
+    required this.hostDestination,
+    required this.readyCount,
+  });
+
+  final MainGameShellScope shell;
+  final BackgroundTheme theme;
+  final MainGameDestination hostDestination;
+  final int readyCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _item(MainGameDestination.hatchery, Icons.home_rounded, 'Hatchery'),
+        _item(MainGameDestination.shop, Icons.shopping_cart_rounded, 'Shop'),
+        _item(
+          MainGameDestination.battles,
+          Icons.sports_martial_arts_rounded,
+          'Battles',
+        ),
+        _item(
+          MainGameDestination.collection,
+          Icons.collections_bookmark_rounded,
+          'Collection',
+        ),
+        _item(
+          MainGameDestination.quests,
+          Icons.flag_rounded,
+          'Quests',
+          badgeCount: readyCount,
+        ),
+        _item(
+          MainGameDestination.customAnimals,
+          Icons.auto_fix_high_rounded,
+          'Custom Animals',
+        ),
+        _item(MainGameDestination.settings, Icons.settings_rounded, 'Settings'),
+      ],
+    );
+  }
+
+  Widget _item(
+    MainGameDestination destination,
+    IconData icon,
+    String label, {
+    int badgeCount = 0,
+  }) {
+    return Expanded(
+      child: _NavButton(
+        icon: icon,
+        label: label,
+        selected: shell.current == destination,
+        theme: theme,
+        onTap: () => shell.onSelect(destination),
+        badgeCount: badgeCount,
+        tutorialKey: _tutorialKey(destination),
+      ),
+    );
+  }
+
+  Key? _tutorialKey(MainGameDestination destination) {
+    if (hostDestination != MainGameDestination.hatchery) return null;
+    return switch (destination) {
+      MainGameDestination.shop => TutorialTargets.shopButton,
+      MainGameDestination.battles => TutorialTargets.battlesButton,
+      MainGameDestination.collection => TutorialTargets.collectionButton,
+      _ => null,
+    };
   }
 }
 

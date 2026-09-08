@@ -656,6 +656,7 @@ class BattlesScreen extends StatelessWidget {
             child: Scaffold(
               backgroundColor: Colors.transparent,
               appBar: PhoneWidthAppBar(
+                useGameWidth: shell != null,
                 title: '⚔️ Boss Battles',
                 titleStyle: const TextStyle(
                   fontWeight: FontWeight.bold,
@@ -680,118 +681,138 @@ class BattlesScreen extends StatelessWidget {
               ),
               body: GameBackground(
                 theme: theme,
-                child: PhoneWidthLayout(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: ListView(
+                child: GameWidthLayout(
+                  useGameWidth: shell != null,
+                  builder: (context, layoutClass) {
+                    final entryWidgets = <Widget>[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: GameTheme.cardDecoration(theme),
+                        child: Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
+                            Text(
+                              '⚔️',
+                              style: TextStyle(
+                                fontSize: 28,
+                                color: theme.primaryColor,
                               ),
-                              decoration: GameTheme.cardDecoration(theme),
-                              child: Row(
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '⚔️',
+                                    'Battle Tokens: ${game.battleTokens}',
                                     style: TextStyle(
-                                      fontSize: 28,
-                                      color: theme.primaryColor,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.cardTextPrimaryColor,
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Battle Tokens: ${game.battleTokens}',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: theme.cardTextPrimaryColor,
-                                          ),
-                                        ),
-                                        if (game.eggShards > 0)
-                                          Text(
-                                            '🥚 Egg Shards: ${game.eggShards}',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
-                                              color: theme.secondaryColor,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (game.totalBossWins > 0)
+                                  if (game.eggShards > 0)
                                     Text(
-                                      '${game.totalBossWins} wins',
+                                      '🥚 Egg Shards: ${game.eggShards}',
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.w600,
-                                        color: theme.cardTextSecondaryColor,
+                                        color: theme.secondaryColor,
                                       ),
                                     ),
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 14),
-                            _ArenaEntryCard(
-                              theme: theme,
-                              game: game,
-                              onTap: () => _openArena(context, theme),
-                            ),
-                            const SizedBox(height: 10),
-                            _MultiplayerEntryCard(
-                              theme: theme,
-                              game: game,
-                              onTap: () =>
-                                  _openMultiplayerArena(context, theme),
-                            ),
-                            const SizedBox(height: 10),
-                            _TradingEntryCard(
-                              theme: theme,
-                              game: game,
-                              serviceAvailable: MultiplayerService
-                                  .defaultServerSupportsTrading,
-                              onTap: () => _openOnlineTrading(context, theme),
-                            ),
-                            const SizedBox(height: 14),
-                            _BattleAccordionSections(
-                              theme: theme,
-                              game: game,
-                              customSprites: customSprites,
-                              onUpgradeBattleHoming: () =>
-                                  _upgradeBattleHoming(context),
-                              onUpgradeBattleShotSpeed: () =>
-                                  _upgradeBattleShotSpeed(context),
-                              onUpgradeBattleExtraLife: () =>
-                                  _upgradeBattleExtraLife(context),
-                              onUnlockBossMutation: () =>
-                                  _unlockBossMutation(context),
-                              onApplyBossMutation: () =>
-                                  _applyBossMutation(context, theme),
-                              onAutoBattle: (boss) =>
-                                  _startAutoBattle(context, boss, theme),
-                              onManualBattle: (boss, mode) =>
-                                  _startManualBattle(
-                                    context,
-                                    boss,
-                                    theme,
-                                    mode: mode,
-                                  ),
-                            ),
-                            const SizedBox(height: 16),
+                            if (game.totalBossWins > 0)
+                              Text(
+                                '${game.totalBossWins} wins',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: theme.cardTextSecondaryColor,
+                                ),
+                              ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
+                      const SizedBox(height: 14),
+                      _ArenaEntryCard(
+                        theme: theme,
+                        game: game,
+                        onTap: () => _openArena(context, theme),
+                      ),
+                      const SizedBox(height: 10),
+                      _MultiplayerEntryCard(
+                        theme: theme,
+                        game: game,
+                        onTap: () => _openMultiplayerArena(context, theme),
+                      ),
+                      const SizedBox(height: 10),
+                      _TradingEntryCard(
+                        theme: theme,
+                        game: game,
+                        serviceAvailable:
+                            MultiplayerService.defaultServerSupportsTrading,
+                        onTap: () => _openOnlineTrading(context, theme),
+                      ),
+                    ];
+                    final battleSections = _BattleAccordionSections(
+                      theme: theme,
+                      game: game,
+                      customSprites: customSprites,
+                      onUpgradeBattleHoming: () =>
+                          _upgradeBattleHoming(context),
+                      onUpgradeBattleShotSpeed: () =>
+                          _upgradeBattleShotSpeed(context),
+                      onUpgradeBattleExtraLife: () =>
+                          _upgradeBattleExtraLife(context),
+                      onUnlockBossMutation: () => _unlockBossMutation(context),
+                      onApplyBossMutation: () =>
+                          _applyBossMutation(context, theme),
+                      onAutoBattle: (boss) =>
+                          _startAutoBattle(context, boss, theme),
+                      onManualBattle: (boss, mode) =>
+                          _startManualBattle(context, boss, theme, mode: mode),
+                    );
+
+                    if (layoutClass == GameLayoutClass.expanded) {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SizedBox(
+                            width: 350,
+                            child: ListView(
+                              key: const PageStorageKey<String>(
+                                'battle-destinations',
+                              ),
+                              children: entryWidgets,
+                            ),
+                          ),
+                          const SizedBox(width: 18),
+                          Expanded(
+                            child: ListView(
+                              key: const PageStorageKey<String>(
+                                'battle-progression',
+                              ),
+                              children: [battleSections],
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
+                    return ListView(
+                      key: const PageStorageKey<String>('battle-all'),
+                      children: [
+                        ...entryWidgets,
+                        const SizedBox(height: 14),
+                        battleSections,
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),

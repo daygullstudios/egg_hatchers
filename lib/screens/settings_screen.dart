@@ -288,6 +288,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Scaffold(
             backgroundColor: Colors.transparent,
             appBar: PhoneWidthAppBar(
+              useGameWidth: shell != null,
               title: 'Settings',
               titleStyle: const TextStyle(
                 fontWeight: FontWeight.bold,
@@ -311,331 +312,366 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             body: GameBackground(
               theme: selected,
-              child: PhoneWidthLayout(
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    _SettingsAccordionSection(
-                      key: const ValueKey('settings-panel-account'),
-                      theme: selected,
-                      icon: Icons.manage_accounts_rounded,
-                      title: 'Account & Saves',
-                      summary: account == null
-                          ? 'Local save transfer'
-                          : '${account.displayName} · ${cloudConnection != null && !cloudConnection.isAvailable ? (cloudConnection.isBusy ? 'Connecting to cloud' : 'Cloud unavailable') : protection.label}',
-                      expanded:
-                          _expandedPanel == _SettingsPanel.accountAndSaves,
-                      onTap: () => setState(
-                        () => _expandedPanel =
-                            _expandedPanel == _SettingsPanel.accountAndSaves
-                            ? null
-                            : _SettingsPanel.accountAndSaves,
+              child: GameWidthLayout(
+                useGameWidth: shell != null,
+                builder: (context, layoutClass) => Align(
+                  alignment: Alignment.topCenter,
+                  child: SizedBox(
+                    width:
+                        layoutClass == GameLayoutClass.expanded &&
+                            _expandedPanel != null
+                        ? 760
+                        : null,
+                    child: ResponsiveCardList(
+                      scrollKey: const PageStorageKey<String>(
+                        'settings-panels',
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (account != null) ...[
-                            _AccountSettings(
-                              account: account,
-                              protection: protection,
-                              syncState: syncState,
-                              onRetrySyncConfirmation:
-                                  progressSync?.retrySyncConfirmation,
-                              onCompareSaves: progressSync == null
-                                  ? null
-                                  : () => showDialog<bool>(
-                                      context: context,
-                                      builder: (_) => ProgressConflictDialog(
-                                        sync: progressSync,
-                                        playerName: account.displayName,
-                                      ),
-                                    ),
-                              onProtectWithGoogle:
-                                  protection.canProtect &&
-                                      (AccountProtectionScope.maybeOf(
-                                            context,
-                                          )?.canLinkGoogle ??
-                                          false)
-                                  ? () => _protectWithGoogle(context, account)
-                                  : null,
-                              theme: selected,
-                              onSwitch: () => _switchAccount(context),
-                              onRemove: () =>
-                                  _removeLocalPlayer(context, account),
-                            ),
-                            const SizedBox(height: 14),
-                            Divider(color: selected.cardBorderColor),
-                            const SizedBox(height: 6),
-                          ],
-                          Text(
-                            'Save Transfer',
-                            style: GameTheme.sectionTitle(selected, size: 16),
+                      spacing: 10,
+                      minTwoColumnWidth: _expandedPanel == null
+                          ? 900
+                          : double.infinity,
+                      children: [
+                        _SettingsAccordionSection(
+                          key: const ValueKey('settings-panel-account'),
+                          theme: selected,
+                          icon: Icons.manage_accounts_rounded,
+                          title: 'Account & Saves',
+                          summary: account == null
+                              ? 'Local save transfer'
+                              : '${account.displayName} · ${cloudConnection != null && !cloudConnection.isAvailable ? (cloudConnection.isBusy ? 'Connecting to cloud' : 'Cloud unavailable') : protection.label}',
+                          expanded:
+                              _expandedPanel == _SettingsPanel.accountAndSaves,
+                          onTap: () => setState(
+                            () => _expandedPanel =
+                                _expandedPanel == _SettingsPanel.accountAndSaves
+                                ? null
+                                : _SettingsPanel.accountAndSaves,
                           ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Move every local account and its progress to another computer.',
-                            style: TextStyle(
-                              color: selected.cardTextSecondaryColor,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (account != null) ...[
+                                _AccountSettings(
+                                  account: account,
+                                  protection: protection,
+                                  syncState: syncState,
+                                  onRetrySyncConfirmation:
+                                      progressSync?.retrySyncConfirmation,
+                                  onCompareSaves: progressSync == null
+                                      ? null
+                                      : () => showDialog<bool>(
+                                          context: context,
+                                          builder: (_) =>
+                                              ProgressConflictDialog(
+                                                sync: progressSync,
+                                                playerName: account.displayName,
+                                              ),
+                                        ),
+                                  onProtectWithGoogle:
+                                      protection.canProtect &&
+                                          (AccountProtectionScope.maybeOf(
+                                                context,
+                                              )?.canLinkGoogle ??
+                                              false)
+                                      ? () =>
+                                            _protectWithGoogle(context, account)
+                                      : null,
+                                  theme: selected,
+                                  onSwitch: () => _switchAccount(context),
+                                  onRemove: () =>
+                                      _removeLocalPlayer(context, account),
+                                ),
+                                const SizedBox(height: 14),
+                                Divider(color: selected.cardBorderColor),
+                                const SizedBox(height: 6),
+                              ],
+                              Text(
+                                'Save Transfer',
+                                style: GameTheme.sectionTitle(
+                                  selected,
+                                  size: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Move every local account and its progress to another computer.',
+                                style: TextStyle(
+                                  color: selected.cardTextSecondaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              FilledButton.icon(
+                                key: const ValueKey('settings-export-save'),
+                                onPressed: kIsWeb
+                                    ? () => _exportSave(context)
+                                    : null,
+                                icon: const Icon(Icons.download_rounded),
+                                label: const Text(
+                                  'Export Save',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                style: GameTheme.filledButton(
+                                  selected,
+                                  color: selected.secondaryColor,
+                                  height: 48,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              OutlinedButton.icon(
+                                key: const ValueKey('settings-copy-save'),
+                                onPressed: kIsWeb
+                                    ? () => _copySave(context)
+                                    : null,
+                                icon: const Icon(Icons.copy_rounded),
+                                label: const Text(
+                                  'Copy Save Code',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: selected.primaryColor,
+                                  minimumSize: const Size.fromHeight(46),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              OutlinedButton.icon(
+                                key: const ValueKey('settings-import-save'),
+                                onPressed: kIsWeb
+                                    ? (_importSelecting
+                                          ? null
+                                          : () => _importSave(context))
+                                    : null,
+                                icon: const Icon(Icons.upload_file_rounded),
+                                label: const Text(
+                                  'Import Save',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: selected.primaryColor,
+                                  minimumSize: const Size.fromHeight(46),
+                                ),
+                              ),
+                              if (!kIsWeb) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Save transfer is currently available in the web game.',
+                                  style: TextStyle(
+                                    color: selected.cardTextSecondaryColor,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                          const SizedBox(height: 12),
-                          FilledButton.icon(
-                            key: const ValueKey('settings-export-save'),
-                            onPressed: kIsWeb
-                                ? () => _exportSave(context)
-                                : null,
-                            icon: const Icon(Icons.download_rounded),
+                        ),
+                        _SettingsAccordionSection(
+                          key: const ValueKey('settings-panel-tutorial'),
+                          theme: selected,
+                          icon: Icons.school_rounded,
+                          title: 'Tutorial',
+                          summary: 'Replay the guided introduction',
+                          expanded: _expandedPanel == _SettingsPanel.tutorial,
+                          onTap: () => setState(
+                            () => _expandedPanel =
+                                _expandedPanel == _SettingsPanel.tutorial
+                                ? null
+                                : _SettingsPanel.tutorial,
+                          ),
+                          child: FilledButton.icon(
+                            onPressed: () => _replayBasics(context, selected),
+                            icon: const Icon(Icons.replay_rounded),
                             label: const Text(
-                              'Export Save',
+                              'Replay Basic Tutorial',
                               style: TextStyle(fontWeight: FontWeight.bold),
                             ),
                             style: GameTheme.filledButton(
                               selected,
                               color: selected.secondaryColor,
-                              height: 48,
+                              height: 52,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          OutlinedButton.icon(
-                            key: const ValueKey('settings-copy-save'),
-                            onPressed: kIsWeb ? () => _copySave(context) : null,
-                            icon: const Icon(Icons.copy_rounded),
-                            label: const Text(
-                              'Copy Save Code',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: selected.primaryColor,
-                              minimumSize: const Size.fromHeight(46),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          OutlinedButton.icon(
-                            key: const ValueKey('settings-import-save'),
-                            onPressed: kIsWeb
-                                ? (_importSelecting
-                                      ? null
-                                      : () => _importSave(context))
-                                : null,
-                            icon: const Icon(Icons.upload_file_rounded),
-                            label: const Text(
-                              'Import Save',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: selected.primaryColor,
-                              minimumSize: const Size.fromHeight(46),
-                            ),
-                          ),
-                          if (!kIsWeb) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              'Save transfer is currently available in the web game.',
-                              style: TextStyle(
-                                color: selected.cardTextSecondaryColor,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    _SettingsAccordionSection(
-                      key: const ValueKey('settings-panel-tutorial'),
-                      theme: selected,
-                      icon: Icons.school_rounded,
-                      title: 'Tutorial',
-                      summary: 'Replay the guided introduction',
-                      expanded: _expandedPanel == _SettingsPanel.tutorial,
-                      onTap: () => setState(
-                        () => _expandedPanel =
-                            _expandedPanel == _SettingsPanel.tutorial
-                            ? null
-                            : _SettingsPanel.tutorial,
-                      ),
-                      child: FilledButton.icon(
-                        onPressed: () => _replayBasics(context, selected),
-                        icon: const Icon(Icons.replay_rounded),
-                        label: const Text(
-                          'Replay Basic Tutorial',
-                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        style: GameTheme.filledButton(
-                          selected,
-                          color: selected.secondaryColor,
-                          height: 52,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    _SettingsAccordionSection(
-                      key: const ValueKey('settings-panel-sound'),
-                      theme: selected,
-                      icon: Icons.tune_rounded,
-                      title: 'Sound & Feedback',
-                      summary:
-                          'Music ${audio.musicEnabled ? 'on' : 'off'} · SFX ${audio.sfxEnabled ? 'on' : 'off'}',
-                      expanded:
-                          _expandedPanel == _SettingsPanel.soundAndFeedback,
-                      onTap: () => setState(
-                        () => _expandedPanel =
-                            _expandedPanel == _SettingsPanel.soundAndFeedback
-                            ? null
-                            : _SettingsPanel.soundAndFeedback,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          AudioSettingsCard(
-                            theme: selected,
-                            audio: audio,
-                            embedded: true,
-                            showTitle: false,
+                        _SettingsAccordionSection(
+                          key: const ValueKey('settings-panel-sound'),
+                          theme: selected,
+                          icon: Icons.tune_rounded,
+                          title: 'Sound & Feedback',
+                          summary:
+                              'Music ${audio.musicEnabled ? 'on' : 'off'} · SFX ${audio.sfxEnabled ? 'on' : 'off'}',
+                          expanded:
+                              _expandedPanel == _SettingsPanel.soundAndFeedback,
+                          onTap: () => setState(
+                            () => _expandedPanel =
+                                _expandedPanel ==
+                                    _SettingsPanel.soundAndFeedback
+                                ? null
+                                : _SettingsPanel.soundAndFeedback,
                           ),
-                          Divider(color: selected.cardBorderColor),
-                          Text(
-                            'Visual & Device Feedback',
-                            style: GameTheme.sectionTitle(selected, size: 16),
-                          ),
-                          Material(
-                            color: Colors.transparent,
-                            child: SwitchListTile.adaptive(
-                              key: const ValueKey(
-                                'settings-reduced-battle-effects',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              AudioSettingsCard(
+                                theme: selected,
+                                audio: audio,
+                                embedded: true,
+                                showTitle: false,
                               ),
-                              contentPadding: EdgeInsets.zero,
-                              value: preferences.reducedBattleEffects,
-                              onChanged: preferences.setReducedBattleEffects,
-                              title: Text(
-                                'Reduced Battle Effects',
-                                style: TextStyle(
-                                  color: selected.cardTextPrimaryColor,
-                                  fontWeight: FontWeight.bold,
+                              Divider(color: selected.cardBorderColor),
+                              Text(
+                                'Visual & Device Feedback',
+                                style: GameTheme.sectionTitle(
+                                  selected,
+                                  size: 16,
                                 ),
                               ),
-                              subtitle: Text(
-                                'Removes screen shake and softens bright flashes',
-                                style: TextStyle(
-                                  color: selected.cardTextSecondaryColor,
+                              Material(
+                                color: Colors.transparent,
+                                child: SwitchListTile.adaptive(
+                                  key: const ValueKey(
+                                    'settings-reduced-battle-effects',
+                                  ),
+                                  contentPadding: EdgeInsets.zero,
+                                  value: preferences.reducedBattleEffects,
+                                  onChanged:
+                                      preferences.setReducedBattleEffects,
+                                  title: Text(
+                                    'Reduced Battle Effects',
+                                    style: TextStyle(
+                                      color: selected.cardTextPrimaryColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    'Removes screen shake and softens bright flashes',
+                                    style: TextStyle(
+                                      color: selected.cardTextSecondaryColor,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                          Divider(color: selected.cardBorderColor),
-                          Material(
-                            color: Colors.transparent,
-                            child: SwitchListTile.adaptive(
-                              key: const ValueKey('settings-haptics-enabled'),
-                              contentPadding: EdgeInsets.zero,
-                              value: preferences.hapticsEnabled,
-                              onChanged: preferences.setHapticsEnabled,
-                              title: Text(
-                                'Haptic Feedback',
-                                style: TextStyle(
-                                  color: selected.cardTextPrimaryColor,
-                                  fontWeight: FontWeight.bold,
+                              Divider(color: selected.cardBorderColor),
+                              Material(
+                                color: Colors.transparent,
+                                child: SwitchListTile.adaptive(
+                                  key: const ValueKey(
+                                    'settings-haptics-enabled',
+                                  ),
+                                  contentPadding: EdgeInsets.zero,
+                                  value: preferences.hapticsEnabled,
+                                  onChanged: preferences.setHapticsEnabled,
+                                  title: Text(
+                                    'Haptic Feedback',
+                                    style: TextStyle(
+                                      color: selected.cardTextPrimaryColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    'Adds vibration feedback to battle actions',
+                                    style: TextStyle(
+                                      color: selected.cardTextSecondaryColor,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              subtitle: Text(
-                                'Adds vibration feedback to battle actions',
-                                style: TextStyle(
-                                  color: selected.cardTextSecondaryColor,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    _SettingsAccordionSection(
-                      key: const ValueKey('settings-panel-appearance'),
-                      theme: selected,
-                      icon: Icons.palette_rounded,
-                      title: 'Appearance',
-                      summary: '${selected.name} · ${selectedAnimalTheme.name}',
-                      expanded: _expandedPanel == _SettingsPanel.appearance,
-                      onTap: () => setState(
-                        () => _expandedPanel =
-                            _expandedPanel == _SettingsPanel.appearance
-                            ? null
-                            : _SettingsPanel.appearance,
-                      ),
-                      child: Column(
-                        children: [
-                          SegmentedButton<_AppearancePanel>(
-                            key: const ValueKey('settings-appearance-selector'),
-                            segments: const [
-                              ButtonSegment(
-                                value: _AppearancePanel.backgrounds,
-                                icon: Icon(Icons.wallpaper_rounded),
-                                label: Text('Background'),
-                              ),
-                              ButtonSegment(
-                                value: _AppearancePanel.animalStyle,
-                                icon: Icon(Icons.pets_rounded),
-                                label: Text('Animal Style'),
                               ),
                             ],
-                            selected: {_appearancePanel},
-                            showSelectedIcon: false,
-                            onSelectionChanged: (selection) => setState(
-                              () => _appearancePanel = selection.first,
-                            ),
                           ),
-                          const SizedBox(height: 12),
-                          if (_appearancePanel == _AppearancePanel.backgrounds)
-                            for (
-                              var i = 0;
-                              i < BackgroundThemes.all.length;
-                              i++
-                            )
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: i == BackgroundThemes.all.length - 1
-                                      ? 0
-                                      : 10,
+                        ),
+                        _SettingsAccordionSection(
+                          key: const ValueKey('settings-panel-appearance'),
+                          theme: selected,
+                          icon: Icons.palette_rounded,
+                          title: 'Appearance',
+                          summary:
+                              '${selected.name} · ${selectedAnimalTheme.name}',
+                          expanded: _expandedPanel == _SettingsPanel.appearance,
+                          onTap: () => setState(
+                            () => _expandedPanel =
+                                _expandedPanel == _SettingsPanel.appearance
+                                ? null
+                                : _SettingsPanel.appearance,
+                          ),
+                          child: Column(
+                            children: [
+                              SegmentedButton<_AppearancePanel>(
+                                key: const ValueKey(
+                                  'settings-appearance-selector',
                                 ),
-                                child: _ThemeOptionCard(
-                                  activeTheme: selected,
-                                  theme: BackgroundThemes.all[i],
-                                  isSelected:
-                                      BackgroundThemes.all[i].id == selected.id,
-                                  onTap: () => _selectTheme(
-                                    context,
-                                    BackgroundThemes.all[i],
+                                segments: const [
+                                  ButtonSegment(
+                                    value: _AppearancePanel.backgrounds,
+                                    icon: Icon(Icons.wallpaper_rounded),
+                                    label: Text('Background'),
                                   ),
-                                ),
-                              )
-                          else
-                            for (
-                              var i = 0;
-                              i < AnimalSpriteThemes.all.length;
-                              i++
-                            )
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: i == AnimalSpriteThemes.all.length - 1
-                                      ? 0
-                                      : 10,
-                                ),
-                                child: _AnimalSpriteThemeCard(
-                                  activeTheme: selected,
-                                  animalTheme: AnimalSpriteThemes.all[i],
-                                  isSelected:
-                                      AnimalSpriteThemes.all[i].id ==
-                                      selectedAnimalTheme.id,
-                                  onTap: () => _selectAnimalSpriteTheme(
-                                    context,
-                                    AnimalSpriteThemes.all[i],
+                                  ButtonSegment(
+                                    value: _AppearancePanel.animalStyle,
+                                    icon: Icon(Icons.pets_rounded),
+                                    label: Text('Animal Style'),
                                   ),
+                                ],
+                                selected: {_appearancePanel},
+                                showSelectedIcon: false,
+                                onSelectionChanged: (selection) => setState(
+                                  () => _appearancePanel = selection.first,
                                 ),
                               ),
-                        ],
-                      ),
+                              const SizedBox(height: 12),
+                              if (_appearancePanel ==
+                                  _AppearancePanel.backgrounds)
+                                for (
+                                  var i = 0;
+                                  i < BackgroundThemes.all.length;
+                                  i++
+                                )
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom:
+                                          i == BackgroundThemes.all.length - 1
+                                          ? 0
+                                          : 10,
+                                    ),
+                                    child: _ThemeOptionCard(
+                                      activeTheme: selected,
+                                      theme: BackgroundThemes.all[i],
+                                      isSelected:
+                                          BackgroundThemes.all[i].id ==
+                                          selected.id,
+                                      onTap: () => _selectTheme(
+                                        context,
+                                        BackgroundThemes.all[i],
+                                      ),
+                                    ),
+                                  )
+                              else
+                                for (
+                                  var i = 0;
+                                  i < AnimalSpriteThemes.all.length;
+                                  i++
+                                )
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom:
+                                          i == AnimalSpriteThemes.all.length - 1
+                                          ? 0
+                                          : 10,
+                                    ),
+                                    child: _AnimalSpriteThemeCard(
+                                      activeTheme: selected,
+                                      animalTheme: AnimalSpriteThemes.all[i],
+                                      isSelected:
+                                          AnimalSpriteThemes.all[i].id ==
+                                          selectedAnimalTheme.id,
+                                      onTap: () => _selectAnimalSpriteTheme(
+                                        context,
+                                        AnimalSpriteThemes.all[i],
+                                      ),
+                                    ),
+                                  ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),

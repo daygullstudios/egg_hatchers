@@ -175,6 +175,7 @@ class _CustomSpritesScreenState extends State<CustomSpritesScreen> {
         final scaffold = Scaffold(
           backgroundColor: Colors.transparent,
           appBar: PhoneWidthAppBar(
+            useGameWidth: shell != null,
             title: '🎨 Custom Animals',
             titleStyle: const TextStyle(
               fontWeight: FontWeight.bold,
@@ -195,31 +196,50 @@ class _CustomSpritesScreenState extends State<CustomSpritesScreen> {
           ),
           body: GameBackground(
             theme: theme,
-            child: PhoneWidthLayout(
-              child: Column(
+            child: GameWidthLayout(
+              useGameWidth: shell != null,
+              builder: (context, layoutClass) => Flex(
+                direction: layoutClass == GameLayoutClass.expanded
+                    ? Axis.horizontal
+                    : Axis.vertical,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _CustomAnimalTools(
-                    theme: theme,
-                    expanded: _toolsExpanded,
-                    customizedCount: customizedCount,
-                    totalCount: GameData.animals.length,
-                    showCustomSprites: customSprites.showCustomSprites,
-                    onToggle: () =>
-                        setState(() => _toolsExpanded = !_toolsExpanded),
-                    onVisibilityChanged: customSprites.setShowCustomSprites,
-                    onResetAll: () => _confirmResetAll(context, theme),
+                  SizedBox(
+                    width: layoutClass == GameLayoutClass.expanded ? 330 : null,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _CustomAnimalTools(
+                          theme: theme,
+                          expanded: _toolsExpanded,
+                          customizedCount: customizedCount,
+                          totalCount: GameData.animals.length,
+                          showCustomSprites: customSprites.showCustomSprites,
+                          onToggle: () =>
+                              setState(() => _toolsExpanded = !_toolsExpanded),
+                          onVisibilityChanged:
+                              customSprites.setShowCustomSprites,
+                          onResetAll: () => _confirmResetAll(context, theme),
+                        ),
+                        const SizedBox(height: 10),
+                        _CustomAnimalControls(
+                          theme: theme,
+                          filter: _filter,
+                          sort: _sort,
+                          onSearchChanged: (value) =>
+                              setState(() => _searchQuery = value),
+                          onFilterChanged: (value) =>
+                              setState(() => _filter = value),
+                          onSortChanged: (value) =>
+                              setState(() => _sort = value),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 10),
-                  _CustomAnimalControls(
-                    theme: theme,
-                    filter: _filter,
-                    sort: _sort,
-                    onSearchChanged: (value) =>
-                        setState(() => _searchQuery = value),
-                    onFilterChanged: (value) => setState(() => _filter = value),
-                    onSortChanged: (value) => setState(() => _sort = value),
+                  SizedBox(
+                    width: layoutClass == GameLayoutClass.expanded ? 18 : 0,
+                    height: layoutClass == GameLayoutClass.expanded ? 0 : 10,
                   ),
-                  const SizedBox(height: 10),
                   Expanded(
                     child: animals.isEmpty
                         ? Center(
@@ -232,41 +252,41 @@ class _CustomSpritesScreenState extends State<CustomSpritesScreen> {
                               ),
                             ),
                           )
-                        : ListView.separated(
-                            key: const PageStorageKey('custom-animal-results'),
-                            padding: EdgeInsets.zero,
-                            itemCount: animals.length,
-                            separatorBuilder: (_, _) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, index) {
-                              final animal = animals[index];
-                              return _AnimalSpriteTile(
-                                animal: animal,
-                                theme: theme,
-                                preferences: preferences,
-                                hasCustom: customSprites.hasCustomSprite(
-                                  animal.id,
-                                ),
-                                customSprite: customSprites.getSprite(
-                                  animal.id,
-                                ),
-                                onTap: () => openWithThemedTransition(
-                                  context,
+                        : ResponsiveCardList(
+                            scrollKey: const PageStorageKey(
+                              'custom-animal-results',
+                            ),
+                            spacing: 10,
+                            minTwoColumnWidth: 720,
+                            children: [
+                              for (final animal in animals)
+                                _AnimalSpriteTile(
+                                  animal: animal,
                                   theme: theme,
-                                  icon: '✏️',
-                                  label: 'Opening Editor',
-                                  duration: kEditorThemedPreNavDuration,
-                                  builder: (_) => SpriteEditorScreen(
-                                    animal: animal,
+                                  preferences: preferences,
+                                  hasCustom: customSprites.hasCustomSprite(
+                                    animal.id,
+                                  ),
+                                  customSprite: customSprites.getSprite(
+                                    animal.id,
+                                  ),
+                                  onTap: () => openWithThemedTransition(
+                                    context,
                                     theme: theme,
-                                    customSprites: customSprites,
-                                    game: game,
-                                    spriteRating: spriteRating,
-                                    referenceOverlay: referenceOverlay,
+                                    icon: '✏️',
+                                    label: 'Opening Editor',
+                                    duration: kEditorThemedPreNavDuration,
+                                    builder: (_) => SpriteEditorScreen(
+                                      animal: animal,
+                                      theme: theme,
+                                      customSprites: customSprites,
+                                      game: game,
+                                      spriteRating: spriteRating,
+                                      referenceOverlay: referenceOverlay,
+                                    ),
                                   ),
                                 ),
-                              );
-                            },
+                            ],
                           ),
                   ),
                 ],

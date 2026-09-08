@@ -9,6 +9,31 @@ import 'coin_balance_scope.dart';
 /// Logical max width for centered phone-style app content on wide screens.
 const double kPhoneMaxContentWidth = 430.0;
 
+/// Widths used by the adaptive primary-game workspace.
+///
+/// Focused routes (tutorials, battles, editors, dialogs) continue to use the
+/// phone-width layout. Only screens that opt into [GameWidthLayout] expand.
+const double kMediumGameBreakpoint = 600.0;
+const double kExpandedGameBreakpoint = 900.0;
+const double kMediumGameMaxContentWidth = 760.0;
+const double kExpandedGameMaxContentWidth = 1180.0;
+
+enum GameLayoutClass { compact, medium, expanded }
+
+GameLayoutClass gameLayoutClassFor(double width) {
+  if (width >= kExpandedGameBreakpoint) return GameLayoutClass.expanded;
+  if (width >= kMediumGameBreakpoint) return GameLayoutClass.medium;
+  return GameLayoutClass.compact;
+}
+
+double gameContentMaxWidthFor(double width) {
+  return switch (gameLayoutClassFor(width)) {
+    GameLayoutClass.compact => kPhoneMaxContentWidth,
+    GameLayoutClass.medium => kMediumGameMaxContentWidth,
+    GameLayoutClass.expanded => kExpandedGameMaxContentWidth,
+  };
+}
+
 const double _kPhoneAppBarSideSlotWidth = 48.0;
 
 /// AppBar whose toolbar content aligns with [PhoneWidthLayout] on wide screens.
@@ -32,6 +57,7 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.titleStyle,
     this.onCoinBalanceTap,
     this.bottom,
+    this.useGameWidth = false,
   }) : titleWidget = null;
 
   const PhoneWidthAppBar.widget({
@@ -47,6 +73,7 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.horizontalPadding = 16,
     this.onCoinBalanceTap,
     this.bottom,
+    this.useGameWidth = false,
   }) : title = null,
        titleStyle = null;
 
@@ -63,6 +90,7 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double horizontalPadding;
   final VoidCallback? onCoinBalanceTap;
   final PreferredSizeWidget? bottom;
+  final bool useGameWidth;
 
   @override
   Size get preferredSize =>
@@ -123,6 +151,9 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contentMaxWidth = useGameWidth
+        ? gameContentMaxWidthFor(MediaQuery.sizeOf(context).width)
+        : kPhoneMaxContentWidth;
     final canPop =
         automaticallyImplyLeading && (ModalRoute.of(context)?.canPop ?? false);
     final actionWidgets = actions ?? const <Widget>[];
@@ -160,16 +191,17 @@ class PhoneWidthAppBar extends StatelessWidget implements PreferredSizeWidget {
               child: Center(
                 child: ConstrainedBox(
                   key: bottomContentKey,
-                  constraints: const BoxConstraints(
-                    maxWidth: kPhoneMaxContentWidth,
+                  constraints: const BoxConstraints(maxWidth: double.infinity),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: contentMaxWidth),
+                    child: SizedBox(width: double.infinity, child: bottom),
                   ),
-                  child: SizedBox(width: double.infinity, child: bottom),
                 ),
               ),
             ),
       title: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: kPhoneMaxContentWidth),
+          constraints: BoxConstraints(maxWidth: contentMaxWidth),
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
             child: Row(
@@ -294,6 +326,99 @@ class PhoneWidthLayout extends StatelessWidget {
 
     if (!useSafeArea) return content;
     return SafeArea(child: content);
+  }
+}
+
+/// Centers primary-game content and expands it at deliberate breakpoints.
+///
+/// This is intentionally separate from [PhoneWidthLayout] so focused routes
+/// cannot accidentally become desktop layouts just because the window grows.
+class GameWidthLayout extends StatelessWidget {
+  const GameWidthLayout({
+    super.key,
+    this.child,
+    this.builder,
+    this.useSafeArea = true,
+    this.useGameWidth = true,
+    this.padding = const EdgeInsets.fromLTRB(16, 8, 16, 16),
+  }) : assert(child != null || builder != null),
+       assert(child == null || builder == null);
+
+  final Widget? child;
+  final Widget Function(BuildContext context, GameLayoutClass layoutClass)?
+  builder;
+  final bool useSafeArea;
+  final bool useGameWidth;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final layoutClass = useGameWidth
+        ? gameLayoutClassFor(width)
+        : GameLayoutClass.compact;
+    final maxContentWidth = useGameWidth
+        ? gameContentMaxWidthFor(width)
+        : kPhoneMaxContentWidth;
+    final content = Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxContentWidth),
+        child: SizedBox(
+          width: double.infinity,
+          height: double.infinity,
+          child: Padding(
+            padding: padding,
+            child: child ?? builder!(context, layoutClass),
+          ),
+        ),
+      ),
+    );
+
+    if (!useSafeArea) return content;
+    return SafeArea(child: content);
+  }
+}
+
+/// A variable-height card collection that becomes a two-column wrap on wide
+/// game screens while retaining one scroll position across window resizes.
+class ResponsiveCardList extends StatelessWidget {
+  const ResponsiveCardList({
+    super.key,
+    required this.children,
+    this.scrollKey,
+    this.spacing = 14,
+    this.minTwoColumnWidth = 820,
+    this.padding = EdgeInsets.zero,
+  });
+
+  final List<Widget> children;
+  final Key? scrollKey;
+  final double spacing;
+  final double minTwoColumnWidth;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= minTwoColumnWidth ? 2 : 1;
+        final itemWidth = columns == 1
+            ? constraints.maxWidth
+            : (constraints.maxWidth - spacing) / 2;
+        return SingleChildScrollView(
+          key: scrollKey,
+          padding: padding,
+          child: Wrap(
+            spacing: spacing,
+            runSpacing: spacing,
+            children: [
+              for (final child in children)
+                SizedBox(width: itemWidth, child: child),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 

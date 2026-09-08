@@ -27,15 +27,30 @@ void main() {
     return inheritedSize!;
   }
 
-  testWidgets('centers a 430px app surface on wide displays', (tester) async {
+  testWidgets('centers a bounded desktop game surface on wide displays', (
+    tester,
+  ) async {
     final inheritedSize = await pumpShell(
       tester,
       viewportSize: const Size(1400, 900),
     );
 
     final surface = tester.getRect(find.byKey(PortraitAppShell.surfaceKey));
-    expect(surface, const Rect.fromLTWH(485, 0, 430, 900));
-    expect(inheritedSize, const Size(430, 900));
+    expect(surface, const Rect.fromLTWH(110, 0, 1180, 900));
+    expect(inheritedSize, const Size(1180, 900));
+  });
+
+  testWidgets('uses the full tablet viewport without a surround', (
+    tester,
+  ) async {
+    final inheritedSize = await pumpShell(
+      tester,
+      viewportSize: const Size(760, 900),
+    );
+
+    final surface = tester.getRect(find.byKey(PortraitAppShell.surfaceKey));
+    expect(surface, const Rect.fromLTWH(0, 0, 760, 900));
+    expect(inheritedSize, const Size(760, 900));
   });
 
   testWidgets('remains edge-to-edge on phone displays', (tester) async {

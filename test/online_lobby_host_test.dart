@@ -117,6 +117,33 @@ void main() {
     expect(find.text('Trade sent to @second successfully'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('wide-screen invitations anchor to the game workspace edge', (
+    tester,
+  ) async {
+    final lobby = _FakeOnlineLobbyService();
+    addTearDown(lobby.dispose);
+    tester.view.physicalSize = const Size(1180, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: OnlineLobbyHost(
+          lobby: lobby,
+          onSessionReady: (_) {},
+          child: const Scaffold(body: SizedBox.expand()),
+        ),
+      ),
+    );
+    lobby.showInvite();
+    await tester.pump();
+
+    final card = tester.getRect(find.byKey(const ValueKey('invite_1')));
+    expect(card.left, 10);
+    expect(card.width, 390);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 class _FakeOnlineLobbyService extends OnlineLobbyService {

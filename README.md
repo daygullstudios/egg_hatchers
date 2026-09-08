@@ -4,11 +4,11 @@ Nestarium is a Flutter idle collection and battle game with three art styles,
 boss fights, custom sprites and eggs, local player profiles, and live multiplayer
 battles and trading.
 
-The selected public domain is **playnestarium.com**. The current private game
-continues at [the protected playtest](https://egg-hatchers-playtest.daygullstudios.com/)
-while the new hostname completes its release gates. Existing players should
-keep using that origin and retain an exported save; refreshing there preserves
-their current browser storage and account session.
+The selected public domain is **playnestarium.com**. The primary private game is
+[the protected Nestarium playtest](https://playtest.playnestarium.com/). The
+legacy protected origin remains available for browser-save, guest-identity and
+rollback continuity. Players moving between origins should export a save first
+because browser storage and sessions are origin-scoped.
 
 See [the Nestarium migration record](docs/NESTARIUM_MIGRATION.md) and
 [the generated compatibility inventory](docs/LEGACY_BRAND_REFERENCES.json).

@@ -1,6 +1,6 @@
 # Nestarium Project Handoff
 
-Updated: 2026-09-07
+Updated: 2026-09-08
 
 ## Public Nestarium preview is live
 
@@ -38,6 +38,41 @@ expires or the network resolver refreshes; direct public-resolver/live-origin
 checks passed. Flutter analysis, all 807 Flutter tests, release web/Wasm dry
 run, four playtest config tests, multiplayer typecheck/28 tests, public-site
 isolation tests and both Wrangler dry runs/deployments passed.
+
+## Adaptive tablet and desktop workspace
+
+The former root-level 430px portrait clamp is superseded. The app surface is
+now bounded at 1180 logical pixels with the neutral surround retained outside
+that boundary. Compact screens preserve the established 430px phone layout;
+600–899px screens use a wider single-column tablet workspace; and 900px-plus
+screens use deliberate multi-pane compositions. Focused routes such as manual
+battles, editors, recovery flows and tutorials still opt into phone-width
+content instead of being stretched automatically.
+
+Expanded Hatchery separates progression from its Production Snapshot. Shop,
+Collection, Battles, Quests and Custom Animals separate navigation/tools from
+their working catalogs or progression surfaces. Collection and Custom Animals
+use two-column result grids where card width remains readable. Settings uses a
+two-column collapsed dashboard and centers one focused 760px panel when a
+section opens. Desktop navigation exposes all seven primary destinations;
+compact and tablet navigation keeps the established four destinations plus
+More. The shell's IndexedStack, PageStorage keys and existing state objects
+preserve route selection, scroll, accordions, filters and drafts across tab
+switches and live window resizing. Multiplayer invitations/notices now anchor
+to the adaptive game workspace rather than the obsolete phone-column edge.
+
+Integration evidence (2026-09-08): Flutter 3.47.2 analysis is clean and all
+**813 Flutter tests** pass. The protected hosted release build completed with
+the required playtest feature flags, followed in order by all **4 playtest
+tests**, Wrangler 4.129.0 dry run and deployment. Both protected custom-domain
+routes now serve static Worker version
+**`dc6c13d9-ae3c-468c-bf73-a8815fcd9c72`**; anonymous requests to each origin
+remain **302 to Cloudflare Access**. Authenticated external Chrome acceptance
+verified the wide Hatchery, Battles, Custom Animals and Settings layouts,
+including Settings' focused expanded panel. Compact 390px and tablet 760px
+checks passed locally, and a live 1280→390→1280 resize retained the selected
+Settings destination and open section. The browser console has no application
+errors; only the pre-existing Noto fallback-font warning remains.
 
 ## Current execution cadence — four grouped delivery batches
 
@@ -1501,7 +1536,7 @@ Nestarium is a Flutter idle collection and battle game. It currently includes lo
 
 Recent polish includes projectile trails, staged boss music that layers intensity without restarting, pause-resume countdowns, improved boss backgrounds, a hidden DayGull Egg unlock path, DayGull animals with animated glitch effects, and a live coin balance that remains in the shared app bar throughout navigation. The hatchery labels its Rebirth-scoped animal-income total as `earned` and explains the total on hover or tap; misleading player-facing `lifetime` terminology has been removed.
 
-The entire app now runs inside one root-level 430px portrait surface on wide displays, with a neutral dark desktop surround and the themed game background contained inside the surface. The constrained `MediaQuery` is inherited by the Navigator, routes, dialogs, tutorial overlays, app bars, and persistent navigation, so new UI cannot accidentally stretch across the desktop viewport; phone-sized displays remain edge-to-edge and vertically scroll normally. The major game screens share persistent navigation with Hatchery, Shop, Battles, Collection, and More, and tabs remain mounted so scroll and screen state survive switching. More opens an anchored, tab-styled secondary menu immediately beneath the navigation rather than a disconnected bottom sheet; it contains Quests, Custom Animals, and Settings. All three are mounted shell destinations with the same coin/navigation header and preserved screen state; Settings no longer pushes a visually inconsistent standalone route from More. The Quests screen uses a single-open accordion, a pinned category jump control, a unified Ready to Claim section with Claim All for ordinary rewards, intelligent progress sorting, and hidden claimed quests.
+The main game shell is adaptive rather than portrait-only: it preserves the established phone composition on compact displays, expands to a readable tablet workspace, and uses bounded multi-pane desktop layouts. The neutral surround remains outside the 1180px maximum game surface. The major game screens share persistent navigation; compact/tablet screens show Hatchery, Shop, Battles, Collection and More, while expanded desktop screens show all seven destinations directly. Tabs remain mounted so scroll and screen state survive switching and resizing. More opens an anchored secondary menu containing Quests, Custom Animals and Settings. All three are mounted shell destinations with the same coin/navigation header and preserved screen state. The Quests screen uses a single-open accordion, a pinned category jump control, a unified Ready to Claim section with Claim All for ordinary rewards, intelligent progress sorting, and hidden claimed quests.
 
 The Battles screen now keeps Battle Tokens plus the Rival Arena, Online Arena, and Trading launchers visible, then uses a single-open accordion for Battle Upgrades, all seven bosses, and Egg Shard Upgrades. Collapsed boss headers show identity, lock/progression status, wins, and the best available difficulty; locked bosses no longer consume full-card height. Upgrade headers surface affordable-action counts, the first Slime Boss section defaults open for onboarding continuity, and the selected section persists while the shell tab remains mounted.
 

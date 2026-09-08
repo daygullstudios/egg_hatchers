@@ -213,17 +213,16 @@ class _QuestsScreenState extends State<QuestsScreen> {
             .where((quest) => quest.isComplete && !quest.claimed)
             .toList();
         final dailyOther = game.dailyQuests
-            .where(
-              (quest) => !dailyReady.any((ready) => ready.id == quest.id),
-            )
+            .where((quest) => !dailyReady.any((ready) => ready.id == quest.id))
             .toList();
         final readyIds = readyToClaim.map((quest) => quest.id).toSet();
-        final claimAllCount = readyToClaim
-            .where(
-              (quest) =>
-                  !quest.showsSecretHintOnClaim && quest.hasClaimableReward,
-            )
-            .length +
+        final claimAllCount =
+            readyToClaim
+                .where(
+                  (quest) =>
+                      !quest.showsSecretHintOnClaim && quest.hasClaimableReward,
+                )
+                .length +
             dailyReady.length;
 
         return TutorialScreenBindings(
@@ -236,6 +235,7 @@ class _QuestsScreenState extends State<QuestsScreen> {
             child: Scaffold(
               backgroundColor: Colors.transparent,
               appBar: PhoneWidthAppBar(
+                useGameWidth: shell != null,
                 title: '🎯 Quests',
                 titleStyle: const TextStyle(
                   fontWeight: FontWeight.bold,
@@ -260,21 +260,41 @@ class _QuestsScreenState extends State<QuestsScreen> {
               ),
               body: GameBackground(
                 theme: theme,
-                child: PhoneWidthLayout(
-                  child: Column(
+                child: GameWidthLayout(
+                  useGameWidth: shell != null,
+                  builder: (context, layoutClass) => Flex(
+                    direction: layoutClass == GameLayoutClass.expanded
+                        ? Axis.horizontal
+                        : Axis.vertical,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _QuestOverview(
-                        theme: theme,
-                        readyCount: readyToClaim.length + dailyReady.length,
+                      SizedBox(
+                        width: layoutClass == GameLayoutClass.expanded
+                            ? 300
+                            : null,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _QuestOverview(
+                              theme: theme,
+                              readyCount:
+                                  readyToClaim.length + dailyReady.length,
+                            ),
+                            const SizedBox(height: 10),
+                            _CategoryJump(
+                              theme: theme,
+                              selected: _openCategory,
+                              onSelected: _selectCategory,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 10),
-                      _CategoryJump(
-                        theme: theme,
-                        selected: _openCategory,
-                        onSelected: _selectCategory,
+                      SizedBox(
+                        width: layoutClass == GameLayoutClass.expanded ? 18 : 0,
+                        height: layoutClass == GameLayoutClass.expanded
+                            ? 0
+                            : 10,
                       ),
-                      const SizedBox(height: 10),
                       Expanded(
                         child: ListView(
                           key: const PageStorageKey<String>('quests-list'),
@@ -290,8 +310,11 @@ class _QuestsScreenState extends State<QuestsScreen> {
                                 onClaim: (quest) => _claimQuest(context, quest),
                                 onClaimDaily: (quest) =>
                                     _claimDailyQuest(context, quest),
-                                onClaimAll: () =>
-                                    _claimAll(context, readyToClaim, dailyReady),
+                                onClaimAll: () => _claimAll(
+                                  context,
+                                  readyToClaim,
+                                  dailyReady,
+                                ),
                               ),
                               const SizedBox(height: 14),
                             ],

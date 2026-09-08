@@ -29,7 +29,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 287,
+      "line": 322,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -37,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 391,
+      "line": 426,
       "references": [
         "egghatchers.game"
       ],
@@ -45,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 447,
+      "line": 482,
       "references": [
         "egg_hatchers"
       ],
@@ -53,7 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1284,
+      "line": 1319,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -61,7 +61,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1465,
+      "line": 1500,
       "references": [
         "egghatchers.game"
       ],
@@ -69,7 +69,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1492,
+      "line": 1527,
       "references": [
         "egg_hatchers"
       ],
@@ -77,7 +77,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1572,
+      "line": 1607,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -85,7 +85,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1590,
+      "line": 1625,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -93,17 +93,9 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1597,
+      "line": 1632,
       "references": [
         "egg_hatchers"
-      ],
-      "reason": "Documented compatibility identity, origin, or migration history."
-    },
-    {
-      "path": "README.md",
-      "line": 8,
-      "references": [
-        "egg-hatchers-playtest"
       ],
       "reason": "Documented compatibility identity, origin, or migration history."
     },
@@ -285,7 +277,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 42,
+      "line": 44,
       "references": [
         "egg_hatchers"
       ],
@@ -293,7 +285,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 44,
+      "line": 46,
       "references": [
         "egghatchers.game"
       ],
@@ -301,7 +293,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 48,
+      "line": 50,
       "references": [
         "Egg Hatchers"
       ],
@@ -309,7 +301,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 57,
+      "line": 59,
       "references": [
         "egg_hatchers_save",
         "egg_hatchers_player_progress"
@@ -318,7 +310,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 58,
+      "line": 60,
       "references": [
         "egg_hatchers_cloud_progress",
         "egg_hatchers"
@@ -327,7 +319,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 61,
+      "line": 63,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -335,7 +327,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 64,
+      "line": 66,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -343,7 +335,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 207,
+      "line": 209,
       "references": [
         "egghatchers.game"
       ],
@@ -351,7 +343,7 @@
     },
     {
       "path": "docs/NESTARIUM_MIGRATION.md",
-      "line": 217,
+      "line": 219,
       "references": [
         "egg_hatchers"
       ],
@@ -359,7 +351,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 394,
+      "line": 397,
       "references": [
         "eggHatchers"
       ],
@@ -367,7 +359,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 399,
+      "line": 402,
       "references": [
         "egg_hatchers_player_state_account_"
       ],
@@ -375,7 +367,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 411,
+      "line": 414,
       "references": [
         "egg_hatchers.settings"
       ],
@@ -383,7 +375,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 432,
+      "line": 435,
       "references": [
         "egg_hatchers"
       ],
@@ -391,7 +383,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 502,
+      "line": 505,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -399,7 +391,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 525,
+      "line": 528,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -407,7 +399,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 552,
+      "line": 555,
       "references": [
         "egg_hatchers"
       ],
@@ -415,7 +407,7 @@
     },
     {
       "path": "docs/PLATFORM_ARCHITECTURE_WORKPLAN.md",
-      "line": 593,
+      "line": 596,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -1132,6 +1124,14 @@
         "egg_hatchers_player_state_account_old_player_backup"
       ],
       "reason": "Persisted save, account, settings, or wire-format contract (including tests)."
+    },
+    {
+      "path": "test/adaptive_game_layout_test.dart",
+      "line": 1,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
     },
     {
       "path": "test/animal_fusion_animation_test.dart",

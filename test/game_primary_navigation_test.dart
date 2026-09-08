@@ -91,19 +91,18 @@ void main() {
     expect(selected, MainGameDestination.settings);
   });
 
-  testWidgets('wide screens retain the centered phone-width navigation', (
-    tester,
-  ) async {
+  testWidgets('wide screens expose every destination directly', (tester) async {
     await pumpNavigation(tester, size: const Size(1000, 800), onSelect: (_) {});
 
     final content = tester.getRect(
       find.byKey(GamePrimaryNavigation.contentKey),
     );
-    expect(content.width, 430);
+    expect(content.width, 1000);
     expect(content.center.dx, 500);
-    expect(find.text('More'), findsOneWidget);
-    expect(find.text('Quests'), findsNothing);
-    expect(find.text('Settings'), findsNothing);
+    expect(find.text('More'), findsNothing);
+    expect(find.text('Quests'), findsOneWidget);
+    expect(find.text('Custom Animals'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 
   testWidgets('app bar bottom content shares the phone-width boundary', (
@@ -124,6 +123,7 @@ void main() {
             appBar: PhoneWidthAppBar(
               title: 'Hatchery',
               backgroundColor: Colors.teal,
+              useGameWidth: true,
               bottom: GamePrimaryNavigation(
                 theme: BackgroundThemes.hatcheryDefault,
                 hostDestination: MainGameDestination.hatchery,
@@ -137,7 +137,7 @@ void main() {
     final boundary = tester.getRect(
       find.byKey(PhoneWidthAppBar.bottomContentKey),
     );
-    expect(boundary.width, 430);
+    expect(boundary.width, 1180);
     expect(boundary.center.dx, 700);
   });
 }

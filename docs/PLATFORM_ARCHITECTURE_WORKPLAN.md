@@ -282,8 +282,9 @@ tab suspension and back/forward behavior across the major launch flows.
    Verify replay, exit and resume, not just first launch.
 4. **Whole-app navigation and accessibility:** audit remaining long pages,
    search/filter discoverability, notification routes, focus, keyboard access,
-   text scaling and empty/locked/error states. Preserve the shared portrait
-   shell, coin strip, navigation selection and per-destination scroll position.
+   text scaling and empty/locked/error states. Preserve the compact phone
+   composition, adaptive game-shell boundary, coin strip, navigation selection
+   and per-destination scroll position.
 5. **Consequential actions:** preview what fusion, rebirth, imports, trades and
    resets consume, preserve and may lose. Explain probabilities plainly; do
    not rely on color, icons or hover-only help. Review streak/time pressure and
@@ -297,9 +298,11 @@ tab suspension and back/forward behavior across the major launch flows.
 
 ### Usability acceptance for each relevant implementation
 
-- Test 320px/390px/430px widths, short-height windows and the wide-desktop
-  portrait surround; include normal and 200% text. Do not shrink text to hide
-  overflows. Long dialog content must scroll while decisions remain reachable.
+- Test 320px/390px/430px compact widths, 600–800px tablet widths, 900px and
+  1200px-plus expanded widths, short-height windows and the wide-desktop
+  surround; include normal and 200% text. Do not shrink text to hide overflows.
+  Long dialog content must scroll while decisions remain reachable. Resizing
+  must retain the active destination and meaningful scroll/selection/draft state.
 - Use at least 48 logical-pixel action targets for newly touched controls,
   visible keyboard focus, readable labels, and a safe cancel path for loss.
 - Check that the player can reach the task without traversing an entire catalog
