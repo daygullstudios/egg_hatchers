@@ -261,7 +261,7 @@
     },
     {
       "path": "cloudflare/public-site/build.mjs",
-      "line": 35,
+      "line": 42,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -269,7 +269,7 @@
     },
     {
       "path": "cloudflare/public-site/site.test.mjs",
-      "line": 111,
+      "line": 95,
       "references": [
         "egg-hatchers-playtest"
       ],

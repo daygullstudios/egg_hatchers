@@ -1,6 +1,6 @@
 {
   "audienceDecisionRecorded": true,
-  "policyAndSupportCopyApproved": false,
+  "policyAndSupportCopyApproved": true,
   "supportDeliveryAndReplyVerified": true,
-  "hostnameAndHeadersVerified": false
+  "hostnameAndHeadersVerified": true
 }

@@ -6,9 +6,16 @@ export const root = dirname(fileURLToPath(import.meta.url));
 export const output = resolve(root, '../../build/nestarium-public-site');
 export const pages = ['index.html', 'support.html', 'privacy.html', 'terms.html', 'delete-account.html', '404.html'];
 export const sources = new Map([
-  ...[...pages, 'site.css', '_headers', 'robots.txt'].map(name => [name, join(root, 'src', name)]),
-  ['brand.png', resolve(root, '../../web/icons/Icon-512.png')],
+  ...[...pages, 'site.css', '_headers', 'robots.txt', 'sitemap.xml'].map(name => [name, join(root, 'src', name)]),
+  ['brand.png', resolve(root, '../../assets/branding/nestarium_source.png')],
   ['favicon.png', resolve(root, '../../web/favicon.png')],
+  ['chicken.png', resolve(root, '../../assets/images/animals/chicken.png')],
+  ['cloud-bunny.png', resolve(root, '../../assets/images/animals/cloud_bunny.png')],
+  ['dragon.png', resolve(root, '../../assets/images/animals/dragon.png')],
+  ['cosmic-phoenix.png', resolve(root, '../../assets/images/animals/cosmic_phoenix.png')],
+  ['basic-egg.png', resolve(root, '../../assets/images/eggs/basic_egg_v2.png')],
+  ['magic-egg.png', resolve(root, '../../assets/images/eggs/magic_egg_v2.png')],
+  ['space-egg.png', resolve(root, '../../assets/images/eggs/space_egg_v2.png')],
 ]);
 
 export async function build() {

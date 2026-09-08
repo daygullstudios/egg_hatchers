@@ -3,5 +3,10 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
-  X-Robots-Tag: noindex, nofollow
   Cache-Control: no-cache
+
+/*.png
+  Cache-Control: public, max-age=604800, immutable
+
+/site.css
+  Cache-Control: public, max-age=86400
