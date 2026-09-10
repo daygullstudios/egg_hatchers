@@ -4,8 +4,8 @@ Updated: 2026-09-08
 
 ## Normal manual-boss music sections
 
-Normal manual boss fights use four sequential sections cut from
-`boss_music.mp3` at 144 BPM. A section plays its lead-in once, then loops the
+Normal manual boss fights use four sequential sections in the sample-accurate
+PCM source `boss_music.wav` at 144 BPM. A section plays its lead-in once, then loops the
 exact BandLab-marked range until a boss-life hit advances the music. The loop
 ranges are bars 2-9, 11-17, 19-25 and 25-41. Each lost boss life advances
 directly to the next section; battles with more than four lives remain on the

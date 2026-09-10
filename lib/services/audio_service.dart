@@ -13,6 +13,9 @@ class AudioService extends ChangeNotifier {
     _musicPositionSubscription = _musicPlayer.onPositionChanged.listen(
       _handleMusicPosition,
     );
+    _musicCompleteSubscription = _musicPlayer.onPlayerComplete.listen(
+      (_) => _handleMusicComplete(),
+    );
   }
 
   final DeviceSettingsStore _settingsStore;
@@ -50,6 +53,7 @@ class AudioService extends ChangeNotifier {
 
   final AudioPlayer _musicPlayer = AudioPlayer(playerId: 'music');
   late final StreamSubscription<Duration> _musicPositionSubscription;
+  late final StreamSubscription<void> _musicCompleteSubscription;
   final List<AudioPlayer> _sfxPlayers = List.generate(
     4,
     (i) => AudioPlayer(playerId: 'sfx_$i'),
@@ -175,12 +179,24 @@ class AudioService extends ChangeNotifier {
     await _stopMusic();
 
     _pendingTrack = null;
-    final played = await _tryPlayMusicAsset(track.assetPath);
+    final pendingPhase = track == MusicTrack.bossBattle
+        ? _pendingBattleMusicPhase
+        : null;
+    final played = await _tryPlayMusicAsset(
+      track.assetPath,
+      position: pendingPhase == null
+          ? null
+          : battleMusicSections[pendingPhase].start,
+      releaseMode: pendingPhase == null ? ReleaseMode.loop : ReleaseMode.stop,
+    );
     if (played) {
       _currentTrack = track;
-      final pendingPhase = _pendingBattleMusicPhase;
       if (track == MusicTrack.bossBattle && pendingPhase != null) {
-        await _activateBattleMusicPhase(pendingPhase, restart: true);
+        await _activateBattleMusicPhase(
+          pendingPhase,
+          restart: true,
+          seekToStart: false,
+        );
       }
       return;
     }
@@ -230,6 +246,7 @@ class AudioService extends ChangeNotifier {
   Future<void> _activateBattleMusicPhase(
     int phase, {
     bool restart = false,
+    bool seekToStart = true,
   }) async {
     if (_currentTrack != MusicTrack.bossBattle) return;
     if (!restart && _battleMusicPhase == phase && _battleMusicSection != null) {
@@ -243,7 +260,9 @@ class AudioService extends ChangeNotifier {
     _battleLoopSeekInProgress = true;
     try {
       await _musicPlayer.setReleaseMode(ReleaseMode.stop);
-      await _musicPlayer.seek(section.start);
+      if (seekToStart) {
+        await _musicPlayer.seek(section.start);
+      }
       if (generation != _battleMusicGeneration) return;
       if (_musicPlayer.state != PlayerState.playing) {
         await _musicPlayer.resume();
@@ -379,11 +398,15 @@ class AudioService extends ChangeNotifier {
     }
   }
 
-  Future<bool> _tryPlayMusicAsset(String assetPath) async {
+  Future<bool> _tryPlayMusicAsset(
+    String assetPath, {
+    Duration? position,
+    ReleaseMode releaseMode = ReleaseMode.loop,
+  }) async {
     try {
-      await _musicPlayer.setReleaseMode(ReleaseMode.loop);
+      await _musicPlayer.setReleaseMode(releaseMode);
       await _musicPlayer.setVolume(_musicVolume);
-      await _musicPlayer.play(AssetSource(assetPath));
+      await _musicPlayer.play(AssetSource(assetPath), position: position);
       return true;
     } catch (e) {
       debugPrint('Music play failed ($assetPath): $e');
@@ -400,6 +423,15 @@ class AudioService extends ChangeNotifier {
       return;
     }
     unawaited(_loopBattleMusic(section));
+  }
+
+  void _handleMusicComplete() {
+    final section = _battleMusicSection;
+    if (_currentTrack == MusicTrack.bossBattle &&
+        section != null &&
+        !_battleLoopSeekInProgress) {
+      unawaited(_loopBattleMusic(section));
+    }
   }
 
   Future<void> _loopBattleMusic(BattleMusicSection section) async {
@@ -433,6 +465,7 @@ class AudioService extends ChangeNotifier {
   @override
   void dispose() {
     unawaited(_musicPositionSubscription.cancel());
+    unawaited(_musicCompleteSubscription.cancel());
     _musicPlayer.dispose();
     for (final player in _sfxPlayers) {
       player.dispose();

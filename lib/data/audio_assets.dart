@@ -3,7 +3,7 @@ class AudioAssets {
   AudioAssets._();
 
   static const musicHatchery = 'sounds/music/hatchery_chill_loop.mp3';
-  static const musicBossBattle = 'sounds/music/boss_music.mp3';
+  static const musicBossBattle = 'sounds/music/boss_music.wav';
   static const musicFinalBoss = 'sounds/music/final_boss_music.mp3';
 
   static const sfxEggCrack = 'sounds/sfx/egg_crack_reference.mp3';

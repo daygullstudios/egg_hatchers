@@ -1,4 +1,5 @@
 import 'package:egg_hatchers/data/boss_data.dart';
+import 'package:egg_hatchers/data/audio_assets.dart';
 import 'package:egg_hatchers/models/boss_battle.dart';
 import 'package:egg_hatchers/models/player_state.dart';
 import 'package:egg_hatchers/utils/boss_battle_logic.dart';
@@ -159,6 +160,7 @@ void main() {
   });
 
   test('boss music uses the exact BandLab phase loop markers', () {
+    expect(MusicTrack.bossBattle.assetPath, endsWith('boss_music.wav'));
     final sections = AudioService.battleMusicSections;
     expect(sections, hasLength(4));
     expect(sections[0].start, Duration.zero);
