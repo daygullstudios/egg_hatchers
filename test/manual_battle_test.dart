@@ -135,22 +135,22 @@ void main() {
     expect(BossBattleLogic.manualMusicStage(livesRemaining: 0, maxLives: 0), 0);
   });
 
-  test('boss music maps lost lives across four ordered sections', () {
+  test('each lost boss life advances to the next music section', () {
     expect(
       AudioService.battleMusicPhase(completedStages: 0, totalStages: 7),
       0,
     );
     expect(
       AudioService.battleMusicPhase(completedStages: 1, totalStages: 7),
-      0,
-    );
-    expect(
-      AudioService.battleMusicPhase(completedStages: 2, totalStages: 7),
       1,
     );
     expect(
-      AudioService.battleMusicPhase(completedStages: 4, totalStages: 7),
+      AudioService.battleMusicPhase(completedStages: 2, totalStages: 7),
       2,
+    );
+    expect(
+      AudioService.battleMusicPhase(completedStages: 4, totalStages: 7),
+      3,
     );
     expect(
       AudioService.battleMusicPhase(completedStages: 6, totalStages: 7),

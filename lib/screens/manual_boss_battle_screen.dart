@@ -262,20 +262,26 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
       : MusicTrack.bossBattle;
 
   Future<void> _playBattleMusic({bool restart = false}) async {
-    await _audio.playMusic(_battleMusicTrack, restart: restart);
-    _advanceBattleMusic();
+    if (_battleMusicTrack == MusicTrack.finalBoss) {
+      await _audio.playMusic(_battleMusicTrack, restart: restart);
+      return;
+    }
+    await _setBattleMusicStage(restart: restart);
   }
 
   void _advanceBattleMusic() {
-    unawaited(
-      _audio.setBattleMusicStage(
-        _battleMusicTrack,
-        completedStages: BossBattleLogic.manualMusicStage(
-          livesRemaining: _bossLives,
-          maxLives: _bossMaxLives,
-        ),
-        totalStages: _bossMaxLives,
+    unawaited(_setBattleMusicStage());
+  }
+
+  Future<void> _setBattleMusicStage({bool restart = false}) {
+    return _audio.setBattleMusicStage(
+      _battleMusicTrack,
+      completedStages: BossBattleLogic.manualMusicStage(
+        livesRemaining: _bossLives,
+        maxLives: _bossMaxLives,
       ),
+      totalStages: _bossMaxLives,
+      restart: restart,
     );
   }
 

@@ -64,6 +64,7 @@ class AudioService extends ChangeNotifier {
   var _userUnlocked = false;
   MusicTrack? _currentTrack;
   MusicTrack? _pendingTrack;
+  int? _pendingBattleMusicPhase;
   var _battleMusicPhase = -1;
   BattleMusicSection? _battleMusicSection;
   var _battleLoopSeekInProgress = false;
@@ -148,6 +149,9 @@ class AudioService extends ChangeNotifier {
 
   Future<void> playMusic(MusicTrack track, {bool restart = false}) async {
     _pendingTrack = track;
+    if (track != MusicTrack.bossBattle) {
+      _pendingBattleMusicPhase = null;
+    }
     if (!_musicEnabled) {
       _debugLog('playMusic ${track.name} skipped (music disabled)');
       return;
@@ -174,6 +178,10 @@ class AudioService extends ChangeNotifier {
     final played = await _tryPlayMusicAsset(track.assetPath);
     if (played) {
       _currentTrack = track;
+      final pendingPhase = _pendingBattleMusicPhase;
+      if (track == MusicTrack.bossBattle && pendingPhase != null) {
+        await _activateBattleMusicPhase(pendingPhase, restart: true);
+      }
       return;
     }
 
@@ -199,21 +207,34 @@ class AudioService extends ChangeNotifier {
     MusicTrack track, {
     required int completedStages,
     required int totalStages,
+    bool restart = false,
   }) async {
-    if (track != MusicTrack.bossBattle ||
-        !_musicEnabled ||
-        !_userUnlocked ||
-        totalStages <= 0) {
+    if (track != MusicTrack.bossBattle || totalStages <= 0) {
       return;
     }
-    if (_currentTrack != track) await playMusic(track);
-    if (_currentTrack != track) return;
-
     final phase = battleMusicPhase(
       completedStages: completedStages,
       totalStages: totalStages,
     );
-    if (_battleMusicPhase == phase && _battleMusicSection != null) return;
+    _pendingTrack = track;
+    _pendingBattleMusicPhase = phase;
+    if (!_musicEnabled || !_userUnlocked) return;
+
+    if (_currentTrack != track || restart) {
+      await playMusic(track, restart: restart);
+      return;
+    }
+    await _activateBattleMusicPhase(phase);
+  }
+
+  Future<void> _activateBattleMusicPhase(
+    int phase, {
+    bool restart = false,
+  }) async {
+    if (_currentTrack != MusicTrack.bossBattle) return;
+    if (!restart && _battleMusicPhase == phase && _battleMusicSection != null) {
+      return;
+    }
 
     final generation = ++_battleMusicGeneration;
     final section = battleMusicSections[phase];
@@ -227,10 +248,7 @@ class AudioService extends ChangeNotifier {
       if (_musicPlayer.state != PlayerState.playing) {
         await _musicPlayer.resume();
       }
-      _debugLog(
-        'section ${phase + 1}/${battleMusicSections.length} for '
-        'stage $completedStages/$totalStages',
-      );
+      _debugLog('section ${phase + 1}/${battleMusicSections.length}');
     } catch (e) {
       debugPrint('Boss music section change failed: $e');
     } finally {
@@ -246,18 +264,17 @@ class AudioService extends ChangeNotifier {
     required int totalStages,
   }) {
     if (totalStages <= 0) return 0;
-    final activeStage = completedStages.clamp(0, totalStages - 1);
-    return (activeStage * battleMusicSections.length ~/ totalStages).clamp(
-      0,
-      battleMusicSections.length - 1,
-    );
+    return completedStages.clamp(0, battleMusicSections.length - 1);
   }
 
   void _debugLog(String message) {
     if (kDebugMode) debugPrint('[AUDIO] $message');
   }
 
-  Future<void> stopMusic() => _stopMusic();
+  Future<void> stopMusic() {
+    _pendingBattleMusicPhase = null;
+    return _stopMusic();
+  }
 
   /// True if a reward-tier SFX played within [withinMs].
   bool rewardPlayedRecently({int withinMs = rewardRecentGapMs}) {
