@@ -122,8 +122,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (confirmed != true || !context.mounted) return;
     final accounts = AccountScope.of(context);
-    await game.deleteAccountSave(account.id);
-    await accounts.deleteAccount(account.id);
+    await accounts.deleteAccount(
+      account.id,
+      deleteProgress: () => game.deleteAccountSave(account.id),
+    );
     if (context.mounted) {
       Navigator.of(context).popUntil((route) => route.isFirst);
     }

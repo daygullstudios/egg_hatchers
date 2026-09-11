@@ -148,7 +148,10 @@ class AccountService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteAccount(String id) async {
+  Future<void> deleteAccount(
+    String id, {
+    Future<void> Function()? deleteProgress,
+  }) async {
     _requireInitialized();
     final index = _accounts.indexWhere((account) => account.id == id);
     if (index < 0) return;
@@ -160,6 +163,7 @@ class AccountService extends ChangeNotifier {
       nextAccount = guest;
     }
     await _saveAccounts(updated);
+    await deleteProgress?.call();
     _accounts = updated;
     _account = nextAccount;
     writeActiveAccountId(nextAccount?.id);

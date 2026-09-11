@@ -52,6 +52,8 @@ Exit: no unresolved feature is being treated as silently required for 1.0.
   removed, without deleting or reassigning the old cloud account.
 - [x] Verify player-directory writes before publishing profile creation or
   removal in the running app.
+- [x] Commit local player removal before deleting its progress, so a failed
+  directory write cannot leave a visible player with a missing save.
 - [x] Simulate clean-device provider recovery through identity switching,
   conflict review and explicit cloud restore without overwriting either copy.
 - [ ] Complete an approved account-recovery method that works across devices.

@@ -206,15 +206,53 @@ void main() {
     await accounts.initialize();
     accounts.selectAccount(second.id);
     storage.rejectWrites = true;
+    var progressDeleted = false;
 
-    await expectLater(accounts.deleteAccount(second.id), throwsStateError);
+    await expectLater(
+      accounts.deleteAccount(
+        second.id,
+        deleteProgress: () async => progressDeleted = true,
+      ),
+      throwsStateError,
+    );
 
     expect(accounts.accounts.map((account) => account.id), [
       first.id,
       second.id,
     ]);
     expect(accounts.account?.id, second.id);
+    expect(progressDeleted, isFalse);
   });
+
+  test(
+    'profile removal deletes progress only after directory commit',
+    () async {
+      final first = _storedPlayer('guest_first', isGuest: true);
+      final second = _storedPlayer('player_second');
+      final storage = ImportMemoryStorage({
+        SavedPlayerDirectory.key: jsonEncode([first.toJson(), second.toJson()]),
+      });
+      final accounts = AccountService(startupStorage: storage);
+      await accounts.initialize();
+      accounts.selectAccount(second.id);
+      final events = <String>[];
+      accounts.addListener(() => events.add('published'));
+
+      await accounts.deleteAccount(
+        second.id,
+        deleteProgress: () async {
+          final saved =
+              jsonDecode(storage.values[SavedPlayerDirectory.key]! as String)
+                  as List<dynamic>;
+          expect(saved.single['id'], first.id);
+          events.add('progress');
+        },
+      );
+
+      expect(events, ['progress', 'published']);
+      expect(accounts.accounts.map((account) => account.id), [first.id]);
+    },
+  );
 
   test('account save slots preserve progress independently', () async {
     final game = GameService();

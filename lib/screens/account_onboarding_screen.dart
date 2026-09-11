@@ -78,8 +78,10 @@ class _AccountOnboardingScreenState extends State<AccountOnboardingScreen> {
             LocalPlayerRemovalDialog(account: account, fromPlayerPicker: true),
       );
       if (confirmed != true || !mounted) return;
-      await widget.game.deleteAccountSave(account.id);
-      await widget.accounts.deleteAccount(account.id);
+      await widget.accounts.deleteAccount(
+        account.id,
+        deleteProgress: () => widget.game.deleteAccountSave(account.id),
+      );
       if (mounted) {
         setState(() => _showCreateForm = widget.accounts.accounts.isEmpty);
       }
