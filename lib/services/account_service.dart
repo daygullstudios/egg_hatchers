@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/player_account.dart';
 import 'account_session_store.dart';
@@ -14,10 +13,17 @@ import 'saved_player_directory.dart';
 import 'save_import_storage.dart';
 
 class AccountService extends ChangeNotifier {
-  AccountService({SaveImportStorage? startupStorage})
-    : _startupStorage = startupStorage ?? PreferencesImportStorage();
+  AccountService({
+    SaveImportStorage? startupStorage,
+    SaveImportStorage? directoryStorage,
+  }) : _startupStorage = startupStorage ?? PreferencesImportStorage(),
+       _directoryStorage =
+           directoryStorage ??
+           startupStorage ??
+           PreferencesKeyStorage({_accountsKey});
 
   final SaveImportStorage _startupStorage;
+  final SaveImportStorage _directoryStorage;
   static const _accountsKey = SavedPlayerDirectory.key;
 
   static const avatarColors = [
@@ -55,16 +61,8 @@ class AccountService extends ChangeNotifier {
           ? 0
           : (jsonDecode(values[_accountsKey] as String) as List).length;
       if (players.isEmpty) players.add(_createGuestAccount());
-      final encoded = jsonEncode(
-        players.map((player) => player.toJson()).toList(),
-      );
       if (originalCount != players.length) {
-        if (!await _startupStorage.write(_accountsKey, encoded)) {
-          throw StateError('Player directory could not be saved');
-        }
-        if ((await _startupStorage.readAll())[_accountsKey] != encoded) {
-          throw StateError('Player directory could not be verified');
-        }
+        await _saveAccounts(players);
       }
       await DeviceGuestSlotStore().ensureForAccounts(players);
       await SaveService.migrateLegacyRottenShellTutorial(
@@ -120,9 +118,9 @@ class AccountService extends ChangeNotifier {
       createdAt: createdAt,
     );
 
-    final preferences = await SharedPreferences.getInstance();
-    _accounts.add(account);
-    await _saveAccounts(preferences);
+    final updated = [..._accounts, account];
+    await _saveAccounts(updated);
+    _accounts = updated;
     _account = account;
     writeActiveAccountId(account.id);
     notifyListeners();
@@ -154,19 +152,17 @@ class AccountService extends ChangeNotifier {
     _requireInitialized();
     final index = _accounts.indexWhere((account) => account.id == id);
     if (index < 0) return;
-    _accounts.removeAt(index);
-    if (_account?.id == id) {
-      _account = null;
-      writeActiveAccountId(null);
-    }
-    if (_accounts.isEmpty) {
+    final updated = [..._accounts]..removeAt(index);
+    PlayerAccount? nextAccount = _account?.id == id ? null : _account;
+    if (updated.isEmpty) {
       final guest = _createGuestAccount();
-      _accounts.add(guest);
-      _account = guest;
-      writeActiveAccountId(guest.id);
+      updated.add(guest);
+      nextAccount = guest;
     }
-    final preferences = await SharedPreferences.getInstance();
-    await _saveAccounts(preferences);
+    await _saveAccounts(updated);
+    _accounts = updated;
+    _account = nextAccount;
+    writeActiveAccountId(nextAccount?.id);
     await DeviceGuestSlotStore().ensureForAccounts(_accounts);
     await AccountStorage.deleteAccountData(id);
     notifyListeners();
@@ -185,11 +181,16 @@ class AccountService extends ChangeNotifier {
     }
   }
 
-  Future<void> _saveAccounts(SharedPreferences preferences) {
-    return preferences.setString(
-      _accountsKey,
-      jsonEncode(_accounts.map((account) => account.toJson()).toList()),
+  Future<void> _saveAccounts(Iterable<PlayerAccount> accounts) async {
+    final encoded = jsonEncode(
+      accounts.map((account) => account.toJson()).toList(),
     );
+    if (!await _directoryStorage.write(_accountsKey, encoded)) {
+      throw StateError('Player directory could not be saved');
+    }
+    if ((await _directoryStorage.readAll())[_accountsKey] != encoded) {
+      throw StateError('Player directory could not be verified');
+    }
   }
 
   PlayerAccount _createGuestAccount() {

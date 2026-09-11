@@ -50,6 +50,8 @@ Exit: no unresolved feature is being treated as silently required for 1.0.
 - [x] Stop uncertain or conflicting cloud state from overwriting local progress.
 - [x] Start a fresh anonymous cloud session after a protected local guest is
   removed, without deleting or reassigning the old cloud account.
+- [x] Verify player-directory writes before publishing profile creation or
+  removal in the running app.
 - [ ] Complete an approved account-recovery method that works across devices.
 - [ ] Prove guest linking preserves the same player and cloud document.
 - [ ] Prove recovery on a clean second device or browser.

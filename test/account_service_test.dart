@@ -1,11 +1,17 @@
+import 'dart:convert';
+
 import 'package:egg_hatchers/data/game_data.dart';
+import 'package:egg_hatchers/models/player_account.dart';
 import 'package:egg_hatchers/services/account_service.dart';
 import 'package:egg_hatchers/services/device_guest_slot_store.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/save_service.dart';
+import 'package:egg_hatchers/services/saved_player_directory.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'helpers/save_import_fixture.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -168,6 +174,48 @@ void main() {
     );
   });
 
+  test('failed profile creation does not publish a phantom player', () async {
+    final original = _storedPlayer('guest_original', isGuest: true);
+    final storage = _RejectDirectoryWrites({
+      SavedPlayerDirectory.key: jsonEncode([original.toJson()]),
+    });
+    final accounts = AccountService(startupStorage: storage);
+    await accounts.initialize();
+    storage.rejectWrites = true;
+
+    await expectLater(
+      accounts.createAccount(
+        displayName: 'Unsaved Player',
+        username: 'unsaved_player',
+        avatarColor: AccountService.avatarColors.last,
+      ),
+      throwsStateError,
+    );
+
+    expect(accounts.accounts.map((account) => account.id), [original.id]);
+    expect(accounts.account?.id, original.id);
+  });
+
+  test('failed profile removal keeps the existing player directory', () async {
+    final first = _storedPlayer('guest_first', isGuest: true);
+    final second = _storedPlayer('player_second');
+    final storage = _RejectDirectoryWrites({
+      SavedPlayerDirectory.key: jsonEncode([first.toJson(), second.toJson()]),
+    });
+    final accounts = AccountService(startupStorage: storage);
+    await accounts.initialize();
+    accounts.selectAccount(second.id);
+    storage.rejectWrites = true;
+
+    await expectLater(accounts.deleteAccount(second.id), throwsStateError);
+
+    expect(accounts.accounts.map((account) => account.id), [
+      first.id,
+      second.id,
+    ]);
+    expect(accounts.account?.id, second.id);
+  });
+
   test('account save slots preserve progress independently', () async {
     final game = GameService();
     await game.initialize(accountId: 'first');
@@ -210,4 +258,25 @@ void main() {
     );
     expect(accounts.accounts.any((account) => account.isGuest), isTrue);
   });
+}
+
+PlayerAccount _storedPlayer(String id, {bool isGuest = false}) => PlayerAccount(
+  id: id,
+  displayName: isGuest ? 'Guest Hatcher' : 'Saved Player',
+  username: id,
+  avatarColorValue: AccountService.avatarColors.first.toARGB32(),
+  createdAt: DateTime.utc(2026, 9, 10),
+  isGuest: isGuest,
+);
+
+final class _RejectDirectoryWrites extends ImportMemoryStorage {
+  _RejectDirectoryWrites(super.initial);
+
+  bool rejectWrites = false;
+
+  @override
+  Future<bool> write(String key, Object value) async {
+    if (rejectWrites && key == SavedPlayerDirectory.key) return false;
+    return super.write(key, value);
+  }
 }
