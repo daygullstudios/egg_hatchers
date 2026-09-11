@@ -1648,7 +1648,7 @@ system security settings to recover the old SDK.
 
 ## Project status
 
-Nestarium is a Flutter idle collection and battle game. It currently includes local multi-account saves, hatching and mutations, rebirths, quests, collections, fusions, custom eggs and sprites, three visual styles, manual boss fights, Bot Arena, live multiplayer battles, live trading, player invitations, collection viewing, and preset trade messages.
+Nestarium is a Flutter idle collection and battle game. It currently includes local multi-account saves, hatching and mutations, rebirths, quests, collections, fusions, custom sprites, three visual styles, manual boss fights, Bot Arena, live multiplayer battles, live trading, player invitations, collection viewing, and preset trade messages. Custom eggs are retired from playable builds; their old records remain only for save compatibility.
 
 Recent polish includes projectile trails, staged boss music that layers intensity without restarting, pause-resume countdowns, improved boss backgrounds, a hidden DayGull Egg unlock path, DayGull animals with animated glitch effects, and a live coin balance that remains in the shared app bar throughout navigation. The hatchery labels its Rebirth-scoped animal-income total as `earned` and explains the total on hover or tap; misleading player-facing `lifetime` terminology has been removed.
 
@@ -1656,7 +1656,7 @@ The main game shell is adaptive rather than portrait-only: it preserves the esta
 
 The Battles screen now keeps Battle Tokens plus the Rival Arena, Online Arena, and Trading launchers visible, then uses a single-open accordion for Battle Upgrades, all seven bosses, and Egg Shard Upgrades. Collapsed boss headers show identity, lock/progression status, wins, and the best available difficulty; locked bosses no longer consume full-card height. Upgrade headers surface affordable-action counts, the first Slime Boss section defaults open for onboarding continuity, and the selected section persists while the shell tab remains mounted.
 
-The Egg Shop now uses a persistent three-way Hatchery/Battle/Custom category switcher above its catalog. Only the selected catalog is rendered, each category surfaces a useful availability summary, Hatchery remains the default for tutorial continuity, and each catalog keeps its own scroll position while the shell remains mounted. Custom egg creation and management live within the Custom category; the former redundant Shop app-bar shortcut has been removed.
+The Egg Shop now uses a persistent two-way Hatchery/Battle category switcher above its catalog. Only the selected catalog is rendered, each category surfaces a useful availability summary, Hatchery remains the default for tutorial continuity, and each catalog keeps its own scroll position while the shell remains mounted.
 
 Claimable quest cards use the theme's primary action color for their Claim Reward/Claim buttons. This keeps the button silhouette and white label legible inside the gold secondary-color Ready to Claim treatment; the secondary color remains the reward-card accent rather than serving as both surface and action.
 
@@ -1665,8 +1665,6 @@ Hatchery is now a dashboard rather than a duplicate full inventory: it shows a t
 Settings now opens as a compact set of four collapsed destinations: Account & Saves, Tutorial, Sound & Feedback, and Appearance. Only one can be expanded at a time. Appearance uses a Background/Animal Style switch so the two visual catalogs are never rendered as one long stack. Custom Animals is available only through the persistent More menu, avoiding a redundant Settings shortcut.
 
 Custom Animals keeps visibility guidance and Reset All in a compact tools accordion at the top instead of burying destructive management below the full catalog. Search plus All/Customized/Original filtering and Rarity/Name/Progression sorting stay above the independently scrolling results, making any of the 48 animals directly reachable without a page-length traversal.
-
-Custom Eggs keeps Create pinned above an independently scrolling library. Saved eggs are searchable, filterable by Enabled/Disabled/Needs Attention, sortable by Newest/Name/Price, and render as single-open summaries; only the selected egg exposes animal previews plus Edit/Delete actions.
 
 Quest-completion notification actions now select the persistent shell's Quests destination, matching More > Quests and preserving the current navigation UI and mounted quest state. The standalone Quests route remains only as a fallback for contexts outside the main shell.
 
@@ -1678,7 +1676,7 @@ The repository is owned by the `daygullstudios` GitHub organization. The main de
 
 ## Local data
 
-Accounts, game progress, settings, custom eggs, and custom sprites are stored locally through Flutter `SharedPreferences`; they are not stored in GitHub. The Settings screen includes Save Transfer controls:
+Accounts, game progress, settings, legacy custom-egg records, and custom sprites are stored locally through Flutter `SharedPreferences`; they are not stored in GitHub. The Settings screen includes Save Transfer controls:
 
 1. On the old computer, open Settings and choose **Export Save**.
 2. Move the downloaded `nestarium-save-YYYY-MM-DD.json` file to the new computer.

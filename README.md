@@ -1,7 +1,7 @@
 # Nestarium
 
 Nestarium is a Flutter idle collection and battle game with three art styles,
-boss fights, custom sprites and eggs, local player profiles, and live multiplayer
+boss fights, custom sprites, local player profiles, and live multiplayer
 battles and trading.
 
 The selected public domain is **playnestarium.com**. The primary private game is
