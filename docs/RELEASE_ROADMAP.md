@@ -48,6 +48,8 @@ Exit: no unresolved feature is being treated as silently required for 1.0.
 - [x] Preserve local profiles and versioned JSON Save Transfer.
 - [x] Protect anonymous guest progress with revisioned cloud sync.
 - [x] Stop uncertain or conflicting cloud state from overwriting local progress.
+- [x] Start a fresh anonymous cloud session after a protected local guest is
+  removed, without deleting or reassigning the old cloud account.
 - [ ] Complete an approved account-recovery method that works across devices.
 - [ ] Prove guest linking preserves the same player and cloud document.
 - [ ] Prove recovery on a clean second device or browser.
@@ -173,11 +175,10 @@ Exit: the approved build is public, monitored and reversible.
 
 ## Immediate work order
 
-1. Correct project documentation that still describes retired custom eggs.
-2. Run the first release-focused code review, starting with save integrity and
+1. Continue the release-focused code review across save integrity and
    authentication boundaries.
-3. Close the cross-device account recovery path.
-4. Finish the family capability and deletion requirements.
-5. Run the authoritative multiplayer two-device and failure-recovery matrix.
-6. Balance the economy and complete visual/audio asset audits.
-7. Enter closed beta only after gates 2 through 7 have release evidence.
+2. Close the cross-device account recovery path.
+3. Finish the family capability and deletion requirements.
+4. Run the authoritative multiplayer two-device and failure-recovery matrix.
+5. Balance the economy and complete visual/audio asset audits.
+6. Enter closed beta only after gates 2 through 7 have release evidence.

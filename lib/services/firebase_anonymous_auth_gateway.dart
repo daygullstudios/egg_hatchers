@@ -41,11 +41,9 @@ final class FirebaseAnonymousAuthGateway implements AccountProtectionGateway {
         );
       }
     } else {
-      if (user != null && !user.isAnonymous) {
-        throw StateError(
-          'A linked Firebase identity cannot be reassigned automatically.',
-        );
-      }
+      // No UID is bound to this device guest. This commonly follows an
+      // explicit local-player removal, where the old cloud account must remain
+      // intact but must no longer own the replacement guest's session.
       if (user != null) await auth.signOut();
       user = (await auth.signInAnonymously()).user;
     }

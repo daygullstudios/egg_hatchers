@@ -155,13 +155,50 @@ void main() {
     expect((await slots.read())?.firebaseUid, 'google-existing');
     expect(await checkpoints.read(), isNull);
   });
+
+  test(
+    'replacement guest receives a fresh identity after local removal',
+    () async {
+      final slots = DeviceGuestSlotStore();
+      await slots.activate('guest_old');
+      await slots.bindFirebaseUid(
+        accountId: 'guest_old',
+        firebaseUid: 'google-protected-old',
+      );
+      final gateway = _Gateway(
+        identityForRequest: ({required accountId, expectedPlayerId}) {
+          expect(accountId, 'guest_new');
+          expect(expectedPlayerId, isNull);
+          return const ProtectedPlayerIdentity(playerId: 'anonymous-new');
+        },
+      );
+      final service = AccountProtectionService(gateway: gateway);
+
+      await slots.activate('guest_new');
+      await service.initialize(accountId: 'guest_new');
+
+      expect(service.state.status, AccountProtectionStatus.guest);
+      expect(service.state.protectedPlayerId, 'anonymous-new');
+      expect((await slots.read())?.firebaseUid, 'anonymous-new');
+    },
+  );
 }
 
 final class _Gateway implements AccountProtectionGateway {
-  _Gateway({this.identity, this.linkedIdentity, this.error = false});
+  _Gateway({
+    this.identity,
+    this.linkedIdentity,
+    this.identityForRequest,
+    this.error = false,
+  });
 
   final ProtectedPlayerIdentity? identity;
   final ProtectedPlayerIdentity? linkedIdentity;
+  final ProtectedPlayerIdentity? Function({
+    required String accountId,
+    required String? expectedPlayerId,
+  })?
+  identityForRequest;
   final bool error;
   int restoreCalls = 0;
 
@@ -178,6 +215,12 @@ final class _Gateway implements AccountProtectionGateway {
   }) async {
     restoreCalls += 1;
     if (error) throw StateError('offline');
+    if (identityForRequest != null) {
+      return identityForRequest!(
+        accountId: accountId,
+        expectedPlayerId: expectedPlayerId,
+      );
+    }
     return identity;
   }
 
