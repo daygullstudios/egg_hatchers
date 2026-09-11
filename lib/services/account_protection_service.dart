@@ -66,10 +66,12 @@ class AccountProtectionService extends ChangeNotifier {
   var _selectionRevision = 0;
   String? _selectedAccountId;
   Future<void>? _selectionPending;
+  Future<AccountProtectionAttempt>? _protectionPending;
   Future<ProtectedPlayerIdentity?>? _gatewayPending;
   Timer? _slowTimer;
   bool _disposed = false, _suspended = false;
-  bool get isChecking => _selectionPending != null;
+  bool get isChecking =>
+      _selectionPending != null || _protectionPending != null;
   Future<void> retryConnection() => selectAccount(_selectedAccountId);
 
   Future<void> pauseForSaveImport() async {
@@ -77,6 +79,7 @@ class AccountProtectionService extends ChangeNotifier {
     _selectionRevision++;
     _slowTimer?.cancel();
     await _selectionPending;
+    await _protectionPending;
     await _gatewayPending;
   }
 
@@ -250,14 +253,31 @@ class AccountProtectionService extends ChangeNotifier {
 
   Future<AccountProtectionAttempt> protectWithGoogle({
     required String accountId,
-  }) async {
+  }) {
     if (_disposed || _suspended || isChecking) {
-      return const AccountProtectionAttempt(
-        status: AccountProtectionAttemptStatus.failed,
-        message:
-            'Wait for the current identity check before connecting Google.',
+      return Future.value(
+        const AccountProtectionAttempt(
+          status: AccountProtectionAttemptStatus.failed,
+          message:
+              'Wait for the current identity check before connecting Google.',
+        ),
       );
     }
+    late final Future<AccountProtectionAttempt> operation;
+    operation = _protectWithGoogle(accountId: accountId).whenComplete(() {
+      if (identical(_protectionPending, operation)) {
+        _protectionPending = null;
+        if (!_disposed) notifyListeners();
+      }
+    });
+    _protectionPending = operation;
+    notifyListeners();
+    return operation;
+  }
+
+  Future<AccountProtectionAttempt> _protectWithGoogle({
+    required String accountId,
+  }) async {
     final revision = ++_selectionRevision;
     final configuredGateway = gateway;
     final slot = await _guestSlots.read();

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:egg_hatchers/models/account_protection_state.dart';
 import 'package:egg_hatchers/models/progress_sync_checkpoint.dart';
 import 'package:egg_hatchers/services/account_protection_service.dart';
@@ -157,6 +159,45 @@ void main() {
   });
 
   test(
+    'Google protection is single-flight while the provider is open',
+    () async {
+      final slots = DeviceGuestSlotStore();
+      await slots.activate('guest_test');
+      await slots.bindFirebaseUid(
+        accountId: 'guest_test',
+        firebaseUid: 'anonymous-123',
+      );
+      final linked = Completer<ProtectedPlayerIdentity?>();
+      final gateway = _Gateway(
+        identity: const ProtectedPlayerIdentity(playerId: 'anonymous-123'),
+        linkedIdentityForRequest: () => linked.future,
+      );
+      final service = AccountProtectionService(gateway: gateway);
+      await service.initialize(accountId: 'guest_test');
+
+      final first = service.protectWithGoogle(accountId: 'guest_test');
+      expect(service.isChecking, isTrue);
+      expect(service.canLinkGoogle, isFalse);
+
+      final duplicate = await service.protectWithGoogle(
+        accountId: 'guest_test',
+      );
+      expect(duplicate.status, AccountProtectionAttemptStatus.failed);
+      expect(gateway.linkCalls, 1);
+
+      linked.complete(
+        const ProtectedPlayerIdentity(
+          playerId: 'anonymous-123',
+          providerIds: {'google.com'},
+        ),
+      );
+      expect((await first).status, AccountProtectionAttemptStatus.protected);
+      expect(service.isChecking, isFalse);
+      expect(service.canLinkGoogle, isTrue);
+    },
+  );
+
+  test(
     'replacement guest receives a fresh identity after local removal',
     () async {
       final slots = DeviceGuestSlotStore();
@@ -188,12 +229,14 @@ final class _Gateway implements AccountProtectionGateway {
   _Gateway({
     this.identity,
     this.linkedIdentity,
+    this.linkedIdentityForRequest,
     this.identityForRequest,
     this.error = false,
   });
 
   final ProtectedPlayerIdentity? identity;
   final ProtectedPlayerIdentity? linkedIdentity;
+  final Future<ProtectedPlayerIdentity?> Function()? linkedIdentityForRequest;
   final ProtectedPlayerIdentity? Function({
     required String accountId,
     required String? expectedPlayerId,
@@ -201,6 +244,7 @@ final class _Gateway implements AccountProtectionGateway {
   identityForRequest;
   final bool error;
   int restoreCalls = 0;
+  int linkCalls = 0;
 
   @override
   bool get isConfigured => true;
@@ -227,5 +271,10 @@ final class _Gateway implements AccountProtectionGateway {
   @override
   Future<ProtectedPlayerIdentity?> linkGoogle({
     required String expectedPlayerId,
-  }) async => linkedIdentity;
+  }) async {
+    linkCalls += 1;
+    return linkedIdentityForRequest == null
+        ? linkedIdentity
+        : linkedIdentityForRequest!();
+  }
 }
