@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/player_account.dart';
@@ -24,6 +26,7 @@ class DeviceGuestSlotStore {
   static const _accountIdKey = '${keyPrefix}account_id';
   static const _generationKey = '${keyPrefix}generation';
   static const _firebaseUidKey = '${keyPrefix}firebase_uid';
+  static Future<void>? _activeMutation;
 
   static bool ownsKey(String key) => key.startsWith(keyPrefix);
 
@@ -53,7 +56,7 @@ class DeviceGuestSlotStore {
   /// ambiguous. Exactly one guest may become the durable device guest.
   Future<DeviceGuestSlot?> ensureForAccounts(
     Iterable<PlayerAccount> accounts,
-  ) async {
+  ) => _serialize(() async {
     final guests = accounts.where((account) => account.isGuest).toList();
     final current = await read();
     if (current != null &&
@@ -61,13 +64,16 @@ class DeviceGuestSlotStore {
       return current;
     }
     if (guests.length == 1) {
-      return activate(guests.single.id);
+      return _activate(guests.single.id);
     }
     await _clearReadableSlot();
     return null;
-  }
+  });
 
-  Future<DeviceGuestSlot> activate(String accountId) async {
+  Future<DeviceGuestSlot> activate(String accountId) =>
+      _serialize(() => _activate(accountId));
+
+  Future<DeviceGuestSlot> _activate(String accountId) async {
     if (!accountId.startsWith('guest_')) {
       throw ArgumentError.value(
         accountId,
@@ -83,10 +89,18 @@ class DeviceGuestSlotStore {
       accountId: accountId,
       generation: (preferences.getInt(_generationKey) ?? 0) + 1,
     );
-    await preferences.setString(_accountIdKey, slot.accountId);
-    await preferences.setInt(_generationKey, slot.generation);
-    await preferences.remove(_firebaseUidKey);
-    return slot;
+    if (!await preferences.remove(_firebaseUidKey) ||
+        !await preferences.setInt(_generationKey, slot.generation) ||
+        !await preferences.setString(_accountIdKey, slot.accountId)) {
+      throw StateError('Device guest identity could not be saved');
+    }
+    final verified = await read();
+    if (verified?.accountId != slot.accountId ||
+        verified?.generation != slot.generation ||
+        verified?.firebaseUid != null) {
+      throw StateError('Device guest identity could not be verified');
+    }
+    return verified!;
   }
 
   Future<DeviceGuestSlot> bindFirebaseUid({
@@ -94,7 +108,7 @@ class DeviceGuestSlotStore {
     required String firebaseUid,
     int? expectedGeneration,
     bool Function()? stillCurrent,
-  }) async {
+  }) => _serialize(() async {
     final uid = firebaseUid.trim();
     if (uid.isEmpty) {
       throw ArgumentError.value(firebaseUid, 'firebaseUid', 'UID is empty.');
@@ -113,34 +127,67 @@ class DeviceGuestSlotStore {
     if (!await preferences.setString(_firebaseUidKey, uid)) {
       throw StateError('Device identity could not be saved');
     }
-    return DeviceGuestSlot(
-      accountId: current.accountId,
-      generation: current.generation,
-      firebaseUid: uid,
-    );
-  }
+    final verified = await read();
+    if (verified?.accountId != current.accountId ||
+        verified?.generation != current.generation ||
+        verified?.firebaseUid != uid ||
+        stillCurrent != null && !stillCurrent()) {
+      if (verified?.accountId == current.accountId &&
+          verified?.generation == current.generation &&
+          verified?.firebaseUid == uid) {
+        await preferences.remove(_firebaseUidKey);
+      }
+      throw StateError('Device identity could not be verified');
+    }
+    return verified!;
+  });
 
   /// Invalidates identity ownership when an import replaces local accounts.
   /// The monotonic generation survives the replacement as a local tombstone.
   Future<void> invalidateForAccountReplacement({
     required int previousGeneration,
-  }) async {
+  }) => _serialize(() async {
     final preferences = await SharedPreferences.getInstance();
     final nextGeneration = previousGeneration + 1;
     final storedGeneration = preferences.getInt(_generationKey) ?? 0;
-    await preferences.setInt(
-      _generationKey,
-      storedGeneration > nextGeneration ? storedGeneration : nextGeneration,
-    );
-    await preferences.remove(_accountIdKey);
-    await preferences.remove(_firebaseUidKey);
-  }
+    final targetGeneration = storedGeneration > nextGeneration
+        ? storedGeneration
+        : nextGeneration;
+    if (!await preferences.remove(_firebaseUidKey) ||
+        !await preferences.remove(_accountIdKey) ||
+        !await preferences.setInt(_generationKey, targetGeneration)) {
+      throw StateError('Device guest identity could not be invalidated');
+    }
+    if (await read() != null ||
+        preferences.getInt(_generationKey) != targetGeneration) {
+      throw StateError('Device guest invalidation could not be verified');
+    }
+  });
 
   Future<void> _clearReadableSlot() async {
     final preferences = await SharedPreferences.getInstance();
-    await preferences.remove(_accountIdKey);
-    await preferences.remove(_firebaseUidKey);
+    if (!await preferences.remove(_firebaseUidKey) ||
+        !await preferences.remove(_accountIdKey) ||
+        await read() != null) {
+      throw StateError('Device guest identity could not be cleared');
+    }
     // Keep the generation counter so replacing a slot cannot reuse an older
     // identity generation after an ambiguous legacy import.
+  }
+
+  static Future<T> _serialize<T>(Future<T> Function() operation) async {
+    while (_activeMutation != null) {
+      await _activeMutation;
+    }
+    final released = Completer<void>();
+    _activeMutation = released.future;
+    try {
+      return await operation();
+    } finally {
+      if (identical(_activeMutation, released.future)) {
+        _activeMutation = null;
+      }
+      released.complete();
+    }
   }
 }

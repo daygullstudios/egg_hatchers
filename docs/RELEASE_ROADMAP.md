@@ -58,6 +58,8 @@ Exit: no unresolved feature is being treated as silently required for 1.0.
   conflict review and explicit cloud restore without overwriting either copy.
 - [x] Prevent overlapping provider-link requests from opening competing identity
   operations for the same local player.
+- [x] Serialize and verify device-guest identity rotation so a stale cloud UID
+  cannot attach to a replacement guest during overlapping account operations.
 - [ ] Complete an approved account-recovery method that works across devices.
 - [ ] Prove guest linking preserves the same player and cloud document.
 - [ ] Prove recovery on a clean second device or browser.

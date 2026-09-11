@@ -81,4 +81,26 @@ void main() {
     );
     expect(bound.firebaseUid, 'firebase-user-one');
   });
+
+  test('guest replacement cannot race with a stale UID binding', () async {
+    final first = DeviceGuestSlotStore();
+    final second = DeviceGuestSlotStore();
+    await first.activate('guest_one');
+    await first.bindFirebaseUid(
+      accountId: 'guest_one',
+      firebaseUid: 'firebase-user-one',
+    );
+
+    final replacement = first.activate('guest_two');
+    final staleBinding = second.bindFirebaseUid(
+      accountId: 'guest_one',
+      firebaseUid: 'firebase-user-one',
+    );
+
+    expect((await replacement).accountId, 'guest_two');
+    await expectLater(staleBinding, throwsStateError);
+    final current = await first.read();
+    expect(current?.accountId, 'guest_two');
+    expect(current?.firebaseUid, isNull);
+  });
 }
