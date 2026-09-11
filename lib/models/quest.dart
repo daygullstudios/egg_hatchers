@@ -5,7 +5,6 @@ enum QuestCategory {
   advanced,
   lateGame,
   battle,
-  customEgg,
   customSprite,
 }
 
@@ -23,9 +22,6 @@ enum QuestMetric {
   totalShadowHatched,
   totalAnimalUpgrades,
   totalLuckUpgrades,
-  totalCustomEggsCreated,
-  totalCustomEggHatches,
-  totalCustomTripleHatches,
   totalSpritesRated,
   totalSpriteRatingRewardsClaimed,
   bestSpriteRatingScore,
@@ -62,7 +58,6 @@ class Quest {
     required this.metric,
     required this.target,
     this.rewardBattleTokens = 0,
-    this.requiresCustomEggCreated = false,
     this.rewardDisplayLabel,
     this.showsSecretHintOnClaim = false,
   });
@@ -75,9 +70,6 @@ class Quest {
   final int rewardBattleTokens;
   final QuestMetric metric;
   final int target;
-
-  /// When true, the quest only completes after at least one custom egg exists.
-  final bool requiresCustomEggCreated;
 
   /// Optional reward text instead of a coin amount (e.g. "???").
   final String? rewardDisplayLabel;
@@ -104,8 +96,6 @@ class Quest {
         return 'Late Game Quests';
       case QuestCategory.battle:
         return 'Battle';
-      case QuestCategory.customEgg:
-        return 'Custom Egg Quests';
       case QuestCategory.customSprite:
         return 'Custom Sprite';
     }
@@ -123,8 +113,6 @@ class Quest {
         return '👑';
       case QuestCategory.battle:
         return '⚔️';
-      case QuestCategory.customEgg:
-        return '🎨';
       case QuestCategory.customSprite:
         return '🎨';
     }
@@ -143,8 +131,6 @@ class Quest {
         return 'Late Game';
       case QuestCategory.battle:
         return 'Battle';
-      case QuestCategory.customEgg:
-        return 'Custom Egg';
       case QuestCategory.customSprite:
         return 'Custom Sprite';
     }
@@ -163,8 +149,6 @@ class Quest {
         return '👑';
       case QuestCategory.battle:
         return '⚔️';
-      case QuestCategory.customEgg:
-        return '🥚';
       case QuestCategory.customSprite:
         return '🎨';
     }

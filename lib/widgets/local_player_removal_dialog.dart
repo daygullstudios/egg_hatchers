@@ -33,7 +33,7 @@ class LocalPlayerRemovalDialog extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'Removes this player’s progress, custom eggs and custom artwork '
+            'Removes this player’s progress, legacy custom-egg data and custom artwork '
             'from $location. Other players and device settings stay.',
           ),
           const SizedBox(height: 12),

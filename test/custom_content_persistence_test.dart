@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:egg_hatchers/data/game_data.dart';
 import 'package:egg_hatchers/models/custom_egg.dart';
 import 'package:egg_hatchers/models/custom_sprite_data.dart';
-import 'package:egg_hatchers/screens/custom_egg_editor_screen.dart';
 import 'package:egg_hatchers/screens/sprite_editor_screen.dart';
 import 'package:egg_hatchers/services/custom_content_store.dart';
 import 'package:egg_hatchers/services/custom_egg_service.dart';
@@ -443,90 +442,6 @@ void main() {
       expect(hasOpenCustomDrafts, false);
     });
   }
-
-  testWidgets(
-    'egg editor keeps typed draft on failure and confirms Back discard',
-    (tester) async {
-      final storage = Storage();
-      final eggs = CustomEggService(storage: storage);
-      final sprites = CustomSpriteService();
-      final game = GameService();
-      final prefs = PreferencesService();
-      await Future.wait([
-        eggs.initialize(),
-        sprites.initialize(),
-        game.initialize(),
-        prefs.initialize(),
-      ]);
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: TextButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) => CustomEggEditorScreen(
-                      game: game,
-                      preferences: prefs,
-                      customEggs: eggs,
-                      customSprites: sprites,
-                      existing: egg,
-                    ),
-                  ),
-                ),
-                child: const Text('Open'),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).first, 'Kept Draft');
-      storage.failure = Failure.reject;
-      await tester.tap(find.text('Save Custom Egg'));
-      await tester.pumpAndSettle();
-      expect(find.text('Change not confirmed'), findsOneWidget);
-      expect(eggs.allEggs, isEmpty);
-      await tester.tap(find.text('Return to screen'));
-      await tester.pumpAndSettle();
-      expect(find.text('Kept Draft'), findsOneWidget);
-      expect(hasOpenCustomDrafts, true);
-      expect(game.isQuestNotificationDeferred, true);
-      await tester.tap(find.byType(CustomDraftBackButton));
-      await tester.pumpAndSettle();
-      expect(find.text('Discard unsaved draft?'), findsOneWidget);
-      await tester.tap(find.text('Keep editing'));
-      await tester.pumpAndSettle();
-      expect(find.text('Kept Draft'), findsOneWidget);
-      storage.failure = Failure.none;
-      await tester.tap(find.text('Save Custom Egg'));
-      await tester.pumpAndSettle();
-      expect(eggs.allEggs.single.name, 'Kept Draft');
-      expect(find.text('Open'), findsOneWidget);
-      expect(hasOpenCustomDrafts, false);
-      expect(game.isQuestNotificationDeferred, false);
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byType(TextField).first,
-        'Discard this draft',
-      );
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Discard draft'));
-      await tester.pumpAndSettle();
-      expect(find.text('Open'), findsOneWidget);
-      expect(eggs.allEggs.single.name, 'Kept Draft');
-      expect(hasOpenCustomDrafts, false);
-      await tester.pumpWidget(const SizedBox.shrink());
-      game.dispose();
-      eggs.dispose();
-      sprites.dispose();
-      prefs.dispose();
-    },
-  );
 
   testWidgets(
     'sprite reset failure retains drawing and reset requires confirmation',

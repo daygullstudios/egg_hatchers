@@ -313,36 +313,6 @@ class QuestData {
       target: 1,
     ),
 
-    // Custom Egg Quests
-    Quest(
-      id: 'custom_create_1',
-      category: QuestCategory.customEgg,
-      title: 'Create a Custom Egg',
-      description: 'Design your own egg in the shop.',
-      rewardCoins: 2500,
-      metric: QuestMetric.totalCustomEggsCreated,
-      target: 1,
-    ),
-    Quest(
-      id: 'custom_hatch_10',
-      category: QuestCategory.customEgg,
-      title: 'Hatch 10 Eggs Total',
-      description: 'Create a custom egg, then hatch 10 eggs in total.',
-      rewardCoins: 5000,
-      metric: QuestMetric.totalEggsHatched,
-      target: 10,
-      requiresCustomEggCreated: true,
-    ),
-    Quest(
-      id: 'custom_triple_1',
-      category: QuestCategory.customEgg,
-      title: 'Triple Hatch a Custom Egg',
-      description: 'Use Triple Hatch on one of your custom eggs.',
-      rewardCoins: 10000,
-      metric: QuestMetric.totalCustomTripleHatches,
-      target: 1,
-    ),
-
     // Custom Sprite Quests
     Quest(
       id: 'sprite_rate_1',
@@ -427,7 +397,6 @@ class QuestData {
     QuestCategory.advanced,
     QuestCategory.lateGame,
     QuestCategory.battle,
-    QuestCategory.customEgg,
     QuestCategory.customSprite,
   ];
 }

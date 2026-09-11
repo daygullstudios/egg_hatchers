@@ -11,7 +11,6 @@ import '../models/active_auto_battle.dart';
 import '../models/arena.dart';
 import '../models/animal.dart';
 import '../models/boss_battle.dart';
-import '../models/custom_egg.dart';
 import '../models/egg.dart';
 import '../models/egg_mastery_progress.dart';
 import '../models/forced_hatch_result.dart';
@@ -19,7 +18,6 @@ import '../models/hatch_result.dart';
 import '../models/boss_reward_grant.dart';
 import '../models/daily_quest_progress.dart';
 import '../utils/daily_system_logic.dart';
-import '../utils/custom_egg_logic.dart';
 import '../utils/animal_fusion_logic.dart';
 import '../utils/battle_upgrade_logic.dart';
 import '../utils/luck_logic.dart';
@@ -755,21 +753,23 @@ class GameService extends ChangeNotifier {
   }
 
   bool isEggUnlocked(Egg egg) {
-    if (egg.id == GameData.dayGullEggId) {
+    final builtInEgg = GameData.eggById(egg.id);
+    if (builtInEgg == null) return false;
+    if (builtInEgg.id == GameData.dayGullEggId) {
       return isDayGullEggUnlocked;
     }
-    if (egg.usesBattleTokens) {
+    if (builtInEgg.usesBattleTokens) {
       return _state.ownedAnimals.isNotEmpty;
     }
     final effectiveRebirth = EggShardLogic.effectiveRebirthRequirement(
-      egg.unlockRebirthLevel,
+      builtInEgg.unlockRebirthLevel,
       _state.eggRebirthReductionLevel,
     );
     if (effectiveRebirth > 0 && _state.rebirthLevel < effectiveRebirth) {
       return false;
     }
-    if (egg.unlockLifetimeCoins > 0 &&
-        _state.lifetimeCoinsEarned < egg.unlockLifetimeCoins) {
+    if (builtInEgg.unlockLifetimeCoins > 0 &&
+        _state.lifetimeCoinsEarned < builtInEgg.unlockLifetimeCoins) {
       return false;
     }
     return true;
@@ -870,10 +870,12 @@ class GameService extends ChangeNotifier {
       dailyQuests.where((quest) => quest.claimed).length;
 
   bool canAfford(Egg egg) {
-    if (egg.usesBattleTokens) {
-      return _state.battleTokens >= egg.cost;
+    final builtInEgg = GameData.eggById(egg.id);
+    if (builtInEgg == null) return false;
+    if (builtInEgg.usesBattleTokens) {
+      return _state.battleTokens >= builtInEgg.cost;
     }
-    return _state.coins >= egg.cost;
+    return _state.coins >= builtInEgg.cost;
   }
 
   bool canBuyEgg(Egg egg) => isEggUnlocked(egg) && canAfford(egg);
@@ -882,20 +884,24 @@ class GameService extends ChangeNotifier {
   static int tripleHatchCost(Egg egg) => (egg.cost * 3.5).ceil();
 
   bool canAffordTripleHatch(Egg egg) {
-    if (!isEggUnlocked(egg)) return false;
-    if (egg.usesBattleTokens) {
-      return _state.battleTokens >= tripleHatchCost(egg);
+    final builtInEgg = GameData.eggById(egg.id);
+    if (builtInEgg == null || !isEggUnlocked(builtInEgg)) return false;
+    if (builtInEgg.usesBattleTokens) {
+      return _state.battleTokens >= tripleHatchCost(builtInEgg);
     }
-    return _state.coins >= tripleHatchCost(egg);
+    return _state.coins >= tripleHatchCost(builtInEgg);
   }
 
   bool buyEgg(Egg egg) {
-    if (!canBuyEgg(egg)) return false;
+    final builtInEgg = GameData.eggById(egg.id);
+    if (builtInEgg == null || !canBuyEgg(builtInEgg)) return false;
 
-    if (egg.usesBattleTokens) {
-      _state = _state.copyWith(battleTokens: _state.battleTokens - egg.cost);
+    if (builtInEgg.usesBattleTokens) {
+      _state = _state.copyWith(
+        battleTokens: _state.battleTokens - builtInEgg.cost,
+      );
     } else {
-      _state = _state.copyWith(coins: _state.coins - egg.cost);
+      _state = _state.copyWith(coins: _state.coins - builtInEgg.cost);
     }
     _incrementDailyQuest(DailySystemLogic.buyEggsType);
     notifyListeners();
@@ -904,10 +910,11 @@ class GameService extends ChangeNotifier {
   }
 
   bool buyTripleHatch(Egg egg) {
-    if (!isEggUnlocked(egg)) return false;
+    final builtInEgg = GameData.eggById(egg.id);
+    if (builtInEgg == null || !isEggUnlocked(builtInEgg)) return false;
 
-    final cost = tripleHatchCost(egg);
-    if (egg.usesBattleTokens) {
+    final cost = tripleHatchCost(builtInEgg);
+    if (builtInEgg.usesBattleTokens) {
       if (_state.battleTokens < cost) return false;
       _state = _state.copyWith(battleTokens: _state.battleTokens - cost);
     } else {
@@ -2702,17 +2709,6 @@ class GameService extends ChangeNotifier {
     save();
   }
 
-  void recordCustomEggCreated() {
-    _state = _state.copyWith(
-      questProgress: _state.questProgress.copyWith(
-        totalCustomEggsCreated: _state.questProgress.totalCustomEggsCreated + 1,
-      ),
-    );
-    _refreshQuestNotifications();
-    notifyListeners();
-    save();
-  }
-
   void devAddEggsHatched(int count) {
     if (count <= 0) return;
     _state = _state.copyWith(
@@ -3056,22 +3052,21 @@ class GameService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Hatch a purchased egg, roll for mutation, and add to the collection.
-  ///
-  /// Pass [customEgg] when hatching a player-created custom egg so weighted
-  /// chances apply. Built-in eggs use equal random selection.
-  HatchResult hatchEgg(Egg egg, {CustomEgg? customEgg}) {
+  /// Hatch a purchased built-in egg, roll for mutation, and add it.
+  HatchResult hatchEgg(Egg egg) {
+    final builtInEgg = GameData.eggById(egg.id);
+    if (builtInEgg == null) {
+      throw ArgumentError.value(egg.id, 'egg.id', 'Unknown egg');
+    }
     final result = _rollAndApplyHatch(
-      egg,
-      customEgg: customEgg,
+      builtInEgg,
       slotIndex: 0,
       isTripleHatchSession: false,
     );
     _recordHatchSession(
       results: [result],
       isTripleHatch: false,
-      isCustomEgg: customEgg != null,
-      eggId: egg.id,
+      eggId: builtInEgg.id,
     );
     _refreshQuestNotifications(deferDisplay: true);
     notifyListeners();
@@ -3080,20 +3075,19 @@ class GameService extends ChangeNotifier {
   }
 
   /// Hatch multiple animals from one purchase.
-  List<HatchResult> hatchEggMultiple(
-    Egg egg,
-    int count, {
-    CustomEgg? customEgg,
-  }) {
+  List<HatchResult> hatchEggMultiple(Egg egg, int count) {
     if (count <= 0) return const [];
+    final builtInEgg = GameData.eggById(egg.id);
+    if (builtInEgg == null) {
+      throw ArgumentError.value(egg.id, 'egg.id', 'Unknown egg');
+    }
 
     final isTripleHatchSession = count >= 3;
     final results = <HatchResult>[];
     for (var i = 0; i < count; i++) {
       results.add(
         _rollAndApplyHatch(
-          egg,
-          customEgg: customEgg,
+          builtInEgg,
           slotIndex: i,
           isTripleHatchSession: isTripleHatchSession,
         ),
@@ -3103,8 +3097,7 @@ class GameService extends ChangeNotifier {
     _recordHatchSession(
       results: results,
       isTripleHatch: isTripleHatchSession,
-      isCustomEgg: customEgg != null,
-      eggId: egg.id,
+      eggId: builtInEgg.id,
     );
     _refreshQuestNotifications(deferDisplay: true);
     notifyListeners();
@@ -3148,7 +3141,6 @@ class GameService extends ChangeNotifier {
 
   HatchResult _rollAndApplyHatch(
     Egg egg, {
-    CustomEgg? customEgg,
     required int slotIndex,
     required bool isTripleHatchSession,
   }) {
@@ -3165,17 +3157,7 @@ class GameService extends ChangeNotifier {
         isTripleHatchSession: isTripleHatchSession,
       );
     } else {
-      final String animalId;
-      if (customEgg != null && customEgg.isValid && customEgg.id == egg.id) {
-        animalId = CustomEggLogic.weightedRandomAnimal(
-          customEgg,
-          _random,
-          lifetimeCoinsEarned: _state.lifetimeCoinsEarned,
-          rebirthLevel: _state.rebirthLevel,
-        );
-      } else {
-        animalId = BuiltInEggLogic.rollAnimal(egg, _random);
-      }
+      final animalId = BuiltInEggLogic.rollAnimal(egg, _random);
       animal = GameData.animalById(animalId)!;
       mutation = LuckLogic.rollMutation(
         _random,
@@ -3241,7 +3223,6 @@ class GameService extends ChangeNotifier {
   void _recordHatchSession({
     required List<HatchResult> results,
     required bool isTripleHatch,
-    required bool isCustomEgg,
     String? eggId,
   }) {
     if (results.isEmpty) return;
@@ -3256,17 +3237,6 @@ class GameService extends ChangeNotifier {
           ? progress.totalTripleHatches + 1
           : progress.totalTripleHatches,
     );
-
-    if (isCustomEgg) {
-      progress = progress.copyWith(
-        totalCustomEggHatches: progress.totalCustomEggHatches + results.length,
-      );
-      if (isTripleHatch) {
-        progress = progress.copyWith(
-          totalCustomTripleHatches: progress.totalCustomTripleHatches + 1,
-        );
-      }
-    }
 
     for (final result in results) {
       if (result.mutation.isNormal) continue;

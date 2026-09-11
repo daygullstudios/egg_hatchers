@@ -179,7 +179,7 @@ class _ProgressConflictDialogState extends State<ProgressConflictDialog> {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Other local players, device settings, custom eggs and custom artwork stay. This does not link or delete a sign-in account.',
+                'Other local players, device settings, legacy custom-egg data and custom artwork stay. This does not link or delete a sign-in account.',
               ),
               const SizedBox(height: 12),
               const Text(

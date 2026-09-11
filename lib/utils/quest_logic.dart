@@ -29,12 +29,6 @@ class QuestLogic {
         return progress.totalAnimalUpgrades;
       case QuestMetric.totalLuckUpgrades:
         return progress.totalLuckUpgrades;
-      case QuestMetric.totalCustomEggsCreated:
-        return progress.totalCustomEggsCreated;
-      case QuestMetric.totalCustomEggHatches:
-        return progress.totalCustomEggHatches;
-      case QuestMetric.totalCustomTripleHatches:
-        return progress.totalCustomTripleHatches;
       case QuestMetric.totalSpritesRated:
         return progress.totalSpritesRated;
       case QuestMetric.totalSpriteRatingRewardsClaimed:
@@ -85,18 +79,10 @@ class QuestLogic {
   }
 
   static int currentValue(Quest quest, PlayerState state) {
-    if (quest.requiresCustomEggCreated &&
-        state.questProgress.totalCustomEggsCreated < 1) {
-      return 0;
-    }
     return metricValue(quest.metric, state);
   }
 
   static bool isComplete(Quest quest, PlayerState state) {
-    if (quest.requiresCustomEggCreated &&
-        state.questProgress.totalCustomEggsCreated < 1) {
-      return false;
-    }
     return currentValue(quest, state) >= quest.target;
   }
 

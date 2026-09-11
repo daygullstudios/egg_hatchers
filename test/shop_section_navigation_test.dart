@@ -1,5 +1,4 @@
 import 'package:egg_hatchers/screens/shop_screen.dart';
-import 'package:egg_hatchers/services/custom_egg_service.dart';
 import 'package:egg_hatchers/services/custom_sprite_service.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/preferences_service.dart';
@@ -21,12 +20,10 @@ void main() {
 
     final game = GameService();
     final preferences = PreferencesService();
-    final customEggs = CustomEggService();
     final customSprites = CustomSpriteService();
     await Future.wait([
       game.initialize(),
       preferences.initialize(),
-      customEggs.initialize(),
       customSprites.initialize(),
     ]);
     game.devCompleteTutorial();
@@ -37,7 +34,6 @@ void main() {
           game: game,
           preferences: preferences,
           customSprites: customSprites,
-          customEggs: customEggs,
         ),
       ),
     );
@@ -55,16 +51,11 @@ void main() {
     expect(find.text('Boss Egg'), findsOneWidget);
     expect(find.text('Create Custom Egg'), findsNothing);
 
-    await tester.tap(find.byKey(const ValueKey('shop-section-custom')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Basic Egg'), findsNothing);
-    expect(find.text('Boss Egg'), findsNothing);
-    expect(find.text('Create Custom Egg'), findsOneWidget);
+    expect(find.byKey(const ValueKey('shop-section-custom')), findsNothing);
+    expect(find.text('Custom'), findsNothing);
     expect(tester.takeException(), isNull);
 
     game.dispose();
-    customEggs.dispose();
     customSprites.dispose();
   });
 }

@@ -44,11 +44,7 @@ void main() {
       emoji: '🥚',
       cost: 1000,
       selectedAnimalIds: ['chicken', 'rabbit', 'dragon'],
-      animalWeights: {
-        'chicken': 6,
-        'rabbit': 3,
-        'dragon': 1,
-      },
+      animalWeights: {'chicken': 6, 'rabbit': 3, 'dragon': 1},
     );
 
     expect(
@@ -119,10 +115,7 @@ void main() {
       emoji: '🥚',
       cost: 100,
       selectedAnimalIds: ['chicken', 'galaxy_dragon'],
-      animalWeights: {
-        'chicken': 9,
-        'galaxy_dragon': 1,
-      },
+      animalWeights: {'chicken': 9, 'galaxy_dragon': 1},
     );
 
     final mixedMin = CustomEggLogic.minimumCostForCustomEgg(
@@ -171,10 +164,7 @@ void main() {
       emoji: '🥚',
       cost: 1000,
       selectedAnimalIds: ['chicken', 'dragon'],
-      animalWeights: {
-        'chicken': 99,
-        'dragon': 1,
-      },
+      animalWeights: {'chicken': 99, 'dragon': 1},
     );
 
     final random = Random(7);
@@ -187,7 +177,7 @@ void main() {
     expect(chickenHits, greaterThan(150));
   });
 
-  test('forced hatch overrides custom egg weighted result', () async {
+  test('custom egg objects cannot enter the built-in hatch pipeline', () async {
     SharedPreferences.setMockInitialValues({});
     const customEgg = CustomEgg(
       id: 'custom_force',
@@ -201,12 +191,8 @@ void main() {
     final game = GameService(random: Random(1));
     await game.initialize();
 
-    game.setForcedNextHatch('dragon', 'none');
-    game.buyEgg(egg);
-    final result = game.hatchEgg(egg, customEgg: customEgg);
-
-    expect(result.animal.id, 'dragon');
-    expect(game.hasForcedNextHatch, isFalse);
+    expect(game.buyEgg(egg), isFalse);
+    expect(() => game.hatchEgg(egg), throwsArgumentError);
     game.dispose();
   });
 
@@ -237,18 +223,9 @@ void main() {
   });
 
   test('animal unlock follows built-in egg lifetime requirements', () {
-    expect(
-      CustomEggLogic.isAnimalUnlockedForCustomEgg('chicken', 0),
-      isTrue,
-    );
-    expect(
-      CustomEggLogic.isAnimalUnlockedForCustomEgg('fox', 299),
-      isFalse,
-    );
-    expect(
-      CustomEggLogic.isAnimalUnlockedForCustomEgg('fox', 300),
-      isTrue,
-    );
+    expect(CustomEggLogic.isAnimalUnlockedForCustomEgg('chicken', 0), isTrue);
+    expect(CustomEggLogic.isAnimalUnlockedForCustomEgg('fox', 299), isFalse);
+    expect(CustomEggLogic.isAnimalUnlockedForCustomEgg('fox', 300), isTrue);
     expect(
       CustomEggLogic.isAnimalUnlockedForCustomEgg('galaxy_dragon', 749999),
       isFalse,
@@ -292,19 +269,11 @@ void main() {
 
   test('canAddAnimalToCustomEgg respects six animal limit', () {
     expect(
-      CustomEggLogic.canAddAnimalToCustomEgg(
-        'chicken',
-        0,
-        selectedCount: 6,
-      ),
+      CustomEggLogic.canAddAnimalToCustomEgg('chicken', 0, selectedCount: 6),
       isFalse,
     );
     expect(
-      CustomEggLogic.canAddAnimalToCustomEgg(
-        'chicken',
-        0,
-        selectedCount: 5,
-      ),
+      CustomEggLogic.canAddAnimalToCustomEgg('chicken', 0, selectedCount: 5),
       isTrue,
     );
   });
@@ -347,38 +316,31 @@ void main() {
     expect(ids.sublist(0, 3), ['chicken', 'mouse', 'rabbit']);
     expect(ids.sublist(3, 6), ['fox', 'deer', 'bear']);
     expect(ids.sublist(6, 10), ['cow', 'pig', 'sheep', 'horse']);
-    expect(
-      ids.sublist(29, 33),
-      ['moon_cat', 'star_fox', 'alien_slime', 'galaxy_dragon'],
-    );
-    expect(
-      ids.sublist(33, 36),
-      ['scarab_beetle', 'saber_cub', 'stone_golem'],
-    );
-    expect(
-      ids.sublist(36, 39),
-      ['royal_chicken', 'crown_fox', 'gem_dragon'],
-    );
-    expect(
-      ids.sublist(39, 42),
-      ['cloud_bunny', 'sun_lion', 'cosmic_phoenix'],
-    );
-    expect(
-      ids.sublist(42, 45),
-      ['void_mouse', 'eclipse_wolf', 'nebula_hydra'],
-    );
-    expect(
-      ids.sublist(45, 48),
-      ['crossword_beast', 'boba_bazooka', 'the_hatched_egg'],
-    );
-    expect(
-      ids.sublist(48, 51),
-      ['slime_pet', 'egg_golem_pet', 'night_rooster'],
-    );
-    expect(
-      ids.sublist(51, 54),
-      ['slime_king', 'egg_guardian', 'shadow_phoenix'],
-    );
+    expect(ids.sublist(29, 33), [
+      'moon_cat',
+      'star_fox',
+      'alien_slime',
+      'galaxy_dragon',
+    ]);
+    expect(ids.sublist(33, 36), ['scarab_beetle', 'saber_cub', 'stone_golem']);
+    expect(ids.sublist(36, 39), ['royal_chicken', 'crown_fox', 'gem_dragon']);
+    expect(ids.sublist(39, 42), ['cloud_bunny', 'sun_lion', 'cosmic_phoenix']);
+    expect(ids.sublist(42, 45), ['void_mouse', 'eclipse_wolf', 'nebula_hydra']);
+    expect(ids.sublist(45, 48), [
+      'crossword_beast',
+      'boba_bazooka',
+      'the_hatched_egg',
+    ]);
+    expect(ids.sublist(48, 51), [
+      'slime_pet',
+      'egg_golem_pet',
+      'night_rooster',
+    ]);
+    expect(ids.sublist(51, 54), [
+      'slime_king',
+      'egg_guardian',
+      'shadow_phoenix',
+    ]);
     expect(ids.last, 'shadow_phoenix');
   });
 

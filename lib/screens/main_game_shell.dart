@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../navigation/app_page_route.dart';
 import '../monetization/monetization_controller.dart';
-import '../services/custom_egg_service.dart';
 import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
 import '../services/preferences_service.dart';
@@ -25,7 +24,6 @@ class MainGameShell extends StatefulWidget {
     required this.game,
     required this.preferences,
     required this.customSprites,
-    required this.customEggs,
     required this.spriteRating,
     required this.referenceOverlay,
   });
@@ -33,7 +31,6 @@ class MainGameShell extends StatefulWidget {
   final GameService game;
   final PreferencesService preferences;
   final CustomSpriteService customSprites;
-  final CustomEggService customEggs;
   final SpriteRatingService spriteRating;
   final SpriteReferenceOverlayService referenceOverlay;
 
@@ -84,13 +81,11 @@ class _MainGameShellState extends State<MainGameShell> {
         game: widget.game,
         preferences: widget.preferences,
         customSprites: widget.customSprites,
-        customEggs: widget.customEggs,
       ),
       ShopScreen(
         game: widget.game,
         preferences: widget.preferences,
         customSprites: widget.customSprites,
-        customEggs: widget.customEggs,
       ),
       BattlesScreen(
         game: widget.game,

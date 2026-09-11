@@ -112,7 +112,7 @@ class _SaveImportReviewDialogState extends State<SaveImportReviewDialog> {
             if (!_started) ...[
               const SizedBox(height: 16),
               const Text(
-                'Replaces ALL local players, progress, settings, custom eggs and artwork in this browser. Saves are not merged.',
+                'Replaces ALL local players, progress, settings, legacy custom-egg data and artwork in this browser. Saves are not merged.',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),

@@ -1809,3 +1809,16 @@ flutter build web --release
 ```
 
 For the combined local web and multiplayer service, see `README.md`. Temporary Cloudflare tunnels are disposable and do not need to be migrated. Do not copy Codex `auth.json`, caches, sandbox directories, or temporary databases between computers.
+
+## Custom egg retirement
+
+Custom eggs were removed from playable Nestarium on 2026-09-10 because they
+duplicated the core egg system and could bypass the intended luck and rarity
+economy. The Egg Shop now contains only Hatchery and Battle catalogs, the
+custom-egg editor and quests are gone, and GameService accepts only canonical
+built-in egg definitions for purchases and hatches.
+
+Legacy custom-egg records remain account-scoped in local storage and Save
+Transfer exports so older saves continue to load and round-trip without silent
+data loss. They are dormant compatibility data and must not be restored to a
+playable surface without an explicit product decision and a new balance model.

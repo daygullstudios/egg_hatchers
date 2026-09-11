@@ -848,7 +848,6 @@ class _NestariumAppState extends State<NestariumApp>
               game: _game,
               preferences: _preferences,
               customSprites: _customSprites,
-              customEggs: _customEggs,
               spriteRating: _spriteRating,
               referenceOverlay: _referenceOverlay,
             ),

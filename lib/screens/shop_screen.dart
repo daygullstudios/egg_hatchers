@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../data/game_data.dart';
 import '../models/egg.dart';
-import '../utils/custom_egg_logic.dart';
 import '../utils/egg_mastery_logic.dart';
 import '../data/audio_assets.dart';
 import '../navigation/app_page_route.dart';
-import '../services/custom_egg_service.dart';
 import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
 import '../services/preferences_service.dart';
-import '../theme/game_theme.dart';
 import '../utils/quest_notification_utils.dart';
 import '../utils/snackbar_utils.dart';
 import '../utils/ui_sound.dart';
@@ -27,10 +24,8 @@ import '../widgets/multi_hatch_dialog.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/quest_notification_listener.dart';
 import '../models/background_theme.dart';
-import 'custom_egg_editor_screen.dart';
-import 'custom_eggs_screen.dart';
 
-enum _ShopSection { hatchery, battle, custom }
+enum _ShopSection { hatchery, battle }
 
 /// Screen where the player buys eggs to hatch.
 class ShopScreen extends StatefulWidget {
@@ -39,13 +34,11 @@ class ShopScreen extends StatefulWidget {
     required this.game,
     required this.preferences,
     required this.customSprites,
-    required this.customEggs,
   });
 
   final GameService game;
   final PreferencesService preferences;
   final CustomSpriteService customSprites;
-  final CustomEggService customEggs;
 
   @override
   State<ShopScreen> createState() => _ShopScreenState();
@@ -57,7 +50,6 @@ class _ShopScreenState extends State<ShopScreen> {
   GameService get game => widget.game;
   PreferencesService get preferences => widget.preferences;
   CustomSpriteService get customSprites => widget.customSprites;
-  CustomEggService get customEggs => widget.customEggs;
 
   Duration _hatchLeadIn(BuildContext context) {
     final audio = AudioScope.maybeOf(context);
@@ -65,37 +57,6 @@ class _ShopScreenState extends State<ShopScreen> {
       return const Duration(milliseconds: 2850);
     }
     return const Duration(milliseconds: 900);
-  }
-
-  void _openCustomEggsScreen(BuildContext context) {
-    final theme = preferences.selectedTheme;
-    openWithThemedTransition(
-      context,
-      theme: theme,
-      icon: '🥚',
-      label: 'Opening Custom Eggs',
-      builder: (_) => CustomEggsScreen(
-        game: game,
-        preferences: preferences,
-        customEggs: customEggs,
-        customSprites: customSprites,
-      ),
-    );
-  }
-
-  void _openCreateCustomEgg(BuildContext context) {
-    final theme = preferences.selectedTheme;
-    pushThemedAppRoute(
-      context,
-      theme: theme,
-      builder: (_) => CustomEggEditorScreen(
-        key: ValueKey('create_${DateTime.now().microsecondsSinceEpoch}'),
-        game: game,
-        preferences: preferences,
-        customEggs: customEggs,
-        customSprites: customSprites,
-      ),
-    );
   }
 
   Future<void> _tripleHatch(BuildContext context, Egg egg) async {
@@ -123,13 +84,9 @@ class _ShopScreenState extends State<ShopScreen> {
       return;
     }
 
-    final customDefinition = CustomEggLogic.isCustomEggId(egg.id)
-        ? customEggs.getById(egg.id)
-        : null;
-
     game.buyTripleHatch(egg);
     UiSound.purchase(context);
-    final results = game.hatchEggMultiple(egg, 3, customEgg: customDefinition);
+    final results = game.hatchEggMultiple(egg, 3);
 
     if (context.mounted) {
       await MultiHatchDialog.show(
@@ -181,14 +138,10 @@ class _ShopScreenState extends State<ShopScreen> {
       return;
     }
 
-    final customDefinition = CustomEggLogic.isCustomEggId(egg.id)
-        ? customEggs.getById(egg.id)
-        : null;
-
     game.buyEgg(egg);
     UiSound.purchase(context);
     TutorialService.instance.notifyEggPurchased();
-    final result = game.hatchEgg(egg, customEgg: customDefinition);
+    final result = game.hatchEgg(egg);
 
     if (context.mounted) {
       TutorialService.instance.notifyHatchDialogOpening();
@@ -214,24 +167,11 @@ class _ShopScreenState extends State<ShopScreen> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([
-        game,
-        preferences,
-        customEggs,
-        customSprites,
-      ]),
+      listenable: Listenable.merge([game, preferences, customSprites]),
       builder: (context, _) {
         final bg = preferences.selectedTheme;
         final shell = MainGameShellScope.maybeOf(context);
-        final lifetime = game.lifetimeCoinsEarned;
         final builtInShopEggs = game.visibleShopEggs;
-        final customShopEggs = customEggs.shopEggs(
-          lifetime,
-          rebirthLevel: game.rebirthLevel,
-        );
-        final hasSavedCustomEggs = customEggs.allEggs.isNotEmpty;
-        final hasHiddenCustomEggs =
-            hasSavedCustomEggs && customShopEggs.isEmpty;
 
         return TutorialScreenBindings(
           enabled: shell == null || shell.current == MainGameDestination.shop,
@@ -303,9 +243,6 @@ class _ShopScreenState extends State<ShopScreen> {
                                 totalCount: builtInShopEggs.length,
                               ),
                               battleSummary: '${game.battleTokens} tokens',
-                              customSummary: customShopEggs.isEmpty
-                                  ? 'Create'
-                                  : '${customShopEggs.length} available',
                               onSelected: (section) {
                                 if (_selectedSection == section) return;
                                 UiSound.click(context);
@@ -414,81 +351,6 @@ class _ShopScreenState extends State<ShopScreen> {
                                     ),
                                   ),
                                 ],
-                              if (_selectedSection == _ShopSection.custom &&
-                                  customShopEggs.isNotEmpty) ...[
-                                for (
-                                  var i = 0;
-                                  i < customShopEggs.length;
-                                  i++
-                                ) ...[
-                                  if (i > 0) const SizedBox(height: 14),
-                                  Builder(
-                                    builder: (context) {
-                                      final customEgg = customShopEggs[i];
-                                      final eggModel = customEgg.toEgg(
-                                        lifetimeCoinsEarned: lifetime,
-                                        rebirthLevel: game.rebirthLevel,
-                                      );
-                                      return EggCard(
-                                        egg: eggModel,
-                                        theme: bg,
-                                        isUnlocked: true,
-                                        canAfford: game.canAfford(eggModel),
-                                        lifetimeCoinsEarned: lifetime,
-                                        isCustomEgg: true,
-                                        customSprites: customSprites,
-                                        tripleHatchCost:
-                                            GameService.tripleHatchCost(
-                                              eggModel,
-                                            ),
-                                        canAffordTripleHatch: game
-                                            .canAffordTripleHatch(eggModel),
-                                        onBuy: () =>
-                                            _buyAndHatch(context, eggModel),
-                                        onTripleHatch: () =>
-                                            _tripleHatch(context, eggModel),
-                                      );
-                                    },
-                                  ),
-                                ],
-                                const SizedBox(height: 14),
-                                OutlinedButton.icon(
-                                  onPressed: () =>
-                                      _openCreateCustomEgg(context),
-                                  icon: const Icon(Icons.add_rounded),
-                                  label: const Text('Create Custom Egg'),
-                                  style: OutlinedButton.styleFrom(
-                                    minimumSize: const Size(
-                                      double.infinity,
-                                      44,
-                                    ),
-                                    foregroundColor: bg.primaryColor,
-                                    side: BorderSide(color: bg.primaryColor),
-                                  ),
-                                ),
-                              ] else if (_selectedSection ==
-                                      _ShopSection.custom &&
-                                  hasHiddenCustomEggs)
-                                _CustomEggsShopNotice(
-                                  theme: bg,
-                                  message:
-                                      'You have custom eggs, but none are '
-                                      'enabled for the shop.',
-                                  buttonLabel: 'Manage Custom Eggs',
-                                  onPressed: () =>
-                                      _openCustomEggsScreen(context),
-                                )
-                              else if (_selectedSection == _ShopSection.custom)
-                                _CustomEggsShopNotice(
-                                  theme: bg,
-                                  message:
-                                      'No custom eggs yet.\n'
-                                      'Create your own egg to hatch your '
-                                      'favorite animals.',
-                                  buttonLabel: 'Create Custom Egg',
-                                  onPressed: () =>
-                                      _openCreateCustomEgg(context),
-                                ),
                             ],
                           ),
                         ),
@@ -519,7 +381,6 @@ class _ShopSectionSelector extends StatelessWidget {
     required this.selected,
     required this.hatcherySummary,
     required this.battleSummary,
-    required this.customSummary,
     required this.onSelected,
   });
 
@@ -527,7 +388,6 @@ class _ShopSectionSelector extends StatelessWidget {
   final _ShopSection selected;
   final String hatcherySummary;
   final String battleSummary;
-  final String customSummary;
   final ValueChanged<_ShopSection> onSelected;
 
   @override
@@ -555,18 +415,6 @@ class _ShopSectionSelector extends StatelessWidget {
             summary: battleSummary,
             selected: selected == _ShopSection.battle,
             onTap: () => onSelected(_ShopSection.battle),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: _ShopSectionButton(
-            key: const ValueKey('shop-section-custom'),
-            theme: theme,
-            icon: Icons.auto_awesome_rounded,
-            label: 'Custom',
-            summary: customSummary,
-            selected: selected == _ShopSection.custom,
-            onTap: () => onSelected(_ShopSection.custom),
           ),
         ),
       ],
@@ -641,61 +489,6 @@ class _ShopSectionButton extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _CustomEggsShopNotice extends StatelessWidget {
-  const _CustomEggsShopNotice({
-    required this.theme,
-    required this.message,
-    required this.buttonLabel,
-    required this.onPressed,
-  });
-
-  final BackgroundTheme theme;
-  final String message;
-  final String buttonLabel;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: GameTheme.cardDecoration(theme),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              color: theme.cardTextSecondaryColor,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: onPressed,
-            style: GameTheme.filledButton(
-              theme,
-              color: theme.secondaryColor,
-              height: 48,
-            ),
-            icon: Icon(
-              buttonLabel.toLowerCase().contains('unlock')
-                  ? Icons.lock_open_rounded
-                  : Icons.auto_awesome_rounded,
-            ),
-            label: Text(
-              buttonLabel,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
       ),
     );
   }
