@@ -50,6 +50,9 @@ jobs:
       - name: Build web release
         run: flutter build web --release --no-pub
 
+      - name: Verify developer tools are absent from release
+        run: node tool/audit_release_surface.mjs
+
       - name: Build multiplayer server
         run: dart compile exe tool/multiplayer_server.dart -o build/nestarium-server
 

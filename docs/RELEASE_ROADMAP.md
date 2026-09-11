@@ -125,6 +125,7 @@ unlicensed release assets.
 ### 7. Reliability and security
 
 - [x] Run static analysis, automated Flutter tests and release web builds in CI.
+- [x] Scan the compiled web release for developer-only controls in CI.
 - [x] Protect the private playtest and disable public preview aliases.
 - [ ] Run a release-focused code review for crashes, data loss and security bugs.
 - [ ] Test slow/offline startup, refreshes, interrupted saves and service outages.
@@ -173,12 +174,10 @@ Exit: the approved build is public, monitored and reversible.
 ## Immediate work order
 
 1. Correct project documentation that still describes retired custom eggs.
-2. Build a release-audit test that detects developer-only surfaces in ordinary
-   builds.
-3. Run the first release-focused code review, starting with save integrity and
+2. Run the first release-focused code review, starting with save integrity and
    authentication boundaries.
-4. Close the cross-device account recovery path.
-5. Finish the family capability and deletion requirements.
-6. Run the authoritative multiplayer two-device and failure-recovery matrix.
-7. Balance the economy and complete visual/audio asset audits.
-8. Enter closed beta only after gates 2 through 7 have release evidence.
+3. Close the cross-device account recovery path.
+4. Finish the family capability and deletion requirements.
+5. Run the authoritative multiplayer two-device and failure-recovery matrix.
+6. Balance the economy and complete visual/audio asset audits.
+7. Enter closed beta only after gates 2 through 7 have release evidence.
