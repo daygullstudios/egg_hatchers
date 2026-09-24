@@ -106,7 +106,7 @@ leave one player with a one-sided result.
 ### 5. Gameplay and economy
 
 - [x] Restrict purchases and hatches to canonical built-in eggs.
-- [ ] Measure the new-player path through first hatch, first boss and first
+- [x] Measure the new-player path through first hatch, first boss and first
   rebirth.
 - [ ] Review every egg price, rarity table, income curve and rebirth multiplier.
 - [ ] Review boss difficulty, lives, abilities, energy frequency and rewards.
