@@ -22,6 +22,12 @@ import {
   type BattleMutation,
   type BattleSession,
 } from "./battle";
+import { hostedArenaReward, onlineRosterRewardPool } from "./arena_balance";
+import {
+  compareFairCandidates,
+  isFairMatch,
+  type RatedQueueEntry,
+} from "./matchmaking";
 import {
   matchmakingShardCount,
   routeMatchmakingPool,
@@ -873,7 +879,7 @@ export class MatchmakingPool extends DurableObject<Env> {
     };
     socket.serializeAttachment(updated);
 
-    const opponent = this.waitingSocket(attachment.uid);
+    const opponent = this.waitingSocket(updated);
     if (!opponent) {
       send(socket, {
         type: "queued",
@@ -884,7 +890,13 @@ export class MatchmakingPool extends DurableObject<Env> {
     await this.createMatch(socket, opponent);
   }
 
-  private waitingSocket(exceptUid: string): WebSocket | undefined {
+  private waitingSocket(seeker: SocketAttachment): WebSocket | undefined {
+    if (!seeker.player || seeker.queuedAt === undefined) return undefined;
+    const now = Date.now();
+    const seekerEntry: RatedQueueEntry = {
+      rating: seeker.player.rating,
+      queuedAt: seeker.queuedAt,
+    };
     return this.ctx
       .getWebSockets()
       .filter((candidate) => candidate.readyState === WebSocket.OPEN)
@@ -893,14 +905,28 @@ export class MatchmakingPool extends DurableObject<Env> {
           candidate.deserializeAttachment() as SocketAttachment;
         return (
           attachment.state === "queued" &&
-          attachment.uid !== exceptUid &&
-          !this.playersAreBlocked(exceptUid, attachment.uid)
+          attachment.uid !== seeker.uid &&
+          attachment.player !== undefined &&
+          attachment.queuedAt !== undefined &&
+          !this.playersAreBlocked(seeker.uid, attachment.uid) &&
+          isFairMatch(
+            seekerEntry,
+            {
+              rating: attachment.player.rating,
+              queuedAt: attachment.queuedAt,
+            },
+            now,
+          )
         );
       })
       .sort((first, second) => {
         const a = first.deserializeAttachment() as SocketAttachment;
         const b = second.deserializeAttachment() as SocketAttachment;
-        return (a.queuedAt ?? 0) - (b.queuedAt ?? 0);
+        return compareFairCandidates(
+          seekerEntry,
+          { rating: a.player!.rating, queuedAt: a.queuedAt! },
+          { rating: b.player!.rating, queuedAt: b.queuedAt! },
+        );
       })[0];
   }
 
@@ -2786,35 +2812,6 @@ function integerInRange(
     : undefined;
 }
 
-function hostedArenaReward(
-  won: boolean,
-  playerRating: number,
-  opponentRating: number,
-  currentStreak: number,
-): { ratingChange: number; coins: number; battleTokens: number } {
-  const difference = opponentRating - playerRating;
-  if (!won) {
-    return {
-      ratingChange: -clampInteger(12 - Math.trunc(difference / 25), 6, 18),
-      coins: 0,
-      battleTokens: 0,
-    };
-  }
-  const ratingChange = clampInteger(
-    18 + Math.trunc(difference / 25),
-    12,
-    28,
-  );
-  const nextStreak = currentStreak + 1;
-  return {
-    ratingChange,
-    // Hosted rewards deliberately do not depend on client-supplied fighter power.
-    coins: 250,
-    battleTokens:
-      1 + (opponentRating >= 1250 ? 1 : 0) + (nextStreak % 5 === 0 ? 1 : 0),
-  };
-}
-
 function clampInteger(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, Math.trunc(value)));
 }
@@ -2824,56 +2821,6 @@ const starterOnlineInventory: readonly OnlineInventoryItem[] = [
   { animalId: "mouse", mutationId: "none", level: 1, quantity: 2 },
   { animalId: "rabbit", mutationId: "none", level: 1, quantity: 2 },
 ];
-
-const earlyOnlineRosterRewards = [
-  "chicken",
-  "mouse",
-  "rabbit",
-  "fox",
-  "deer",
-  "bear",
-  "cow",
-  "pig",
-  "sheep",
-  "horse",
-] as const;
-
-const establishedOnlineRosterRewards = [
-  ...earlyOnlineRosterRewards,
-  "tiger",
-  "dragon",
-  "unicorn",
-  "monkey",
-  "parrot",
-  "snake",
-  "gorilla",
-] as const;
-
-const advancedOnlineRosterRewards = [
-  ...establishedOnlineRosterRewards,
-  "fish",
-  "turtle",
-  "dolphin",
-  "shark",
-  "penguin",
-  "seal",
-  "polar_bear",
-  "snow_owl",
-  "raptor",
-  "triceratops",
-  "t_rex",
-  "fossil_dragon",
-  "moon_cat",
-  "star_fox",
-  "alien_slime",
-  "galaxy_dragon",
-] as const;
-
-function onlineRosterRewardPool(rating: number): readonly string[] {
-  if (rating >= 1600) return advancedOnlineRosterRewards;
-  if (rating >= 1250) return establishedOnlineRosterRewards;
-  return earlyOnlineRosterRewards;
-}
 
 function stableStringIndex(value: string, length: number): number {
   let hash = 0x811c9dc5;
