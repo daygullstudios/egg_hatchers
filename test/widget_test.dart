@@ -945,10 +945,10 @@ void main() {
   test('income multiplier formula works', () {
     expect(RebirthLogic.incomeMultiplier(0), 1);
     expect(RebirthLogic.incomeMultiplier(1), 2);
-    expect(RebirthLogic.incomeMultiplier(2), 4);
-    expect(RebirthLogic.incomeMultiplier(4), 16);
+    expect(RebirthLogic.incomeMultiplier(2), 3);
+    expect(RebirthLogic.incomeMultiplier(4), 5);
     expect(RebirthLogic.applyMultiplier(100, 1), 200);
-    expect(RebirthLogic.applyMultiplier(100, 4), 1600);
+    expect(RebirthLogic.applyMultiplier(100, 4), 500);
   });
 
   test('rebirth is unavailable below requirement at level 0', () async {

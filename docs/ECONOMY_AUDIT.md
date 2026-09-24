@@ -64,11 +64,13 @@ Expected payback falls from 39 seconds for Basic to three seconds for Space.
 That compression matches the measured 2-to-5.5-minute first rebirth and leaves
 little time for upgrades, collection decisions or bosses to matter.
 
-### High: Rebirth scaling shortens later cycles
+### Resolved during the boss-balance step: exponential rebirth scaling
 
-Income doubles every rebirth while requirements grow quadratically as
-`1,000,000 * (level + 1)^2`. Exponential income eventually outpaces the
-requirement curve, and stronger rebirth eggs amplify the effect.
+At the start of this audit, income doubled every rebirth while requirements
+grew quadratically. Rebirth income now adds one multiplier step per level:
+1x with no rebirth, 2x at level 1, 3x at level 2, and so on. Requirements remain
+`1,000,000 * (level + 1)^2`, so the multiplier no longer outgrows them
+exponentially.
 
 ### Medium: Opening battle rewards overwhelm egg prices
 

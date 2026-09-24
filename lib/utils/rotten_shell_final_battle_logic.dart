@@ -6,6 +6,11 @@ class RottenShellFinalBattleLogic {
   RottenShellFinalBattleLogic._();
 
   static const rottenShellBossId = 'rotten_shell';
+  static const energyMoveInterval = Duration(milliseconds: 1500);
+  static const bossAttackInterval = Duration(milliseconds: 1850);
+  static const goldenEnergyOneIn = 8;
+  static const energyCenterMin = 0.35;
+  static const energyCenterSpan = 0.30;
 
   static bool shouldEnter({
     required String bossId,

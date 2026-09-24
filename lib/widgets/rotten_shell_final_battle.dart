@@ -139,11 +139,11 @@ class _RottenShellFinalBattleState extends State<RottenShellFinalBattle>
     _energyMoveTimer?.cancel();
     _bossAttackTimer?.cancel();
     _energyMoveTimer = Timer.periodic(
-      const Duration(milliseconds: 1500),
+      RottenShellFinalBattleLogic.energyMoveInterval,
       (_) => _moveEnergy(),
     );
     _bossAttackTimer = Timer.periodic(
-      const Duration(milliseconds: 1850),
+      RottenShellFinalBattleLogic.bossAttackInterval,
       (_) => _bossAttack(),
     );
   }
@@ -151,9 +151,14 @@ class _RottenShellFinalBattleState extends State<RottenShellFinalBattle>
   void _moveEnergy() {
     if (!mounted || _finishing || _finished) return;
     setState(() {
-      _energyX = 0.35 + _random.nextDouble() * 0.30;
-      _energyY = 0.35 + _random.nextDouble() * 0.30;
-      _goldenEnergy = _random.nextInt(8) == 0;
+      _energyX =
+          RottenShellFinalBattleLogic.energyCenterMin +
+          _random.nextDouble() * RottenShellFinalBattleLogic.energyCenterSpan;
+      _energyY =
+          RottenShellFinalBattleLogic.energyCenterMin +
+          _random.nextDouble() * RottenShellFinalBattleLogic.energyCenterSpan;
+      _goldenEnergy =
+          _random.nextInt(RottenShellFinalBattleLogic.goldenEnergyOneIn) == 0;
       _energyVisible = true;
     });
   }

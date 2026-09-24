@@ -228,8 +228,8 @@ class _RebirthConfirmDialog extends StatelessWidget {
               children: [
                 Text(
                   'Rebirth resets your coins, animals, upgrades, Luck, and quest '
-                  'progress, but permanently doubles your total income. Secret '
-                  'reward animals are kept.',
+                  'progress, but permanently adds +1x to your total income '
+                  'multiplier. Secret reward animals are kept.',
                   style: TextStyle(
                     height: 1.4,
                     color: theme.cardTextSecondaryColor,

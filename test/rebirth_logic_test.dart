@@ -62,13 +62,13 @@ void main() {
     expect(RebirthLogic.nextRebirthRequirement(2), 9000000);
   });
 
-  test('income multiplier doubles with every rebirth', () {
+  test('income multiplier gains one step with every rebirth', () {
     expect(RebirthLogic.incomeMultiplier(0), 1);
     expect(RebirthLogic.incomeMultiplier(1), 2);
-    expect(RebirthLogic.incomeMultiplier(2), 4);
-    expect(RebirthLogic.incomeMultiplier(3), 8);
-    expect(RebirthLogic.incomeMultiplier(10), 1024);
-    expect(RebirthLogic.nextIncomeMultiplier(3), 16);
+    expect(RebirthLogic.incomeMultiplier(2), 3);
+    expect(RebirthLogic.incomeMultiplier(3), 4);
+    expect(RebirthLogic.incomeMultiplier(10), 11);
+    expect(RebirthLogic.nextIncomeMultiplier(3), 5);
   });
 
   test('negative rebirth levels safely use the base multiplier', () {
