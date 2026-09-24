@@ -86,9 +86,13 @@ void main() {
       expect(openedUri, service.serverUri);
       expect(openedProtocols, ['nestarium-v1', 'firebase-auth.firebase-token']);
       expect(service.state, MultiplayerConnectionState.ready);
-      expect(jsonDecode(channel.sink.messages.single as String), {
-        'type': 'getInventory',
-      });
+      expect(
+        channel.sink.messages.map((message) => jsonDecode(message as String)),
+        [
+          {'type': 'getInventory'},
+          {'type': 'listBlocks'},
+        ],
+      );
 
       channel.incoming.add(
         jsonEncode({
@@ -228,6 +232,35 @@ void main() {
     );
     expect(service.peerSafetyReceipt?.eventId, 'safety-1');
     expect(service.peerSafetyReceipt?.blocked, isTrue);
+    expect(jsonDecode(channel.sink.messages.last as String), {
+      'type': 'listBlocks',
+    });
+
+    channel.incoming.add(
+      jsonEncode({
+        'type': 'blockedPlayers',
+        'players': [
+          {
+            'token': '7ad97010-a8b8-4ce7-a280-f3d76db277ed',
+            'account': {
+              'id': 'peer-ABC123',
+              'displayName': 'Player ABC123',
+              'username': 'nest-abc123',
+              'avatarColorValue': 0xFF5271FF,
+              'createdAt': '2000-01-01T00:00:00.000Z',
+              'isGuest': false,
+            },
+            'blockedAt': '2026-09-24T12:00:00.000Z',
+          },
+        ],
+      }),
+    );
+    expect(service.blockedPlayers?.single.account.displayName, 'Player ABC123');
+    service.unblockPlayer(service.blockedPlayers!.single.token);
+    expect(jsonDecode(channel.sink.messages.last as String), {
+      'type': 'unblockPlayer',
+      'token': '7ad97010-a8b8-4ce7-a280-f3d76db277ed',
+    });
   });
 
   test(

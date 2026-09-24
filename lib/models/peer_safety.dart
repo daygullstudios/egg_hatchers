@@ -1,3 +1,5 @@
+import 'player_account.dart';
+
 enum PeerReportReason {
   disruptiveConduct(
     'disruptive_conduct',
@@ -25,6 +27,35 @@ enum PeerReportReason {
   final String wireName;
   final String label;
   final String description;
+}
+
+class BlockedPlayerEntry {
+  const BlockedPlayerEntry({
+    required this.token,
+    required this.account,
+    required this.blockedAt,
+  });
+
+  final String token;
+  final PlayerAccount account;
+  final DateTime blockedAt;
+
+  factory BlockedPlayerEntry.fromJson(Map<String, dynamic> json) {
+    final token = json['token'] as String?;
+    final account = json['account'];
+    final blockedAt = json['blockedAt'] as String?;
+    if (token == null ||
+        token.isEmpty ||
+        account is! Map ||
+        blockedAt == null) {
+      throw const FormatException('Invalid blocked player entry');
+    }
+    return BlockedPlayerEntry(
+      token: token,
+      account: PlayerAccount.fromJson(Map<String, dynamic>.from(account)),
+      blockedAt: DateTime.parse(blockedAt),
+    );
+  }
 }
 
 class PeerSafetyReceipt {

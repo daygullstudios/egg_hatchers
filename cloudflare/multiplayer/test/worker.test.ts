@@ -535,6 +535,24 @@ describe("multiplayer edge authentication", () => {
       message: expect.stringContaining("blocked"),
     });
 
+    first.send(JSON.stringify({ type: "listBlocks" }));
+    const blockedPlayers = await firstMessages.next();
+    expect(blockedPlayers).toMatchObject({
+      type: "blockedPlayers",
+      players: [
+        {
+          token: expect.stringMatching(/^[0-9a-f-]{36}$/i),
+          account: {
+            displayName: expect.stringMatching(/^Player [A-F0-9]{6}$/),
+            username: expect.stringMatching(/^nest-[a-f0-9]{6}$/),
+          },
+          blockedAt: expect.any(String),
+        },
+      ],
+    });
+    expect(JSON.stringify(blockedPlayers)).not.toContain("safety-owner-a");
+    expect(JSON.stringify(blockedPlayers)).not.toContain("safety-owner-b");
+
     first.send(
       JSON.stringify({
         type: "peerSafety",
@@ -568,6 +586,33 @@ describe("multiplayer edge authentication", () => {
     await expect(firstMessages.next()).resolves.toMatchObject({ type: "queued" });
     second.send(JSON.stringify({ type: "queue", player: player("safety-b") }));
     await expect(secondMessages.next()).resolves.toMatchObject({ type: "queued" });
+
+    first.send(JSON.stringify({ type: "cancel" }));
+    second.send(JSON.stringify({ type: "cancel" }));
+    await expect(firstMessages.next()).resolves.toMatchObject({ type: "ready" });
+    await expect(secondMessages.next()).resolves.toMatchObject({ type: "ready" });
+
+    first.send(
+      JSON.stringify({
+        type: "unblockPlayer",
+        token: blockedPlayers.players[0].token,
+      }),
+    );
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "blockedPlayers",
+      players: [],
+    });
+
+    first.send(JSON.stringify({ type: "queue", player: player("safety-a") }));
+    await expect(firstMessages.next()).resolves.toMatchObject({ type: "queued" });
+    second.send(JSON.stringify({ type: "queue", player: player("safety-b") }));
+    const firstMatch = await firstMessages.next();
+    const secondMatch = await secondMessages.next();
+    expect(firstMatch).toMatchObject({ type: "matched" });
+    expect(secondMatch).toMatchObject({
+      type: "matched",
+      matchId: firstMatch.matchId,
+    });
 
     first.close(1000, "done");
     second.close(1000, "done");

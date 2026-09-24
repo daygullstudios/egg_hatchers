@@ -1,6 +1,6 @@
 # Nestarium release roadmap
 
-Updated: 2026-09-10
+Updated: 2026-09-24
 
 This is the working checklist for the first public Nestarium release. A checked
 item needs evidence from the release candidate, not only an implementation or a
@@ -94,7 +94,7 @@ and enforced by the server.
 - [x] Preserve both rosters when a trade disconnects before confirmation.
 - [x] Handle battle reconnect windows without inventing an outcome.
 - [ ] Complete trusted authenticated sessions in the production environment.
-- [ ] Complete the user-managed blocked-player list.
+- [x] Complete the user-managed blocked-player list.
 - [ ] Test duplicate sessions, reconnects, forfeits, timeouts and stale clients.
 - [ ] Test matchmaking fairness and reward balance with representative accounts.
 - [ ] Run two-device internet play outside the developer network.

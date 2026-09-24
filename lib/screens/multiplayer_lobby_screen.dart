@@ -8,6 +8,7 @@ import '../models/multiplayer.dart';
 import '../models/online_lobby.dart';
 import '../models/owned_animal.dart';
 import '../models/player_account.dart';
+import '../models/peer_safety.dart';
 import '../navigation/app_page_route.dart';
 import '../services/custom_sprite_service.dart';
 import '../services/game_service.dart';
@@ -438,6 +439,18 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
     accounts.chooseAnotherAccount();
   }
 
+  Future<void> _showBlockedPlayers() async {
+    final multiplayer = _multiplayer;
+    if (multiplayer == null) return;
+    multiplayer.requestBlockedPlayers();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _BlockedPlayersSheet(multiplayer: multiplayer),
+    );
+  }
+
   @override
   void dispose() {
     _multiplayer?.removeListener(_onMultiplayerChanged);
@@ -558,6 +571,19 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
                     message: _multiplayer?.message,
                     onRetry: _multiplayer?.retry,
                   ),
+                  if (_usesServerRoster) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      key: const ValueKey('manage-blocked-players-button'),
+                      onPressed: serverConnected ? _showBlockedPlayers : null,
+                      icon: const Icon(Icons.block),
+                      label: Text(
+                        _multiplayer?.blockedPlayers == null
+                            ? 'BLOCKED PLAYERS'
+                            : 'BLOCKED PLAYERS (${_multiplayer!.blockedPlayers!.length})',
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 14),
                   SizedBox(
                     height: 52,
@@ -613,6 +639,159 @@ class _MultiplayerLobbyScreenState extends State<MultiplayerLobbyScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _BlockedPlayersSheet extends StatefulWidget {
+  const _BlockedPlayersSheet({required this.multiplayer});
+
+  final MultiplayerService multiplayer;
+
+  @override
+  State<_BlockedPlayersSheet> createState() => _BlockedPlayersSheetState();
+}
+
+class _BlockedPlayersSheetState extends State<_BlockedPlayersSheet> {
+  @override
+  void initState() {
+    super.initState();
+    widget.multiplayer.addListener(_refresh);
+  }
+
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    widget.multiplayer.removeListener(_refresh);
+    super.dispose();
+  }
+
+  Future<void> _confirmUnblock(BlockedPlayerEntry player) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unblock player?'),
+        content: Text(
+          '${player.account.displayName} may appear in your matches or trades again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCEL'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('UNBLOCK'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) widget.multiplayer.unblockPlayer(player.token);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final players = widget.multiplayer.blockedPlayers;
+    return SafeArea(
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.78,
+        ),
+        decoration: const BoxDecoration(
+          color: Color(0xFF111B3D),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 8, 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.block, color: Color(0xFF70D9FF)),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Blocked players',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Close',
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: players == null
+                  ? const Center(child: CircularProgressIndicator())
+                  : players.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.fromLTRB(24, 30, 24, 44),
+                      child: Text(
+                        'No blocked players.',
+                        style: TextStyle(color: Color(0xFFC5D0FF)),
+                      ),
+                    )
+                  : ListView.separated(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
+                      itemCount: players.length,
+                      separatorBuilder: (_, _) =>
+                          const Divider(color: Color(0xFF31436F), height: 1),
+                      itemBuilder: (context, index) {
+                        final player = players[index];
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 5,
+                          ),
+                          leading: CircleAvatar(
+                            backgroundColor: player.account.avatarColor,
+                            child: Text(
+                              player.account.displayName.characters.first,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            player.account.displayName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          subtitle: Text(
+                            player.account.identityLabel,
+                            style: const TextStyle(color: Color(0xFFA9B8E8)),
+                          ),
+                          trailing: IconButton(
+                            key: ValueKey('unblock-${player.token}'),
+                            tooltip: 'Unblock player',
+                            onPressed: () => _confirmUnblock(player),
+                            icon: const Icon(
+                              Icons.person_add_alt_1,
+                              color: Color(0xFF70D9FF),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

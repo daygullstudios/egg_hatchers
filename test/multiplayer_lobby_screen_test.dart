@@ -214,6 +214,84 @@ void main() {
     setup.game.dispose();
   });
 
+  testWidgets('hosted lobby lets the player review and unblock safe aliases', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final setup = await services();
+    final channel = ControlledLobbyChannel()..handshake.complete();
+    final multiplayer = MultiplayerService(
+      serverUri: Uri.parse('wss://playtest.example/ws'),
+      identityTokenProvider: const _TokenProvider('firebase-token'),
+      hostedMultiplayerEnabled: true,
+      channelFactory: (uri, {protocols}) => channel,
+    );
+    await multiplayer.connect();
+    channel.incoming.add(
+      jsonEncode({
+        'type': 'blockedPlayers',
+        'players': [
+          {
+            'token': '7ad97010-a8b8-4ce7-a280-f3d76db277ed',
+            'account': {
+              'id': 'peer-ABC123',
+              'displayName': 'Player ABC123',
+              'username': 'nest-abc123',
+              'avatarColorValue': 0xFF5271FF,
+              'createdAt': '2000-01-01T00:00:00.000Z',
+              'isGuest': false,
+            },
+            'blockedAt': '2026-09-24T12:00:00.000Z',
+          },
+        ],
+      }),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MultiplayerLobbyScreen(
+          game: setup.game,
+          preferences: setup.preferences,
+          customSprites: setup.sprites,
+          account: account,
+          multiplayer: multiplayer,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final manageButton = find.byKey(
+      const ValueKey('manage-blocked-players-button'),
+    );
+    await tester.ensureVisible(manageButton);
+    await tester.tap(manageButton);
+    await tester.pumpAndSettle();
+    expect(find.text('Player ABC123'), findsOneWidget);
+    expect(find.text('@nest-abc123'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(
+        const ValueKey('unblock-7ad97010-a8b8-4ce7-a280-f3d76db277ed'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Unblock player?'), findsOneWidget);
+    await tester.tap(find.text('UNBLOCK'));
+    await tester.pumpAndSettle();
+    expect(jsonDecode(channel.sink.messages.last as String), {
+      'type': 'unblockPlayer',
+      'token': '7ad97010-a8b8-4ce7-a280-f3d76db277ed',
+    });
+
+    await tester.pumpWidget(const SizedBox());
+    multiplayer.dispose();
+    channel.finish();
+    setup.game.dispose();
+  });
+
   testWidgets('a resumed hosted match reopens battle without a stale prompt', (
     tester,
   ) async {

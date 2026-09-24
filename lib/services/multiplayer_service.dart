@@ -55,6 +55,7 @@ class MultiplayerService extends ChangeNotifier {
   MultiplayerEnergySpawn? _energySpawn;
   MultiplayerSettlement? _settlement;
   PeerSafetyReceipt? _peerSafetyReceipt;
+  List<BlockedPlayerEntry>? _blockedPlayers;
   List<OwnedAnimal>? _onlineInventory;
   int? _onlineInventoryRevision;
   String? _selfPlayerId;
@@ -70,6 +71,9 @@ class MultiplayerService extends ChangeNotifier {
   MultiplayerEnergySpawn? get energySpawn => _energySpawn;
   MultiplayerSettlement? get settlement => _settlement;
   PeerSafetyReceipt? get peerSafetyReceipt => _peerSafetyReceipt;
+  List<BlockedPlayerEntry>? get blockedPlayers => _blockedPlayers == null
+      ? null
+      : List<BlockedPlayerEntry>.unmodifiable(_blockedPlayers!);
   List<OwnedAnimal>? get onlineInventory => _onlineInventory == null
       ? null
       : List<OwnedAnimal>.unmodifiable(_onlineInventory!);
@@ -141,6 +145,7 @@ class MultiplayerService extends ChangeNotifier {
       );
       if (isHostedServer) {
         channel.sink.add(jsonEncode({'type': 'getInventory'}));
+        requestBlockedPlayers();
       }
     } catch (_) {
       final failedChannel = _channel;
@@ -263,6 +268,18 @@ class MultiplayerService extends ChangeNotifier {
 
   void blockPeer() => _sendPeerSafety('block');
 
+  void requestBlockedPlayers() {
+    if (_disposed || _channel == null || !isHostedServer) return;
+    _channel!.sink.add(jsonEncode({'type': 'listBlocks'}));
+  }
+
+  void unblockPlayer(String token) {
+    if (_disposed || _channel == null || !isHostedServer || token.isEmpty) {
+      return;
+    }
+    _channel!.sink.add(jsonEncode({'type': 'unblockPlayer', 'token': token}));
+  }
+
   void _sendPeerSafety(
     String action, {
     PeerReportReason? reason,
@@ -370,9 +387,26 @@ class MultiplayerService extends ChangeNotifier {
       case 'peerSafetyRecorded':
         try {
           _peerSafetyReceipt = PeerSafetyReceipt.fromJson(data);
+          if (_peerSafetyReceipt!.blocked) requestBlockedPlayers();
           notifyListeners();
         } catch (_) {
           _message = 'The player safety action could not be confirmed.';
+          notifyListeners();
+        }
+      case 'blockedPlayers':
+        final players = data['players'];
+        if (players is! List) return;
+        try {
+          _blockedPlayers = players
+              .map(
+                (player) => BlockedPlayerEntry.fromJson(
+                  Map<String, dynamic>.from(player as Map),
+                ),
+              )
+              .toList(growable: false);
+          notifyListeners();
+        } catch (_) {
+          _message = 'Your blocked-player list could not be verified.';
           notifyListeners();
         }
       case 'error':

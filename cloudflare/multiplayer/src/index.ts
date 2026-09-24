@@ -577,6 +577,11 @@ export class MatchmakingPool extends DurableObject<Env> {
       Date.now(),
     );
     this.ensureColumn("settlements", "roster_reward_json", "TEXT");
+    this.ensureColumn("player_blocks", "manage_token", "TEXT");
+    this.ctx.storage.sql.exec(`
+      CREATE UNIQUE INDEX IF NOT EXISTS player_blocks_manage_token
+        ON player_blocks(manage_token) WHERE manage_token IS NOT NULL
+    `);
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -770,6 +775,12 @@ export class MatchmakingPool extends DurableObject<Env> {
         break;
       case "getInventory":
         this.sendInventory(socket, attachment.uid);
+        break;
+      case "listBlocks":
+        await this.sendBlockedPlayers(socket, attachment.uid);
+        break;
+      case "unblockPlayer":
+        await this.unblockPlayer(socket, attachment.uid, data.token);
         break;
       case "queueTrade":
         await this.queueTrade(socket, attachment);
@@ -2030,6 +2041,60 @@ export class MatchmakingPool extends DurableObject<Env> {
     return row?.blocked === 1;
   }
 
+  private async sendBlockedPlayers(
+    socket: WebSocket,
+    blockerUid: string,
+  ): Promise<void> {
+    const rows = [
+      ...this.ctx.storage.sql.exec<{
+        blocked_uid: string;
+        manage_token: string | null;
+        created_at: number;
+      }>(
+        "SELECT blocked_uid, manage_token, created_at FROM player_blocks WHERE blocker_uid = ? ORDER BY created_at DESC LIMIT 200",
+        blockerUid,
+      ),
+    ];
+    const players = [];
+    for (const row of rows) {
+      const token = row.manage_token ?? crypto.randomUUID();
+      if (row.manage_token === null) {
+        this.ctx.storage.sql.exec(
+          "UPDATE player_blocks SET manage_token = ? WHERE blocker_uid = ? AND blocked_uid = ? AND manage_token IS NULL",
+          token,
+          blockerUid,
+          row.blocked_uid,
+        );
+      }
+      players.push({
+        token,
+        account: await peerSafeAccount(row.blocked_uid),
+        blockedAt: new Date(row.created_at).toISOString(),
+      });
+    }
+    send(socket, { type: "blockedPlayers", players });
+  }
+
+  private async unblockPlayer(
+    socket: WebSocket,
+    blockerUid: string,
+    rawToken: unknown,
+  ): Promise<void> {
+    if (
+      typeof rawToken !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(rawToken)
+    ) {
+      sendError(socket, "Choose a valid blocked player.");
+      return;
+    }
+    this.ctx.storage.sql.exec(
+      "DELETE FROM player_blocks WHERE blocker_uid = ? AND manage_token = ?",
+      blockerUid,
+      rawToken,
+    );
+    await this.sendBlockedPlayers(socket, blockerUid);
+  }
+
   private async handlePeerSafety(
     socket: WebSocket,
     attachment: SocketAttachment,
@@ -2151,13 +2216,15 @@ export class MatchmakingPool extends DurableObject<Env> {
 
     const shouldBlock = action === "block" || data.block === true;
     if (shouldBlock) {
+      const manageToken = crypto.randomUUID();
       this.ctx.storage.sql.exec(
-        "INSERT OR IGNORE INTO player_blocks (blocker_uid, blocked_uid, context_type, context_id, created_at) VALUES (?, ?, ?, ?, ?)",
+        "INSERT OR IGNORE INTO player_blocks (blocker_uid, blocked_uid, context_type, context_id, created_at, manage_token) VALUES (?, ?, ?, ?, ?, ?)",
         attachment.uid,
         targetUid,
         contextType,
         contextId,
         now,
+        manageToken,
       );
       blocked = true;
     }
