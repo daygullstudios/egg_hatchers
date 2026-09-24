@@ -191,6 +191,12 @@ describe("multiplayer edge authentication", () => {
     expect(firstMatch.opponent.team[0].power).toBe(1);
     expect(firstMatch.matchId).toBe(secondMatch.matchId);
 
+    first.send(JSON.stringify({ type: "ready", matchId: "stale-match-id" }));
+    await expect(firstMessages.next()).resolves.toMatchObject({
+      type: "error",
+      message: expect.stringContaining("no longer active"),
+    });
+
     first.send(JSON.stringify({ type: "ready", matchId: firstMatch.matchId }));
     second.send(JSON.stringify({ type: "ready", matchId: secondMatch.matchId }));
     await expect(firstMessages.next()).resolves.toMatchObject({

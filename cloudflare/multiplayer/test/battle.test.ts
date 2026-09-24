@@ -5,6 +5,7 @@ import {
   collectEnergy,
   createBattle,
   expireReconnect,
+  forfeitBattle,
   markReady,
   pauseBattle,
   processBattleClock,
@@ -102,5 +103,29 @@ describe("server-run battle", () => {
     expect(expireReconnect(battle, 42_000).changed).toBe(true);
     expect(battle.finished).toBe(true);
     expect(battle.winnerUid).toBeUndefined();
+  });
+
+  it("awards a forfeit once to the remaining player", () => {
+    const fighter = authoritativeFighter("chicken", "none", 1)!;
+    const battle = createBattle(
+      "match-forfeit",
+      "first-uid",
+      "Player FIRST",
+      [fighter, fighter, fighter],
+      "second-uid",
+      "Player SECOND",
+      [fighter, fighter, fighter],
+    );
+
+    expect(forfeitBattle(battle, "first-uid")).toMatchObject({
+      changed: true,
+      actorUid: "second-uid",
+      message: expect.stringContaining("Player SECOND wins"),
+    });
+    expect(battle).toMatchObject({
+      finished: true,
+      winnerUid: "second-uid",
+    });
+    expect(forfeitBattle(battle, "first-uid")).toEqual({ changed: false });
   });
 });

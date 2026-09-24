@@ -95,7 +95,7 @@ and enforced by the server.
 - [x] Handle battle reconnect windows without inventing an outcome.
 - [ ] Complete trusted authenticated sessions in the production environment.
 - [x] Complete the user-managed blocked-player list.
-- [ ] Test duplicate sessions, reconnects, forfeits, timeouts and stale clients.
+- [x] Test duplicate sessions, reconnects, forfeits, timeouts and stale clients.
 - [ ] Test matchmaking fairness and reward balance with representative accounts.
 - [ ] Run two-device internet play outside the developer network.
 - [ ] Run load and capacity tests for the intended launch size.
