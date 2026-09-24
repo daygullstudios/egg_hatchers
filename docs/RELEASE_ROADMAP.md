@@ -108,7 +108,7 @@ leave one player with a one-sided result.
 - [x] Restrict purchases and hatches to canonical built-in eggs.
 - [x] Measure the new-player path through first hatch, first boss and first
   rebirth.
-- [ ] Review every egg price, rarity table, income curve and rebirth multiplier.
+- [x] Review every egg price, rarity table, income curve and rebirth multiplier.
 - [ ] Review boss difficulty, lives, abilities, energy frequency and rewards.
 - [ ] Review DayGull progression and endgame income for economy-breaking jumps.
 - [ ] Review fusion, daily rewards, quests, multiplayer rewards and roster drops.
