@@ -140,7 +140,7 @@ unlicensed release assets.
 - [x] Scan the compiled web release for developer-only controls in CI.
 - [x] Protect the private playtest and disable public preview aliases.
 - [ ] Run a release-focused code review for crashes, data loss and security bugs.
-- [ ] Test slow/offline startup, refreshes, interrupted saves and service outages.
+- [x] Test slow/offline startup, refreshes, interrupted saves and service outages.
 - [x] Test older supported Save Transfer files against the candidate.
 - [ ] Add production error monitoring that matches the approved privacy model.
 - [ ] Confirm backups, restore procedures, rate limits and operational alerts.
