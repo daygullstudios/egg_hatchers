@@ -139,7 +139,7 @@ unlicensed release assets.
 - [x] Run static analysis, automated Flutter tests and release web builds in CI.
 - [x] Scan the compiled web release for developer-only controls in CI.
 - [x] Protect the private playtest and disable public preview aliases.
-- [ ] Run a release-focused code review for crashes, data loss and security bugs.
+- [x] Run a release-focused code review for crashes, data loss and security bugs.
 - [x] Test slow/offline startup, refreshes, interrupted saves and service outages.
 - [x] Test older supported Save Transfer files against the candidate.
 - [ ] Add production error monitoring that matches the approved privacy model.
