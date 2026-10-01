@@ -79,7 +79,7 @@ Exit: a fresh player, returning player and migrating player can recover safely.
   connections.
 - [ ] Add parent-managed permissions, review, revocation and deletion controls.
 - [ ] Finalize retention rules and provider responsibilities.
-- [ ] Verify names, discovery, invitations, messages and trading under every
+- [x] Verify names, discovery, invitations, messages and trading under every
   account capability level.
 - [ ] Publish candidate-accurate Privacy Policy, Terms and support instructions.
 
