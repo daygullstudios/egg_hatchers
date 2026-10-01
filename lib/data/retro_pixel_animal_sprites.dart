@@ -16,7 +16,8 @@ class RetroPixelAnimalSprites {
 
   static const int minBuiltInGridSize = 48;
 
-  static final Map<String, RetroPixelSpriteDefinition> _sprites = _buildSprites();
+  static final Map<String, RetroPixelSpriteDefinition> _sprites =
+      _buildSprites();
 
   static Map<String, RetroPixelSpriteDefinition> _buildSprites() {
     final merged = <String, RetroPixelSpriteDefinition>{
@@ -49,6 +50,11 @@ class RetroPixelAnimalSprites {
 
   static RetroPixelSpriteDefinition? spriteFor(String animalId) =>
       _sprites[animalId];
+
+  static String? assetPathFor(String animalId) {
+    if (!supportedAnimalIds.contains(animalId)) return null;
+    return 'assets/images/animal_themes/retro_pixel/$animalId.png';
+  }
 
   /// Debug/diagnostic: how this animal's Retro Pixel art was produced.
   static RetroPixelSpriteSource sourceFor(String animalId) {

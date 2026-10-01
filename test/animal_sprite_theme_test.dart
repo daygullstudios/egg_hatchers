@@ -314,6 +314,15 @@ void main() {
     );
   });
 
+  test('Every built-in animal has transparent Retro Pixel PNG art', () async {
+    for (final animal in GameData.animals) {
+      final path = RetroPixelAnimalSprites.assetPathFor(animal.id);
+      expect(path, isNotNull, reason: animal.id);
+      expect(File(path!).existsSync(), isTrue, reason: path);
+      await _expectTransparentPng(path, expectedSize: 128);
+    }
+  });
+
   test('Every built-in animal uses native64 Retro Pixel art', () {
     for (final animal in GameData.animals) {
       final sprite = RetroPixelAnimalSprites.spriteFor(animal.id)!;
