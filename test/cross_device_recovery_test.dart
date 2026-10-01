@@ -84,6 +84,64 @@ void main() {
       expect(cloud.writes, 1);
     },
   );
+
+  test(
+    'guest Google linking preserves the same player and cloud document',
+    () async {
+      const account = 'guest_linking_device';
+      const protectedPlayer = 'anonymous-123';
+      final cloud = _MemoryCloud();
+      final slots = DeviceGuestSlotStore();
+      await slots.activate(account);
+      await slots.bindFirebaseUid(
+        accountId: account,
+        firebaseUid: protectedPlayer,
+      );
+
+      final save = SaveService(accountId: account);
+      await save.save(GameData.startingPlayerState().copyWith(coins: 777));
+      final sync = ProgressSyncService();
+      addTearDown(sync.dispose);
+      await sync.selectAccount(
+        accountId: account,
+        protectedPlayerId: protectedPlayer,
+        cloud: cloud,
+        applyCloud: (_) async => false,
+      );
+
+      expect(sync.state.status, ProgressSyncStatus.synced);
+      expect(cloud.writes, 1);
+      expect(cloud.writeProtectedIds, [protectedPlayer]);
+      final snapshotBeforeLink = cloud.snapshot;
+      final checkpointBeforeLink = await sync.prepareConflictReview();
+      expect(checkpointBeforeLink, isNull);
+
+      final protection = AccountProtectionService(
+        gateway: _LinkingGateway(protectedPlayer),
+      );
+      addTearDown(protection.dispose);
+      await protection.initialize(accountId: account);
+
+      final link = await protection.protectWithGoogle(accountId: account);
+
+      expect(link.status, AccountProtectionAttemptStatus.protected);
+      expect(protection.state.protectedPlayerId, protectedPlayer);
+      expect((await slots.read())?.firebaseUid, protectedPlayer);
+
+      await sync.selectAccount(
+        accountId: account,
+        protectedPlayerId: protection.state.protectedPlayerId,
+        cloud: cloud,
+        applyCloud: (_) async => false,
+      );
+
+      expect(sync.state.status, ProgressSyncStatus.synced);
+      expect(cloud.snapshot, same(snapshotBeforeLink));
+      expect(cloud.writes, 1);
+      expect(cloud.writeProtectedIds, [protectedPlayer]);
+      expect(cloud.readProtectedIds, everyElement(protectedPlayer));
+    },
+  );
 }
 
 final class _RecoveryGateway implements AccountProtectionGateway {
@@ -108,15 +166,48 @@ final class _RecoveryGateway implements AccountProtectionGateway {
   );
 }
 
+final class _LinkingGateway implements AccountProtectionGateway {
+  const _LinkingGateway(this.playerId);
+
+  final String playerId;
+
+  @override
+  bool get isConfigured => true;
+
+  @override
+  bool get canLinkGoogle => true;
+
+  @override
+  Future<ProtectedPlayerIdentity?> restoreIdentity({
+    required String accountId,
+    required String? expectedPlayerId,
+  }) async => ProtectedPlayerIdentity(playerId: expectedPlayerId ?? playerId);
+
+  @override
+  Future<ProtectedPlayerIdentity?> linkGoogle({
+    required String expectedPlayerId,
+  }) async {
+    expect(expectedPlayerId, playerId);
+    return ProtectedPlayerIdentity(
+      playerId: expectedPlayerId,
+      providerIds: {'google.com'},
+    );
+  }
+}
+
 final class _MemoryCloud implements CloudProgressRepository {
   CloudProgressSnapshot? snapshot;
   int writes = 0;
+  final List<String> readProtectedIds = [];
+  final List<String> writeProtectedIds = [];
 
   @override
-  Future<CloudProgressRead> read(String protectedPlayerId) async =>
-      snapshot == null
-      ? const CloudProgressRead.missing()
-      : CloudProgressRead.present(snapshot!);
+  Future<CloudProgressRead> read(String protectedPlayerId) async {
+    readProtectedIds.add(protectedPlayerId);
+    return snapshot == null
+        ? const CloudProgressRead.missing()
+        : CloudProgressRead.present(snapshot!);
+  }
 
   @override
   Future<CloudProgressSnapshot> write({
@@ -124,6 +215,7 @@ final class _MemoryCloud implements CloudProgressRepository {
     required ProgressSaveSnapshot local,
     required int? expectedCloudRevision,
   }) async {
+    writeProtectedIds.add(protectedPlayerId);
     if (snapshot?.cloudRevision != expectedCloudRevision) {
       throw const CloudProgressWriteConflict();
     }
