@@ -141,7 +141,7 @@ unlicensed release assets.
 - [x] Protect the private playtest and disable public preview aliases.
 - [ ] Run a release-focused code review for crashes, data loss and security bugs.
 - [ ] Test slow/offline startup, refreshes, interrupted saves and service outages.
-- [ ] Test older supported Save Transfer files against the candidate.
+- [x] Test older supported Save Transfer files against the candidate.
 - [ ] Add production error monitoring that matches the approved privacy model.
 - [ ] Confirm backups, restore procedures, rate limits and operational alerts.
 - [ ] Perform a security review of authentication, multiplayer and trading.

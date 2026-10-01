@@ -151,6 +151,81 @@ void main() {
     },
   );
 
+  test(
+    'release legacy transfer keeps old local profile and dormant custom eggs',
+    () async {
+      final oldTransfer = jsonEncode({
+        'format': 'egg_hatchers_save',
+        'version': 1,
+        'exportedAt': '2026-01-15T09:30:00Z',
+        'activeAccountId': 'legacy_player',
+        'preferences': {
+          'playerAccountId': {'type': 'string', 'value': 'legacy_player'},
+          'playerAccountDisplayName': {
+            'type': 'string',
+            'value': 'Legacy Tester',
+          },
+          'playerAccountUsername': {
+            'type': 'string',
+            'value': 'legacy_tester',
+          },
+          'playerAccountAvatarColor': {'type': 'int', 'value': 4283638271},
+          'playerAccountCreatedAt': {
+            'type': 'string',
+            'value': '2025-12-31T23:00:00Z',
+          },
+          'egg_hatchers_player_state_account_legacy_player': {
+            'type': 'string',
+            'value': jsonEncode({
+              'coins': 987654,
+              'ownedAnimals': [],
+              'lastSavedTime': '2026-01-15T09:30:00Z',
+            }),
+          },
+          'customEggs.account.legacy_player': {
+            'type': 'string',
+            'value': jsonEncode([
+              {
+                'id': 'custom_legacy_1',
+                'name': 'Old Draft',
+                'emoji': '🥚',
+                'cost': 1234,
+                'selectedAnimalIds': ['chicken', 'fox'],
+                'animalWeights': {'chicken': 4, 'fox': 1},
+                'isEnabled': true,
+              },
+            ]),
+          },
+        },
+      });
+      final storage = ImportMemoryStorage({'existing': 'keep'});
+      final service = SaveTransferService(storage: storage);
+
+      final preview = service.inspectSave(oldTransfer);
+      expect(preview.players.single.displayName, 'Legacy Tester');
+      expect(preview.progress['legacy_player']?.coins, 987654);
+      expect(preview.hasLegacyProgress, false);
+
+      await service.stageImport(preview);
+      expect(
+        await service.finishPendingImport(),
+        SaveImportBootResult.imported,
+      );
+
+      expect(storage.values['existing'], isNull);
+      expect(readActiveAccountId(), 'legacy_player');
+      expect(
+        storage.values['customEggs.account.legacy_player'],
+        contains('custom_legacy_1'),
+      );
+      final exported = jsonDecode(await service.exportSave()) as Map;
+      expect(
+        (exported['preferences'] as Map).keys,
+        contains('customEggs.account.legacy_player'),
+      );
+    },
+  );
+
   for (final entry in <String, Object>{
     'playerAccounts': {'type': 'string', 'value': '[{"id":"incomplete"}]'},
     'egg_hatchers_player_state_account_imported': {
