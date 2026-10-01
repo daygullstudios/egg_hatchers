@@ -338,9 +338,9 @@ class ArenaAbilityData {
       techniqueEffect: ArenaAbilityEffect.drain,
     ),
     'the_hatched_egg': ArenaAbilityLoadout(
-      quickName: 'Rule Crack',
-      techniqueName: 'Shell Rewrite',
-      signatureName: 'Gamebreaker Hatch',
+      quickName: 'Nest Spark',
+      techniqueName: 'Flock Rewrite',
+      signatureName: 'Ultimate Convergence',
       techniqueEffect: ArenaAbilityEffect.heal,
     ),
     'slime_pet': ArenaAbilityLoadout(

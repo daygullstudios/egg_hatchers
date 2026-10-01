@@ -86,7 +86,7 @@ void main() {
     }
   });
 
-  testWidgets('The Hatched Egg uses a changing glitch head in every style', (
+  testWidgets('Ultimate Nest keeps five changing heads matching every style', (
     tester,
   ) async {
     for (final theme in AnimalSpriteThemes.all) {
@@ -104,20 +104,49 @@ void main() {
         ),
       );
 
-      expect(find.byType(HatchedEggGlitchSprite), findsOneWidget);
+      expect(find.byType(UltimateNestGlitchSprite), findsOneWidget);
       expect(find.byType(AnimatedAnimalGlitch), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('hatched-egg-front-shell')),
+        find.byKey(const ValueKey('ultimate-nest-front-rim')),
         findsWidgets,
       );
-      expect(find.byKey(const ValueKey('hatched-egg-cavity')), findsWidgets);
-      expect(find.byKey(const ValueKey('royal_chicken')), findsWidgets);
+      for (var slot = 0; slot < 5; slot++) {
+        expect(
+          find.byKey(ValueKey('ultimate-nest-head-slot-$slot')),
+          findsWidgets,
+        );
+      }
+      final paths = tester
+          .widgetList<Image>(find.byType(Image))
+          .map(
+            (image) => image.image is ResizeImage
+                ? (image.image as ResizeImage).imageProvider
+                : image.image,
+          )
+          .whereType<AssetImage>()
+          .map((asset) => asset.assetName)
+          .where((path) => path.contains('hatched_egg_heads/'))
+          .toSet();
+      expect(paths, hasLength(5));
+      for (final path in paths) {
+        expect(
+          path,
+          startsWith(
+            theme.id == 'realistic'
+                ? 'assets/images/hatched_egg_heads/'
+                : 'assets/images/hatched_egg_heads/${theme.id}/',
+          ),
+        );
+      }
       await tester.pump(const Duration(milliseconds: 100));
       expect(tester.takeException(), isNull, reason: theme.name);
     }
 
     await tester.pump(const Duration(milliseconds: 3300));
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(find.byKey(const ValueKey('royal_chicken')), findsNothing);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(
+      find.byKey(const ValueKey('ultimate-nest-head-0-royal_chicken')),
+      findsNothing,
+    );
   });
 }

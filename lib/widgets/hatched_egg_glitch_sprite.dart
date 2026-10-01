@@ -4,17 +4,26 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../utils/sprite_decode_size.dart';
+import '../models/animal_sprite_theme.dart';
+import 'animal_sprite_theme_scope.dart';
 import 'animated_animal_glitch.dart';
 
-/// Open glitch shell whose occupant changes between friendly animal heads.
-class HatchedEggGlitchSprite extends StatefulWidget {
-  const HatchedEggGlitchSprite({
+/// Glitching nest with five independently changing friendly animal heads.
+class UltimateNestGlitchSprite extends StatefulWidget {
+  const UltimateNestGlitchSprite({
     super.key,
     required this.body,
     required this.size,
   });
 
   static const headAssetDirectory = 'assets/images/hatched_egg_heads';
+
+  static String headAssetPath(String themeId, String animalId) {
+    final directory = themeId == AnimalSpriteThemes.realistic.id
+        ? headAssetDirectory
+        : '$headAssetDirectory/$themeId';
+    return '$directory/$animalId.png';
+  }
 
   static const goodHeadAnimalIds = [
     'royal_chicken',
@@ -29,30 +38,19 @@ class HatchedEggGlitchSprite extends StatefulWidget {
     'unicorn',
   ];
 
-  static const _headTopFactors = <String, double>{
-    'royal_chicken': 0.115,
-    'crown_fox': 0.10,
-    'gem_dragon': 0.055,
-    'cloud_bunny': 0.015,
-    'sun_lion': 0.11,
-    'cosmic_phoenix': 0.07,
-    'moon_cat': 0.065,
-    'star_fox': 0.06,
-    'galaxy_dragon': 0.055,
-    'unicorn': 0.025,
-  };
-
   final Widget body;
   final double size;
 
   @override
-  State<HatchedEggGlitchSprite> createState() => _HatchedEggGlitchSpriteState();
+  State<UltimateNestGlitchSprite> createState() =>
+      _UltimateNestGlitchSpriteState();
 }
 
-class _HatchedEggGlitchSpriteState extends State<HatchedEggGlitchSprite> {
+class _UltimateNestGlitchSpriteState extends State<UltimateNestGlitchSprite> {
   final _random = math.Random();
   Timer? _headTimer;
-  var _headIndex = 0;
+  final _headIndices = <int>[0, 1, 2, 3, 4];
+  var _nextSlot = 0;
 
   @override
   void initState() {
@@ -71,14 +69,21 @@ class _HatchedEggGlitchSpriteState extends State<HatchedEggGlitchSprite> {
       Duration(milliseconds: 1800 + _random.nextInt(1400)),
       () {
         if (!mounted) return;
+        final slot = _nextSlot;
         var nextIndex = _random.nextInt(
-          HatchedEggGlitchSprite.goodHeadAnimalIds.length,
+          UltimateNestGlitchSprite.goodHeadAnimalIds.length,
         );
-        if (nextIndex == _headIndex) {
+        final occupied = _headIndices.toSet()..remove(_headIndices[slot]);
+        while (nextIndex == _headIndices[slot] ||
+            occupied.contains(nextIndex)) {
           nextIndex =
-              (nextIndex + 1) % HatchedEggGlitchSprite.goodHeadAnimalIds.length;
+              (nextIndex + 1) %
+              UltimateNestGlitchSprite.goodHeadAnimalIds.length;
         }
-        setState(() => _headIndex = nextIndex);
+        setState(() {
+          _headIndices[slot] = nextIndex;
+          _nextSlot = (_nextSlot + 1) % _headIndices.length;
+        });
         _scheduleHeadChange();
       },
     );
@@ -86,15 +91,6 @@ class _HatchedEggGlitchSpriteState extends State<HatchedEggGlitchSprite> {
 
   @override
   Widget build(BuildContext context) {
-    final headId = HatchedEggGlitchSprite.goodHeadAnimalIds[_headIndex];
-    final headSize = widget.size * 0.39;
-    final headDecodeWidth = SpriteDecodeSize.forDisplay(
-      logicalSize: headSize,
-      devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-      maxSourceWidth: 256,
-    );
-    final headTop = HatchedEggGlitchSprite._headTopFactors[headId] ?? 0.06;
-
     return SizedBox.square(
       dimension: widget.size,
       child: AnimatedAnimalGlitch(
@@ -103,69 +99,13 @@ class _HatchedEggGlitchSpriteState extends State<HatchedEggGlitchSprite> {
           clipBehavior: Clip.none,
           children: [
             Positioned.fill(child: widget.body),
-            Positioned(
-              top: widget.size * 0.16,
-              left: widget.size * 0.27,
-              width: widget.size * 0.46,
-              height: widget.size * 0.25,
-              child: const ExcludeSemantics(
-                child: DecoratedBox(
-                  key: ValueKey('hatched-egg-cavity'),
-                  decoration: BoxDecoration(
-                    color: Color(0xFF10162E),
-                    borderRadius: BorderRadius.all(Radius.elliptical(999, 520)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0xAA5A2EA6),
-                        blurRadius: 6,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: widget.size * headTop,
-              left: widget.size * 0.305,
-              width: widget.size * 0.39,
-              height: widget.size * 0.37,
-              child: ExcludeSemantics(
-                child: ClipRect(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    switchInCurve: Curves.easeOutBack,
-                    switchOutCurve: Curves.easeIn,
-                    transitionBuilder: (child, animation) => FadeTransition(
-                      opacity: animation,
-                      child: ScaleTransition(
-                        scale: Tween(begin: 0.82, end: 1.0).animate(animation),
-                        child: child,
-                      ),
-                    ),
-                    child: OverflowBox(
-                      key: ValueKey(headId),
-                      alignment: Alignment.topCenter,
-                      maxWidth: headSize,
-                      maxHeight: headSize,
-                      child: Image.asset(
-                        '${HatchedEggGlitchSprite.headAssetDirectory}/$headId.png',
-                        width: headSize,
-                        height: headSize,
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.high,
-                        cacheWidth: headDecodeWidth,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            for (var slot = 0; slot < _headIndices.length; slot++)
+              _buildHead(context, slot),
             Positioned.fill(
               child: ExcludeSemantics(
                 child: ClipPath(
-                  key: const ValueKey('hatched-egg-front-shell'),
-                  clipper: const _HatchedEggFrontShellClipper(),
+                  key: const ValueKey('ultimate-nest-front-rim'),
+                  clipper: const _UltimateNestFrontRimClipper(),
                   child: widget.body,
                 ),
               ),
@@ -175,31 +115,75 @@ class _HatchedEggGlitchSpriteState extends State<HatchedEggGlitchSprite> {
       ),
     );
   }
+
+  Widget _buildHead(BuildContext context, int slot) {
+    const slots = <({double left, double top, double size})>[
+      (left: 0.13, top: 0.27, size: 0.29),
+      (left: 0.26, top: 0.19, size: 0.29),
+      (left: 0.45, top: 0.20, size: 0.29),
+      (left: 0.59, top: 0.29, size: 0.29),
+      (left: 0.35, top: 0.35, size: 0.30),
+    ];
+    final layout = slots[slot];
+    final headId =
+        UltimateNestGlitchSprite.goodHeadAnimalIds[_headIndices[slot]];
+    final headSize = widget.size * layout.size;
+    final themeId = AnimalSpriteThemeScope.of(context).id;
+    final pixelated = themeId == AnimalSpriteThemes.retroPixel.id;
+    final headDecodeWidth = SpriteDecodeSize.forDisplay(
+      logicalSize: headSize,
+      devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+      maxSourceWidth: pixelated ? 64 : 256,
+    );
+
+    return Positioned(
+      key: ValueKey('ultimate-nest-head-slot-$slot'),
+      top: widget.size * layout.top,
+      left: widget.size * layout.left,
+      width: headSize,
+      height: headSize,
+      child: ExcludeSemantics(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          switchInCurve: Curves.easeOutBack,
+          switchOutCurve: Curves.easeIn,
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween(begin: 0.78, end: 1.0).animate(animation),
+              child: child,
+            ),
+          ),
+          child: Image.asset(
+            UltimateNestGlitchSprite.headAssetPath(themeId, headId),
+            key: ValueKey('ultimate-nest-head-$slot-$headId'),
+            width: headSize,
+            height: headSize,
+            fit: BoxFit.contain,
+            filterQuality: pixelated ? FilterQuality.none : FilterQuality.high,
+            cacheWidth: headDecodeWidth,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-/// Keeps the lower egg wall in front of the occupant along the cracked rim.
-class _HatchedEggFrontShellClipper extends CustomClipper<Path> {
-  const _HatchedEggFrontShellClipper();
+/// Repaints the lower nest weave in front of all five occupants.
+class _UltimateNestFrontRimClipper extends CustomClipper<Path> {
+  const _UltimateNestFrontRimClipper();
 
   @override
   Path getClip(Size size) {
-    final w = size.width;
     final h = size.height;
     return Path()
-      ..moveTo(0, h * 0.39)
-      ..lineTo(w * 0.25, h * 0.39)
-      ..lineTo(w * 0.31, h * 0.33)
-      ..lineTo(w * 0.39, h * 0.41)
-      ..lineTo(w * 0.47, h * 0.33)
-      ..lineTo(w * 0.55, h * 0.41)
-      ..lineTo(w * 0.65, h * 0.34)
-      ..lineTo(w * 0.72, h * 0.39)
-      ..lineTo(w, h * 0.39)
-      ..lineTo(w, h)
+      ..moveTo(0, h * 0.43)
+      ..quadraticBezierTo(size.width * .5, h * .77, size.width, h * .43)
+      ..lineTo(size.width, h)
       ..lineTo(0, h)
       ..close();
   }
 
   @override
-  bool shouldReclip(_HatchedEggFrontShellClipper oldClipper) => false;
+  bool shouldReclip(_UltimateNestFrontRimClipper oldClipper) => false;
 }

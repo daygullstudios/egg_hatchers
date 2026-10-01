@@ -52,8 +52,8 @@ class GameSprite extends StatelessWidget {
     final id = animalId;
 
     if (id == 'the_hatched_egg') {
-      return HatchedEggGlitchSprite(
-        key: const ValueKey('hatched-egg-glitch'),
+      return UltimateNestGlitchSprite(
+        key: const ValueKey('ultimate-nest-glitch'),
         size: size,
         body: sprite,
       );

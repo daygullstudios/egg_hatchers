@@ -411,10 +411,10 @@ class GameData {
     ),
     Animal(
       id: 'the_hatched_egg',
-      name: 'The Hatched Egg',
+      name: 'The Ultimate Nest',
       rarity: Rarity.boss,
       coinsPerSecond: 12000000,
-      emoji: '🐣🥚',
+      emoji: '🪺✨',
       spritePath: 'assets/images/animals/the_hatched_egg.png',
     ),
     Animal(

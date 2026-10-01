@@ -83,18 +83,17 @@ void main() {
     expect(AnimalSpriteThemes.byId('realistic').id, 'realistic');
   });
 
-  test(
-    'The Hatched Egg has ten transparent front-facing head assets',
-    () async {
-      expect(HatchedEggGlitchSprite.goodHeadAnimalIds, hasLength(10));
-      for (final animalId in HatchedEggGlitchSprite.goodHeadAnimalIds) {
+  test('Ultimate Nest has ten transparent heads for each style', () async {
+    expect(UltimateNestGlitchSprite.goodHeadAnimalIds, hasLength(10));
+    for (final theme in AnimalSpriteThemes.all) {
+      for (final animalId in UltimateNestGlitchSprite.goodHeadAnimalIds) {
         await _expectTransparentPng(
-          '${HatchedEggGlitchSprite.headAssetDirectory}/$animalId.png',
-          expectedSize: 256,
+          UltimateNestGlitchSprite.headAssetPath(theme.id, animalId),
+          expectedSize: theme.id == 'retroPixel' ? 64 : 256,
         );
       }
-    },
-  );
+    }
+  });
 
   test('Crossword Beast has transparent art in all three styles', () async {
     await _expectTransparentPng(
