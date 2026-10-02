@@ -274,6 +274,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _deleteCloudAccount(
+    BuildContext context,
+    PlayerAccount account,
+  ) async {
+    final protection = AccountProtectionScope.maybeOf(context);
+    if (protection == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => _CloudAccountDeletionDialog(account: account),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final outcome = await protection.deleteCloudAccount(accountId: account.id);
+    if (!context.mounted) return;
+    if (outcome.succeeded) UiSound.confirm(context);
+    showGameSnackBar(
+      context,
+      message: outcome.message,
+      backgroundColor: outcome.status == AccountProtectionAttemptStatus.failed
+          ? Colors.redAccent
+          : preferences.selectedTheme.primaryColor,
+    );
+  }
+
   Future<void> _purchaseAdFree(BuildContext context) async {
     final protected =
         AccountProtectionScope.maybeOf(context)?.state.isProtected ?? false;
@@ -420,6 +443,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                               false)
                                       ? () =>
                                             _protectWithGoogle(context, account)
+                                      : null,
+                                  onDeleteCloudAccount:
+                                      AccountProtectionScope.maybeOf(
+                                            context,
+                                          )?.canDeleteCloudAccount ??
+                                          false
+                                      ? () => _deleteCloudAccount(
+                                          context,
+                                          account,
+                                        )
                                       : null,
                                   theme: selected,
                                   onSwitch: () => _switchAccount(context),
@@ -863,6 +896,7 @@ class _AccountSettings extends StatelessWidget {
     required this.onCompareSaves,
     required this.onRetrySyncConfirmation,
     required this.onProtectWithGoogle,
+    required this.onDeleteCloudAccount,
     required this.theme,
     required this.onSwitch,
     required this.onRemove,
@@ -874,6 +908,7 @@ class _AccountSettings extends StatelessWidget {
   final VoidCallback? onCompareSaves;
   final VoidCallback? onRetrySyncConfirmation;
   final VoidCallback? onProtectWithGoogle;
+  final VoidCallback? onDeleteCloudAccount;
   final BackgroundTheme theme;
   final VoidCallback onSwitch;
   final VoidCallback onRemove;
@@ -1025,6 +1060,24 @@ class _AccountSettings extends StatelessWidget {
             ),
           ),
         ],
+        if (onDeleteCloudAccount != null) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const ValueKey('settings-delete-cloud-account-button'),
+            onPressed: protection.status == AccountProtectionStatus.syncing
+                ? null
+                : onDeleteCloudAccount,
+            icon: const Icon(Icons.cloud_off_rounded),
+            label: const Text(
+              'Delete cloud account',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+              minimumSize: const Size.fromHeight(48),
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
         Container(
           key: const ValueKey('settings-progress-sync-status'),
@@ -1160,6 +1213,70 @@ class _AccountSettings extends StatelessWidget {
     if (providerIds.contains('google.com')) return 'Protected with Google';
     if (providerIds.contains('apple.com')) return 'Protected with Apple';
     return 'Protected account';
+  }
+}
+
+class _CloudAccountDeletionDialog extends StatelessWidget {
+  const _CloudAccountDeletionDialog({required this.account});
+
+  final PlayerAccount account;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return AlertDialog(
+      key: const ValueKey('cloud-account-deletion-dialog'),
+      scrollable: true,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      title: const Text('Delete cloud account?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            account.displayName,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'This deletes the active Nestarium cloud account and its synced cloud progress.',
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'The local player stays on this device. Export a save first if you want a backup.',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'If the provider asks you to sign in again, no local data will be removed.',
+          ),
+          const SizedBox(height: 12),
+          const Text('There is no undo for the cloud copy.'),
+        ],
+      ),
+      actionsOverflowButtonSpacing: 8,
+      actions: [
+        TextButton.icon(
+          key: const ValueKey('settings-cancel-delete-cloud-account'),
+          autofocus: true,
+          onPressed: () => Navigator.pop(context, false),
+          icon: const Icon(Icons.close_rounded),
+          label: const Text('Keep cloud account'),
+          style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+        ),
+        FilledButton.icon(
+          key: const ValueKey('settings-confirm-delete-cloud-account'),
+          onPressed: () => Navigator.pop(context, true),
+          icon: const Icon(Icons.cloud_off_rounded),
+          label: const Text('Delete cloud'),
+          style: FilledButton.styleFrom(
+            backgroundColor: colors.error,
+            foregroundColor: colors.onError,
+            minimumSize: const Size(48, 48),
+          ),
+        ),
+      ],
+    );
   }
 }
 

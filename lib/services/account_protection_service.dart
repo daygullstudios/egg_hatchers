@@ -18,6 +18,7 @@ class ProtectedPlayerIdentity {
 abstract interface class AccountProtectionGateway {
   bool get isConfigured;
   bool get canLinkGoogle;
+  bool get canDeleteAccount;
 
   Future<ProtectedPlayerIdentity?> restoreIdentity({
     required String accountId,
@@ -27,9 +28,17 @@ abstract interface class AccountProtectionGateway {
   Future<ProtectedPlayerIdentity?> linkGoogle({
     required String expectedPlayerId,
   });
+
+  Future<void> deleteProtectedAccount({required String expectedPlayerId});
 }
 
-enum AccountProtectionAttemptStatus { protected, switched, canceled, failed }
+enum AccountProtectionAttemptStatus {
+  protected,
+  switched,
+  canceled,
+  deleted,
+  failed,
+}
 
 class AccountProtectionAttempt {
   const AccountProtectionAttempt({required this.status, required this.message});
@@ -39,7 +48,8 @@ class AccountProtectionAttempt {
 
   bool get succeeded =>
       status == AccountProtectionAttemptStatus.protected ||
-      status == AccountProtectionAttemptStatus.switched;
+      status == AccountProtectionAttemptStatus.switched ||
+      status == AccountProtectionAttemptStatus.deleted;
 }
 
 /// Owns the app-wide distinction between a device profile and a protected
@@ -63,6 +73,10 @@ class AccountProtectionService extends ChangeNotifier {
   AccountProtectionState get state => _state;
   bool get isInitialized => _isInitialized;
   bool get canLinkGoogle => !isChecking && (gateway?.canLinkGoogle ?? false);
+  bool get canDeleteCloudAccount =>
+      !isChecking &&
+      _state.protectedPlayerId != null &&
+      (gateway?.canDeleteAccount ?? false);
   var _selectionRevision = 0;
   String? _selectedAccountId;
   Future<void>? _selectionPending;
@@ -273,6 +287,105 @@ class AccountProtectionService extends ChangeNotifier {
     _protectionPending = operation;
     notifyListeners();
     return operation;
+  }
+
+  Future<AccountProtectionAttempt> deleteCloudAccount({
+    required String accountId,
+  }) {
+    if (_disposed || _suspended || isChecking) {
+      return Future.value(
+        const AccountProtectionAttempt(
+          status: AccountProtectionAttemptStatus.failed,
+          message: 'Wait for the current cloud operation to finish first.',
+        ),
+      );
+    }
+    late final Future<AccountProtectionAttempt> operation;
+    operation = _deleteCloudAccount(accountId: accountId).whenComplete(() {
+      if (identical(_protectionPending, operation)) {
+        _protectionPending = null;
+        if (!_disposed) notifyListeners();
+      }
+    });
+    _protectionPending = operation;
+    notifyListeners();
+    return operation;
+  }
+
+  Future<AccountProtectionAttempt> _deleteCloudAccount({
+    required String accountId,
+  }) async {
+    final revision = ++_selectionRevision;
+    final configuredGateway = gateway;
+    final protectedPlayerId = _state.protectedPlayerId;
+    final slot = await _guestSlots.read();
+    if (configuredGateway == null ||
+        !configuredGateway.isConfigured ||
+        !configuredGateway.canDeleteAccount ||
+        protectedPlayerId == null ||
+        slot?.accountId != accountId ||
+        slot?.firebaseUid != protectedPlayerId) {
+      return const AccountProtectionAttempt(
+        status: AccountProtectionAttemptStatus.failed,
+        message: 'Cloud account deletion is unavailable for this player.',
+      );
+    }
+
+    _setStateIfCurrent(
+      revision,
+      AccountProtectionState(
+        status: AccountProtectionStatus.syncing,
+        protectedPlayerId: protectedPlayerId,
+        providerIds: _state.providerIds,
+        message: 'Deleting this player’s cloud account…',
+      ),
+    );
+    try {
+      await configuredGateway.deleteProtectedAccount(
+        expectedPlayerId: protectedPlayerId,
+      );
+      if (revision != _selectionRevision) {
+        return const AccountProtectionAttempt(
+          status: AccountProtectionAttemptStatus.failed,
+          message: 'The active player changed before deletion finished.',
+        );
+      }
+      await ProgressSyncCheckpointStore(accountId: accountId).clear();
+      await _guestSlots.clearFirebaseUid(
+        accountId: accountId,
+        firebaseUid: protectedPlayerId,
+      );
+      _setState(
+        const AccountProtectionState(
+          status: AccountProtectionStatus.localOnly,
+          message:
+              'Cloud account deleted. This local player remains on this device; reconnect cloud protection only if you want a new cloud copy.',
+        ),
+      );
+      return const AccountProtectionAttempt(
+        status: AccountProtectionAttemptStatus.deleted,
+        message:
+            'Cloud account deleted. Local progress is still on this device.',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Cloud account deletion failed: $error\n$stackTrace');
+      if (revision == _selectionRevision) {
+        _setState(
+          AccountProtectionState(
+            status: AccountProtectionStatus.protected,
+            protectedPlayerId: protectedPlayerId,
+            providerIds: _state.providerIds,
+            message:
+                'Cloud account deletion failed. Nothing local was removed.',
+          ),
+        );
+      }
+      return const AccountProtectionAttempt(
+        status: AccountProtectionAttemptStatus.failed,
+        message:
+            'Cloud account deletion failed. Sign in again and try once more.',
+      );
+    }
   }
 
   Future<AccountProtectionAttempt> _protectWithGoogle({

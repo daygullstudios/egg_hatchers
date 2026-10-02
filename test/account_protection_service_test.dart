@@ -223,6 +223,70 @@ void main() {
       expect((await slots.read())?.firebaseUid, 'anonymous-new');
     },
   );
+
+  test(
+    'cloud account deletion clears identity binding and sync ancestry',
+    () async {
+      final slots = DeviceGuestSlotStore();
+      await slots.activate('guest_test');
+      await slots.bindFirebaseUid(
+        accountId: 'guest_test',
+        firebaseUid: 'google-player',
+      );
+      final checkpoints = ProgressSyncCheckpointStore(accountId: 'guest_test');
+      await checkpoints.write(
+        ProgressSyncCheckpoint(
+          contentFingerprint: List.filled(64, 'b').join(),
+          cloudRevision: 7,
+          recordedAt: DateTime.utc(2026),
+        ),
+      );
+      final gateway = _Gateway(
+        identity: const ProtectedPlayerIdentity(
+          playerId: 'google-player',
+          providerIds: {'google.com'},
+        ),
+        canDelete: true,
+      );
+      final service = AccountProtectionService(gateway: gateway);
+      await service.initialize(accountId: 'guest_test');
+
+      final outcome = await service.deleteCloudAccount(accountId: 'guest_test');
+
+      expect(outcome.status, AccountProtectionAttemptStatus.deleted);
+      expect(gateway.deletedIds, ['google-player']);
+      expect(service.state.status, AccountProtectionStatus.localOnly);
+      expect(service.state.protectedPlayerId, isNull);
+      expect((await slots.read())?.firebaseUid, isNull);
+      expect(await checkpoints.read(), isNull);
+    },
+  );
+
+  test('failed cloud deletion keeps protected identity binding', () async {
+    final slots = DeviceGuestSlotStore();
+    await slots.activate('guest_test');
+    await slots.bindFirebaseUid(
+      accountId: 'guest_test',
+      firebaseUid: 'google-player',
+    );
+    final gateway = _Gateway(
+      identity: const ProtectedPlayerIdentity(
+        playerId: 'google-player',
+        providerIds: {'google.com'},
+      ),
+      canDelete: true,
+      deleteError: true,
+    );
+    final service = AccountProtectionService(gateway: gateway);
+    await service.initialize(accountId: 'guest_test');
+
+    final outcome = await service.deleteCloudAccount(accountId: 'guest_test');
+
+    expect(outcome.status, AccountProtectionAttemptStatus.failed);
+    expect(service.state.status, AccountProtectionStatus.protected);
+    expect(service.state.protectedPlayerId, 'google-player');
+    expect((await slots.read())?.firebaseUid, 'google-player');
+  });
 }
 
 final class _Gateway implements AccountProtectionGateway {
@@ -232,6 +296,8 @@ final class _Gateway implements AccountProtectionGateway {
     this.linkedIdentityForRequest,
     this.identityForRequest,
     this.error = false,
+    this.canDelete = false,
+    this.deleteError = false,
   });
 
   final ProtectedPlayerIdentity? identity;
@@ -243,14 +309,20 @@ final class _Gateway implements AccountProtectionGateway {
   })?
   identityForRequest;
   final bool error;
+  final bool canDelete;
+  final bool deleteError;
   int restoreCalls = 0;
   int linkCalls = 0;
+  final deletedIds = <String>[];
 
   @override
   bool get isConfigured => true;
 
   @override
   bool get canLinkGoogle => true;
+
+  @override
+  bool get canDeleteAccount => canDelete;
 
   @override
   Future<ProtectedPlayerIdentity?> restoreIdentity({
@@ -276,5 +348,13 @@ final class _Gateway implements AccountProtectionGateway {
     return linkedIdentityForRequest == null
         ? linkedIdentity
         : linkedIdentityForRequest!();
+  }
+
+  @override
+  Future<void> deleteProtectedAccount({
+    required String expectedPlayerId,
+  }) async {
+    if (deleteError) throw StateError('delete failed');
+    deletedIds.add(expectedPlayerId);
   }
 }

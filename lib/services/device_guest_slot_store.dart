@@ -142,6 +142,28 @@ class DeviceGuestSlotStore {
     return verified!;
   });
 
+  Future<void> clearFirebaseUid({
+    required String accountId,
+    required String firebaseUid,
+  }) => _serialize(() async {
+    final current = await read();
+    if (current == null ||
+        current.accountId != accountId ||
+        current.firebaseUid != firebaseUid) {
+      throw StateError('Device guest identity does not match deletion target.');
+    }
+    final preferences = await SharedPreferences.getInstance();
+    if (!await preferences.remove(_firebaseUidKey)) {
+      throw StateError('Device identity could not be cleared');
+    }
+    final verified = await read();
+    if (verified?.accountId != accountId ||
+        verified?.generation != current.generation ||
+        verified?.firebaseUid != null) {
+      throw StateError('Device identity clearing could not be verified');
+    }
+  });
+
   /// Invalidates identity ownership when an import replaces local accounts.
   /// The monotonic generation survives the replacement as a local tombstone.
   Future<void> invalidateForAccountReplacement({

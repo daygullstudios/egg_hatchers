@@ -7,6 +7,7 @@ import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/preferences_service.dart';
 import 'package:egg_hatchers/services/save_service.dart';
 import 'package:egg_hatchers/services/progress_sync_service.dart';
+import 'package:egg_hatchers/models/account_protection_state.dart';
 import 'package:egg_hatchers/models/progress_sync_state.dart';
 import 'package:egg_hatchers/models/progress_conflict_review.dart';
 import 'package:egg_hatchers/widgets/progress_sync_scope.dart';
@@ -311,6 +312,86 @@ void main() {
     game.dispose();
     audio.dispose();
   });
+
+  testWidgets('protected player can delete cloud account from settings', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+    final accounts = AccountService();
+    final game = GameService();
+    final preferences = PreferencesService();
+    final audio = AudioService();
+    await accounts.initialize();
+    await Future.wait([
+      game.initialize(accountId: accounts.account?.id),
+      preferences.initialize(),
+    ]);
+    final account = accounts.account!;
+    await DeviceGuestSlotStore().bindFirebaseUid(
+      accountId: account.id,
+      firebaseUid: 'anonymous-123',
+    );
+    final gateway = _SettingsProtectionGateway(protectedOnRestore: true);
+    final protection = AccountProtectionService(gateway: gateway);
+    await protection.initialize(accountId: account.id);
+
+    await tester.pumpWidget(
+      AccountScope(
+        accounts: accounts,
+        child: AccountProtectionScope(
+          protection: protection,
+          child: AudioScope(
+            audio: audio,
+            child: MaterialApp(
+              home: MainGameShellScope(
+                current: MainGameDestination.settings,
+                game: game,
+                onSelect: (_) {},
+                child: SettingsScreen(preferences: preferences, game: game),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('settings-panel-account')));
+    await tester.pumpAndSettle();
+
+    final delete = find.byKey(
+      const ValueKey('settings-delete-cloud-account-button'),
+    );
+    expect(delete, findsOneWidget);
+    await tester.ensureVisible(delete);
+    await tester.tap(delete);
+    await tester.pumpAndSettle();
+    expect(find.text('Delete cloud account?'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('settings-confirm-delete-cloud-account')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(gateway.deletedIds, ['anonymous-123']);
+    expect(protection.state.status, AccountProtectionStatus.localOnly);
+    expect(
+      find.byKey(const ValueKey('settings-delete-cloud-account-button')),
+      findsNothing,
+    );
+    expect(
+      find.text(
+        'Cloud account deleted. Local progress is still on this device.',
+      ),
+      findsOneWidget,
+    );
+
+    protection.dispose();
+    game.dispose();
+    audio.dispose();
+  });
 }
 
 class _ReviewOnlySync extends ProgressSyncService {
@@ -328,6 +409,11 @@ class _ReviewOnlySync extends ProgressSyncService {
 }
 
 final class _SettingsProtectionGateway implements AccountProtectionGateway {
+  _SettingsProtectionGateway({this.protectedOnRestore = false});
+
+  final bool protectedOnRestore;
+  final deletedIds = <String>[];
+
   @override
   bool get isConfigured => true;
 
@@ -335,10 +421,16 @@ final class _SettingsProtectionGateway implements AccountProtectionGateway {
   bool get canLinkGoogle => true;
 
   @override
+  bool get canDeleteAccount => true;
+
+  @override
   Future<ProtectedPlayerIdentity?> restoreIdentity({
     required String accountId,
     required String? expectedPlayerId,
-  }) async => const ProtectedPlayerIdentity(playerId: 'anonymous-123');
+  }) async => ProtectedPlayerIdentity(
+    playerId: 'anonymous-123',
+    providerIds: protectedOnRestore ? {'google.com'} : const {},
+  );
 
   @override
   Future<ProtectedPlayerIdentity?> linkGoogle({
@@ -347,4 +439,11 @@ final class _SettingsProtectionGateway implements AccountProtectionGateway {
     playerId: 'anonymous-123',
     providerIds: {'google.com'},
   );
+
+  @override
+  Future<void> deleteProtectedAccount({
+    required String expectedPlayerId,
+  }) async {
+    deletedIds.add(expectedPlayerId);
+  }
 }

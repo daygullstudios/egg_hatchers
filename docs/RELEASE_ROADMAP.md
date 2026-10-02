@@ -63,7 +63,7 @@ Exit: no unresolved feature is being treated as silently required for 1.0.
 - [x] Complete an approved account-recovery method that works across devices.
 - [x] Prove guest linking preserves the same player and cloud document.
 - [x] Prove recovery on a clean second device or browser.
-- [ ] Implement and test complete cloud-account deletion where required.
+- [x] Implement and test complete cloud-account deletion where required.
 - [x] Run the account-switch, deletion, offline, conflict and corrupt-save matrix.
 
 Exit: a fresh player, returning player and migrating player can recover safely.

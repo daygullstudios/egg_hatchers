@@ -152,6 +152,9 @@ final class _RecoveryGateway implements AccountProtectionGateway {
   bool get canLinkGoogle => true;
 
   @override
+  bool get canDeleteAccount => false;
+
+  @override
   Future<ProtectedPlayerIdentity?> restoreIdentity({
     required String accountId,
     required String? expectedPlayerId,
@@ -164,6 +167,13 @@ final class _RecoveryGateway implements AccountProtectionGateway {
     playerId: 'google-player',
     providerIds: {'google.com'},
   );
+
+  @override
+  Future<void> deleteProtectedAccount({
+    required String expectedPlayerId,
+  }) async {
+    throw UnimplementedError();
+  }
 }
 
 final class _LinkingGateway implements AccountProtectionGateway {
@@ -176,6 +186,9 @@ final class _LinkingGateway implements AccountProtectionGateway {
 
   @override
   bool get canLinkGoogle => true;
+
+  @override
+  bool get canDeleteAccount => false;
 
   @override
   Future<ProtectedPlayerIdentity?> restoreIdentity({
@@ -192,6 +205,13 @@ final class _LinkingGateway implements AccountProtectionGateway {
       playerId: expectedPlayerId,
       providerIds: {'google.com'},
     );
+  }
+
+  @override
+  Future<void> deleteProtectedAccount({
+    required String expectedPlayerId,
+  }) async {
+    throw UnimplementedError();
   }
 }
 

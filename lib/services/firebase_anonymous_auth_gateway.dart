@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -23,6 +24,9 @@ final class FirebaseAnonymousAuthGateway implements AccountProtectionGateway {
   @override
   bool get canLinkGoogle =>
       kIsWeb && const bool.fromEnvironment('NESTARIUM_GOOGLE_SIGN_IN_ENABLED');
+
+  @override
+  bool get canDeleteAccount => isConfigured;
 
   @override
   Future<ProtectedPlayerIdentity?> restoreIdentity({
@@ -93,6 +97,24 @@ final class FirebaseAnonymousAuthGateway implements AccountProtectionGateway {
       }
       rethrow;
     }
+  }
+
+  @override
+  Future<void> deleteProtectedAccount({
+    required String expectedPlayerId,
+  }) async {
+    final auth = _firebaseAuth;
+    final user = auth.currentUser;
+    if (user == null || user.uid != expectedPlayerId) {
+      throw StateError('The expected cloud account is not active.');
+    }
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(expectedPlayerId)
+        .collection('products')
+        .doc('egg_hatchers')
+        .delete();
+    await user.delete();
   }
 
   Future<UserCredential> _linkWebGoogle(FirebaseAuth auth, User current) async {

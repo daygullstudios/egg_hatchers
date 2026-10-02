@@ -542,6 +542,8 @@ class _Gateway implements AccountProtectionGateway {
   @override
   bool get canLinkGoogle => false;
   @override
+  bool get canDeleteAccount => false;
+  @override
   Future<ProtectedPlayerIdentity?> restoreIdentity({
     required String accountId,
     required String? expectedPlayerId,
@@ -559,6 +561,13 @@ class _Gateway implements AccountProtectionGateway {
   Future<ProtectedPlayerIdentity?> linkGoogle({
     required String expectedPlayerId,
   }) async => null;
+
+  @override
+  Future<void> deleteProtectedAccount({
+    required String expectedPlayerId,
+  }) async {
+    throw UnimplementedError();
+  }
 }
 
 class _SyncRecorder extends ProgressSyncService {
