@@ -1,5 +1,8 @@
 import 'package:egg_hatchers/data/game_data.dart';
+import 'package:egg_hatchers/data/quest_data.dart';
 import 'package:egg_hatchers/models/egg.dart';
+import 'package:egg_hatchers/utils/animal_fusion_logic.dart';
+import 'package:egg_hatchers/utils/daily_system_logic.dart';
 import 'package:egg_hatchers/utils/luck_logic.dart';
 import 'package:egg_hatchers/utils/rebirth_logic.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -91,6 +94,44 @@ void main() {
       GameData.postRottenShellSecretAnimalIds,
       containsAll(GameData.eggById('daygull')!.possibleAnimalIds),
     );
+  });
+
+  test('secondary reward systems remain tied to reviewed values', () {
+    final weeklyDailyRewards = [
+      for (var day = 1; day <= 7; day++) DailySystemLogic.rewardForDaySlot(day),
+    ];
+    expect(
+      weeklyDailyRewards.fold<int>(0, (sum, reward) => sum + reward.coins),
+      19000,
+    );
+    expect(
+      weeklyDailyRewards.fold<int>(
+        0,
+        (sum, reward) => sum + reward.battleTokens,
+      ),
+      80,
+    );
+
+    expect(
+      QuestData.all.fold<int>(0, (sum, quest) => sum + quest.rewardCoins),
+      3048400,
+    );
+    expect(
+      QuestData.all.fold<int>(
+        0,
+        (sum, quest) => sum + quest.rewardBattleTokens,
+      ),
+      240,
+    );
+
+    final goldenFusionExpectedOutput =
+        AnimalFusionLogic.successChance *
+        (0.9 * GameData.mutationById('rainbow')!.incomeMultiplier +
+            0.1 * GameData.mutationById('shadow')!.incomeMultiplier);
+    final goldenFusionInput =
+        AnimalFusionLogic.inputQuantity *
+        GameData.mutationById('golden')!.incomeMultiplier;
+    expect(goldenFusionExpectedOutput / goldenFusionInput, closeTo(1.1, 0.001));
   });
 }
 
