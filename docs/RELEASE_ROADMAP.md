@@ -112,7 +112,7 @@ leave one player with a one-sided result.
 - [x] Review boss difficulty, lives, abilities, energy frequency and rewards.
 - [x] Review DayGull progression and endgame income for economy-breaking jumps.
 - [x] Review fusion, daily rewards, quests, multiplayer rewards and roster drops.
-- [ ] Test fresh, midgame and late-game saves without developer boosts.
+- [x] Test fresh, midgame and late-game saves without developer boosts.
 - [ ] Fix every progression blocker and practical farming exploit.
 
 Exit: progression is understandable, rewarding and resistant to obvious abuse.

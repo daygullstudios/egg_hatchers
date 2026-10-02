@@ -3,8 +3,12 @@ import 'dart:math';
 import 'package:egg_hatchers/data/boss_data.dart';
 import 'package:egg_hatchers/data/game_data.dart';
 import 'package:egg_hatchers/models/egg.dart';
+import 'package:egg_hatchers/models/owned_animal.dart';
+import 'package:egg_hatchers/models/player_state.dart';
 import 'package:egg_hatchers/utils/boss_battle_logic.dart';
 import 'package:egg_hatchers/utils/built_in_egg_logic.dart';
+import 'package:egg_hatchers/services/game_service.dart';
+import 'package:egg_hatchers/utils/egg_shard_logic.dart';
 import 'package:egg_hatchers/utils/luck_logic.dart';
 import 'package:egg_hatchers/utils/rebirth_logic.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -71,6 +75,49 @@ void main() {
       ),
       isTrue,
     );
+  });
+
+  test('fresh midgame and late-game saves work without developer boosts', () {
+    final fixtures = <_SaveStageFixture>[
+      _freshFixture(),
+      _midgameFixture(),
+      _lateGameFixture(),
+    ];
+
+    for (final fixture in fixtures) {
+      final state = fixture.state;
+      expect(
+        state.fullDeveloperToolsUnlocked,
+        isFalse,
+        reason: '${fixture.name} must not rely on developer tools',
+      );
+      expect(_baseIncome(state), greaterThan(0), reason: fixture.name);
+      expect(
+        _unlockedCoinEggIds(state),
+        contains(fixture.expectedHighestCoinEggId),
+        reason: fixture.name,
+      );
+      expect(
+        BossBattleLogic.isBossUnlocked(
+          BossData.bossById(fixture.expectedUnlockedBossId)!,
+          state,
+        ),
+        isTrue,
+        reason: fixture.name,
+      );
+      expect(
+        RebirthLogic.canRebirth(
+          lifetimeCoinsEarned: state.lifetimeCoinsEarned,
+          rebirthLevel: state.rebirthLevel,
+        ),
+        fixture.canRebirth,
+        reason: fixture.name,
+      );
+    }
+
+    final late = _lateGameFixture().state;
+    expect(EggShardLogic.isRottenShellUnlocked(late), isTrue);
+    expect(late.bossWins[EggShardLogic.rottenShellBossId], 1);
   });
 }
 
@@ -167,4 +214,176 @@ Egg _highestUnlockedProgressionEgg(int lifetimeCoinsEarned) {
         egg.unlockRebirthLevel == 0 &&
         egg.unlockLifetimeCoins <= lifetimeCoinsEarned,
   );
+}
+
+class _SaveStageFixture {
+  const _SaveStageFixture({
+    required this.name,
+    required this.state,
+    required this.expectedHighestCoinEggId,
+    required this.expectedUnlockedBossId,
+    required this.canRebirth,
+  });
+
+  final String name;
+  final PlayerState state;
+  final String expectedHighestCoinEggId;
+  final String expectedUnlockedBossId;
+  final bool canRebirth;
+}
+
+_SaveStageFixture _freshFixture() => _SaveStageFixture(
+  name: 'fresh',
+  expectedHighestCoinEggId: 'basic',
+  expectedUnlockedBossId: 'slime_boss',
+  canRebirth: false,
+  state: GameData.startingPlayerState().copyWith(
+    coins: 150,
+    lifetimeCoinsEarned: 100,
+    ownedAnimals: const [
+      OwnedAnimal(animalId: 'chicken', quantity: 1, sourceEggId: 'basic'),
+    ],
+  ),
+);
+
+_SaveStageFixture _midgameFixture() => _SaveStageFixture(
+  name: 'midgame',
+  expectedHighestCoinEggId: 'space',
+  expectedUnlockedBossId: 'egg_golem',
+  canRebirth: false,
+  state: GameData.startingPlayerState().copyWith(
+    coins: 600000,
+    lifetimeCoinsEarned: 800000,
+    luckLevel: 4,
+    bossWins: const {'slime_boss': 3},
+    ownedAnimals: const [
+      OwnedAnimal(
+        animalId: 'chicken',
+        quantity: 1,
+        level: 8,
+        sourceEggId: 'basic',
+      ),
+      OwnedAnimal(
+        animalId: 'mouse',
+        quantity: 1,
+        level: 7,
+        sourceEggId: 'basic',
+      ),
+      OwnedAnimal(
+        animalId: 'rabbit',
+        quantity: 1,
+        level: 6,
+        sourceEggId: 'basic',
+      ),
+      OwnedAnimal(
+        animalId: 'fox',
+        quantity: 1,
+        level: 5,
+        sourceEggId: 'forest',
+      ),
+      OwnedAnimal(
+        animalId: 'deer',
+        quantity: 1,
+        level: 5,
+        sourceEggId: 'forest',
+      ),
+      OwnedAnimal(
+        animalId: 'bear',
+        quantity: 1,
+        level: 4,
+        sourceEggId: 'forest',
+      ),
+      OwnedAnimal(animalId: 'cow', quantity: 1, level: 4, sourceEggId: 'farm'),
+      OwnedAnimal(animalId: 'pig', quantity: 1, level: 4, sourceEggId: 'farm'),
+      OwnedAnimal(
+        animalId: 'sheep',
+        quantity: 1,
+        level: 4,
+        sourceEggId: 'farm',
+      ),
+      OwnedAnimal(
+        animalId: 'galaxy_dragon',
+        quantity: 1,
+        mutationId: 'golden',
+        sourceEggId: 'space',
+      ),
+    ],
+  ),
+);
+
+_SaveStageFixture _lateGameFixture() => _SaveStageFixture(
+  name: 'late-game',
+  expectedHighestCoinEggId: 'void',
+  expectedUnlockedBossId: 'rotten_shell',
+  canRebirth: true,
+  state: GameData.startingPlayerState().copyWith(
+    coins: 350000000,
+    lifetimeCoinsEarned: 60000000,
+    rebirthLevel: 5,
+    luckLevel: 10,
+    battleTokens: 65,
+    eggShards: 9,
+    shadowPhoenixFlawlessWin: true,
+    bossWins: const {
+      'slime_boss': 8,
+      'egg_golem': 8,
+      'shadow_rooster': 8,
+      'slime_king': 1,
+      'egg_guardian': 1,
+      'shadow_phoenix': 1,
+      'rotten_shell': 1,
+    },
+    ownedAnimals: const [
+      OwnedAnimal(
+        animalId: 'nebula_hydra',
+        quantity: 1,
+        mutationId: 'shadow',
+        level: 4,
+        sourceEggId: 'void',
+      ),
+      OwnedAnimal(
+        animalId: 'eclipse_wolf',
+        quantity: 2,
+        mutationId: 'rainbow',
+        level: 4,
+        sourceEggId: 'void',
+      ),
+      OwnedAnimal(
+        animalId: 'shadow_phoenix',
+        quantity: 1,
+        level: 2,
+        isProtected: true,
+        isEliteReward: true,
+      ),
+      OwnedAnimal(
+        animalId: 'crossword_beast',
+        quantity: 1,
+        level: 1,
+        sourceEggId: 'daygull',
+      ),
+    ],
+  ),
+);
+
+List<String> _unlockedCoinEggIds(PlayerState state) => GameData.eggs
+    .where((egg) => egg.id != GameData.dayGullEggId)
+    .where(
+      (egg) =>
+          egg.unlockLifetimeCoins <= state.lifetimeCoinsEarned &&
+          state.rebirthLevel >=
+              EggShardLogic.effectiveRebirthRequirement(
+                egg.unlockRebirthLevel,
+                state.eggRebirthReductionLevel,
+              ),
+    )
+    .map((egg) => egg.id)
+    .toList(growable: false);
+
+int _baseIncome(PlayerState state) {
+  var total = 0;
+  for (final owned in state.ownedAnimals) {
+    final animal = GameData.animalById(owned.animalId);
+    if (animal != null) total += GameService.incomeFor(animal, owned);
+  }
+  return total;
 }
