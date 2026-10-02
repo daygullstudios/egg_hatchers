@@ -144,7 +144,7 @@ unlicensed release assets.
 - [x] Test older supported Save Transfer files against the candidate.
 - [ ] Add production error monitoring that matches the approved privacy model.
 - [ ] Confirm backups, restore procedures, rate limits and operational alerts.
-- [ ] Perform a security review of authentication, multiplayer and trading.
+- [x] Perform a security review of authentication, multiplayer and trading.
 
 Exit: critical failures are observable, recoverable and documented.
 
