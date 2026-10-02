@@ -34,6 +34,15 @@ void main() {
     for (final item in stillOpenRoadmapItems) {
       expect(roadmap, contains(item), reason: item);
     }
+
+    expect(
+      roadmap,
+      contains('Collect the owner decisions in `docs/RELEASE_DECISION_PACKET.md`'),
+    );
+    expect(
+      roadmap,
+      contains('Configure selected platform signing/store readiness only after launch'),
+    );
   });
 
   test('release decision packet matches current platform files', () {

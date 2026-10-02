@@ -185,10 +185,18 @@ Exit: the approved build is public, monitored and reversible.
 
 ## Immediate work order
 
-1. Continue the release-focused code review across save integrity and
-   authentication boundaries.
-2. Close the cross-device account recovery path.
-3. Finish the family capability and deletion requirements.
-4. Run the authoritative multiplayer two-device and failure-recovery matrix.
-5. Balance the economy and complete visual/audio asset audits.
-6. Enter closed beta only after gates 2 through 7 have release evidence.
+1. Collect the owner decisions in `docs/RELEASE_DECISION_PACKET.md`: launch
+   platforms, launch countries, release owner, rollback decision maker, final
+   logo approval, music rights, monitoring owner and family/privacy review path.
+2. Complete the professional family/privacy review and implement the approved
+   age/guardian capability flow, parent controls, retention rules and public
+   policy copy.
+3. Finish production trusted sessions, then run two-device internet play and
+   load/capacity tests for the selected launch size.
+4. Close the remaining visual/audio approvals: final logo/platform branding,
+   music transition listening, volume normalization, platform audio behavior and
+   shipped-asset rights.
+5. Configure selected platform signing/store readiness only after launch
+   platforms are chosen.
+6. Enter closed beta only after gates 2 through 7 have release evidence and the
+   owner-dependent release decisions are recorded.
