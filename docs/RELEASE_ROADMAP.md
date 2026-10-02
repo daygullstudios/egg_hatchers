@@ -119,15 +119,15 @@ Exit: progression is understandable, rewarding and resistant to obvious abuse.
 
 ### 6. Visuals, audio and accessibility
 
-- [ ] Audit every animal in Classic, Retro Pixel and Realistic styles.
-- [ ] Replace unfinished or inconsistent Retro Pixel assets.
-- [ ] Audit egg art, boss art, backgrounds, projectiles, trails and cinematics.
+- [x] Audit every animal in Classic, Retro Pixel and Realistic styles.
+- [x] Replace unfinished or inconsistent Retro Pixel assets.
+- [x] Audit egg art, boss art, backgrounds, projectiles, trails and cinematics.
 - [ ] Approve the final Nestarium logo and regenerate platform branding assets.
 - [ ] Finalize boss phase music loops and all other music transitions.
 - [ ] Normalize music and sound-effect volume.
 - [ ] Verify audio unlock, pause/resume and background/foreground behavior on
   each release platform.
-- [ ] Test narrow phones, tablets and desktop layouts at supported text scales.
+- [x] Test narrow phones, tablets and desktop layouts at supported text scales.
 - [ ] Check contrast, reduced-motion behavior, labels and touch-target sizes.
 - [ ] Confirm commercial rights and source records for every shipped asset.
 

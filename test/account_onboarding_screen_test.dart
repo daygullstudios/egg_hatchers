@@ -16,6 +16,7 @@ void main() {
     (const Size(320, 568), 2.0),
     (const Size(390, 844), 1.0),
     (const Size(430, 932), 2.0),
+    (const Size(834, 1194), 1.5),
     (const Size(320, 360), 2.0),
     (const Size(1400, 900), 2.0),
   ]) {
