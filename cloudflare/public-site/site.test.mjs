@@ -78,8 +78,10 @@ test('security headers fail closed while crawlers can index public pages', async
 });
 
 test('support and privacy explain current recovery, deletion, and family boundaries', () => {
-  assert.match(html.get('support.html'), /Removing a local player does not automatically delete cloud records/);
-  assert.match(html.get('delete-account.html'), /does not delete Firebase Authentication or Firestore records/);
+  assert.match(html.get('support.html'), /Delete cloud account to delete the active protected cloud account/);
+  assert.match(html.get('support.html'), /Removing a local player still does not delete cloud records by itself/);
+  assert.match(html.get('delete-account.html'), /active Nestarium cloud account and synced cloud progress/);
+  assert.match(html.get('privacy.html'), /Delete cloud account can remove the active Nestarium cloud account/);
   assert.match(html.get('privacy.html'), /children, teens, and adults/);
   assert.match(html.get('privacy.html'), /limited private test, not a publicly released child-directed service/);
   assert.match(html.get('privacy.html'), /updated disclosures before launch/);
