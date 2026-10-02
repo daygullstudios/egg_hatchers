@@ -137,7 +137,7 @@ void main() {
     game.devSetOwnedAnimalsForTesting([
       const OwnedAnimal(animalId: 'chicken', quantity: 1),
     ]);
-    game.devAddBattleTokens(10);
+    game.devAddBattleTokens(60);
 
     final bossEgg = GameData.battleEggs.first;
     game.buyEgg(bossEgg);
@@ -201,7 +201,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final game = GameService();
     await game.initialize();
-    game.devAddBattleTokens(10);
+    game.devAddBattleTokens(60);
     game.devSetOwnedAnimalsForTesting([
       const OwnedAnimal(animalId: 'chicken', quantity: 1),
     ]);
@@ -214,9 +214,9 @@ void main() {
     final tokensBefore = game.battleTokens;
     final reward = game.claimQuest('battle_boss_egg_beginner');
 
-    expect(reward?.battleTokens, 5);
+    expect(reward?.battleTokens, 2);
     expect(reward?.coins, 0);
-    expect(game.battleTokens, tokensBefore + 5);
+    expect(game.battleTokens, tokensBefore + 2);
     expect(game.lifetimeCoinsEarned, lifetimeBefore);
 
     game.dispose();

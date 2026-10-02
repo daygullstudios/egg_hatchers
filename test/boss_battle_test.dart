@@ -122,7 +122,7 @@ void main() {
     expect(game.battleTokens, beforeTokens);
 
     expect(game.applyBossBattleRewards('slime_boss', result), isNull);
-    expect(game.coins, beforeCoins + 2500);
+    expect(game.coins, beforeCoins + 500);
     expect(game.battleTokens, beforeTokens + 1);
     expect(game.lifetimeCoinsEarned, beforeLifetime);
     expect(game.bossWinCount('slime_boss'), 1);
@@ -149,7 +149,7 @@ void main() {
 
     expect(result, isNotNull);
     expect(result!.won, isTrue);
-    expect(game.coins, beforeCoins + 2500);
+    expect(game.coins, beforeCoins + 500);
     expect(game.battleTokens, beforeTokens + 1);
     expect(game.lifetimeCoinsEarned, beforeLifetime);
     expect(game.bossWinCount('slime_boss'), 1);

@@ -4,7 +4,6 @@ import 'package:egg_hatchers/models/egg.dart';
 import 'package:egg_hatchers/utils/animal_fusion_logic.dart';
 import 'package:egg_hatchers/utils/daily_system_logic.dart';
 import 'package:egg_hatchers/utils/luck_logic.dart';
-import 'package:egg_hatchers/utils/rebirth_logic.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -52,12 +51,12 @@ void main() {
       'arctic': 3740,
       'dino': 18530,
       'space': 157250,
-      'ancient': 15172.5,
-      'royal': 48025,
-      'celestial': 151725,
-      'void': 480250,
-      'daygull': 10149000,
-      'boss_egg': 1249500,
+      'ancient': 219300,
+      'royal': 404600,
+      'celestial': 719100,
+      'void': 1096500,
+      'daygull': 3400000,
+      'boss_egg': 331500,
     };
 
     for (final entry in expectedIncome.entries) {
@@ -70,31 +69,34 @@ void main() {
 
     expect(
       _expectedIncome(GameData.eggById('ancient')!),
-      lessThan(_expectedIncome(GameData.eggById('space')!)),
+      greaterThan(_expectedIncome(GameData.eggById('space')!)),
     );
     expect(
       _expectedIncome(GameData.eggById('boss_egg')!),
-      greaterThan(RebirthLogic.nextRebirthRequirement(0)),
+      lessThan(_expectedIncome(GameData.eggById('void')!)),
     );
   });
 
-  test('DayGull endgame income spike remains documented', () {
-    final voidIncome = _expectedIncome(GameData.eggById('void')!);
-    final dayGullIncome = _expectedIncome(GameData.eggById('daygull')!);
-    final ultimateNest = GameData.animalById('the_hatched_egg')!;
-    final nebulaHydra = GameData.animalById('nebula_hydra')!;
+  test(
+    'DayGull endgame income remains strong without skipping the endgame',
+    () {
+      final voidIncome = _expectedIncome(GameData.eggById('void')!);
+      final dayGullIncome = _expectedIncome(GameData.eggById('daygull')!);
+      final ultimateNest = GameData.animalById('the_hatched_egg')!;
+      final nebulaHydra = GameData.animalById('nebula_hydra')!;
 
-    expect(dayGullIncome, closeTo(10149000, 0.001));
-    expect(dayGullIncome / voidIncome, closeTo(21.13, 0.01));
-    expect(
-      ultimateNest.coinsPerSecond / nebulaHydra.coinsPerSecond,
-      closeTo(26.67, 0.01),
-    );
-    expect(
-      GameData.postRottenShellSecretAnimalIds,
-      containsAll(GameData.eggById('daygull')!.possibleAnimalIds),
-    );
-  });
+      expect(dayGullIncome, closeTo(3400000, 0.001));
+      expect(dayGullIncome / voidIncome, closeTo(3.10, 0.01));
+      expect(
+        ultimateNest.coinsPerSecond / nebulaHydra.coinsPerSecond,
+        closeTo(5.5, 0.01),
+      );
+      expect(
+        GameData.postRottenShellSecretAnimalIds,
+        containsAll(GameData.eggById('daygull')!.possibleAnimalIds),
+      );
+    },
+  );
 
   test('secondary reward systems remain tied to reviewed values', () {
     final weeklyDailyRewards = [
@@ -109,19 +111,19 @@ void main() {
         0,
         (sum, reward) => sum + reward.battleTokens,
       ),
-      80,
+      25,
     );
 
     expect(
       QuestData.all.fold<int>(0, (sum, quest) => sum + quest.rewardCoins),
-      3048400,
+      2800400,
     );
     expect(
       QuestData.all.fold<int>(
         0,
         (sum, quest) => sum + quest.rewardBattleTokens,
       ),
-      240,
+      180,
     );
 
     final goldenFusionExpectedOutput =

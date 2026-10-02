@@ -25,7 +25,7 @@ void main() {
             interval: 1200,
             speed: 120,
             movement: 45,
-            coins: 2500,
+            coins: 500,
             tokens: 1,
           ),
           'egg_golem': (
@@ -33,7 +33,7 @@ void main() {
             interval: 950,
             speed: 180,
             movement: 70,
-            coins: 25000,
+            coins: 15000,
             tokens: 3,
           ),
           'shadow_rooster': (
@@ -41,7 +41,7 @@ void main() {
             interval: 750,
             speed: 260,
             movement: 95,
-            coins: 250000,
+            coins: 100000,
             tokens: 8,
           ),
           'slime_king': (

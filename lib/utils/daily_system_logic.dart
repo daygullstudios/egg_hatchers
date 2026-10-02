@@ -61,7 +61,7 @@ class DailySystemLogic {
       type: defeatBossType,
       title: 'Defeat 1 boss',
       target: 1,
-      rewardBattleTokens: 15,
+      rewardBattleTokens: 3,
     ),
     _DailyQuestDefinition(
       id: 'defeat_boss_3',
@@ -69,7 +69,7 @@ class DailySystemLogic {
       type: defeatBossType,
       title: 'Defeat 3 bosses',
       target: 3,
-      rewardBattleTokens: 35,
+      rewardBattleTokens: 8,
     ),
     _DailyQuestDefinition(
       id: 'start_auto_1',
@@ -77,7 +77,7 @@ class DailySystemLogic {
       type: startAutoBattleType,
       title: 'Start 1 Auto Battle',
       target: 1,
-      rewardBattleTokens: 10,
+      rewardBattleTokens: 2,
     ),
     _DailyQuestDefinition(
       id: 'start_manual_1',
@@ -93,7 +93,7 @@ class DailySystemLogic {
       type: winManualBattleType,
       title: 'Win 1 Manual Battle',
       target: 1,
-      rewardBattleTokens: 20,
+      rewardBattleTokens: 5,
     ),
     _DailyQuestDefinition(
       id: 'claim_regular_1',
@@ -101,7 +101,7 @@ class DailySystemLogic {
       type: claimQuestRewardType,
       title: 'Claim 1 quest reward',
       target: 1,
-      rewardBattleTokens: 10,
+      rewardBattleTokens: 2,
     ),
     _DailyQuestDefinition(
       id: 'buy_eggs_2',
@@ -117,7 +117,7 @@ class DailySystemLogic {
       type: buyBattleUpgradeType,
       title: 'Buy 1 battle upgrade',
       target: 1,
-      rewardBattleTokens: 20,
+      rewardBattleTokens: 5,
     ),
     _DailyQuestDefinition(
       id: 'try_fusion_1',
@@ -133,7 +133,7 @@ class DailySystemLogic {
       type: successfulFusionType,
       title: 'Complete a Fusion',
       target: 1,
-      rewardBattleTokens: 20,
+      rewardBattleTokens: 5,
     ),
   ];
 
@@ -190,8 +190,8 @@ class DailySystemLogic {
         return const DailyRewardOffer(
           daySlot: 3,
           coins: 0,
-          battleTokens: 10,
-          label: '10 Battle Tokens',
+          battleTokens: 5,
+          label: '5 Battle Tokens',
         );
       case 4:
         return const DailyRewardOffer(
@@ -204,8 +204,8 @@ class DailySystemLogic {
         return const DailyRewardOffer(
           daySlot: 5,
           coins: 0,
-          battleTokens: 20,
-          label: '20 Battle Tokens',
+          battleTokens: 5,
+          label: '5 Battle Tokens',
         );
       case 6:
         return const DailyRewardOffer(
@@ -218,8 +218,8 @@ class DailySystemLogic {
         return const DailyRewardOffer(
           daySlot: 7,
           coins: 10000,
-          battleTokens: 50,
-          label: '50 Battle Tokens + 10,000 coins',
+          battleTokens: 15,
+          label: '15 Battle Tokens + 10,000 coins',
         );
       default:
         return rewardForDaySlot(1);
@@ -232,7 +232,8 @@ class DailySystemLogic {
     int rerollSalt = 0,
   }) {
     final random = Random(_seedFromDateKey(dateKey) ^ rerollSalt);
-    final shuffled = List<_DailyQuestDefinition>.from(_questPool)..shuffle(random);
+    final shuffled = List<_DailyQuestDefinition>.from(_questPool)
+      ..shuffle(random);
 
     final selected = <_DailyQuestDefinition>[];
     final usedGroups = <String>{};

@@ -14,7 +14,7 @@ class BossData {
       spritePath: 'assets/images/bosses/slime_boss.png',
       maxHp: 1000,
       recommendedPower: 100,
-      coinReward: 2500,
+      coinReward: 500,
       battleTokenReward: 1,
       unlockRequirementText: 'Hatch at least one animal',
       autoBattleSeconds: 10,
@@ -34,7 +34,7 @@ class BossData {
       spritePath: 'assets/images/bosses/egg_golem.png',
       maxHp: 15000,
       recommendedPower: 1500,
-      coinReward: 25000,
+      coinReward: 15000,
       battleTokenReward: 3,
       unlockRequirementText: 'Collect 10 unique base animals',
       autoBattleSeconds: 20,
@@ -54,7 +54,7 @@ class BossData {
       spritePath: 'assets/images/bosses/shadow_rooster.png',
       maxHp: 150000,
       recommendedPower: 15000,
-      coinReward: 250000,
+      coinReward: 100000,
       battleTokenReward: 8,
       unlockRequirementText:
           'Reach Rebirth Level 1 or collect 25 unique base animals',
@@ -80,8 +80,7 @@ class BossData {
       recommendedPower: 5000,
       coinReward: 500000,
       battleTokenReward: 10,
-      unlockRequirementText:
-          'Defeat Slime Boss in Nightmare Mode 3 times',
+      unlockRequirementText: 'Defeat Slime Boss in Nightmare Mode 3 times',
       autoBattleSeconds: 40,
       projectileIntervalMs: 700,
       projectileSpeed: 280,
@@ -107,8 +106,7 @@ class BossData {
       recommendedPower: 12000,
       coinReward: 750000,
       battleTokenReward: 12,
-      unlockRequirementText:
-          'Defeat Egg Golem in Nightmare Mode 3 times',
+      unlockRequirementText: 'Defeat Egg Golem in Nightmare Mode 3 times',
       autoBattleSeconds: 45,
       projectileIntervalMs: 620,
       projectileSpeed: 310,
@@ -134,8 +132,7 @@ class BossData {
       recommendedPower: 25000,
       coinReward: 1000000,
       battleTokenReward: 15,
-      unlockRequirementText:
-          'Defeat Shadow Rooster in Nightmare Mode 3 times',
+      unlockRequirementText: 'Defeat Shadow Rooster in Nightmare Mode 3 times',
       autoBattleSeconds: 50,
       projectileIntervalMs: 550,
       projectileSpeed: 340,
@@ -182,8 +179,11 @@ class BossData {
     ),
   ];
 
-  static List<BossBattleDefinition> get bosses =>
-      [...standardBosses, ...eliteBosses, ...endgameBosses];
+  static List<BossBattleDefinition> get bosses => [
+    ...standardBosses,
+    ...eliteBosses,
+    ...endgameBosses,
+  ];
 
   static BossBattleDefinition? bossById(String id) {
     for (final boss in bosses) {

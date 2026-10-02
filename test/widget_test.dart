@@ -21,8 +21,8 @@ import 'package:egg_hatchers/utils/rebirth_logic.dart';
 
 void main() {
   test('Crossword Beast and Boba Bazooka use their swapped incomes', () {
-    expect(GameData.animalById('crossword_beast')!.coinsPerSecond, 6500000);
-    expect(GameData.animalById('boba_bazooka')!.coinsPerSecond, 4200000);
+    expect(GameData.animalById('crossword_beast')!.coinsPerSecond, 2000000);
+    expect(GameData.animalById('boba_bazooka')!.coinsPerSecond, 1500000);
   });
 
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -1,6 +1,6 @@
 # Release economy audit
 
-Audited: 2026-09-24
+Audited: 2026-10-01
 
 This audit covers every built-in egg price, rarity table, base income curve and
 rebirth multiplier in the release candidate. Calculations are protected by
@@ -24,14 +24,14 @@ quests and rebirth multipliers.
 | Arctic | 40,000 | 75,000 lifetime | 3,740 | 10.7s |
 | Dino | 125,000 | 200,000 lifetime | 18,530 | 6.7s |
 | Space | 500,000 | 750,000 lifetime | 157,250 | 3.2s |
-| Ancient | 1,500,000 | Rebirth 1 | 15,172.50 | 98.9s |
-| Royal | 5,000,000 | Rebirth 2 | 48,025 | 104.1s |
-| Celestial | 15,000,000 | Rebirth 3 | 151,725 | 98.9s |
-| Void | 50,000,000 | Rebirth 5 | 480,250 | 104.1s |
-| DayGull | 250,000,000 | Rotten Shell | 10,149,000 | 24.6s |
+| Ancient | 1,500,000 | Rebirth 1 | 219,300 | 6.8s |
+| Royal | 5,000,000 | Rebirth 2 | 404,600 | 12.4s |
+| Celestial | 15,000,000 | Rebirth 3 | 719,100 | 20.9s |
+| Void | 50,000,000 | Rebirth 5 | 1,096,500 | 45.6s |
+| DayGull | 250,000,000 | Rotten Shell | 3,400,000 | 73.5s |
 
-The Boss Egg costs 10 Battle Tokens and has an expected level-1 income of
-1,249,500 coins per second.
+The Boss Egg costs 60 Battle Tokens and has an expected level-1 income of
+331,500 coins per second.
 
 ## Rarity tables
 
@@ -40,23 +40,22 @@ outcome weights and a nondecreasing common-to-rare ordering. The level-1
 mutation table is also internally consistent: 70% Normal, 20% Golden, 8%
 Rainbow and 2% Shadow.
 
-The tables are structurally sound. The release risks come from the values
-around those tables.
+The tables are structurally sound. The main known value spikes from Boss Eggs,
+rebirth eggs, DayGull and early battle rewards have been rebalanced.
 
 ## Findings
 
-### Critical: Boss Egg bypasses the first progression cycle
+### Resolved: Boss Egg bypassed the first progression cycle
 
-A Boss Egg unlocks after owning any animal. Its expected income in one second
-is greater than the entire 1,000,000 lifetime-coin requirement for the first
-rebirth. Daily quests can award enough Battle Tokens to buy it before normal
-egg progression reaches the threshold.
+Boss Egg cost increased from 10 to 60 Battle Tokens, Boss Egg pet income now
+sits below the Void Egg peak, and login/quest token rewards were reduced. Boss
+Eggs are still a useful battle reward, but no longer skip the first rebirth
+cycle by themselves.
 
-### High: Rebirth eggs are dominated by Space Egg
+### Resolved: Rebirth eggs were dominated by Space Egg
 
-Ancient, Royal and Celestial Eggs have lower expected income than the
-pre-rebirth Space Egg. Ancient costs three times as much while producing about
-one tenth as much. These unlocks feel like regressions instead of rewards.
+Ancient, Royal, Celestial and Void animals now climb above Space instead of
+feeling like regressions after rebirth.
 
 ### High: The pre-rebirth curve accelerates too sharply
 
@@ -72,21 +71,17 @@ grew quadratically. Rebirth income now adds one multiplier step per level:
 `1,000,000 * (level + 1)^2`, so the multiplier no longer outgrows them
 exponentially.
 
-### Medium: Opening battle rewards overwhelm egg prices
+### Resolved: Opening battle rewards overwhelmed egg prices
 
-The first Slime Boss win grants 2,500 coins. Claiming First Fight and First
-Victory adds another 6,000 coins. The combined 8,500 coins can skip most of the
-opening egg ladder.
+The first Slime Boss win now grants 500 coins. First Fight and First Victory
+now add 1,000 coins total, keeping battles helpful without letting one early
+boss session skip most of the opening egg ladder.
 
 ## Rebalance order
 
-1. Choose target times for the first and later rebirth cycles.
-2. Bring Boss Egg animals into a safe early/midgame range or gate them later.
-3. Restore a consistent payback range across the coin egg ladder.
-4. Make every rebirth egg a meaningful improvement over the previous tier.
-5. Align boss and quest rewards with the stage where players can earn them.
-6. Reconcile exponential rebirth income with the requirement curve.
-7. Rerun the seeded new-player cohort and test existing mid/late saves.
-
-No values were changed during this audit. That keeps the baseline honest and
-lets the rebalance land as one reviewed system instead of isolated patches.
+1. Rerun the seeded new-player cohort after this rebalance.
+2. Playtest a real fresh save through first rebirth and first Boss Egg.
+3. Tune individual payback times only if the updated path feels too slow or too
+   compressed.
+4. Keep watching Golden fusion and hosted multiplayer rewards after the broader
+   economy changes.

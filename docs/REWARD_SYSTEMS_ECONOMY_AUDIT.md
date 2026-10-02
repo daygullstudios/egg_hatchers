@@ -12,8 +12,8 @@ online roster drops. The candidate constants are protected by
 
 | System | Current reward behavior |
 | --- | --- |
-| Daily login rewards | 19,000 coins and 80 Battle Tokens across a complete 7-day cycle |
-| Quest rewards | 3,048,400 coins and 240 Battle Tokens across all built-in quests |
+| Daily login rewards | 19,000 coins and 25 Battle Tokens across a complete 7-day cycle |
+| Quest rewards | 2,800,400 coins and 180 Battle Tokens across all built-in quests |
 | Hosted online battle win | 250 coins, 1-3 Battle Tokens, rating change and at most one daily roster animal |
 | Hosted online battle loss | Rating loss only; no coins or Battle Tokens |
 | Online roster drop | One server-owned animal per day, drawn by rating from Basic through Space-era animals only |
@@ -21,22 +21,17 @@ online roster drops. The candidate constants are protected by
 
 ## Findings
 
-### High: Battle Tokens enter the economy too early
+### Resolved: Battle Tokens entered the economy too early
 
-Daily rewards alone grant 80 Battle Tokens per weekly cycle. Because a Boss Egg
-costs 10 Battle Tokens, the weekly login track can buy eight Boss Eggs. Daily
-quests can also grant Battle Tokens before the normal coin ladder reaches its
-first rebirth. This reinforces the existing Boss Egg finding from
-`docs/ECONOMY_AUDIT.md`: Boss Egg income is far above the first progression
-cycle, so early Battle Token rewards can become an economy shortcut.
+Daily rewards now grant 25 Battle Tokens per weekly cycle, while Boss Eggs cost
+60 tokens. Daily battle-token quests were also reduced. Tokens still matter,
+but the login track no longer buys a pile of Boss Eggs by itself.
 
-### Medium: One quest category can overwhelm early progression
+### Resolved: One quest category could overwhelm early progression
 
-All built-in quests currently sum to 3,048,400 coins. That total is not a
-problem by itself because late quests should matter, but some early battle and
-sprite rewards are large relative to Basic through Magic egg prices. This
-matches the new-player baseline finding that first battle rewards can skip much
-of the early egg ladder.
+Early battle quest coin rewards were reduced alongside the first boss reward.
+The full built-in quest coin total is still meaningful, but the earliest battle
+quests no longer skip most of Basic through Magic.
 
 ### Medium: Golden fusion is slightly positive expected value
 
@@ -59,14 +54,12 @@ obvious income or roster shortcut.
 
 Rebalance in this order:
 
-1. Set Boss Egg and Battle Token targets together. Do not tune daily rewards
-   until Boss Egg income is in the intended range.
-2. Keep hosted online wins conservative until launch capacity and abuse testing
+1. Keep hosted online wins conservative until launch capacity and abuse testing
    are complete.
-3. Reduce early coin quest spikes only after the first-session target time is
-   chosen.
-4. Leave fusion rules unchanged unless Golden duplicate farming becomes common
+2. Leave fusion rules unchanged unless Golden duplicate farming becomes common
    after the main egg and Boss Egg rebalance.
+3. Rerun fresh-save and two-device playtests to make sure tokens still feel
+   rewarding after the reduction.
 
-No values were changed during this audit. This closes the review step while
-leaving actual reward tuning for the progression-fix step.
+This closes the first reward-tuning pass. Further changes should come from
+playtest evidence rather than isolated number tweaks.

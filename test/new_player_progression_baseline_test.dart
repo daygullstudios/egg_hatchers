@@ -51,9 +51,9 @@ void main() {
     expect(economyTimes.first, 120);
     expect(economyTimes[49], 217);
     expect(economyTimes.last, 330);
-    expect(activeTimes.first, 99);
-    expect(activeTimes[49], 152);
-    expect(activeTimes.last, 187);
+    expect(activeTimes.first, 116);
+    expect(activeTimes[49], 158);
+    expect(activeTimes.last, 203);
 
     expect(
       economyTimes.last,

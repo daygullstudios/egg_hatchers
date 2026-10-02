@@ -11,7 +11,9 @@ void main() {
       final weights = LuckLogic.mutationWeights(level);
       expect(weights.containsKey('boss'), isFalse);
       expect(
-        LuckLogic.mutationPercentages(level).values.fold<double>(0, (a, b) => a + b),
+        LuckLogic.mutationPercentages(
+          level,
+        ).values.fold<double>(0, (a, b) => a + b),
         closeTo(100.0, 0.001),
       );
     }
@@ -29,10 +31,7 @@ void main() {
       expect(LuckLogic.totalWeight(level, bossMutationUnlocked: true), 10000);
     }
 
-    final level1 = LuckLogic.mutationPercentages(
-      1,
-      bossMutationUnlocked: true,
-    );
+    final level1 = LuckLogic.mutationPercentages(1, bossMutationUnlocked: true);
     expect(level1['none'], closeTo(69.5, 0.01));
     expect(level1['boss'], closeTo(0.5, 0.01));
   });
@@ -43,7 +42,7 @@ void main() {
     await game.initialize();
 
     final bossEgg = GameData.battleEggs.first;
-    expect(bossEgg.cost, 10);
+    expect(bossEgg.cost, 60);
     expect(bossEgg.usesBattleTokens, isTrue);
 
     expect(game.isEggUnlocked(bossEgg), isFalse);
@@ -54,7 +53,7 @@ void main() {
     expect(game.isEggUnlocked(bossEgg), isTrue);
 
     final coinsBefore = game.coins;
-    game.devAddBattleTokens(10);
+    game.devAddBattleTokens(60);
     expect(game.canBuyEgg(bossEgg), isTrue);
 
     game.buyEgg(bossEgg);
@@ -120,10 +119,10 @@ void main() {
     game.dispose();
   });
 
-  test('night rooster beats nebula hydra cps', () {
+  test('boss egg pets stay below void egg peak income', () {
     final nightRooster = GameData.animalById('night_rooster')!;
     final nebulaHydra = GameData.animalById('nebula_hydra')!;
-    expect(nightRooster.coinsPerSecond, greaterThan(nebulaHydra.coinsPerSecond));
-    expect(nightRooster.coinsPerSecond, 1500000);
+    expect(nightRooster.coinsPerSecond, lessThan(nebulaHydra.coinsPerSecond));
+    expect(nightRooster.coinsPerSecond, 450000);
   });
 }

@@ -10,9 +10,9 @@ abilities, energy cadence and rewards. Candidate values are protected by
 
 | Boss | Lives | Base shot interval | Shot speed | Move speed | Coins | Tokens |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Slime Boss | 1 | 1,200ms | 120 | 45 | 2,500 | 1 |
-| Egg Golem | 2 | 950ms | 180 | 70 | 25,000 | 3 |
-| Shadow Rooster | 3 | 750ms | 260 | 95 | 250,000 | 8 |
+| Slime Boss | 1 | 1,200ms | 120 | 45 | 500 | 1 |
+| Egg Golem | 2 | 950ms | 180 | 70 | 15,000 | 3 |
+| Shadow Rooster | 3 | 750ms | 260 | 95 | 100,000 | 8 |
 | Slime King | 3 | 700ms | 280 | 88 | 500,000 | 10 |
 | Egg Guardian | 4 | 620ms | 310 | 102 | 750,000 | 12 |
 | Shadow Phoenix | 5 | 550ms | 340 | 115 | 1,000,000 | 15 |
@@ -47,12 +47,12 @@ can therefore collect continuously without waiting for the documented
 1.5-second timer. The timer currently changes position rather than enforcing a
 spawn cooldown. This explains why energy can still feel too frequent.
 
-### High: boss rewards can skip the coin ladder
+### Resolved: boss rewards could skip the coin ladder
 
-The first Slime victory plus its first two quest rewards grants 8,500 coins.
-Later boss rewards grow to two million coins before difficulty multipliers.
-As recorded in the economy audit, the 10-token Boss Egg is an even larger
-progression bypass. Boss and egg rewards need to be rebalanced together.
+The first Slime victory plus its first two quest rewards now grants 1,500 coins
+instead of 8,500. The Boss Egg now costs 60 Battle Tokens and has lower
+midgame income. Boss rewards should still be playtested on a fresh save, but
+the obvious early skip has been removed.
 
 ### Medium: manual recommended power is not a difficulty gate
 
@@ -72,7 +72,6 @@ playtest evidence for touch controls and reduced-effects mode.
 ## Conclusions
 
 The life ladder, unlock chain, ability availability, center-only energy area
-and final-duel scaling are coherent. The two release blockers are the immediate
-energy respawn and rewards that overwhelm the main economy. Resolve those with
-the broader economy rebalance, then playtest every boss on a narrow touch
-device before considering this gate balanced.
+and final-duel scaling are coherent. The remaining release risk is whether
+energy cadence and elite difficulty feel fair on narrow touch devices after the
+reward rebalance.

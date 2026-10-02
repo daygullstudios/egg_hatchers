@@ -11,9 +11,9 @@ void main() {
   group('DailySystemLogic', () {
     test('reward track rotates every 7 streak days', () {
       expect(DailySystemLogic.rewardForStreak(1).coins, 500);
-      expect(DailySystemLogic.rewardForStreak(3).battleTokens, 10);
+      expect(DailySystemLogic.rewardForStreak(3).battleTokens, 5);
       expect(DailySystemLogic.rewardForStreak(7).coins, 10000);
-      expect(DailySystemLogic.rewardForStreak(7).battleTokens, 50);
+      expect(DailySystemLogic.rewardForStreak(7).battleTokens, 15);
       expect(DailySystemLogic.rewardForStreak(8).coins, 500);
     });
 
