@@ -128,7 +128,7 @@ Exit: progression is understandable, rewarding and resistant to obvious abuse.
 - [ ] Verify audio unlock, pause/resume and background/foreground behavior on
   each release platform.
 - [x] Test narrow phones, tablets and desktop layouts at supported text scales.
-- [ ] Check contrast, reduced-motion behavior, labels and touch-target sizes.
+- [x] Check contrast, reduced-motion behavior, labels and touch-target sizes.
 - [ ] Confirm commercial rights and source records for every shipped asset.
 
 Exit: there are no placeholder assets, broken layouts, inaccessible controls or

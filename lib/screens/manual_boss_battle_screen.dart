@@ -1137,7 +1137,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
                   fontSize: 20,
                 ),
                 backgroundColor: currentTheme.appBarColor,
-                foregroundColor: Colors.white,
+                foregroundColor: currentTheme.appBarForegroundColor,
               ),
               body: GameBackground(
                 theme: currentTheme,

@@ -82,11 +82,11 @@ class BackgroundsScreen extends StatelessWidget {
                 fontSize: 22,
               ),
               backgroundColor: selected.appBarColor,
-              foregroundColor: Colors.white,
+              foregroundColor: selected.appBarForegroundColor,
               automaticallyImplyLeading: false,
               leading: ReturnToHatcheryBackButton(
                 theme: selected,
-                color: Colors.white,
+                color: selected.appBarForegroundColor,
               ),
             ),
             body: GameBackground(

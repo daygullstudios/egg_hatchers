@@ -41,15 +41,34 @@ class BackgroundTheme {
   final bool isDark;
 
   LinearGradient get gradient => LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: colors,
-      );
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: colors,
+  );
 
+  Color get appBarForegroundColor => readableOn(appBarColor);
+  Color get primaryForegroundColor => readableOn(primaryColor);
+  Color get secondaryForegroundColor => readableOn(secondaryColor);
   Color get previewStart => colors.first;
   Color get previewEnd => colors.last;
 
   Color get scaffoldColor => colors.first;
+
+  static Color readableOn(Color background) {
+    const light = Colors.white;
+    const dark = Colors.black;
+    return _contrastRatio(background, light) >= _contrastRatio(background, dark)
+        ? light
+        : dark;
+  }
+}
+
+double _contrastRatio(Color a, Color b) {
+  final aLum = a.computeLuminance();
+  final bLum = b.computeLuminance();
+  final light = aLum > bLum ? aLum : bLum;
+  final dark = aLum > bLum ? bLum : aLum;
+  return (light + 0.05) / (dark + 0.05);
 }
 
 /// All available background themes.
@@ -60,11 +79,7 @@ class BackgroundThemes {
     id: 'hatchery_default',
     name: 'Hatchery Default',
     description: 'Soft pastel egg hatchery look',
-    colors: [
-      Color(0xFFFFF3C4),
-      Color(0xFFFFF8F0),
-      Color(0xFFFFE8D6),
-    ],
+    colors: [Color(0xFFFFF3C4), Color(0xFFFFF8F0), Color(0xFFFFE8D6)],
     cardColor: Color(0xFFFFFFF5),
     cardBorderColor: Color(0xFFFFB74D),
     primaryColor: Color(0xFF4DB6AC),
@@ -83,11 +98,7 @@ class BackgroundThemes {
     id: 'sunny_meadow',
     name: 'Sunny Meadow',
     description: 'Light green and yellow outdoor vibes',
-    colors: [
-      Color(0xFFE8F5E9),
-      Color(0xFFFFF9C4),
-      Color(0xFFC8E6C9),
-    ],
+    colors: [Color(0xFFE8F5E9), Color(0xFFFFF9C4), Color(0xFFC8E6C9)],
     cardColor: Color(0xFFFFFFF8),
     cardBorderColor: Color(0xFF66BB6A),
     primaryColor: Color(0xFF43A047),
@@ -106,11 +117,7 @@ class BackgroundThemes {
     id: 'candy_clouds',
     name: 'Candy Clouds',
     description: 'Pink, purple, and sky-blue fun',
-    colors: [
-      Color(0xFFFCE4EC),
-      Color(0xFFE1BEE7),
-      Color(0xFFE3F2FD),
-    ],
+    colors: [Color(0xFFFCE4EC), Color(0xFFE1BEE7), Color(0xFFE3F2FD)],
     cardColor: Color(0xFFFFFFF8),
     cardBorderColor: Color(0xFFEC407A),
     primaryColor: Color(0xFFAB47BC),
@@ -129,11 +136,7 @@ class BackgroundThemes {
     id: 'ocean_breeze',
     name: 'Ocean Breeze',
     description: 'Cool light blue and teal waves',
-    colors: [
-      Color(0xFFE1F5FE),
-      Color(0xFFB2EBF2),
-      Color(0xFF80DEEA),
-    ],
+    colors: [Color(0xFFE1F5FE), Color(0xFFB2EBF2), Color(0xFF80DEEA)],
     cardColor: Color(0xFFFFFFF8),
     cardBorderColor: Color(0xFF26C6DA),
     primaryColor: Color(0xFF00ACC1),
@@ -152,11 +155,7 @@ class BackgroundThemes {
     id: 'starry_space',
     name: 'Starry Space',
     description: 'Deep cosmic blue and purple',
-    colors: [
-      Color(0xFF0D1B2A),
-      Color(0xFF1B263B),
-      Color(0xFF3D348B),
-    ],
+    colors: [Color(0xFF0D1B2A), Color(0xFF1B263B), Color(0xFF3D348B)],
     cardColor: Color(0xFF243B55),
     cardBorderColor: Color(0xFF5C6BC0),
     primaryColor: Color(0xFF7C4DFF),
@@ -176,11 +175,7 @@ class BackgroundThemes {
     id: 'golden_glow',
     name: 'Golden Glow',
     description: 'Warm cream and golden shimmer',
-    colors: [
-      Color(0xFFFFF8E1),
-      Color(0xFFFFECB3),
-      Color(0xFFFFE082),
-    ],
+    colors: [Color(0xFFFFF8E1), Color(0xFFFFECB3), Color(0xFFFFE082)],
     cardColor: Color(0xFFFFFFF5),
     cardBorderColor: Color(0xFFFFB300),
     primaryColor: Color(0xFFFFA000),
@@ -199,11 +194,7 @@ class BackgroundThemes {
     id: 'shadow_night',
     name: 'Shadow Night',
     description: 'Mysterious purple and midnight tones',
-    colors: [
-      Color(0xFF1A1025),
-      Color(0xFF2D1B4E),
-      Color(0xFF0D0D0D),
-    ],
+    colors: [Color(0xFF1A1025), Color(0xFF2D1B4E), Color(0xFF0D0D0D)],
     cardColor: Color(0xFF2A1F3D),
     cardBorderColor: Color(0xFF7E57C2),
     primaryColor: Color(0xFF9575CD),

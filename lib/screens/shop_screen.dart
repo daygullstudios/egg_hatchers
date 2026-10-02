@@ -197,12 +197,12 @@ class _ShopScreenState extends State<ShopScreen> {
                     fontSize: 22,
                   ),
                   backgroundColor: bg.appBarColor,
-                  foregroundColor: Colors.white,
+                  foregroundColor: bg.appBarForegroundColor,
                   automaticallyImplyLeading: false,
                   leading: shell == null
                       ? ReturnToHatcheryBackButton(
                           theme: bg,
-                          color: Colors.white,
+                          color: bg.appBarForegroundColor,
                           tutorialKey: TutorialTargets.screenBackButton,
                         )
                       : null,

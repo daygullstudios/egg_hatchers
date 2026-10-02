@@ -663,12 +663,12 @@ class BattlesScreen extends StatelessWidget {
                   fontSize: 22,
                 ),
                 backgroundColor: theme.appBarColor,
-                foregroundColor: Colors.white,
+                foregroundColor: theme.appBarForegroundColor,
                 automaticallyImplyLeading: false,
                 leading: shell == null
                     ? ReturnToHatcheryBackButton(
                         theme: theme,
-                        color: Colors.white,
+                        color: theme.appBarForegroundColor,
                         tutorialKey: TutorialTargets.screenBackButton,
                       )
                     : null,

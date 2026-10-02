@@ -100,7 +100,7 @@ class _DayGullDiscoverySequenceState extends State<DayGullDiscoverySequence>
               fontWeight: FontWeight.bold,
             ),
             backgroundColor: widget.theme.appBarColor,
-            foregroundColor: Colors.white,
+            foregroundColor: widget.theme.appBarForegroundColor,
             automaticallyImplyLeading: false,
           ),
           body: GameBackground(

@@ -182,10 +182,13 @@ class _CustomSpritesScreenState extends State<CustomSpritesScreen> {
               fontSize: 22,
             ),
             backgroundColor: theme.appBarColor,
-            foregroundColor: Colors.white,
+            foregroundColor: theme.appBarForegroundColor,
             automaticallyImplyLeading: shell == null && !returnToHatcheryOnBack,
             leading: shell == null && returnToHatcheryOnBack
-                ? ReturnToHatcheryBackButton(theme: theme, color: Colors.white)
+                ? ReturnToHatcheryBackButton(
+                    theme: theme,
+                    color: theme.appBarForegroundColor,
+                  )
                 : null,
             bottom: shell == null
                 ? null

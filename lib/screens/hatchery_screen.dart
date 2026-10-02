@@ -338,7 +338,7 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                   fontSize: 22,
                 ),
                 backgroundColor: bg.appBarColor,
-                foregroundColor: Colors.white,
+                foregroundColor: bg.appBarForegroundColor,
                 onCoinBalanceTap: _onCoinTap,
                 bottom: shell == null
                     ? null

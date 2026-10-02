@@ -318,8 +318,8 @@ class _NavButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = selected
-        ? Colors.white
-        : Colors.white.withValues(alpha: 0.72);
+        ? theme.secondaryForegroundColor
+        : theme.appBarForegroundColor;
     return SizedBox(
       height: 58,
       child: Semantics(
@@ -461,7 +461,9 @@ class _MoreMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = Colors.white.withValues(alpha: selected ? 1 : 0.88);
+    final foreground = selected
+        ? theme.secondaryForegroundColor
+        : theme.appBarForegroundColor;
     return MenuItemButton(
       onPressed: onPressed,
       leadingIcon: Badge(

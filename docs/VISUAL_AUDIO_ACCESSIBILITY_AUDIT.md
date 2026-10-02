@@ -10,6 +10,12 @@ run:
 
 Result: 86 tests passed.
 
+Additional accessibility verification:
+
+`flutter test test\accessibility_release_audit_test.dart`
+
+Result: 3 tests passed.
+
 ## Completed evidence
 
 ### Animal style coverage
@@ -57,6 +63,9 @@ The targeted run confirms several layout and reduced-effects paths:
 - Long tutorial prompts stay visible on short screens.
 - Reduced battle effects keep motion, readiness, health, impact and countdown
   widgets stable.
+- Theme app bar/action foregrounds meet release contrast thresholds.
+- Primary navigation labels are present and keep at least 48x48 touch targets
+  on phone and desktop widths.
 
 ### Audio asset registration
 

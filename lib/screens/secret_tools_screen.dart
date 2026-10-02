@@ -180,7 +180,7 @@ class SecretToolsScreen extends StatelessWidget {
                                 : () => Navigator.pop(sheetContext, owned),
                             style: FilledButton.styleFrom(
                               backgroundColor: theme.secondaryColor,
-                              foregroundColor: Colors.white,
+                              foregroundColor: theme.secondaryForegroundColor,
                             ),
                             icon: const Icon(Icons.check_rounded),
                             label: const Text('Choose'),
@@ -227,11 +227,11 @@ class SecretToolsScreen extends StatelessWidget {
                 fontSize: 22,
               ),
               backgroundColor: theme.appBarColor,
-              foregroundColor: Colors.white,
+              foregroundColor: theme.appBarForegroundColor,
               automaticallyImplyLeading: false,
               leading: ReturnToHatcheryBackButton(
                 theme: theme,
-                color: Colors.white,
+                color: theme.appBarForegroundColor,
               ),
             ),
             body: GameBackground(
@@ -421,7 +421,7 @@ class SecretToolsScreen extends StatelessWidget {
                               ),
                               style: FilledButton.styleFrom(
                                 backgroundColor: theme.secondaryColor,
-                                foregroundColor: Colors.white,
+                                foregroundColor: theme.secondaryForegroundColor,
                                 disabledBackgroundColor: theme.panelAccentColor
                                     .withValues(alpha: 0.35),
                                 disabledForegroundColor:

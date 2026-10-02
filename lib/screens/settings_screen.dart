@@ -363,12 +363,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontSize: 22,
               ),
               backgroundColor: selected.appBarColor,
-              foregroundColor: Colors.white,
+              foregroundColor: selected.appBarForegroundColor,
               automaticallyImplyLeading: false,
               leading: shell == null
                   ? ReturnToHatcheryBackButton(
                       theme: selected,
-                      color: Colors.white,
+                      color: selected.appBarForegroundColor,
                     )
                   : null,
               bottom: shell == null
