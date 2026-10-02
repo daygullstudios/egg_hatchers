@@ -87,4 +87,5 @@ These items still need separate approval or platform evidence:
 - Audio unlock, pause/resume and background/foreground behavior on each selected
   release platform.
 - Full contrast review and final touch-target pass across the whole app.
-- Commercial rights/source records for every shipped asset.
+- Music source/license confirmation for the three shipped music files listed in
+  `docs/ASSET_RIGHTS_RELEASE_AUDIT.md`.
