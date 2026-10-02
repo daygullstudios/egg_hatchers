@@ -110,7 +110,7 @@ leave one player with a one-sided result.
   rebirth.
 - [x] Review every egg price, rarity table, income curve and rebirth multiplier.
 - [x] Review boss difficulty, lives, abilities, energy frequency and rewards.
-- [ ] Review DayGull progression and endgame income for economy-breaking jumps.
+- [x] Review DayGull progression and endgame income for economy-breaking jumps.
 - [ ] Review fusion, daily rewards, quests, multiplayer rewards and roster drops.
 - [ ] Test fresh, midgame and late-game saves without developer boosts.
 - [ ] Fix every progression blocker and practical farming exploit.

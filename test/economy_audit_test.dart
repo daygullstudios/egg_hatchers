@@ -74,6 +74,24 @@ void main() {
       greaterThan(RebirthLogic.nextRebirthRequirement(0)),
     );
   });
+
+  test('DayGull endgame income spike remains documented', () {
+    final voidIncome = _expectedIncome(GameData.eggById('void')!);
+    final dayGullIncome = _expectedIncome(GameData.eggById('daygull')!);
+    final ultimateNest = GameData.animalById('the_hatched_egg')!;
+    final nebulaHydra = GameData.animalById('nebula_hydra')!;
+
+    expect(dayGullIncome, closeTo(10149000, 0.001));
+    expect(dayGullIncome / voidIncome, closeTo(21.13, 0.01));
+    expect(
+      ultimateNest.coinsPerSecond / nebulaHydra.coinsPerSecond,
+      closeTo(26.67, 0.01),
+    );
+    expect(
+      GameData.postRottenShellSecretAnimalIds,
+      containsAll(GameData.eggById('daygull')!.possibleAnimalIds),
+    );
+  });
 }
 
 double _expectedMutationMultiplierAtLuckOne() {
