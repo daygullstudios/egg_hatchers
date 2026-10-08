@@ -12,6 +12,7 @@ flutter pub get
 flutter analyze
 node tool/audit_brand.mjs
 node tool/audit_release_evidence.mjs
+node tool/audit_release_decisions.mjs
 node tool/audit_public_policy_links.mjs
 node tool/audit_asset_rights.mjs
 node tool/audit_audio_release.mjs
@@ -66,6 +67,7 @@ npm run deploy:dry-run
 - `flutter analyze`
 - `node tool/audit_brand.mjs`
 - `node tool/audit_release_evidence.mjs`
+- `node tool/audit_release_decisions.mjs`
 - `node tool/audit_public_policy_links.mjs`
 - `node tool/audit_asset_rights.mjs`
 - `node tool/audit_audio_release.mjs`
@@ -108,6 +110,7 @@ Run and record:
 
 - Brand/legacy compatibility audit: `node tool/audit_brand.mjs`
 - Release-evidence index audit: `node tool/audit_release_evidence.mjs`
+- Release decision packet audit: `node tool/audit_release_decisions.mjs`
 - Public policy/support link audit: `node tool/audit_public_policy_links.mjs`
 - Asset rights inventory audit: `node tool/audit_asset_rights.mjs`
 - Audio release audit: `node tool/audit_audio_release.mjs`
