@@ -22,6 +22,7 @@ node tool/audit_platform_store.mjs
 node tool/audit_platform_signing_handoff.mjs
 node tool/audit_store_listing_checklist.mjs
 node tool/audit_multiplayer_production.mjs
+node tool/audit_multiplayer_two_device_playtest.mjs
 node tool/audit_monitoring_operations.mjs
 node tool/audit_operations_dry_run.mjs
 node tool/audit_release_reliability.mjs
@@ -89,6 +90,7 @@ npm run deploy:dry-run
 - `node tool/audit_platform_signing_handoff.mjs`
 - `node tool/audit_store_listing_checklist.mjs`
 - `node tool/audit_multiplayer_production.mjs`
+- `node tool/audit_multiplayer_two_device_playtest.mjs`
 - `node tool/audit_monitoring_operations.mjs`
 - `node tool/audit_operations_dry_run.mjs`
 - `node tool/audit_release_reliability.mjs`
@@ -148,6 +150,9 @@ Run and record:
   `docs/PLATFORM_SIGNING_HANDOFF.md`
 - Store listing checklist audit: `node tool/audit_store_listing_checklist.mjs`
 - Multiplayer production audit: `node tool/audit_multiplayer_production.mjs`
+- Multiplayer two-device playtest audit:
+  `node tool/audit_multiplayer_two_device_playtest.mjs` for
+  `docs/MULTIPLAYER_TWO_DEVICE_PLAYTEST_SCRIPT.md`
 - Monitoring operations audit: `node tool/audit_monitoring_operations.mjs`
 - Operations dry-run audit: `node tool/audit_operations_dry_run.mjs`
 - Release reliability audit: `node tool/audit_release_reliability.mjs`

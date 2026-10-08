@@ -73,6 +73,9 @@ jobs:
       - name: Verify multiplayer production readiness
         run: node tool/audit_multiplayer_production.mjs
 
+      - name: Verify multiplayer two-device playtest script
+        run: node tool/audit_multiplayer_two_device_playtest.mjs
+
       - name: Verify monitoring operations readiness
         run: node tool/audit_monitoring_operations.mjs
 
