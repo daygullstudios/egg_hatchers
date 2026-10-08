@@ -9,6 +9,7 @@ requires a frozen candidate and the owner approvals named in the roadmap.
 
 - Scope boundary: `docs/RELEASE_ROADMAP.md`
 - Owner decisions still needed: `docs/RELEASE_DECISION_PACKET.md`
+- Fillable owner decision form: `docs/RELEASE_OWNER_DECISION_FORM.md`
 - Release candidate identity: `docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md`
 
 Open release dependencies: launch platforms, launch countries, release owner

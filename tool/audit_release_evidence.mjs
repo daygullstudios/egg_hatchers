@@ -29,6 +29,7 @@ const requiredWarnings = [
 
 const requiredEvidence = [
   'docs/RELEASE_DECISION_PACKET.md',
+  'docs/RELEASE_OWNER_DECISION_FORM.md',
   'docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md',
   'docs/RELEASE_ACCOUNT_MATRIX_EVIDENCE.md',
   'docs/RELEASE_ACCOUNT_RECOVERY_EVIDENCE.md',

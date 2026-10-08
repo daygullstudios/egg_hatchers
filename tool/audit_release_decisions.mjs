@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 
 const packetPath = 'docs/RELEASE_DECISION_PACKET.md';
+const ownerDecisionFormPath = 'docs/RELEASE_OWNER_DECISION_FORM.md';
 const roadmapPath = 'docs/RELEASE_ROADMAP.md';
 const evidenceIndexPath = 'docs/RELEASE_EVIDENCE_INDEX.md';
 const assetRightsPath = 'docs/ASSET_RIGHTS_RELEASE_AUDIT.md';
@@ -19,6 +20,7 @@ const migrationPath = 'docs/NESTARIUM_MIGRATION.md';
 
 const files = {
   [packetPath]: readFileSync(resolve(root, packetPath), 'utf8'),
+  [ownerDecisionFormPath]: readFileSync(resolve(root, ownerDecisionFormPath), 'utf8'),
   [roadmapPath]: readFileSync(resolve(root, roadmapPath), 'utf8'),
   [evidenceIndexPath]: readFileSync(resolve(root, evidenceIndexPath), 'utf8'),
   [assetRightsPath]: readFileSync(resolve(root, assetRightsPath), 'utf8'),
@@ -94,9 +96,43 @@ for (const phrase of [
   'Music rights confirmed for the three listed files: yes/no',
   'Production monitoring/alerts owner:',
   'Family/privacy review owner or plan:',
+  'docs/RELEASE_OWNER_DECISION_FORM.md',
   'continue polishing only non-publishing work',
 ]) {
   requirePhrase(packetPath, phrase);
+}
+
+for (const phrase of [
+  'does not approve launch',
+  'Decision Identity',
+  'Launch Scope',
+  'First release platforms',
+  'First launch countries/regions',
+  'Public playable route approval',
+  'Store submission approval',
+  'Bot Arena remains in 1.0',
+  'Future events remain excluded from 1.0',
+  'Rights And Branding',
+  'Music rights confirmed for `assets/sounds/music/hatchery_chill_loop.mp3`',
+  'Music rights confirmed for `assets/sounds/music/boss_music.wav`',
+  'Music rights confirmed for `assets/sounds/music/final_boss_music.mp3`',
+  'Family And Privacy',
+  'Parent/guardian capability flow approved',
+  'Candidate support/account-deletion instructions approved',
+  'Monitoring And Operations',
+  'Production monitoring/alerts owner',
+  'Backup restore drill owner',
+  'Multiplayer And Beta',
+  'Trusted production session owner',
+  'Load/capacity target and owner',
+  'Closed beta entry approved',
+  'Platform And Store',
+  'Android credential owner',
+  'iOS credential owner',
+  'Support/deletion link verification owner',
+  'Explicit Stop Conditions',
+]) {
+  requirePhrase(ownerDecisionFormPath, phrase);
 }
 
 for (const musicFile of [
@@ -124,6 +160,7 @@ for (const item of [
 
 for (const phrase of [
   'docs/RELEASE_DECISION_PACKET.md',
+  'docs/RELEASE_OWNER_DECISION_FORM.md',
   'Open release dependencies: launch platforms, launch countries, release owner',
   'Open release dependencies: music rights, volume normalization and platform audio',
   'Open release dependencies: approved production monitoring, alert destinations',

@@ -141,6 +141,8 @@ Run and record:
 - Brand/legacy compatibility audit: `node tool/audit_brand.mjs`
 - Release-evidence index audit: `node tool/audit_release_evidence.mjs`
 - Release decision packet audit: `node tool/audit_release_decisions.mjs`
+  covering `docs/RELEASE_DECISION_PACKET.md` and
+  `docs/RELEASE_OWNER_DECISION_FORM.md`
 - Public policy/support link audit: `node tool/audit_public_policy_links.mjs`
 - Support/deletion link audit:
   `node tool/audit_support_deletion_links.mjs` for

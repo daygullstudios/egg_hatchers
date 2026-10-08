@@ -47,6 +47,7 @@ void main() {
       roadmap,
       contains('Configure selected platform signing/store readiness only after launch'),
     );
+    expect(packet, contains('docs/RELEASE_OWNER_DECISION_FORM.md'));
   });
 
   test('release decision packet matches current platform files', () {
@@ -85,6 +86,31 @@ void main() {
     for (final file in musicFiles) {
       expect(packet, contains(file), reason: file);
       expect(assetAudit, contains(file), reason: file);
+    }
+  });
+
+  test('release owner decision form captures final owner answers', () {
+    final form = File('docs/RELEASE_OWNER_DECISION_FORM.md').readAsStringSync();
+
+    for (final phrase in [
+      'Decision Identity',
+      'Launch Scope',
+      'First release platforms',
+      'First launch countries/regions',
+      'Public playable route approval',
+      'Store submission approval',
+      'Bot Arena remains in 1.0',
+      'Music rights confirmed for `assets/sounds/music/hatchery_chill_loop.mp3`',
+      'Music rights confirmed for `assets/sounds/music/boss_music.wav`',
+      'Music rights confirmed for `assets/sounds/music/final_boss_music.mp3`',
+      'Parent/guardian capability flow approved',
+      'Production monitoring/alerts owner',
+      'Trusted production session owner',
+      'Closed beta entry approved',
+      'Support/deletion link verification owner',
+      'Explicit Stop Conditions',
+    ]) {
+      expect(form, contains(phrase), reason: phrase);
     }
   });
 }

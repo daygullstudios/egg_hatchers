@@ -180,6 +180,11 @@ When ready, answer these in one message:
 7. Production monitoring/alerts owner:
 8. Family/privacy review owner or plan:
 
+For a more complete fillable record, copy
+`docs/RELEASE_OWNER_DECISION_FORM.md` to a dated release decision record and
+fill every selected-platform, rights, privacy, monitoring, multiplayer, beta and
+store owner field.
+
 Until those are answered, continue polishing only non-publishing work that does
 not require store credentials, public routing, legal/privacy approval or launch
 ownership.

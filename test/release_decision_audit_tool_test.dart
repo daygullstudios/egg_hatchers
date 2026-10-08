@@ -21,9 +21,12 @@ void main() {
   test('release verification runbook and CI include release decision audit', () {
     final runbook = File('docs/RELEASE_VERIFICATION_RUNBOOK.md').readAsStringSync();
     final workflow = File('.github/workflows/verify.yml').readAsStringSync();
+    final evidenceIndex = File('docs/RELEASE_EVIDENCE_INDEX.md').readAsStringSync();
 
     expect(runbook, contains('node tool/audit_release_decisions.mjs'));
+    expect(runbook, contains('docs/RELEASE_OWNER_DECISION_FORM.md'));
     expect(workflow, contains('node tool/audit_release_decisions.mjs'));
     expect(workflow, contains('Verify release decision packet'));
+    expect(evidenceIndex, contains('docs/RELEASE_OWNER_DECISION_FORM.md'));
   });
 }
