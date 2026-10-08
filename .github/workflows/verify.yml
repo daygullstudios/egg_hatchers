@@ -88,6 +88,9 @@ jobs:
       - name: Verify gameplay economy evidence
         run: node tool/audit_gameplay_economy.mjs
 
+      - name: Verify custom eggs are retired
+        run: node tool/audit_custom_eggs_retired.mjs
+
       - name: Verify isolated public information site
         working-directory: cloudflare/public-site
         run: npm test
