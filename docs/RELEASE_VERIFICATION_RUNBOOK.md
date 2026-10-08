@@ -21,6 +21,7 @@ node tool/audit_multiplayer_production.mjs
 node tool/audit_monitoring_operations.mjs
 node tool/audit_cross_platform_acceptance.mjs
 node tool/audit_closed_beta_readiness.mjs
+node tool/audit_rollback_rehearsal.mjs
 flutter test
 flutter build web --release --no-pub
 node tool/audit_release_surface.mjs
@@ -70,6 +71,7 @@ npm run deploy:dry-run
 - `node tool/audit_monitoring_operations.mjs`
 - `node tool/audit_cross_platform_acceptance.mjs`
 - `node tool/audit_closed_beta_readiness.mjs`
+- `node tool/audit_rollback_rehearsal.mjs`
 - `cloudflare/public-site` tests
 - `flutter test`
 - `flutter build web --release --no-pub`
@@ -107,6 +109,7 @@ Run and record:
 - Monitoring operations audit: `node tool/audit_monitoring_operations.mjs`
 - Cross-platform acceptance audit: `node tool/audit_cross_platform_acceptance.mjs`
 - Closed beta readiness audit: `node tool/audit_closed_beta_readiness.mjs`
+- Rollback rehearsal audit: `node tool/audit_rollback_rehearsal.mjs`
 - Release-surface audit: `node tool/audit_release_surface.mjs`
 - Save Transfer compatibility result from the candidate matrix.
 - Cross-platform account/save/multiplayer matrix result from
