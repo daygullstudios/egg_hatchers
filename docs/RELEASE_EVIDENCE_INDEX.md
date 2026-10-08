@@ -96,6 +96,7 @@ recorded in `docs/PLATFORM_BRANDING_READINESS.md`.
 - Production error visibility drill:
   `docs/PRODUCTION_ERROR_VISIBILITY_DRILL.md`
 - Operations evidence: `docs/RELEASE_OPERATIONS_EVIDENCE.md`
+- Backup restore drill: `docs/BACKUP_RESTORE_DRILL.md`
 - Operations dry-run checklist: `docs/OPERATIONS_DRY_RUN_CHECKLIST.md`
 - Release-surface evidence: `docs/RELEASE_FREEZE_SURFACE_EVIDENCE.md`
 - Feature-freeze checklist: `docs/RELEASE_FEATURE_FREEZE_CHECKLIST.md`

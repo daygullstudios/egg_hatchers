@@ -23,6 +23,7 @@ rehearsal. Do not fill it with placeholder approvals.
 - D1 safety database backup/export reference:
 - Multiplayer Durable Object migration/export reference, if relevant:
 - Release build artifact backup location:
+- Backup restore drill result:
 - `docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md` entry updated: yes/no
 
 ## Pre-Rehearsal Checks

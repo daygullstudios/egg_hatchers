@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 
 const checklistPath = 'docs/OPERATIONS_DRY_RUN_CHECKLIST.md';
+const backupRestoreDrillPath = 'docs/BACKUP_RESTORE_DRILL.md';
 const runbookPath = 'docs/RELEASE_VERIFICATION_RUNBOOK.md';
 const monitoringPath = 'docs/RELEASE_MONITORING_EVIDENCE.md';
 const operationsPath = 'docs/RELEASE_OPERATIONS_EVIDENCE.md';
@@ -14,6 +15,7 @@ const workflowPath = '.github/workflows/verify.yml';
 
 const files = {
   [checklistPath]: readFileSync(resolve(root, checklistPath), 'utf8'),
+  [backupRestoreDrillPath]: readFileSync(resolve(root, backupRestoreDrillPath), 'utf8'),
   [runbookPath]: readFileSync(resolve(root, runbookPath), 'utf8'),
   [monitoringPath]: readFileSync(resolve(root, monitoringPath), 'utf8'),
   [operationsPath]: readFileSync(resolve(root, operationsPath), 'utf8'),
@@ -37,6 +39,7 @@ for (const phrase of [
   'docs/RELEASE_DECISION_PACKET.md',
   'docs/MONITORING_ALERT_RUNBOOK_TEMPLATE.md',
   'docs/ROLLBACK_REHEARSAL_TEMPLATE.md',
+  'docs/BACKUP_RESTORE_DRILL.md',
   'flutter analyze',
   'node tool/audit_monitoring_operations.mjs',
   'node tool/audit_rollback_rehearsal.mjs',
@@ -47,11 +50,29 @@ for (const phrase of [
   'npm run deploy:dry-run',
   'previous protected playtest Worker version ID',
   'D1 safety database backup/export reference',
+  'Backup restore drill results',
   'Multiplayer capacity saturation',
   'privacy-safe synthetic events',
   'Do not mark the release roadmap operations or rollback items complete',
 ]) {
   requirePhrase(checklistPath, phrase);
+}
+
+for (const phrase of [
+  'Firebase/Firestore backup reference',
+  'D1 safety database backup/export reference',
+  'Multiplayer Durable Object migration/export reference',
+  'Release build artifact backup location',
+  'Local progress restore',
+  'Save Transfer restore',
+  'Cloud account restore',
+  'Safety database restore',
+  'Multiplayer migration restore',
+  'Release artifact restore',
+  'A backup cannot be found, read or tied to the candidate build',
+  'disposable or explicitly approved rehearsal data',
+]) {
+  requirePhrase(backupRestoreDrillPath, phrase);
 }
 
 for (const forbidden of [
@@ -79,6 +100,7 @@ for (const phrase of [
 for (const phrase of [
   'backup cadence',
   'restore rehearsal',
+  'docs/BACKUP_RESTORE_DRILL.md',
   'Alert destinations',
   'Do not mark the roadmap operations item complete',
 ]) {
@@ -87,6 +109,7 @@ for (const phrase of [
 
 for (const phrase of [
   'Rollback Path',
+  'Backup restore drill result',
   'Smoke Check Results',
   'Do not mark the release roadmap rollback item complete',
 ]) {
@@ -102,6 +125,7 @@ for (const item of [
 
 requirePhrase(runbookPath, 'node tool/audit_operations_dry_run.mjs');
 requirePhrase(runbookPath, 'Operations dry-run audit');
+requirePhrase(runbookPath, 'docs/BACKUP_RESTORE_DRILL.md');
 requirePhrase(workflowPath, 'node tool/audit_operations_dry_run.mjs');
 requirePhrase(workflowPath, 'Verify operations dry-run checklist');
 
@@ -110,5 +134,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  'Operations dry-run audit: rehearsal checklist, privacy boundary, backup references and open release gates verified.',
+  'Operations dry-run audit: rehearsal checklist, privacy boundary, backup restore drill and open release gates verified.',
 );

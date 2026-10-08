@@ -16,6 +16,8 @@ rate limits, alerts or rollback.
 - Open `docs/ROLLBACK_REHEARSAL_TEMPLATE.md` and identify disposable test
   references for Firebase/Firestore, D1 safety data, Durable Object migration
   artifacts and release build artifacts.
+- Open `docs/BACKUP_RESTORE_DRILL.md` and select the smallest disposable data
+  set that proves each backup can be found, read and smoke-tested.
 - Confirm this dry run uses test data only. Do not touch live player saves,
   identity tokens, support documents, custom art or child/guardian information.
 
@@ -71,6 +73,8 @@ npm run deploy:dry-run
 - Confirm the D1 safety database backup/export reference for the test project.
 - Confirm the Durable Object migration/export reference, if a migration is part
   of the candidate.
+- Complete the backup restore drill in `docs/BACKUP_RESTORE_DRILL.md` using
+  disposable or release-owner-approved rehearsal data.
 - Walk through the rollback path in `docs/ROLLBACK_REHEARSAL_TEMPLATE.md`
   without routing public traffic.
 - Run the smoke checks listed in the rollback template: app loads, existing
@@ -98,6 +102,9 @@ trigger.
 - Every command above passes or has an owned fix ticket.
 - The dry-run candidate record lists exact commit, build artifact backup,
   Worker version IDs, backup references, alert destinations and rollback result.
+- Backup restore drill results are recorded for local progress, Save Transfer,
+  cloud account recovery, D1 safety data, multiplayer migration artifacts and
+  release build artifacts.
 - No dry-run step requires logging player profile payloads, progress payloads,
   preset-message contents, custom art, animal rosters, Save Transfer files,
   identity tokens, support documents or child/guardian information.

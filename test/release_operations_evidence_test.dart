@@ -30,6 +30,10 @@ void main() {
         'encrypted manifest artifacts',
         'rollback sequence',
       ],
+      'docs/BACKUP_RESTORE_DRILL.md': [
+        'Local progress restore',
+        'Release artifact restore',
+      ],
     };
 
     for (final entry in requiredEvidence.entries) {
@@ -59,6 +63,7 @@ void main() {
     expect(evidence, contains('32-session guardrail'));
     expect(evidence, contains('ten unique reports per reporter per day'));
     expect(evidence, contains('Do not mark the roadmap operations item complete'));
+    expect(evidence, contains('docs/BACKUP_RESTORE_DRILL.md'));
     expect(evidence, contains('Alert destinations'));
     expect(workerTest, contains('capacity'));
     expect(workerTest, contains('settles a hosted result once'));

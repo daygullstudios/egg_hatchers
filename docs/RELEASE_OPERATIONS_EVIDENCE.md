@@ -71,5 +71,13 @@ The release still needs:
   rollback path if a migration or deployment fails.
 - Retention and support-access rules that match the final privacy policy.
 
+The candidate drill for proving backup integrity and restore readiness is
+`docs/BACKUP_RESTORE_DRILL.md`. It covers local progress, Save Transfer, cloud
+account recovery, D1 safety data, multiplayer migration artifacts and release
+build artifact restore using disposable or approved rehearsal data. Its named
+checks include Local progress restore, Save Transfer restore, Cloud account
+restore, Safety database restore, Multiplayer migration restore, and Release
+artifact restore. The final item is the Release artifact restore check.
+
 Do not mark the roadmap operations item complete until those human-owned
 production procedures are confirmed.

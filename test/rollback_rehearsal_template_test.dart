@@ -38,6 +38,7 @@ void main() {
       'D1 safety database backup/export reference',
       'Multiplayer Durable Object migration/export reference',
       'Release build artifact backup location',
+      'Backup restore drill result',
       'flutter analyze',
       'flutter test',
       'flutter build web --release',

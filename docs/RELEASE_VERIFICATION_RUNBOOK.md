@@ -168,6 +168,8 @@ Run and record:
   `docs/PRODUCTION_ERROR_VISIBILITY_DRILL.md` and
   `docs/MONITORING_ALERT_RUNBOOK_TEMPLATE.md`
 - Operations dry-run audit: `node tool/audit_operations_dry_run.mjs`
+  covering `docs/OPERATIONS_DRY_RUN_CHECKLIST.md`,
+  `docs/BACKUP_RESTORE_DRILL.md` and rollback rehearsal backup references
 - Release reliability audit: `node tool/audit_release_reliability.mjs`
 - Release code review audit: `node tool/audit_release_code_review.mjs`
 - Release feature-freeze audit:

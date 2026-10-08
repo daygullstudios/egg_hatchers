@@ -12,7 +12,7 @@ void main() {
     expect(
       result.stdout.toString(),
       contains(
-        'Operations dry-run audit: rehearsal checklist, privacy boundary, backup references and open release gates verified.',
+        'Operations dry-run audit: rehearsal checklist, privacy boundary, backup restore drill and open release gates verified.',
       ),
     );
   });
@@ -26,8 +26,44 @@ void main() {
       final workflow = File('.github/workflows/verify.yml').readAsStringSync();
 
       expect(runbook, contains('node tool/audit_operations_dry_run.mjs'));
+      expect(runbook, contains('docs/BACKUP_RESTORE_DRILL.md'));
       expect(workflow, contains('node tool/audit_operations_dry_run.mjs'));
       expect(workflow, contains('Verify operations dry-run checklist'));
     },
   );
+
+  test('backup restore drill covers every release backup surface', () {
+    final drill = File('docs/BACKUP_RESTORE_DRILL.md').readAsStringSync();
+    final checklist = File(
+      'docs/OPERATIONS_DRY_RUN_CHECKLIST.md',
+    ).readAsStringSync();
+    final candidate = File(
+      'docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md',
+    ).readAsStringSync();
+    final rollback = File('docs/ROLLBACK_REHEARSAL_TEMPLATE.md').readAsStringSync();
+
+    for (final surface in [
+      'Local progress restore',
+      'Save Transfer restore',
+      'Cloud account restore',
+      'Safety database restore',
+      'Multiplayer migration restore',
+      'Release artifact restore',
+    ]) {
+      expect(drill, contains(surface), reason: surface);
+    }
+
+    for (final reference in [
+      'Firebase/Firestore backup reference',
+      'D1 safety database backup/export reference',
+      'Multiplayer Durable Object migration/export reference',
+      'Release build artifact backup location',
+    ]) {
+      expect(drill, contains(reference), reason: reference);
+    }
+
+    expect(checklist, contains('docs/BACKUP_RESTORE_DRILL.md'));
+    expect(candidate, contains('Backup restore drill result'));
+    expect(rollback, contains('Backup restore drill result'));
+  });
 }

@@ -51,6 +51,7 @@ only after the matching evidence exists.
 - D1 safety database backup/export reference: TBD
 - Multiplayer Durable Object migration/export reference, if relevant: TBD
 - Release build artifact backup location: TBD
+- Backup restore drill result: TBD
 - Previous protected version ID: TBD
 - Rollback test result: TBD
 - Restore rehearsal result: TBD
