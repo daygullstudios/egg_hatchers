@@ -67,6 +67,9 @@ jobs:
       - name: Verify monitoring operations readiness
         run: node tool/audit_monitoring_operations.mjs
 
+      - name: Verify operations dry-run checklist
+        run: node tool/audit_operations_dry_run.mjs
+
       - name: Verify release reliability evidence
         run: node tool/audit_release_reliability.mjs
 

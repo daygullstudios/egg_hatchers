@@ -20,6 +20,7 @@ node tool/audit_platform_branding.mjs
 node tool/audit_platform_store.mjs
 node tool/audit_multiplayer_production.mjs
 node tool/audit_monitoring_operations.mjs
+node tool/audit_operations_dry_run.mjs
 node tool/audit_release_reliability.mjs
 node tool/audit_release_code_review.mjs
 node tool/audit_security_review.mjs
@@ -79,6 +80,7 @@ npm run deploy:dry-run
 - `node tool/audit_platform_store.mjs`
 - `node tool/audit_multiplayer_production.mjs`
 - `node tool/audit_monitoring_operations.mjs`
+- `node tool/audit_operations_dry_run.mjs`
 - `node tool/audit_release_reliability.mjs`
 - `node tool/audit_release_code_review.mjs`
 - `node tool/audit_security_review.mjs`
@@ -126,6 +128,7 @@ Run and record:
 - Platform store audit: `node tool/audit_platform_store.mjs`
 - Multiplayer production audit: `node tool/audit_multiplayer_production.mjs`
 - Monitoring operations audit: `node tool/audit_monitoring_operations.mjs`
+- Operations dry-run audit: `node tool/audit_operations_dry_run.mjs`
 - Release reliability audit: `node tool/audit_release_reliability.mjs`
 - Release code review audit: `node tool/audit_release_code_review.mjs`
 - Security review audit: `node tool/audit_security_review.mjs`
