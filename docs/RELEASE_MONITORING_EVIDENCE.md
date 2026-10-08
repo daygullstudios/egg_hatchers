@@ -46,5 +46,10 @@ privacy model" remains open until these decisions are recorded:
 - A test proving public production errors are visible without exposing player
   progress or identity details.
 
+The candidate drill for that final test is
+`docs/PRODUCTION_ERROR_VISIBILITY_DRILL.md`. It records the preconditions,
+controlled failure scenarios, pass criteria and stop conditions for proving
+privacy-safe error visibility without enabling client telemetry prematurely.
+
 Until then, the protected playtest has server-side visibility, and the client
 continues to avoid app-side telemetry.

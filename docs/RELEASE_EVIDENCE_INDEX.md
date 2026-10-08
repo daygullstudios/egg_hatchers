@@ -93,6 +93,8 @@ recorded in `docs/PLATFORM_BRANDING_READINESS.md`.
 - Reliability evidence: `docs/RELEASE_RELIABILITY_EVIDENCE.md`
 - Security review: `docs/RELEASE_SECURITY_REVIEW.md`
 - Monitoring evidence: `docs/RELEASE_MONITORING_EVIDENCE.md`
+- Production error visibility drill:
+  `docs/PRODUCTION_ERROR_VISIBILITY_DRILL.md`
 - Operations evidence: `docs/RELEASE_OPERATIONS_EVIDENCE.md`
 - Operations dry-run checklist: `docs/OPERATIONS_DRY_RUN_CHECKLIST.md`
 - Release-surface evidence: `docs/RELEASE_FREEZE_SURFACE_EVIDENCE.md`

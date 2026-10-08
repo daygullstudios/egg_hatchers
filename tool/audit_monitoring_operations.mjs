@@ -5,6 +5,7 @@ const root = resolve(import.meta.dirname, '..');
 
 const roadmapPath = 'docs/RELEASE_ROADMAP.md';
 const monitoringPath = 'docs/RELEASE_MONITORING_EVIDENCE.md';
+const errorVisibilityDrillPath = 'docs/PRODUCTION_ERROR_VISIBILITY_DRILL.md';
 const operationsPath = 'docs/RELEASE_OPERATIONS_EVIDENCE.md';
 const alertRunbookPath = 'docs/MONITORING_ALERT_RUNBOOK_TEMPLATE.md';
 const decisionPacketPath = 'docs/RELEASE_DECISION_PACKET.md';
@@ -15,6 +16,7 @@ const multiplayerCanaryWranglerPath = 'cloudflare/multiplayer/wrangler.canary.js
 
 const roadmap = readFileSync(resolve(root, roadmapPath), 'utf8');
 const monitoring = readFileSync(resolve(root, monitoringPath), 'utf8');
+const errorVisibilityDrill = readFileSync(resolve(root, errorVisibilityDrillPath), 'utf8');
 const operations = readFileSync(resolve(root, operationsPath), 'utf8');
 const alertRunbook = readFileSync(resolve(root, alertRunbookPath), 'utf8');
 const decisionPacket = readFileSync(resolve(root, decisionPacketPath), 'utf8');
@@ -82,8 +84,24 @@ for (const phrase of [
   'Do not',
   'intentionally log player profile payloads',
   'A test proving public production errors are visible without exposing player',
+  'docs/PRODUCTION_ERROR_VISIBILITY_DRILL.md',
 ]) {
   requirePhrase(monitoringPath, monitoring, phrase);
+}
+
+for (const phrase of [
+  'Release owner, rollback decision maker, monitoring owner and backup responder',
+  'Allowed operational fields',
+  'Worker Observability is enabled on every selected production Worker',
+  'Web route failure visibility',
+  'Multiplayer capability-denial visibility',
+  'Trading or battle safety failure visibility',
+  'Support and account-deletion link failure visibility',
+  'Alert delivery and rollback handoff',
+  'No player progress, identity details, Save Transfer files, custom art, animal',
+  'A production error cannot be tied to the candidate deploy version',
+]) {
+  requirePhrase(errorVisibilityDrillPath, errorVisibilityDrill, phrase);
 }
 
 for (const phrase of [
@@ -118,6 +136,13 @@ for (const phrase of [
   requirePhrase(decisionPacketPath, decisionPacket, phrase);
 }
 
+for (const phrase of [
+  'Monitoring/alert owner and destinations',
+  'Production error visibility drill result',
+]) {
+  requirePhrase('docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md', readFileSync(resolve(root, 'docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md'), 'utf8'), phrase);
+}
+
 for (const item of [
   '[ ] Add production error monitoring that matches the approved privacy model.',
   '[ ] Confirm backups, restore procedures, rate limits and operational alerts.',
@@ -130,5 +155,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  'Monitoring operations audit: Worker observability, telemetry boundary and open owner gates verified.',
+  'Monitoring operations audit: Worker observability, telemetry boundary, error visibility drill and open owner gates verified.',
 );

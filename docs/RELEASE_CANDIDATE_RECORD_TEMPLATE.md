@@ -67,6 +67,7 @@ only after the matching evidence exists.
 - Candidate support instructions URL/version: TBD
 - Store Data Safety/Privacy answers source reference: TBD
 - Monitoring/alert owner and destinations: TBD
+- Production error visibility drill result: TBD
 
 ## Open risks
 

@@ -164,6 +164,9 @@ Run and record:
   `node tool/audit_multiplayer_load_capacity.mjs` for
   `docs/MULTIPLAYER_LOAD_CAPACITY_REHEARSAL.md`
 - Monitoring operations audit: `node tool/audit_monitoring_operations.mjs`
+  covering `docs/RELEASE_MONITORING_EVIDENCE.md`,
+  `docs/PRODUCTION_ERROR_VISIBILITY_DRILL.md` and
+  `docs/MONITORING_ALERT_RUNBOOK_TEMPLATE.md`
 - Operations dry-run audit: `node tool/audit_operations_dry_run.mjs`
 - Release reliability audit: `node tool/audit_release_reliability.mjs`
 - Release code review audit: `node tool/audit_release_code_review.mjs`
