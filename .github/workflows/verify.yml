@@ -64,6 +64,9 @@ jobs:
       - name: Verify monitoring operations readiness
         run: node tool/audit_monitoring_operations.mjs
 
+      - name: Verify cross-platform acceptance template
+        run: node tool/audit_cross_platform_acceptance.mjs
+
       - name: Verify isolated public information site
         working-directory: cloudflare/public-site
         run: npm test
