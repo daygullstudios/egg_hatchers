@@ -33,6 +33,8 @@ coverage.
 - Current audience position: `docs/FAMILY_AUDIENCE_V1.md`
 - Family/privacy review intake: `docs/FAMILY_PRIVACY_REVIEW_INTAKE.md`
   verified by `node tool/audit_family_privacy_review_intake.mjs`
+- Family/privacy review response template:
+  `docs/FAMILY_PRIVACY_REVIEW_RESPONSE_TEMPLATE.md`
 - Family capability evidence: `docs/RELEASE_FAMILY_CAPABILITY_EVIDENCE.md`
 - Public policy readiness: `docs/PUBLIC_POLICY_READINESS.md`
 - Support/deletion link verification:

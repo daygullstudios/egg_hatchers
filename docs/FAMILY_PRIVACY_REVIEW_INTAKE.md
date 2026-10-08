@@ -113,6 +113,11 @@ The review must produce:
 - Accepted risks, if any.
 - Reviewer approval date and owner sign-off.
 
+Record the reviewer answers in
+`docs/FAMILY_PRIVACY_REVIEW_RESPONSE_TEMPLATE.md` or a dated copy of that
+template. The filled response must be cited by the release candidate record
+before family/privacy roadmap items can close.
+
 ## Acceptance evidence after implementation
 
 Do not close the roadmap family/privacy items until tests or release evidence

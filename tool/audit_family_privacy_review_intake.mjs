@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 
 const intakePath = 'docs/FAMILY_PRIVACY_REVIEW_INTAKE.md';
+const responseTemplatePath = 'docs/FAMILY_PRIVACY_REVIEW_RESPONSE_TEMPLATE.md';
 const familyPath = 'docs/FAMILY_AUDIENCE_V1.md';
 const capabilityEvidencePath = 'docs/RELEASE_FAMILY_CAPABILITY_EVIDENCE.md';
 const policyPath = 'docs/PUBLIC_POLICY_READINESS.md';
@@ -15,6 +16,7 @@ const workflowPath = '.github/workflows/verify.yml';
 const releaseEvidenceAuditPath = 'tool/audit_release_evidence.mjs';
 
 const intake = readFileSync(resolve(root, intakePath), 'utf8');
+const responseTemplate = readFileSync(resolve(root, responseTemplatePath), 'utf8');
 const family = readFileSync(resolve(root, familyPath), 'utf8');
 const capabilityEvidence = readFileSync(resolve(root, capabilityEvidencePath), 'utf8');
 const policy = readFileSync(resolve(root, policyPath), 'utf8');
@@ -38,6 +40,7 @@ function requirePhrase(path, text, phrase) {
 
 for (const path of [
   intakePath,
+  responseTemplatePath,
   familyPath,
   capabilityEvidencePath,
   policyPath,
@@ -131,8 +134,38 @@ for (const phrase of [
   'Monitoring/logging boundary',
   'Accepted risks',
   'Reviewer approval date and owner sign-off',
+  'docs/FAMILY_PRIVACY_REVIEW_RESPONSE_TEMPLATE.md',
 ]) {
   requirePhrase(intakePath, intake, phrase);
+}
+
+for (const phrase of [
+  'not legal clearance unless',
+  'Reviewer role/qualification',
+  'Candidate commit reviewed',
+  'Privacy Policy version reviewed',
+  'Audience Classification',
+  'Approved Capability Matrix',
+  'Allowed for unknown user',
+  'Allowed for restricted child',
+  'Separate guardian permission required',
+  'Age And Guardian Flow',
+  'Approved age/region question text',
+  'Parent-managed permission review process',
+  'Non-Google recovery route',
+  'Data Inventory And Retention',
+  'Firebase Authentication',
+  'Firestore progress/cloud save',
+  'D1 safety reports, blocks and capability claims',
+  'Public Policy And Store Disclosures',
+  'Google Play Data Safety answers',
+  'Apple privacy answers',
+  'Accepted Risks And Launch Blocks',
+  'Required implementation changes before beta',
+  'Required tests before public launch',
+  'release candidate record does not cite this filled review response',
+]) {
+  requirePhrase(responseTemplatePath, responseTemplate, phrase);
 }
 
 for (const phrase of [
@@ -185,6 +218,7 @@ for (const item of [
 
 for (const phrase of [
   intakePath,
+  responseTemplatePath,
   'node tool/audit_family_privacy_review_intake.mjs',
 ]) {
   requirePhrase(evidenceIndexPath, evidenceIndex, phrase);
@@ -199,6 +233,7 @@ for (const phrase of [
 }
 
 requirePhrase(releaseEvidenceAuditPath, releaseEvidenceAudit, intakePath);
+requirePhrase(releaseEvidenceAuditPath, releaseEvidenceAudit, responseTemplatePath);
 
 if (failures.length > 0) {
   throw new Error(failures.join('\n'));

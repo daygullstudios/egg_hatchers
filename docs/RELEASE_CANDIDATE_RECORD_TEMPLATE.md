@@ -63,6 +63,7 @@ only after the matching evidence exists.
 ## Privacy, family and support
 
 - Professional family/privacy review reference: TBD
+- Family/privacy review response result: TBD
 - Approved age/guardian capability flow reference: TBD
 - Candidate Privacy Policy URL/version: TBD
 - Candidate Terms URL/version: TBD

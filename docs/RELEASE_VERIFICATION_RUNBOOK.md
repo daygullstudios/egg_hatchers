@@ -195,7 +195,8 @@ Run and record:
 - Family privacy gate audit: `node tool/audit_family_privacy_gate.mjs`
 - Family privacy review intake audit:
   `node tool/audit_family_privacy_review_intake.mjs` for
-  `docs/FAMILY_PRIVACY_REVIEW_INTAKE.md`
+  `docs/FAMILY_PRIVACY_REVIEW_INTAKE.md` and
+  `docs/FAMILY_PRIVACY_REVIEW_RESPONSE_TEMPLATE.md`
 - Gameplay economy audit: `node tool/audit_gameplay_economy.mjs`
 - Custom egg retirement audit: `node tool/audit_custom_eggs_retired.mjs`
 - Release-surface audit: `node tool/audit_release_surface.mjs`
