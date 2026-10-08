@@ -1822,6 +1822,14 @@
       "reason": "Stable Dart package/import identity."
     },
     {
+      "path": "test/audio_assets_test.dart",
+      "line": 6,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
       "path": "test/audio_release_acceptance_test.dart",
       "line": 5,
       "references": [
@@ -4359,7 +4367,7 @@
     },
     {
       "path": "test/platform_store_readiness_test.dart",
-      "line": 46,
+      "line": 48,
       "references": [
         "egghatchers.game"
       ],
