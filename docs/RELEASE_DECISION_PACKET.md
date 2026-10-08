@@ -1,6 +1,6 @@
 # Nestarium release decision packet
 
-Updated: 2026-10-02
+Updated: 2026-10-08
 
 This packet turns the remaining roadmap blockers into concrete owner decisions.
 It does not change runtime behavior, publish a store listing, route a public
@@ -79,15 +79,19 @@ Roadmap items this unlocks:
 
 ### 4. Final logo and platform branding approval
 
-Approve the exact Nestarium logo image to ship. After approval, regenerate and
-verify platform branding assets for the selected platforms.
+Approved: yes. The owner approved the three-style Nestarium logo source in the
+2026-10-08 project thread and requested that it be implemented as the new logo.
+Commit `99bd909` replaced the approved source image and regenerated the platform
+branding assets.
 
 Current evidence:
 
 - `docs/ASSET_RIGHTS_RELEASE_AUDIT.md` tracks shipped asset roots and calls out
   asset-rights items that still need owner confirmation.
-- `docs/VISUAL_AUDIO_ACCESSIBILITY_AUDIT.md` keeps final logo approval and
-  platform branding assets open.
+- `docs/PLATFORM_BRANDING_READINESS.md` records the approved source, generator
+  targets and verification commands.
+- `docs/VISUAL_AUDIO_ACCESSIBILITY_AUDIT.md` records logo approval and generated
+  platform branding as completed evidence.
 
 Roadmap items this unlocks:
 
@@ -171,7 +175,7 @@ When ready, answer these in one message:
 2. First launch countries:
 3. Release owner:
 4. Rollback decision maker:
-5. Final logo approved: yes/no
+5. Final logo approved: yes
 6. Music rights confirmed for the three listed files: yes/no
 7. Production monitoring/alerts owner:
 8. Family/privacy review owner or plan:

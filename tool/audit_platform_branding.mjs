@@ -108,7 +108,8 @@ for (const requiredText of [
   'assets/images/ui/app_logo.png',
   'tool/generate_brand_assets.dart',
   'windows/runner/resources/app_icon.ico',
-  'owner approves the final logo',
+  'owner approved the final three-style',
+  'Commit `99bd909`',
   'Platform-specific visual inspection',
 ]) {
   if (!readiness.includes(requiredText)) {
@@ -116,12 +117,12 @@ for (const requiredText of [
   }
 }
 
-if (!roadmap.includes('[ ] Approve the final Nestarium logo and regenerate platform branding assets.')) {
-  failures.push(`${roadmapPath}: final logo approval gate is not open`);
+if (!roadmap.includes('[x] Approve the final Nestarium logo and regenerate platform branding assets.')) {
+  failures.push(`${roadmapPath}: final logo approval gate is not marked complete`);
 }
 
 for (const requiredText of [
-  'Final logo approved: yes/no',
+  'Final logo approved: yes',
   'Final logo and platform branding approval',
 ]) {
   if (!decisionPacket.includes(requiredText)) {

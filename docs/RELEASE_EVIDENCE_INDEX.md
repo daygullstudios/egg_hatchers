@@ -70,8 +70,9 @@ progression blocker or farming exploit remains.
 - Asset rights audit: `docs/ASSET_RIGHTS_RELEASE_AUDIT.md`
 - Platform branding readiness: `docs/PLATFORM_BRANDING_READINESS.md`
 
-Open release dependencies: final logo approval, regenerated platform branding,
-music rights, volume normalization and platform audio behavior checks.
+Open release dependencies: music rights, volume normalization and platform audio
+behavior checks. Final logo approval and regenerated platform branding are
+recorded in `docs/PLATFORM_BRANDING_READINESS.md`.
 
 ## 7. Reliability and security
 

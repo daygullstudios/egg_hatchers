@@ -25,7 +25,6 @@ void main() {
       '[ ] Confirm launch platforms: web, Android and/or iOS.',
       '[ ] Confirm launch countries.',
       '[ ] Name one release owner and one rollback decision maker.',
-      '[ ] Approve the final Nestarium logo and regenerate platform branding assets.',
       '[ ] Confirm commercial rights and source records for every shipped asset.',
       '[ ] Add production error monitoring that matches the approved privacy model.',
       '[ ] Confirm backups, restore procedures, rate limits and operational alerts.',
@@ -34,6 +33,11 @@ void main() {
     for (final item in stillOpenRoadmapItems) {
       expect(roadmap, contains(item), reason: item);
     }
+
+    expect(
+      roadmap,
+      contains('[x] Approve the final Nestarium logo and regenerate platform branding assets.'),
+    );
 
     expect(
       roadmap,

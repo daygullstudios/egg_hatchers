@@ -34,7 +34,7 @@ void main() {
     expect(generator, contains('image.encodeIco'));
   });
 
-  test('roadmap keeps final logo approval open until owner approval', () {
+  test('roadmap records final logo approval after owner approval', () {
     final roadmap = File('docs/RELEASE_ROADMAP.md').readAsStringSync();
     final decisionPacket = File(
       'docs/RELEASE_DECISION_PACKET.md',
@@ -42,9 +42,9 @@ void main() {
 
     expect(
       roadmap,
-      contains('[ ] Approve the final Nestarium logo and regenerate platform branding assets.'),
+      contains('[x] Approve the final Nestarium logo and regenerate platform branding assets.'),
     );
-    expect(decisionPacket, contains('Final logo approved: yes/no'));
+    expect(decisionPacket, contains('Final logo approved: yes'));
     expect(decisionPacket, contains('Final logo and platform branding approval'));
   });
 }

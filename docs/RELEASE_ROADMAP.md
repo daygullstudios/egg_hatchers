@@ -1,6 +1,6 @@
 # Nestarium release roadmap
 
-Updated: 2026-09-24
+Updated: 2026-10-08
 
 This is the working checklist for the first public Nestarium release. A checked
 item needs evidence from the release candidate, not only an implementation or a
@@ -122,7 +122,7 @@ Exit: progression is understandable, rewarding and resistant to obvious abuse.
 - [x] Audit every animal in Classic, Retro Pixel and Realistic styles.
 - [x] Replace unfinished or inconsistent Retro Pixel assets.
 - [x] Audit egg art, boss art, backgrounds, projectiles, trails and cinematics.
-- [ ] Approve the final Nestarium logo and regenerate platform branding assets.
+- [x] Approve the final Nestarium logo and regenerate platform branding assets.
 - [ ] Finalize boss phase music loops and all other music transitions.
 - [ ] Normalize music and sound-effect volume.
 - [ ] Verify audio unlock, pause/resume and background/foreground behavior on
@@ -193,9 +193,8 @@ Exit: the approved build is public, monitored and reversible.
    policy copy.
 3. Finish production trusted sessions, then run two-device internet play and
    load/capacity tests for the selected launch size.
-4. Close the remaining visual/audio approvals: final logo/platform branding,
-   music transition listening, volume normalization, platform audio behavior and
-   shipped-asset rights.
+4. Close the remaining visual/audio approvals: music transition listening,
+   volume normalization, platform audio behavior and shipped-asset rights.
 5. Configure selected platform signing/store readiness only after launch
    platforms are chosen.
 6. Enter closed beta only after gates 2 through 7 have release evidence and the

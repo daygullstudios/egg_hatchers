@@ -1,6 +1,6 @@
 # Visual, audio and accessibility audit
 
-Audited: 2026-10-02
+Audited: 2026-10-08
 
 This audit records release evidence for the visual, audio and accessibility
 roadmap gate. It is based on the current candidate and the targeted verification
@@ -77,11 +77,17 @@ The audio asset audit confirms:
 - Every shipped audio file under the music and SFX folders is registered.
 - Key recorded effects have cooldowns to avoid obvious self-overlap.
 
+### Final logo and platform branding
+
+The owner approved the three-style Nestarium logo source and requested
+implementation as the new logo on 2026-10-08. Commit `99bd909` replaced
+`assets/branding/nestarium_source.png`, regenerated platform branding assets
+with `tool/generate_brand_assets.dart`, and verified the generated image set.
+
 ## Remaining release work
 
 These items still need separate approval or platform evidence:
 
-- Final Nestarium logo approval and regenerated platform branding assets.
 - Boss phase music loop approval in real gameplay.
 - Music and SFX volume normalization by listening pass.
 - Audio unlock, pause/resume and background/foreground behavior on each selected
