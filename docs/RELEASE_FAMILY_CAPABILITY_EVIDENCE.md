@@ -22,6 +22,11 @@ candidate legal policy work that remain separate release gates.
 - `cloudflare/multiplayer/src/safety_authority.ts`
   - `profile discovery is not approved in family policy v1`.
   - `preset messages require trading permission`.
+  - `deniedCapabilities` is the default for missing, stale, expired, revoked or
+    denied capability decisions.
+  - `capabilityDecisionForUid` resolves the current hosted capability status
+    from the pseudonymous safety database.
+  - `moderationReportRetentionMs` bounds report retention before pruning.
 
 ## Names, discovery and invitations
 
