@@ -70,6 +70,9 @@ jobs:
       - name: Verify release reliability evidence
         run: node tool/audit_release_reliability.mjs
 
+      - name: Verify release code review evidence
+        run: node tool/audit_release_code_review.mjs
+
       - name: Verify security review evidence
         run: node tool/audit_security_review.mjs
 
