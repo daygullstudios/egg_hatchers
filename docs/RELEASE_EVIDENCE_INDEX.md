@@ -101,6 +101,7 @@ store metadata, ratings, privacy answers and store support/deletion links.
 ## 9. Closed beta
 
 - Closed beta plan: `docs/CLOSED_BETA_PLAN.md`
+- Tester packet: `docs/CLOSED_BETA_TESTER_PACKET.md`
 - Findings log template: `docs/CLOSED_BETA_FINDINGS_LOG_TEMPLATE.md`
 - Release candidate record: `docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md`
 

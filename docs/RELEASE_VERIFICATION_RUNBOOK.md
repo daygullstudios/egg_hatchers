@@ -27,6 +27,7 @@ node tool/audit_release_code_review.mjs
 node tool/audit_security_review.mjs
 node tool/audit_cross_platform_acceptance.mjs
 node tool/audit_closed_beta_readiness.mjs
+node tool/audit_closed_beta_tester_packet.mjs
 node tool/audit_rollback_rehearsal.mjs
 node tool/audit_release_candidate_record.mjs
 node tool/audit_monetization_boundary.mjs
@@ -88,6 +89,7 @@ npm run deploy:dry-run
 - `node tool/audit_security_review.mjs`
 - `node tool/audit_cross_platform_acceptance.mjs`
 - `node tool/audit_closed_beta_readiness.mjs`
+- `node tool/audit_closed_beta_tester_packet.mjs`
 - `node tool/audit_rollback_rehearsal.mjs`
 - `node tool/audit_release_candidate_record.mjs`
 - `node tool/audit_monetization_boundary.mjs`
@@ -137,6 +139,9 @@ Run and record:
 - Security review audit: `node tool/audit_security_review.mjs`
 - Cross-platform acceptance audit: `node tool/audit_cross_platform_acceptance.mjs`
 - Closed beta readiness audit: `node tool/audit_closed_beta_readiness.mjs`
+- Closed beta tester packet audit:
+  `node tool/audit_closed_beta_tester_packet.mjs` for
+  `docs/CLOSED_BETA_TESTER_PACKET.md`
 - Rollback rehearsal audit: `node tool/audit_rollback_rehearsal.mjs`
 - Release candidate record audit: `node tool/audit_release_candidate_record.mjs`
 - Monetization boundary audit: `node tool/audit_monetization_boundary.mjs`

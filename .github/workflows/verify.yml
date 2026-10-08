@@ -88,6 +88,9 @@ jobs:
       - name: Verify closed beta readiness template
         run: node tool/audit_closed_beta_readiness.mjs
 
+      - name: Verify closed beta tester packet
+        run: node tool/audit_closed_beta_tester_packet.mjs
+
       - name: Verify rollback rehearsal template
         run: node tool/audit_rollback_rehearsal.mjs
 
