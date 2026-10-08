@@ -82,6 +82,9 @@ jobs:
       - name: Verify family privacy gate evidence
         run: node tool/audit_family_privacy_gate.mjs
 
+      - name: Verify gameplay economy evidence
+        run: node tool/audit_gameplay_economy.mjs
+
       - name: Verify isolated public information site
         working-directory: cloudflare/public-site
         run: npm test

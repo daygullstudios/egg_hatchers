@@ -25,6 +25,7 @@ node tool/audit_rollback_rehearsal.mjs
 node tool/audit_release_candidate_record.mjs
 node tool/audit_monetization_boundary.mjs
 node tool/audit_family_privacy_gate.mjs
+node tool/audit_gameplay_economy.mjs
 flutter test
 flutter build web --release --no-pub
 node tool/audit_release_surface.mjs
@@ -78,6 +79,7 @@ npm run deploy:dry-run
 - `node tool/audit_release_candidate_record.mjs`
 - `node tool/audit_monetization_boundary.mjs`
 - `node tool/audit_family_privacy_gate.mjs`
+- `node tool/audit_gameplay_economy.mjs`
 - `cloudflare/public-site` tests
 - `flutter test`
 - `flutter build web --release --no-pub`
@@ -119,6 +121,7 @@ Run and record:
 - Release candidate record audit: `node tool/audit_release_candidate_record.mjs`
 - Monetization boundary audit: `node tool/audit_monetization_boundary.mjs`
 - Family privacy gate audit: `node tool/audit_family_privacy_gate.mjs`
+- Gameplay economy audit: `node tool/audit_gameplay_economy.mjs`
 - Release-surface audit: `node tool/audit_release_surface.mjs`
 - Save Transfer compatibility result from the candidate matrix.
 - Cross-platform account/save/multiplayer matrix result from
