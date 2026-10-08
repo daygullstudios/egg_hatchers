@@ -61,6 +61,7 @@ const requiredEvidence = [
   'docs/RELEASE_VERIFICATION_RUNBOOK.md',
   'docs/ROLLBACK_REHEARSAL_TEMPLATE.md',
   'docs/MONITORING_ALERT_RUNBOOK_TEMPLATE.md',
+  'docs/GRADUAL_RELEASE_MONITORING_CHECKLIST.md',
 ];
 
 const failures = [];

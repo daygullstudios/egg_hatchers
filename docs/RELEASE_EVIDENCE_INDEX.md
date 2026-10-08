@@ -120,6 +120,9 @@ accounts, tracked findings and one complete candidate pass after blocker fixes.
 - Rollback rehearsal: `docs/ROLLBACK_REHEARSAL_TEMPLATE.md`
 - Monitoring alert runbook: `docs/MONITORING_ALERT_RUNBOOK_TEMPLATE.md`
 - Operations dry-run checklist: `docs/OPERATIONS_DRY_RUN_CHECKLIST.md`
+- Gradual release monitoring checklist:
+  `docs/GRADUAL_RELEASE_MONITORING_CHECKLIST.md` verified by
+  `node tool/audit_gradual_release_monitoring.mjs`
 
 Open release dependencies: frozen candidate, exact commit/build evidence,
 rollback test, explicit owner approval, gradual release and live monitoring.

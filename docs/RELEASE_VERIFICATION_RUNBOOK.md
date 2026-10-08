@@ -31,6 +31,7 @@ node tool/audit_closed_beta_readiness.mjs
 node tool/audit_closed_beta_tester_packet.mjs
 node tool/audit_rollback_rehearsal.mjs
 node tool/audit_release_candidate_record.mjs
+node tool/audit_gradual_release_monitoring.mjs
 node tool/audit_monetization_boundary.mjs
 node tool/audit_family_privacy_gate.mjs
 node tool/audit_gameplay_economy.mjs
@@ -94,6 +95,7 @@ npm run deploy:dry-run
 - `node tool/audit_closed_beta_tester_packet.mjs`
 - `node tool/audit_rollback_rehearsal.mjs`
 - `node tool/audit_release_candidate_record.mjs`
+- `node tool/audit_gradual_release_monitoring.mjs`
 - `node tool/audit_monetization_boundary.mjs`
 - `node tool/audit_family_privacy_gate.mjs`
 - `node tool/audit_gameplay_economy.mjs`
@@ -149,6 +151,9 @@ Run and record:
   `docs/CLOSED_BETA_TESTER_PACKET.md`
 - Rollback rehearsal audit: `node tool/audit_rollback_rehearsal.mjs`
 - Release candidate record audit: `node tool/audit_release_candidate_record.mjs`
+- Gradual release monitoring audit:
+  `node tool/audit_gradual_release_monitoring.mjs` for
+  `docs/GRADUAL_RELEASE_MONITORING_CHECKLIST.md`
 - Monetization boundary audit: `node tool/audit_monetization_boundary.mjs`
 - Family privacy gate audit: `node tool/audit_family_privacy_gate.mjs`
 - Gameplay economy audit: `node tool/audit_gameplay_economy.mjs`

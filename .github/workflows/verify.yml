@@ -100,6 +100,9 @@ jobs:
       - name: Verify release candidate record template
         run: node tool/audit_release_candidate_record.mjs
 
+      - name: Verify gradual release monitoring checklist
+        run: node tool/audit_gradual_release_monitoring.mjs
+
       - name: Verify monetization remains dormant
         run: node tool/audit_monetization_boundary.mjs
 
