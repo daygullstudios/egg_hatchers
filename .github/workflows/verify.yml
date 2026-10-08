@@ -55,6 +55,9 @@ jobs:
       - name: Verify platform branding readiness
         run: node tool/audit_platform_branding.mjs
 
+      - name: Verify platform store readiness
+        run: node tool/audit_platform_store.mjs
+
       - name: Verify isolated public information site
         working-directory: cloudflare/public-site
         run: npm test
