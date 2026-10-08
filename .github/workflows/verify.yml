@@ -52,6 +52,9 @@ jobs:
       - name: Verify audio release readiness
         run: node tool/audit_audio_release.mjs
 
+      - name: Verify platform branding readiness
+        run: node tool/audit_platform_branding.mjs
+
       - name: Verify isolated public information site
         working-directory: cloudflare/public-site
         run: npm test
