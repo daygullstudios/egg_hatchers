@@ -76,6 +76,9 @@ jobs:
       - name: Verify release candidate record template
         run: node tool/audit_release_candidate_record.mjs
 
+      - name: Verify monetization remains dormant
+        run: node tool/audit_monetization_boundary.mjs
+
       - name: Verify isolated public information site
         working-directory: cloudflare/public-site
         run: npm test
