@@ -61,6 +61,9 @@ jobs:
       - name: Verify multiplayer production readiness
         run: node tool/audit_multiplayer_production.mjs
 
+      - name: Verify monitoring operations readiness
+        run: node tool/audit_monitoring_operations.mjs
+
       - name: Verify isolated public information site
         working-directory: cloudflare/public-site
         run: npm test
