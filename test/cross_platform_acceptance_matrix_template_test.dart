@@ -76,5 +76,31 @@ void main() {
     );
     expect(matrix, contains('release-owner-approved Pass'));
   });
+
+  test('cross-platform acceptance matrix blocks hidden failures', () {
+    final matrix = File(
+      'docs/CROSS_PLATFORM_ACCEPTANCE_MATRIX_TEMPLATE.md',
+    ).readAsStringSync();
+    final releaseCandidate = File(
+      'docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md',
+    ).readAsStringSync();
+
+    for (final phrase in [
+      'Failed Or Deferred Rows',
+      'Exact failed row field',
+      'Whether the selected launch platform list must change',
+      'Focused retest command and result',
+      'Release owner decision',
+      'Rollback decision maker decision',
+      'Any Critical or High failure keeps the release candidate blocked',
+    ]) {
+      expect(matrix, contains(phrase), reason: phrase);
+    }
+
+    expect(
+      releaseCandidate,
+      contains('Failed/deferred platform rows and accepted-risk references'),
+    );
+  });
 }
 

@@ -55,6 +55,26 @@ Evidence link or notes:
 - `docs/PUBLIC_POLICY_READINESS.md` for support, privacy, terms and
   account-deletion link readiness.
 
+## Failed Or Deferred Rows
+
+Do not hide a failed or deferred platform row in notes. For each failure or
+deferral, record:
+
+- Platform and build artifact.
+- Exact failed row field.
+- User impact: data loss, account recovery, multiplayer/trading, audio,
+  accessibility, policy/support, store readiness, or other.
+- Whether the selected launch platform list must change.
+- Fix commit or accepted-risk reference.
+- Focused retest command and result.
+- Release owner decision.
+- Rollback decision maker decision if the issue affects saves, identity,
+  rewards, trades, privacy, support links, or launch routing.
+
+Any Critical or High failure keeps the release candidate blocked unless the
+release owner and rollback decision maker explicitly accept the risk in
+`docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md`.
+
 ## Exit Rule
 
 The release roadmap item "Complete the cross-platform account/save/multiplayer

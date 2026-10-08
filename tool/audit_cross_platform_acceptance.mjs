@@ -79,6 +79,13 @@ for (const evidencePath of [
 for (const phrase of [
   'Copy one row for each selected platform: Web, Android and/or iOS.',
   'tested with the exact',
+  'Failed Or Deferred Rows',
+  'Exact failed row field',
+  'Whether the selected launch platform list must change',
+  'Focused retest command and result',
+  'Release owner decision',
+  'Rollback decision maker decision',
+  'Any Critical or High failure keeps the release candidate blocked',
   'release-owner-approved Pass',
   'written accepted risk in the release candidate',
 ]) {
@@ -87,6 +94,7 @@ for (const phrase of [
 
 for (const field of [
   'Account/save/multiplayer acceptance matrix',
+  'Failed/deferred platform rows and accepted-risk references',
   'Selected launch platforms',
   'Selected launch countries',
   'Release owner',

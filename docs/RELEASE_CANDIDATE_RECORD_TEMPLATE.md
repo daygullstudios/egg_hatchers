@@ -44,6 +44,7 @@ only after the matching evidence exists.
 - Two-device internet play: TBD
 - Load/capacity test: TBD
 - Account/save/multiplayer acceptance matrix: TBD
+- Failed/deferred platform rows and accepted-risk references: TBD
 
 ## Data, backups and rollback
 
