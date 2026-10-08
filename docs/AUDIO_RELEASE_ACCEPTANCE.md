@@ -44,6 +44,18 @@ the owner listening pass.
 The MP3 tracks still need listening approval and source/license confirmation
 because this project does not decode MP3 loudness in the local audit.
 
+## Release SFX mix scales
+
+Every registered SFX in `lib/data/audio_assets.dart` has a
+`releaseVolumeScale` that is applied on top of the player's SFX slider and any
+one-off call-site scale. Short UI taps, battle hits and large cinematic sounds
+are intentionally lower than the reward and confirmation sounds so the default
+mix is less spiky before the final owner listening pass.
+
+`test/audio_assets_test.dart` verifies that all SFX scales stay in the reviewed
+release range and that `AudioService.effectiveSfxVolume` clamps bad values
+without letting one sound exceed the global SFX slider.
+
 ## Listening pass
 
 Before release, play a normal manual boss fight from a fresh app start and

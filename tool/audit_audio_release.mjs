@@ -231,6 +231,9 @@ for (const section of expectedBossMarkers) {
 for (const phrase of [
   'next section without intentionally restarting the whole track',
   'Automated WAV normalization guardrail',
+  'Release SFX mix scales',
+  'releaseVolumeScale',
+  'AudioService.effectiveSfxVolume',
   'Owner listening approval',
   'Volume normalization approval',
   'Platform audio behavior checks',
@@ -239,6 +242,13 @@ for (const phrase of [
   if (!checklist.includes(phrase)) {
     failures.push(`${checklistPath}: missing release audio phrase "${phrase}"`);
   }
+}
+
+if (!registry.includes('releaseVolumeScale')) {
+  failures.push(`${audioRegistryPath}: missing release SFX mix scales`);
+}
+if (!audioService.includes('effectiveSfxVolume')) {
+  failures.push(`${audioServicePath}: missing release SFX volume helper`);
 }
 
 for (const phrase of [

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:egg_hatchers/data/audio_assets.dart';
+import 'package:egg_hatchers/services/audio_service.dart';
 
 List<int> _headerFor(File file) => file.readAsBytesSync().take(4).toList();
 
@@ -82,5 +83,34 @@ void main() {
     expect(Sfx.purchase.cooldownMs, greaterThanOrEqualTo(2750));
     expect(Sfx.finisherSlash.assetPath, endsWith('.mp3'));
     expect(Sfx.finisherSlash.cooldownMs, greaterThanOrEqualTo(165));
+  });
+
+  test('release SFX mix scales keep effects below the global slider', () {
+    for (final sound in Sfx.values) {
+      expect(
+        sound.releaseVolumeScale,
+        inInclusiveRange(0.65, 1.0),
+        reason: sound.name,
+      );
+    }
+
+    expect(
+      Sfx.uiTap.releaseVolumeScale,
+      lessThan(Sfx.confirm.releaseVolumeScale),
+    );
+    expect(
+      Sfx.rottenExplosion.releaseVolumeScale,
+      lessThan(Sfx.coinReward.releaseVolumeScale),
+    );
+    expect(
+      AudioService.effectiveSfxVolume(0.8, Sfx.rottenExplosion),
+      closeTo(0.608, 0.0001),
+    );
+    expect(
+      AudioService.effectiveSfxVolume(0.8, Sfx.uiTap, 0.5),
+      closeTo(0.28, 0.0001),
+    );
+    expect(AudioService.effectiveSfxVolume(4, Sfx.victory), 1);
+    expect(AudioService.effectiveSfxVolume(double.nan, Sfx.victory), 0.8);
   });
 }

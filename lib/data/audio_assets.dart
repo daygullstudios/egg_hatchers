@@ -49,39 +49,128 @@ enum MusicTrack {
 }
 
 enum Sfx {
-  eggCrack(AudioAssets.sfxEggCrack, cooldownMs: 1000),
-  hatchReveal(AudioAssets.sfxHatchReveal, cooldownMs: 1150),
-  rareChime(AudioAssets.sfxRareChime, cooldownMs: 1400),
-  coinReward(AudioAssets.sfxCoinReward, cooldownMs: 850),
-  tokenReward(AudioAssets.sfxTokenReward, cooldownMs: 900),
-  eggShardReward(AudioAssets.sfxEggShardReward, cooldownMs: 1500),
-  uiTap(AudioAssets.sfxUiTap, cooldownMs: 110),
-  confirm(AudioAssets.sfxConfirm, cooldownMs: 350),
-  purchase(AudioAssets.sfxPurchase, cooldownMs: 2800),
-  errorLocked(AudioAssets.sfxErrorLocked, cooldownMs: 450),
-  playerShoot(AudioAssets.sfxPlayerShoot, cooldownMs: 340),
-  playerHit(AudioAssets.sfxPlayerHit, cooldownMs: 380),
-  bossHit(AudioAssets.sfxBossHit, cooldownMs: 440),
-  shieldBreak(AudioAssets.sfxShieldBreak, cooldownMs: 500),
-  rageMode(AudioAssets.sfxRageMode, cooldownMs: 950),
-  victory(AudioAssets.sfxVictory, cooldownMs: 1500),
-  defeat(AudioAssets.sfxDefeat, cooldownMs: 1150),
-  finisherSlash(AudioAssets.sfxFinisherSlash, cooldownMs: 220),
-  finisherBonus(AudioAssets.sfxFinisherBonus, cooldownMs: 950),
-  slimePop(AudioAssets.sfxSlimePop, cooldownMs: 650),
-  golemCrack(AudioAssets.sfxGolemCrack, cooldownMs: 700),
-  featherBurst(AudioAssets.sfxFeatherBurst, cooldownMs: 600),
-  royalPop(AudioAssets.sfxRoyalPop, cooldownMs: 650),
-  guardianShatter(AudioAssets.sfxGuardianShatter, cooldownMs: 700),
-  phoenixFlap(AudioAssets.sfxPhoenixFlap, cooldownMs: 550),
-  phoenixImpact(AudioAssets.sfxPhoenixImpact, cooldownMs: 650),
-  phoenixLaugh(AudioAssets.sfxPhoenixLaugh, cooldownMs: 950),
-  rottenPulse(AudioAssets.sfxRottenPulse, cooldownMs: 750),
-  rottenCollapse(AudioAssets.sfxRottenCollapse, cooldownMs: 1200),
-  rottenExplosion(AudioAssets.sfxRottenExplosion, cooldownMs: 1300),
-  rottenShardHarvest(AudioAssets.sfxRottenShardHarvest, cooldownMs: 1450);
+  eggCrack(AudioAssets.sfxEggCrack, cooldownMs: 1000, releaseVolumeScale: 0.9),
+  hatchReveal(
+    AudioAssets.sfxHatchReveal,
+    cooldownMs: 1150,
+    releaseVolumeScale: 0.9,
+  ),
+  rareChime(
+    AudioAssets.sfxRareChime,
+    cooldownMs: 1400,
+    releaseVolumeScale: 0.86,
+  ),
+  coinReward(
+    AudioAssets.sfxCoinReward,
+    cooldownMs: 850,
+    releaseVolumeScale: 0.88,
+  ),
+  tokenReward(
+    AudioAssets.sfxTokenReward,
+    cooldownMs: 900,
+    releaseVolumeScale: 0.88,
+  ),
+  eggShardReward(
+    AudioAssets.sfxEggShardReward,
+    cooldownMs: 1500,
+    releaseVolumeScale: 0.86,
+  ),
+  uiTap(AudioAssets.sfxUiTap, cooldownMs: 110, releaseVolumeScale: 0.7),
+  confirm(AudioAssets.sfxConfirm, cooldownMs: 350, releaseVolumeScale: 0.8),
+  purchase(AudioAssets.sfxPurchase, cooldownMs: 2800, releaseVolumeScale: 0.84),
+  errorLocked(
+    AudioAssets.sfxErrorLocked,
+    cooldownMs: 450,
+    releaseVolumeScale: 0.78,
+  ),
+  playerShoot(
+    AudioAssets.sfxPlayerShoot,
+    cooldownMs: 340,
+    releaseVolumeScale: 0.78,
+  ),
+  playerHit(
+    AudioAssets.sfxPlayerHit,
+    cooldownMs: 380,
+    releaseVolumeScale: 0.76,
+  ),
+  bossHit(AudioAssets.sfxBossHit, cooldownMs: 440, releaseVolumeScale: 0.76),
+  shieldBreak(
+    AudioAssets.sfxShieldBreak,
+    cooldownMs: 500,
+    releaseVolumeScale: 0.8,
+  ),
+  rageMode(AudioAssets.sfxRageMode, cooldownMs: 950, releaseVolumeScale: 0.78),
+  victory(AudioAssets.sfxVictory, cooldownMs: 1500, releaseVolumeScale: 0.84),
+  defeat(AudioAssets.sfxDefeat, cooldownMs: 1150, releaseVolumeScale: 0.84),
+  finisherSlash(
+    AudioAssets.sfxFinisherSlash,
+    cooldownMs: 220,
+    releaseVolumeScale: 0.82,
+  ),
+  finisherBonus(
+    AudioAssets.sfxFinisherBonus,
+    cooldownMs: 950,
+    releaseVolumeScale: 0.86,
+  ),
+  slimePop(AudioAssets.sfxSlimePop, cooldownMs: 650, releaseVolumeScale: 0.82),
+  golemCrack(
+    AudioAssets.sfxGolemCrack,
+    cooldownMs: 700,
+    releaseVolumeScale: 0.8,
+  ),
+  featherBurst(
+    AudioAssets.sfxFeatherBurst,
+    cooldownMs: 600,
+    releaseVolumeScale: 0.8,
+  ),
+  royalPop(AudioAssets.sfxRoyalPop, cooldownMs: 650, releaseVolumeScale: 0.82),
+  guardianShatter(
+    AudioAssets.sfxGuardianShatter,
+    cooldownMs: 700,
+    releaseVolumeScale: 0.78,
+  ),
+  phoenixFlap(
+    AudioAssets.sfxPhoenixFlap,
+    cooldownMs: 550,
+    releaseVolumeScale: 0.72,
+  ),
+  phoenixImpact(
+    AudioAssets.sfxPhoenixImpact,
+    cooldownMs: 650,
+    releaseVolumeScale: 0.8,
+  ),
+  phoenixLaugh(
+    AudioAssets.sfxPhoenixLaugh,
+    cooldownMs: 950,
+    releaseVolumeScale: 0.76,
+  ),
+  rottenPulse(
+    AudioAssets.sfxRottenPulse,
+    cooldownMs: 750,
+    releaseVolumeScale: 0.72,
+  ),
+  rottenCollapse(
+    AudioAssets.sfxRottenCollapse,
+    cooldownMs: 1200,
+    releaseVolumeScale: 0.8,
+  ),
+  rottenExplosion(
+    AudioAssets.sfxRottenExplosion,
+    cooldownMs: 1300,
+    releaseVolumeScale: 0.76,
+  ),
+  rottenShardHarvest(
+    AudioAssets.sfxRottenShardHarvest,
+    cooldownMs: 1450,
+    releaseVolumeScale: 0.82,
+  );
 
-  const Sfx(this.assetPath, {required this.cooldownMs});
+  const Sfx(
+    this.assetPath, {
+    required this.cooldownMs,
+    required this.releaseVolumeScale,
+  });
   final String assetPath;
   final int cooldownMs;
+  final double releaseVolumeScale;
 }

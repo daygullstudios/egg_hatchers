@@ -331,7 +331,7 @@ class AudioService extends ChangeNotifier {
     final player = _sfxPlayers[_sfxRoundRobin++ % _sfxPlayers.length];
     try {
       await player.stop();
-      await player.setVolume((_sfxVolume * volumeScale).clamp(0.0, 1.0));
+      await player.setVolume(effectiveSfxVolume(_sfxVolume, sfx, volumeScale));
       await player.play(AssetSource(sfx.assetPath));
       if (kDebugMode) {
         debugPrint('[SFX] ${sfx.name} → ${sfx.assetPath}');
@@ -343,6 +343,16 @@ class AudioService extends ChangeNotifier {
 
   /// Short shell-crack SFX for hatches and boss shell breaks.
   Future<void> playEggCrack() => playSfx(Sfx.eggCrack, volumeScale: 0.78);
+
+  @visibleForTesting
+  static double effectiveSfxVolume(
+    double baseVolume,
+    Sfx sfx, [
+    double callVolumeScale = 1.0,
+  ]) {
+    final normalized = baseVolume * sfx.releaseVolumeScale * callVolumeScale;
+    return normalized.isFinite ? normalized.clamp(0.0, 1.0) : 0.8;
+  }
 
   bool _canPlaySfx(Sfx sfx) {
     if (sfx.cooldownMs <= 0) return true;
