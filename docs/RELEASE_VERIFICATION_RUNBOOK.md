@@ -13,6 +13,7 @@ flutter analyze
 node tool/audit_brand.mjs
 node tool/audit_release_evidence.mjs
 node tool/audit_public_policy_links.mjs
+node tool/audit_asset_rights.mjs
 flutter test
 flutter build web --release --no-pub
 node tool/audit_release_surface.mjs
@@ -54,6 +55,7 @@ npm run deploy:dry-run
 - `node tool/audit_brand.mjs`
 - `node tool/audit_release_evidence.mjs`
 - `node tool/audit_public_policy_links.mjs`
+- `node tool/audit_asset_rights.mjs`
 - `cloudflare/public-site` tests
 - `flutter test`
 - `flutter build web --release --no-pub`
@@ -83,6 +85,7 @@ Run and record:
 - Brand/legacy compatibility audit: `node tool/audit_brand.mjs`
 - Release-evidence index audit: `node tool/audit_release_evidence.mjs`
 - Public policy/support link audit: `node tool/audit_public_policy_links.mjs`
+- Asset rights inventory audit: `node tool/audit_asset_rights.mjs`
 - Release-surface audit: `node tool/audit_release_surface.mjs`
 - Save Transfer compatibility result from the candidate matrix.
 - Cross-platform account/save/multiplayer matrix result from
