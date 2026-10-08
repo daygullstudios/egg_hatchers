@@ -49,6 +49,9 @@ jobs:
       - name: Verify public policy and support links
         run: node tool/audit_public_policy_links.mjs
 
+      - name: Verify support and deletion links
+        run: node tool/audit_support_deletion_links.mjs
+
       - name: Verify asset rights inventory
         run: node tool/audit_asset_rights.mjs
 

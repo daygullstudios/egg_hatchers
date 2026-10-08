@@ -35,6 +35,9 @@ coverage.
   verified by `node tool/audit_family_privacy_review_intake.mjs`
 - Family capability evidence: `docs/RELEASE_FAMILY_CAPABILITY_EVIDENCE.md`
 - Public policy readiness: `docs/PUBLIC_POLICY_READINESS.md`
+- Support/deletion link verification:
+  `docs/SUPPORT_DELETION_LINK_VERIFICATION.md` verified by
+  `node tool/audit_support_deletion_links.mjs`
 - Release decisions still needed: `docs/RELEASE_DECISION_PACKET.md`
 
 Open release dependencies: professional review, approved guardian flow, parent
@@ -105,6 +108,8 @@ backup cadence and restore ownership.
 - Platform signing handoff: `docs/PLATFORM_SIGNING_HANDOFF.md`
   verified by `node tool/audit_platform_signing_handoff.mjs`
 - Store listing draft checklist: `docs/STORE_LISTING_DRAFT_CHECKLIST.md`
+- Support/deletion link verification:
+  `docs/SUPPORT_DELETION_LINK_VERIFICATION.md`
 - Platform branding readiness: `docs/PLATFORM_BRANDING_READINESS.md`
 - Public policy readiness: `docs/PUBLIC_POLICY_READINESS.md`
 - Monetization boundary: `docs/MONETIZATION_AND_AD_OPERATIONS.md`

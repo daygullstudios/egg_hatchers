@@ -14,6 +14,7 @@ node tool/audit_brand.mjs
 node tool/audit_release_evidence.mjs
 node tool/audit_release_decisions.mjs
 node tool/audit_public_policy_links.mjs
+node tool/audit_support_deletion_links.mjs
 node tool/audit_asset_rights.mjs
 node tool/audit_audio_release.mjs
 node tool/audit_music_rights_listening.mjs
@@ -83,6 +84,7 @@ npm run deploy:dry-run
 - `node tool/audit_release_evidence.mjs`
 - `node tool/audit_release_decisions.mjs`
 - `node tool/audit_public_policy_links.mjs`
+- `node tool/audit_support_deletion_links.mjs`
 - `node tool/audit_asset_rights.mjs`
 - `node tool/audit_audio_release.mjs`
 - `node tool/audit_music_rights_listening.mjs`
@@ -140,6 +142,9 @@ Run and record:
 - Release-evidence index audit: `node tool/audit_release_evidence.mjs`
 - Release decision packet audit: `node tool/audit_release_decisions.mjs`
 - Public policy/support link audit: `node tool/audit_public_policy_links.mjs`
+- Support/deletion link audit:
+  `node tool/audit_support_deletion_links.mjs` for
+  `docs/SUPPORT_DELETION_LINK_VERIFICATION.md`
 - Asset rights inventory audit: `node tool/audit_asset_rights.mjs`
 - Audio release audit: `node tool/audit_audio_release.mjs`
 - Music rights/listening audit:

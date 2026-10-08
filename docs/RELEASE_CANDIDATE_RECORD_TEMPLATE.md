@@ -63,6 +63,8 @@ only after the matching evidence exists.
 - Candidate Privacy Policy URL/version: TBD
 - Candidate Terms URL/version: TBD
 - Support/account-deletion URL: TBD
+- Support/deletion selected-store verification: Verify the support/account-deletion links from every selected store. TBD
+- Candidate support instructions URL/version: TBD
 - Store Data Safety/Privacy answers source reference: TBD
 - Monitoring/alert owner and destinations: TBD
 
