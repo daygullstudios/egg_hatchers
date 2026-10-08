@@ -19,7 +19,8 @@ currently includes:
 
 Those pages describe the current public information website and private test.
 They must be reviewed again before a playable public release, store submission,
-or any change to selected launch countries.
+or any change to selected launch countries, because updated disclosures before launch
+must reflect the final candidate behavior.
 
 ## Release gate coverage
 

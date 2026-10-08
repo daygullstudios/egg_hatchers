@@ -34,6 +34,7 @@ node tool/audit_release_candidate_record.mjs
 node tool/audit_gradual_release_monitoring.mjs
 node tool/audit_monetization_boundary.mjs
 node tool/audit_family_privacy_gate.mjs
+node tool/audit_family_privacy_review_intake.mjs
 node tool/audit_gameplay_economy.mjs
 node tool/audit_custom_eggs_retired.mjs
 flutter test
@@ -98,6 +99,7 @@ npm run deploy:dry-run
 - `node tool/audit_gradual_release_monitoring.mjs`
 - `node tool/audit_monetization_boundary.mjs`
 - `node tool/audit_family_privacy_gate.mjs`
+- `node tool/audit_family_privacy_review_intake.mjs`
 - `node tool/audit_gameplay_economy.mjs`
 - `node tool/audit_custom_eggs_retired.mjs`
 - `cloudflare/public-site` tests
@@ -156,6 +158,9 @@ Run and record:
   `docs/GRADUAL_RELEASE_MONITORING_CHECKLIST.md`
 - Monetization boundary audit: `node tool/audit_monetization_boundary.mjs`
 - Family privacy gate audit: `node tool/audit_family_privacy_gate.mjs`
+- Family privacy review intake audit:
+  `node tool/audit_family_privacy_review_intake.mjs` for
+  `docs/FAMILY_PRIVACY_REVIEW_INTAKE.md`
 - Gameplay economy audit: `node tool/audit_gameplay_economy.mjs`
 - Custom egg retirement audit: `node tool/audit_custom_eggs_retired.mjs`
 - Release-surface audit: `node tool/audit_release_surface.mjs`

@@ -109,6 +109,9 @@ jobs:
       - name: Verify family privacy gate evidence
         run: node tool/audit_family_privacy_gate.mjs
 
+      - name: Verify family privacy review intake
+        run: node tool/audit_family_privacy_review_intake.mjs
+
       - name: Verify gameplay economy evidence
         run: node tool/audit_gameplay_economy.mjs
 
