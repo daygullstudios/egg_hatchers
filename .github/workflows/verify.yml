@@ -49,6 +49,9 @@ jobs:
       - name: Verify asset rights inventory
         run: node tool/audit_asset_rights.mjs
 
+      - name: Verify audio release readiness
+        run: node tool/audit_audio_release.mjs
+
       - name: Verify isolated public information site
         working-directory: cloudflare/public-site
         run: npm test
