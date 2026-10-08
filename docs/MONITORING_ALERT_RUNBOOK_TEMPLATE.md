@@ -42,6 +42,7 @@ monitoring.
 - Failed deploy or dry-run:
 - Support/account-deletion link failure:
 - Save/account recovery support spike:
+- Rollback trigger thresholds:
 
 ## Response Steps
 
@@ -63,4 +64,5 @@ monitoring.
 - Retention and support-access rules are approved.
 - A privacy-safe error visibility test has been run.
 - The release candidate record cites this runbook and the monitoring owner.
+- Rollback trigger thresholds are recorded in the release candidate record.
 
