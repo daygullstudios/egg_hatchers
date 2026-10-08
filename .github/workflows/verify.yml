@@ -76,6 +76,9 @@ jobs:
       - name: Verify multiplayer two-device playtest script
         run: node tool/audit_multiplayer_two_device_playtest.mjs
 
+      - name: Verify multiplayer load capacity rehearsal
+        run: node tool/audit_multiplayer_load_capacity.mjs
+
       - name: Verify monitoring operations readiness
         run: node tool/audit_monitoring_operations.mjs
 

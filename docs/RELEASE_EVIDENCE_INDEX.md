@@ -47,6 +47,9 @@ controls, retention rules and candidate-accurate policy/support pages.
 - Two-device playtest script:
   `docs/MULTIPLAYER_TWO_DEVICE_PLAYTEST_SCRIPT.md` verified by
   `node tool/audit_multiplayer_two_device_playtest.mjs`
+- Load/capacity rehearsal:
+  `docs/MULTIPLAYER_LOAD_CAPACITY_REHEARSAL.md` verified by
+  `node tool/audit_multiplayer_load_capacity.mjs`
 - Security review: `docs/RELEASE_SECURITY_REVIEW.md`
 - Monitoring evidence: `docs/RELEASE_MONITORING_EVIDENCE.md`
 - Operations evidence: `docs/RELEASE_OPERATIONS_EVIDENCE.md`
