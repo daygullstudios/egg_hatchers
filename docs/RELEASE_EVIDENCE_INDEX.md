@@ -81,6 +81,7 @@ recorded in `docs/PLATFORM_BRANDING_READINESS.md`.
 - Security review: `docs/RELEASE_SECURITY_REVIEW.md`
 - Monitoring evidence: `docs/RELEASE_MONITORING_EVIDENCE.md`
 - Operations evidence: `docs/RELEASE_OPERATIONS_EVIDENCE.md`
+- Operations dry-run checklist: `docs/OPERATIONS_DRY_RUN_CHECKLIST.md`
 - Release-surface evidence: `docs/RELEASE_FREEZE_SURFACE_EVIDENCE.md`
 
 Open release dependencies: approved production monitoring, alert destinations,
@@ -113,6 +114,7 @@ accounts, tracked findings and one complete candidate pass after blocker fixes.
   `docs/CROSS_PLATFORM_ACCEPTANCE_MATRIX_TEMPLATE.md`
 - Rollback rehearsal: `docs/ROLLBACK_REHEARSAL_TEMPLATE.md`
 - Monitoring alert runbook: `docs/MONITORING_ALERT_RUNBOOK_TEMPLATE.md`
+- Operations dry-run checklist: `docs/OPERATIONS_DRY_RUN_CHECKLIST.md`
 
 Open release dependencies: frozen candidate, exact commit/build evidence,
 rollback test, explicit owner approval, gradual release and live monitoring.
