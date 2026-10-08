@@ -90,6 +90,7 @@ backup cadence and restore ownership.
 ## 8. Platform and store readiness
 
 - Platform store readiness: `docs/PLATFORM_STORE_READINESS.md`
+- Store listing draft checklist: `docs/STORE_LISTING_DRAFT_CHECKLIST.md`
 - Platform branding readiness: `docs/PLATFORM_BRANDING_READINESS.md`
 - Public policy readiness: `docs/PUBLIC_POLICY_READINESS.md`
 - Monetization boundary: `docs/MONETIZATION_AND_AD_OPERATIONS.md`

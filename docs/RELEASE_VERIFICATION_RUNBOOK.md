@@ -18,6 +18,7 @@ node tool/audit_asset_rights.mjs
 node tool/audit_audio_release.mjs
 node tool/audit_platform_branding.mjs
 node tool/audit_platform_store.mjs
+node tool/audit_store_listing_checklist.mjs
 node tool/audit_multiplayer_production.mjs
 node tool/audit_monitoring_operations.mjs
 node tool/audit_operations_dry_run.mjs
@@ -78,6 +79,7 @@ npm run deploy:dry-run
 - `node tool/audit_audio_release.mjs`
 - `node tool/audit_platform_branding.mjs`
 - `node tool/audit_platform_store.mjs`
+- `node tool/audit_store_listing_checklist.mjs`
 - `node tool/audit_multiplayer_production.mjs`
 - `node tool/audit_monitoring_operations.mjs`
 - `node tool/audit_operations_dry_run.mjs`
@@ -126,6 +128,7 @@ Run and record:
 - Audio release audit: `node tool/audit_audio_release.mjs`
 - Platform branding audit: `node tool/audit_platform_branding.mjs`
 - Platform store audit: `node tool/audit_platform_store.mjs`
+- Store listing checklist audit: `node tool/audit_store_listing_checklist.mjs`
 - Multiplayer production audit: `node tool/audit_multiplayer_production.mjs`
 - Monitoring operations audit: `node tool/audit_monitoring_operations.mjs`
 - Operations dry-run audit: `node tool/audit_operations_dry_run.mjs`

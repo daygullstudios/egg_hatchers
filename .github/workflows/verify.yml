@@ -61,6 +61,9 @@ jobs:
       - name: Verify platform store readiness
         run: node tool/audit_platform_store.mjs
 
+      - name: Verify store listing checklist
+        run: node tool/audit_store_listing_checklist.mjs
+
       - name: Verify multiplayer production readiness
         run: node tool/audit_multiplayer_production.mjs
 
