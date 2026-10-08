@@ -93,6 +93,7 @@ Before store submission, record in the release candidate record:
   `docs/CROSS_PLATFORM_ACCEPTANCE_MATRIX_TEMPLATE.md`.
 - Android signed App Bundle path/checksum, if Android is selected.
 - iOS archive/build identifier and real-device test result, if iOS is selected.
+- Platform build inspection from `docs/PLATFORM_BUILD_INSPECTION_TEMPLATE.md`.
 - Store copy source version.
 - Screenshot capture commit and device list.
 - Store Data Safety or Privacy Nutrition answer source.

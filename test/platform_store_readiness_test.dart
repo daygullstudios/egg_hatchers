@@ -40,6 +40,7 @@ void main() {
     ).readAsStringSync();
 
     expect(evidence, contains('ios/Runner.xcodeproj/project.pbxproj'));
+    expect(evidence, contains('docs/PLATFORM_BUILD_INSPECTION_TEMPLATE.md'));
     expect(evidence, contains('Apple Developer Team'));
     expect(evidence, contains('App Store Connect'));
     expect(evidence, contains('Real-device testing'));

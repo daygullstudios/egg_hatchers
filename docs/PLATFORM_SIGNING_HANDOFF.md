@@ -88,6 +88,7 @@ Attach or cite:
 - Google Play Data Safety or Apple privacy answer source.
 - Support/account-deletion URL verification result.
 - Signing credential storage reference without secrets.
+- Platform build inspection from `docs/PLATFORM_BUILD_INSPECTION_TEMPLATE.md`.
 - Owner approval for store submission.
 
 ## Repository safety check

@@ -155,7 +155,8 @@ Run and record:
 - Platform store audit: `node tool/audit_platform_store.mjs`
 - Platform signing handoff audit:
   `node tool/audit_platform_signing_handoff.mjs` for
-  `docs/PLATFORM_SIGNING_HANDOFF.md`
+  `docs/PLATFORM_SIGNING_HANDOFF.md` and
+  `docs/PLATFORM_BUILD_INSPECTION_TEMPLATE.md`
 - Store listing checklist audit: `node tool/audit_store_listing_checklist.mjs`
   covering `docs/STORE_LISTING_DRAFT_CHECKLIST.md` and
   `docs/STORE_SCREENSHOT_MANIFEST_TEMPLATE.md`

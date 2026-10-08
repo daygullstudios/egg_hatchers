@@ -23,6 +23,7 @@ only after the matching evidence exists.
 - Web build artifact location or checksum: TBD
 - Android App Bundle path/checksum, if Android is selected: TBD
 - iOS archive/build identifier, if iOS is selected: TBD
+- Platform build inspection result: TBD
 - Public information site version, if updated: TBD
 - Protected playtest Worker version ID: TBD
 - Multiplayer Worker version ID: TBD

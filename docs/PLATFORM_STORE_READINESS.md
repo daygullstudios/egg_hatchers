@@ -15,6 +15,8 @@ Android and/or iOS.
   `android/app/build.gradle.kts`.
 - iOS source is present, but signing, App Store Connect setup, and real-device
   testing still need the Mac/App Store path.
+- Signed/archived candidate inspection should be recorded with
+  `docs/PLATFORM_BUILD_INSPECTION_TEMPLATE.md` after platform selection.
 
 ## Android readiness
 

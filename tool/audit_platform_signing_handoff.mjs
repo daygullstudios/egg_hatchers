@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 
 const handoffPath = 'docs/PLATFORM_SIGNING_HANDOFF.md';
+const buildInspectionPath = 'docs/PLATFORM_BUILD_INSPECTION_TEMPLATE.md';
 const readinessPath = 'docs/PLATFORM_STORE_READINESS.md';
 const storeChecklistPath = 'docs/STORE_LISTING_DRAFT_CHECKLIST.md';
 const candidatePath = 'docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md';
@@ -17,6 +18,7 @@ const androidIgnorePath = 'android/.gitignore';
 const androidKeyExamplePath = 'android/key.properties.example';
 
 const handoff = readFileSync(resolve(root, handoffPath), 'utf8');
+const buildInspection = readFileSync(resolve(root, buildInspectionPath), 'utf8');
 const readiness = readFileSync(resolve(root, readinessPath), 'utf8');
 const storeChecklist = readFileSync(resolve(root, storeChecklistPath), 'utf8');
 const candidate = readFileSync(resolve(root, candidatePath), 'utf8');
@@ -110,9 +112,34 @@ for (const phrase of [
   'Screenshot capture commit and device list',
   'Support/account-deletion URL verification result',
   'Signing credential storage reference without secrets',
+  'docs/PLATFORM_BUILD_INSPECTION_TEMPLATE.md',
   'Owner approval for store submission',
 ]) {
   requirePhrase(handoffPath, handoff, phrase);
+}
+
+for (const phrase of [
+  'does not create credentials',
+  'Candidate Git commit',
+  'Android App Bundle Inspection',
+  'App Bundle checksum',
+  'Package name',
+  'Version code',
+  'Upload key fingerprint reference',
+  'Permissions review',
+  'iOS Archive Inspection',
+  'Archive/build identifier',
+  'Bundle identifier',
+  'Signing team',
+  'Provisioning profile reference',
+  'Entitlements review',
+  'Real-device test result',
+  'Secrets absent from artifact notes/logs',
+  'The build was created from a dirty working tree',
+  'Store privacy answers do not match the inspected candidate',
+  'failed or deferred inspection lacks a fix commit',
+]) {
+  requirePhrase(buildInspectionPath, buildInspection, phrase);
 }
 
 for (const phrase of [
@@ -122,6 +149,7 @@ for (const phrase of [
   '**/*.keystore',
   '**/*.jks',
   'iOS source is present',
+  'docs/PLATFORM_BUILD_INSPECTION_TEMPLATE.md',
   'Store metadata and disclosure work must wait',
 ]) {
   requirePhrase(readinessPath, readiness, phrase);
@@ -130,6 +158,7 @@ for (const phrase of [
 for (const phrase of [
   'Android signed App Bundle path/checksum',
   'iOS archive/build identifier and real-device test result',
+  'docs/PLATFORM_BUILD_INSPECTION_TEMPLATE.md',
   'Owner approval for store submission',
 ]) {
   requirePhrase(storeChecklistPath, storeChecklist, phrase);
@@ -138,6 +167,7 @@ for (const phrase of [
 for (const phrase of [
   'Android App Bundle path/checksum',
   'iOS archive/build identifier',
+  'Platform build inspection result',
   'Store Data Safety/Privacy answers source reference',
   'Store submission approval, if selected',
 ]) {
@@ -187,6 +217,7 @@ for (const privatePath of [
 
 for (const phrase of [
   handoffPath,
+  buildInspectionPath,
   'node tool/audit_platform_signing_handoff.mjs',
 ]) {
   requirePhrase(evidenceIndexPath, evidenceIndex, phrase);
