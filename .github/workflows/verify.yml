@@ -70,6 +70,9 @@ jobs:
       - name: Verify release reliability evidence
         run: node tool/audit_release_reliability.mjs
 
+      - name: Verify security review evidence
+        run: node tool/audit_security_review.mjs
+
       - name: Verify cross-platform acceptance template
         run: node tool/audit_cross_platform_acceptance.mjs
 
