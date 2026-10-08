@@ -1,25 +1,24 @@
 # Nestarium artwork source
 
 `nestarium_source.png` is the reviewed square source generated using the built-in
-image-generation tool on 2026-09-06. `tool/generate_brand_assets.dart` produces
+image-generation tool on 2026-10-08. `tool/generate_brand_assets.dart` produces
 all platform versions with the existing pixel dimensions; PWA maskable versions
-include a central safe area. The generation retained the game's existing
-magical eggs, nest, jewel colors and dark background while replacing the old
-two-line wordmark with the exact single word NESTARIUM.
+include a central safe area. The generation uses the exact single word
+NESTARIUM over a three-style game identity: Retro Pixel in the top-left section,
+Realistic in the top-right section, and Classic in the bottom section.
 
 Final prompt:
 
-> Use case: text-localization. Edit target: the supplied square game logo.
-> This project is being renamed to Nestarium. Replace the entire old lettering
-> with the exact single word NESTARIUM (N E S T A R I U M), large, highly legible
-> polished dimensional lettering across the lower part. Preserve the illustrated
-> magical eggs, nest, dark blue background, lighting, jewel colors and existing
-> high quality playful fantasy style. Adapt the gold-edged name plaque to fit
-> the single word without cramping or cropping. No old text, no additional
-> words, no trademark symbols, no watermark. Square 1024 by 1024 or higher
-> suitable as the source for game loading artwork and launcher icons. All
-> essential artwork and lettering should have reasonable edge padding.
+> Use case: logo-brand. Asset type: final app/logo source. Create a square
+> Nestarium logo with the exact word NESTARIUM (N E S T A R I U M), large and
+> highly legible. Split the artwork into three game-art style sections with
+> visible gold and teal Y-shaped dividers: top-left Retro Pixel eggs, nest,
+> background, and matching pixel-style lettering; top-right Realistic glossy
+> eggs, leaves, dark fantasy background, and polished dimensional lettering;
+> bottom Classic cartoony egg/nest artwork and matching bright cartoon lettering.
+> Preserve a dark navy/black fantasy background, magical eggs, nest, jewel
+> colors, and clear edge padding for launcher icons. No old text, no additional
+> words, no trademark symbols, no watermark. Square 1024 by 1024 or higher.
 
-The prompt above omits only the repeated former wordmark spelling from the
-generation request. The generated source is 1254×1254. This rebrand does not
-change gameplay animal/egg illustrations or their identifiers.
+The final source is a 1254x1254 concept image selected by the owner. This brand
+asset does not change gameplay animal/egg illustrations or their identifiers.

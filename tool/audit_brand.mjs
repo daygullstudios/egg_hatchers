@@ -29,7 +29,7 @@ for (const path of [...new Set(files)].sort()) {
     else if (/egg-hatchers-playtest/.test(line)) reason = 'Existing protected origin/Worker; preserves browser storage and deployment history.';
     else if (/EGG_HATCHERS_/.test(line)) reason = 'Backward-compatible server environment option or its regression test.';
     else if (/eggHatchersActiveAccountId|egg_hatchers_(player_state|player_progress|cloud_progress|save)|egg_hatchers\.(settings|device_guest_slot|sync_checkpoint)/.test(line)) reason = 'Persisted save, account, settings, or wire-format contract (including tests).';
-    else if (/products\/egg_hatchers|\.doc\('egg_hatchers'\)/.test(line)) reason = 'Existing owner-scoped Firestore progress document.';
+    else if (/products\/egg_hatchers|\.?doc\('egg_hatchers'\)/.test(line)) reason = 'Existing owner-scoped Firestore progress document.';
     else if (path === 'pubspec.yaml' && line === 'name: egg_hatchers') reason = 'Stable private Dart package identity.';
     else if (['linux/CMakeLists.txt', 'windows/CMakeLists.txt'].includes(path)) reason = 'Existing native executable/build identity; keep installed launch compatibility.';
     else if (path === 'windows/runner/Runner.rc' && /CompanyName|ProductName|OriginalFilename/.test(line)) reason = 'Windows preference-directory identity or existing executable filename.';
