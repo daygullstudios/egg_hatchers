@@ -111,6 +111,8 @@ backup cadence and restore ownership.
 - Platform signing handoff: `docs/PLATFORM_SIGNING_HANDOFF.md`
   verified by `node tool/audit_platform_signing_handoff.mjs`
 - Store listing draft checklist: `docs/STORE_LISTING_DRAFT_CHECKLIST.md`
+- Store screenshot manifest template:
+  `docs/STORE_SCREENSHOT_MANIFEST_TEMPLATE.md`
 - Support/deletion link verification:
   `docs/SUPPORT_DELETION_LINK_VERIFICATION.md`
 - Platform branding readiness: `docs/PLATFORM_BRANDING_READINESS.md`

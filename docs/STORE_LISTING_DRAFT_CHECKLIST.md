@@ -49,6 +49,10 @@ Capture only the approved release candidate with developer tools hidden:
 - Tablet layout, if selected.
 - Desktop/web layout, if selected.
 
+Record the screenshot set in `docs/STORE_SCREENSHOT_MANIFEST_TEMPLATE.md` with
+the candidate commit, build artifact, device/browser/OS, private-data check,
+developer-tools check and evidence file or storage location for every image.
+
 Screenshots must not show private tester names, emails, account identifiers,
 debug URLs, Cloudflare temporary tunnels, real support messages, save JSON,
 developer-only controls or unapproved future-event art.

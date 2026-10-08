@@ -43,6 +43,7 @@ void main() {
     expect(evidence, contains('Apple Developer Team'));
     expect(evidence, contains('App Store Connect'));
     expect(evidence, contains('Real-device testing'));
+    expect(evidence, contains('docs/STORE_SCREENSHOT_MANIFEST_TEMPLATE.md'));
     expect(iosProject, contains('PRODUCT_BUNDLE_IDENTIFIER = com.egghatchers.game'));
     expect(iosProject, contains('CODE_SIGN_STYLE = Automatic'));
 

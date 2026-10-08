@@ -38,6 +38,7 @@ only after the matching evidence exists.
 - Cloudflare playtest build/test/dry-run/deploy: TBD
 - Multiplayer Worker tests/dry-run/deploy: TBD
 - Public-site tests/dry-run/deploy, if updated: TBD
+- Store screenshot manifest result: TBD
 - Brand audit: TBD
 - Asset rights audit: TBD
 - Accessibility/layout/audio acceptance: TBD

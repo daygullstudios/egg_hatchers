@@ -156,6 +156,8 @@ Run and record:
   `node tool/audit_platform_signing_handoff.mjs` for
   `docs/PLATFORM_SIGNING_HANDOFF.md`
 - Store listing checklist audit: `node tool/audit_store_listing_checklist.mjs`
+  covering `docs/STORE_LISTING_DRAFT_CHECKLIST.md` and
+  `docs/STORE_SCREENSHOT_MANIFEST_TEMPLATE.md`
 - Multiplayer production audit: `node tool/audit_multiplayer_production.mjs`
 - Multiplayer two-device playtest audit:
   `node tool/audit_multiplayer_two_device_playtest.mjs` for

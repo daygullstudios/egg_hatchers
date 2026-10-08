@@ -55,6 +55,7 @@ Store metadata and disclosure work must wait for selected launch platforms and
 launch countries. The release candidate record must cite the final source for:
 
 - Store name, description, screenshots, ratings and disclosures.
+- Store screenshot manifest from `docs/STORE_SCREENSHOT_MANIFEST_TEMPLATE.md`.
 - Google Play Data Safety, if Android is selected.
 - Apple privacy answers, if iOS is selected.
 - Support and account-deletion links from every selected store.
