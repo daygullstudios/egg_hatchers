@@ -23,6 +23,7 @@ void main() {
 
     expect(checklist, contains('test/audio_assets_test.dart'));
     expect(checklist, contains('test/manual_battle_test.dart'));
+    expect(checklist, contains('docs/PLATFORM_AUDIO_BEHAVIOR_MATRIX.md'));
     expect(visualAudit, contains('Boss phase music loop approval'));
     expect(visualAudit, contains('Music and SFX volume normalization'));
   });
@@ -65,6 +66,33 @@ void main() {
     ]) {
       expect(roadmap, contains(item), reason: item);
     }
+  });
+
+  test('platform audio behavior matrix covers release audio behavior', () {
+    final matrix = File(
+      'docs/PLATFORM_AUDIO_BEHAVIOR_MATRIX.md',
+    ).readAsStringSync();
+    final candidate = File(
+      'docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md',
+    ).readAsStringSync();
+
+    for (final phrase in [
+      'First user tap unlocks audio',
+      'Boss-life hit advances to the next phase without restarting at 0:00',
+      'Each boss phase loops inside its approved BandLab red range',
+      'Music slider changes volume without reload',
+      'SFX slider changes volume without reload',
+      'Music mute persists after refresh/restart',
+      'SFX mute persists after refresh/restart',
+      'Pause/resume does not stack duplicate music',
+      'Background/foreground behavior acceptable',
+      'Reduced Battle Effects keeps critical audio feedback',
+      'Result: Pass / Fail / Deferred',
+    ]) {
+      expect(matrix, contains(phrase), reason: phrase);
+    }
+
+    expect(candidate, contains('Platform audio behavior matrix result'));
   });
 }
 

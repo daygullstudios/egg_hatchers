@@ -74,6 +74,11 @@ confirm:
 - Pause/resume and app background/foreground behavior are acceptable on every
   selected release platform.
 
+Record platform-specific results in `docs/PLATFORM_AUDIO_BEHAVIOR_MATRIX.md`.
+That matrix is the candidate record for audio unlock, phase-loop behavior,
+slider/mute persistence, pause/resume, background/foreground behavior and
+Reduced Battle Effects on every selected release platform.
+
 ## Remaining release-candidate work
 
 - Owner listening approval for the normal boss phase loops.

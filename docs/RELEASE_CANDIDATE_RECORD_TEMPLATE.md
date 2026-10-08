@@ -42,6 +42,7 @@ only after the matching evidence exists.
 - Brand audit: TBD
 - Asset rights audit: TBD
 - Accessibility/layout/audio acceptance: TBD
+- Platform audio behavior matrix result: TBD
 - Two-device internet play: TBD
 - Load/capacity test: TBD
 - Account/save/multiplayer acceptance matrix: TBD

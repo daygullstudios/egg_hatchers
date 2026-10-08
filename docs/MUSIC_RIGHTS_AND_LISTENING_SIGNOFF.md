@@ -70,6 +70,7 @@ Attach or cite:
 - `test/audio_assets_test.dart`
 - `test/manual_battle_test.dart`
 - `docs/AUDIO_RELEASE_ACCEPTANCE.md`
+- `docs/PLATFORM_AUDIO_BEHAVIOR_MATRIX.md`
 - `docs/ASSET_RIGHTS_RELEASE_AUDIT.md`
 - `docs/VISUAL_AUDIO_ACCESSIBILITY_AUDIT.md`
 

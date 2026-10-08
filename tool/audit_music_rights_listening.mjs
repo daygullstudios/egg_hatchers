@@ -5,6 +5,7 @@ const root = resolve(import.meta.dirname, '..');
 
 const signoffPath = 'docs/MUSIC_RIGHTS_AND_LISTENING_SIGNOFF.md';
 const audioAcceptancePath = 'docs/AUDIO_RELEASE_ACCEPTANCE.md';
+const platformAudioPath = 'docs/PLATFORM_AUDIO_BEHAVIOR_MATRIX.md';
 const assetRightsPath = 'docs/ASSET_RIGHTS_RELEASE_AUDIT.md';
 const visualAuditPath = 'docs/VISUAL_AUDIO_ACCESSIBILITY_AUDIT.md';
 const roadmapPath = 'docs/RELEASE_ROADMAP.md';
@@ -15,6 +16,7 @@ const releaseEvidenceAuditPath = 'tool/audit_release_evidence.mjs';
 
 const signoff = readFileSync(resolve(root, signoffPath), 'utf8');
 const audioAcceptance = readFileSync(resolve(root, audioAcceptancePath), 'utf8');
+const platformAudio = readFileSync(resolve(root, platformAudioPath), 'utf8');
 const assetRights = readFileSync(resolve(root, assetRightsPath), 'utf8');
 const visualAudit = readFileSync(resolve(root, visualAuditPath), 'utf8');
 const roadmap = readFileSync(resolve(root, roadmapPath), 'utf8');
@@ -116,6 +118,7 @@ for (const phrase of [
   'test/audio_assets_test.dart',
   'test/manual_battle_test.dart',
   'docs/AUDIO_RELEASE_ACCEPTANCE.md',
+  'docs/PLATFORM_AUDIO_BEHAVIOR_MATRIX.md',
   'docs/ASSET_RIGHTS_RELEASE_AUDIT.md',
   'docs/VISUAL_AUDIO_ACCESSIBILITY_AUDIT.md',
 ]) {
@@ -141,8 +144,29 @@ for (const phrase of [
   'Volume normalization approval',
   'Platform audio behavior checks',
   'Source/license confirmation',
+  'docs/PLATFORM_AUDIO_BEHAVIOR_MATRIX.md',
 ]) {
   requirePhrase(audioAcceptancePath, audioAcceptance, phrase);
+}
+
+for (const phrase of [
+  'does not approve shipped audio',
+  'Candidate Git commit',
+  'Selected launch platforms',
+  'First user tap unlocks audio',
+  'Boss-life hit advances to the next phase without restarting at 0:00',
+  'Each boss phase loops inside its approved BandLab red range',
+  'Music slider changes volume without reload',
+  'SFX slider changes volume without reload',
+  'Music mute persists after refresh/restart',
+  'SFX mute persists after refresh/restart',
+  'Pause/resume does not stack duplicate music',
+  'Background/foreground behavior acceptable',
+  'Reduced Battle Effects keeps critical audio feedback',
+  'Result: Pass / Fail / Deferred',
+  'failed or deferred row lacks a fix commit',
+]) {
+  requirePhrase(platformAudioPath, platformAudio, phrase);
 }
 
 for (const phrase of [
@@ -171,6 +195,7 @@ for (const item of [
 
 for (const phrase of [
   signoffPath,
+  platformAudioPath,
   'node tool/audit_music_rights_listening.mjs',
 ]) {
   requirePhrase(evidenceIndexPath, evidenceIndex, phrase);
@@ -185,6 +210,7 @@ for (const phrase of [
 }
 
 requirePhrase(releaseEvidenceAuditPath, releaseEvidenceAudit, signoffPath);
+requirePhrase(releaseEvidenceAuditPath, releaseEvidenceAudit, platformAudioPath);
 
 if (failures.length > 0) {
   throw new Error(failures.join('\n'));

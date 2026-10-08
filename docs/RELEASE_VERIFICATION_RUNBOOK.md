@@ -149,7 +149,8 @@ Run and record:
 - Audio release audit: `node tool/audit_audio_release.mjs`
 - Music rights/listening audit:
   `node tool/audit_music_rights_listening.mjs` for
-  `docs/MUSIC_RIGHTS_AND_LISTENING_SIGNOFF.md`
+  `docs/MUSIC_RIGHTS_AND_LISTENING_SIGNOFF.md` and
+  `docs/PLATFORM_AUDIO_BEHAVIOR_MATRIX.md`
 - Platform branding audit: `node tool/audit_platform_branding.mjs`
 - Platform store audit: `node tool/audit_platform_store.mjs`
 - Platform signing handoff audit:

@@ -25,9 +25,12 @@ void main() {
 
     expect(signoff, contains('Music source records to fill'));
     expect(signoff, contains('Normal boss listening pass'));
+    expect(signoff, contains('docs/PLATFORM_AUDIO_BEHAVIOR_MATRIX.md'));
     expect(signoff, contains('Stop conditions'));
     expect(runbook, contains('node tool/audit_music_rights_listening.mjs'));
+    expect(runbook, contains('docs/PLATFORM_AUDIO_BEHAVIOR_MATRIX.md'));
     expect(workflow, contains('node tool/audit_music_rights_listening.mjs'));
     expect(evidenceIndex, contains('docs/MUSIC_RIGHTS_AND_LISTENING_SIGNOFF.md'));
+    expect(evidenceIndex, contains('docs/PLATFORM_AUDIO_BEHAVIOR_MATRIX.md'));
   });
 }
