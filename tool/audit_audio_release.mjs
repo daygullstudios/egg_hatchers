@@ -1,5 +1,5 @@
-import { readFileSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { extname, join, resolve, relative } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
 const audioRegistryPath = 'lib/data/audio_assets.dart';
@@ -49,31 +49,116 @@ const expectedBossMarkers = [
 
 const failures = [];
 
-function wavDurationMicros(relativePath) {
+function listFilesRecursive(relativePath, extension) {
+  const directory = resolve(root, relativePath);
+  const files = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const absolutePath = join(directory, entry.name);
+    const repositoryPath = relative(root, absolutePath).replaceAll('\\', '/');
+    if (entry.isDirectory()) {
+      files.push(...listFilesRecursive(repositoryPath, extension));
+    } else if (extname(entry.name).toLowerCase() === extension) {
+      files.push(repositoryPath);
+    }
+  }
+  return files.sort();
+}
+
+function readWavStats(relativePath) {
   const buffer = readFileSync(resolve(root, relativePath));
   if (buffer.toString('ascii', 0, 4) !== 'RIFF' || buffer.toString('ascii', 8, 12) !== 'WAVE') {
     throw new Error(`${relativePath}: not a RIFF/WAVE file`);
   }
 
   let offset = 12;
+  let format;
+  let channels;
+  let sampleRate;
   let byteRate;
+  let blockAlign;
+  let bitsPerSample;
+  let dataStart;
   let dataSize;
   while (offset + 8 <= buffer.length) {
     const chunkId = buffer.toString('ascii', offset, offset + 4);
     const chunkSize = buffer.readUInt32LE(offset + 4);
     const chunkStart = offset + 8;
     if (chunkId === 'fmt ') {
+      format = buffer.readUInt16LE(chunkStart);
+      channels = buffer.readUInt16LE(chunkStart + 2);
+      sampleRate = buffer.readUInt32LE(chunkStart + 4);
       byteRate = buffer.readUInt32LE(chunkStart + 8);
+      blockAlign = buffer.readUInt16LE(chunkStart + 12);
+      bitsPerSample = buffer.readUInt16LE(chunkStart + 14);
     } else if (chunkId === 'data') {
+      dataStart = chunkStart;
       dataSize = chunkSize;
       break;
     }
     offset = chunkStart + chunkSize + (chunkSize % 2);
   }
-  if (!byteRate || !dataSize) {
-    throw new Error(`${relativePath}: missing wav byte rate or data chunk`);
+
+  if (!format || !channels || !sampleRate || !byteRate || !blockAlign || !bitsPerSample || !dataStart || !dataSize) {
+    throw new Error(`${relativePath}: missing wav format or data chunk`);
   }
-  return Math.floor((dataSize / byteRate) * 1000000);
+  if (![1, 3].includes(format)) {
+    throw new Error(`${relativePath}: unsupported wav format ${format}`);
+  }
+  if (format === 3 && bitsPerSample !== 32) {
+    throw new Error(`${relativePath}: unsupported float wav bit depth ${bitsPerSample}`);
+  }
+  if (format === 1 && ![8, 16, 24, 32].includes(bitsPerSample)) {
+    throw new Error(`${relativePath}: unsupported PCM wav bit depth ${bitsPerSample}`);
+  }
+
+  const bytesPerSample = bitsPerSample / 8;
+  let sampleCount = 0;
+  let peak = 0;
+  let sumSquares = 0;
+  let clippingSamples = 0;
+  for (let frameOffset = dataStart; frameOffset + blockAlign <= dataStart + dataSize; frameOffset += blockAlign) {
+    for (let channel = 0; channel < channels; channel += 1) {
+      const sampleOffset = frameOffset + channel * bytesPerSample;
+      let sample;
+      if (format === 3) {
+        sample = buffer.readFloatLE(sampleOffset);
+      } else if (bitsPerSample === 8) {
+        sample = (buffer.readUInt8(sampleOffset) - 128) / 128;
+      } else if (bitsPerSample === 16) {
+        sample = buffer.readInt16LE(sampleOffset) / 32768;
+      } else if (bitsPerSample === 24) {
+        let value =
+          buffer[sampleOffset] |
+          (buffer[sampleOffset + 1] << 8) |
+          (buffer[sampleOffset + 2] << 16);
+        if ((value & 0x800000) !== 0) {
+          value |= 0xff000000;
+        }
+        sample = value / 8388608;
+      } else {
+        sample = buffer.readInt32LE(sampleOffset) / 2147483648;
+      }
+
+      const absoluteSample = Math.abs(sample);
+      if (!Number.isFinite(absoluteSample)) {
+        throw new Error(`${relativePath}: non-finite wav sample`);
+      }
+      if (absoluteSample >= 0.999) {
+        clippingSamples += 1;
+      }
+      peak = Math.max(peak, absoluteSample);
+      sumSquares += sample * sample;
+      sampleCount += 1;
+    }
+  }
+
+  return {
+    durationMicros: Math.floor((dataSize / byteRate) * 1000000),
+    peak,
+    rms: Math.sqrt(sumSquares / sampleCount),
+    clippingSamples,
+    sampleCount,
+  };
 }
 
 for (const relativePath of requiredMusic) {
@@ -94,12 +179,32 @@ for (const relativePath of requiredMusic) {
   }
 }
 
-const bossDuration = wavDurationMicros('assets/sounds/music/boss_music.wav');
+const bossMusicStats = readWavStats('assets/sounds/music/boss_music.wav');
+const bossDuration = bossMusicStats.durationMicros;
 const finalLoopEnd = expectedBossMarkers.at(-1).loopEnd;
 if (bossDuration + 1000 < finalLoopEnd) {
   failures.push(
     `assets/sounds/music/boss_music.wav: duration ${bossDuration}us is shorter than final loop end ${finalLoopEnd}us`,
   );
+}
+
+const wavFiles = listFilesRecursive('assets/sounds', '.wav');
+for (const relativePath of wavFiles) {
+  const stats = relativePath === 'assets/sounds/music/boss_music.wav'
+    ? bossMusicStats
+    : readWavStats(relativePath);
+  if (stats.sampleCount <= 0) {
+    failures.push(`${relativePath}: contains no decoded wav samples`);
+  }
+  if (stats.peak < 0.001 || stats.rms < 0.0005) {
+    failures.push(`${relativePath}: appears silent or too quiet for a shipped release asset`);
+  }
+  if (stats.peak > 1 || stats.clippingSamples > 0) {
+    failures.push(`${relativePath}: contains clipped wav samples`);
+  }
+  if (stats.rms > 0.5) {
+    failures.push(`${relativePath}: RMS level ${stats.rms.toFixed(3)} is unusually loud`);
+  }
 }
 
 for (const section of expectedBossMarkers) {
@@ -125,6 +230,7 @@ for (const section of expectedBossMarkers) {
 
 for (const phrase of [
   'next section without intentionally restarting the whole track',
+  'Automated WAV normalization guardrail',
   'Owner listening approval',
   'Volume normalization approval',
   'Platform audio behavior checks',
@@ -160,5 +266,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `Audio release audit: ${requiredMusic.length} music tracks and ${expectedBossMarkers.length} boss sections verified.`,
+  `Audio release audit: ${requiredMusic.length} music tracks, ${expectedBossMarkers.length} boss sections and ${wavFiles.length} WAV loudness checks verified.`,
 );

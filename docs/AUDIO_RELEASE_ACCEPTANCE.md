@@ -33,6 +33,17 @@ Current section ranges:
 `test/manual_battle_test.dart` verifies those exact markers and confirms boss
 music advances as lives are removed.
 
+## Automated WAV normalization guardrail
+
+`node tool/audit_audio_release.mjs` decodes every shipped WAV file under
+`assets/sounds`, including normal boss music and SFX, and rejects files that are
+silent, clipped, malformed, too short for their loop markers, or unusually loud
+by RMS. This gives release verification a repeatable audio-health check before
+the owner listening pass.
+
+The MP3 tracks still need listening approval and source/license confirmation
+because this project does not decode MP3 loudness in the local audit.
+
 ## Listening pass
 
 Before release, play a normal manual boss fight from a fresh app start and

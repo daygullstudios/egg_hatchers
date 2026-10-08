@@ -11,7 +11,9 @@ void main() {
     expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
     expect(
       result.stdout.toString(),
-      contains('Audio release audit: 3 music tracks and 4 boss sections verified'),
+      contains(
+        'Audio release audit: 3 music tracks, 4 boss sections and 29 WAV loudness checks verified',
+      ),
     );
   });
 
