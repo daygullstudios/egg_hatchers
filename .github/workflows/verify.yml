@@ -43,6 +43,9 @@ jobs:
       - name: Verify release evidence index
         run: node tool/audit_release_evidence.mjs
 
+      - name: Verify public policy and support links
+        run: node tool/audit_public_policy_links.mjs
+
       - name: Verify isolated public information site
         working-directory: cloudflare/public-site
         run: npm test
