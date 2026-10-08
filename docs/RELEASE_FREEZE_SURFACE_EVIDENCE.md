@@ -5,7 +5,9 @@ Updated: 2026-10-07
 This record supports the roadmap item "Freeze features and remove or hide
 development-only controls." The item remains open until a final release
 candidate is frozen and audited, but the current code has a documented boundary
-for developer-only tools.
+for developer-only tools. The full release freeze process is captured in
+`docs/RELEASE_FEATURE_FREEZE_CHECKLIST.md`; this record covers only the release
+surface audit and source boundary.
 
 ## Current boundary
 
@@ -44,5 +46,6 @@ The audit currently blocks these markers from compiled release output:
 - Run `node tool/audit_release_surface.mjs` against that exact bundle.
 - Run the full release test/build matrix from
   `docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md`.
+- Complete `docs/RELEASE_FEATURE_FREEZE_CHECKLIST.md` for the exact candidate.
 - Record owner approval before public routing or store submission.
 

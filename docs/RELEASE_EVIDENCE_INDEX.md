@@ -83,6 +83,8 @@ recorded in `docs/PLATFORM_BRANDING_READINESS.md`.
 - Operations evidence: `docs/RELEASE_OPERATIONS_EVIDENCE.md`
 - Operations dry-run checklist: `docs/OPERATIONS_DRY_RUN_CHECKLIST.md`
 - Release-surface evidence: `docs/RELEASE_FREEZE_SURFACE_EVIDENCE.md`
+- Feature-freeze checklist: `docs/RELEASE_FEATURE_FREEZE_CHECKLIST.md`
+  verified by `node tool/audit_release_feature_freeze.mjs`
 
 Open release dependencies: approved production monitoring, alert destinations,
 backup cadence and restore ownership.
@@ -111,6 +113,7 @@ accounts, tracked findings and one complete candidate pass after blocker fixes.
 ## 10. Release candidate and launch
 
 - Release verification runbook: `docs/RELEASE_VERIFICATION_RUNBOOK.md`
+- Feature-freeze checklist: `docs/RELEASE_FEATURE_FREEZE_CHECKLIST.md`
 - Release candidate record: `docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md`
 - Cross-platform acceptance matrix:
   `docs/CROSS_PLATFORM_ACCEPTANCE_MATRIX_TEMPLATE.md`

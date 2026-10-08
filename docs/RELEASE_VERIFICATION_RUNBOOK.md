@@ -24,6 +24,7 @@ node tool/audit_monitoring_operations.mjs
 node tool/audit_operations_dry_run.mjs
 node tool/audit_release_reliability.mjs
 node tool/audit_release_code_review.mjs
+node tool/audit_release_feature_freeze.mjs
 node tool/audit_security_review.mjs
 node tool/audit_cross_platform_acceptance.mjs
 node tool/audit_closed_beta_readiness.mjs
@@ -86,6 +87,7 @@ npm run deploy:dry-run
 - `node tool/audit_operations_dry_run.mjs`
 - `node tool/audit_release_reliability.mjs`
 - `node tool/audit_release_code_review.mjs`
+- `node tool/audit_release_feature_freeze.mjs`
 - `node tool/audit_security_review.mjs`
 - `node tool/audit_cross_platform_acceptance.mjs`
 - `node tool/audit_closed_beta_readiness.mjs`
@@ -136,6 +138,9 @@ Run and record:
 - Operations dry-run audit: `node tool/audit_operations_dry_run.mjs`
 - Release reliability audit: `node tool/audit_release_reliability.mjs`
 - Release code review audit: `node tool/audit_release_code_review.mjs`
+- Release feature-freeze audit:
+  `node tool/audit_release_feature_freeze.mjs` for
+  `docs/RELEASE_FEATURE_FREEZE_CHECKLIST.md`
 - Security review audit: `node tool/audit_security_review.mjs`
 - Cross-platform acceptance audit: `node tool/audit_cross_platform_acceptance.mjs`
 - Closed beta readiness audit: `node tool/audit_closed_beta_readiness.mjs`

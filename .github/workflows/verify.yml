@@ -79,6 +79,9 @@ jobs:
       - name: Verify release code review evidence
         run: node tool/audit_release_code_review.mjs
 
+      - name: Verify release feature-freeze checklist
+        run: node tool/audit_release_feature_freeze.mjs
+
       - name: Verify security review evidence
         run: node tool/audit_security_review.mjs
 
