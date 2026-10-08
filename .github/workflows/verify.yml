@@ -64,6 +64,9 @@ jobs:
       - name: Verify platform store readiness
         run: node tool/audit_platform_store.mjs
 
+      - name: Verify platform signing handoff
+        run: node tool/audit_platform_signing_handoff.mjs
+
       - name: Verify store listing checklist
         run: node tool/audit_store_listing_checklist.mjs
 

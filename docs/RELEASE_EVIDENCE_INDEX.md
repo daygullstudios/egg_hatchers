@@ -96,6 +96,8 @@ backup cadence and restore ownership.
 ## 8. Platform and store readiness
 
 - Platform store readiness: `docs/PLATFORM_STORE_READINESS.md`
+- Platform signing handoff: `docs/PLATFORM_SIGNING_HANDOFF.md`
+  verified by `node tool/audit_platform_signing_handoff.mjs`
 - Store listing draft checklist: `docs/STORE_LISTING_DRAFT_CHECKLIST.md`
 - Platform branding readiness: `docs/PLATFORM_BRANDING_READINESS.md`
 - Public policy readiness: `docs/PUBLIC_POLICY_READINESS.md`

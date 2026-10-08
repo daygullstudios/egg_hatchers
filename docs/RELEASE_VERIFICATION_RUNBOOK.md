@@ -19,6 +19,7 @@ node tool/audit_audio_release.mjs
 node tool/audit_music_rights_listening.mjs
 node tool/audit_platform_branding.mjs
 node tool/audit_platform_store.mjs
+node tool/audit_platform_signing_handoff.mjs
 node tool/audit_store_listing_checklist.mjs
 node tool/audit_multiplayer_production.mjs
 node tool/audit_monitoring_operations.mjs
@@ -85,6 +86,7 @@ npm run deploy:dry-run
 - `node tool/audit_music_rights_listening.mjs`
 - `node tool/audit_platform_branding.mjs`
 - `node tool/audit_platform_store.mjs`
+- `node tool/audit_platform_signing_handoff.mjs`
 - `node tool/audit_store_listing_checklist.mjs`
 - `node tool/audit_multiplayer_production.mjs`
 - `node tool/audit_monitoring_operations.mjs`
@@ -141,6 +143,9 @@ Run and record:
   `docs/MUSIC_RIGHTS_AND_LISTENING_SIGNOFF.md`
 - Platform branding audit: `node tool/audit_platform_branding.mjs`
 - Platform store audit: `node tool/audit_platform_store.mjs`
+- Platform signing handoff audit:
+  `node tool/audit_platform_signing_handoff.mjs` for
+  `docs/PLATFORM_SIGNING_HANDOFF.md`
 - Store listing checklist audit: `node tool/audit_store_listing_checklist.mjs`
 - Multiplayer production audit: `node tool/audit_multiplayer_production.mjs`
 - Monitoring operations audit: `node tool/audit_monitoring_operations.mjs`
