@@ -67,6 +67,9 @@ jobs:
       - name: Verify cross-platform acceptance template
         run: node tool/audit_cross_platform_acceptance.mjs
 
+      - name: Verify closed beta readiness template
+        run: node tool/audit_closed_beta_readiness.mjs
+
       - name: Verify isolated public information site
         working-directory: cloudflare/public-site
         run: npm test
