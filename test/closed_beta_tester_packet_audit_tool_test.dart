@@ -19,9 +19,12 @@ void main() {
 
   test('release runbook and CI include tester packet audit', () {
     final runbook = File('docs/RELEASE_VERIFICATION_RUNBOOK.md').readAsStringSync();
+    final evidenceIndex = File('docs/RELEASE_EVIDENCE_INDEX.md').readAsStringSync();
     final workflow = File('.github/workflows/verify.yml').readAsStringSync();
 
     expect(runbook, contains('docs/CLOSED_BETA_TESTER_PACKET.md'));
+    expect(runbook, contains('docs/CLOSED_BETA_COVERAGE_MATRIX.md'));
+    expect(evidenceIndex, contains('docs/CLOSED_BETA_COVERAGE_MATRIX.md'));
     expect(runbook, contains('node tool/audit_closed_beta_tester_packet.mjs'));
     expect(workflow, contains('node tool/audit_closed_beta_tester_packet.mjs'));
     expect(workflow, contains('Verify closed beta tester packet'));

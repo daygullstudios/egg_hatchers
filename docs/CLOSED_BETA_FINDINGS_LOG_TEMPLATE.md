@@ -13,6 +13,7 @@ is active.
 - Multiplayer Worker version:
 - Release owner:
 - Triage owner:
+- Closed beta coverage matrix reference:
 
 ## Tester Coverage
 
@@ -26,6 +27,7 @@ identifier.
 - Larger-screen/tablet testers:
 - Supported platforms covered:
 - Supported networks covered:
+- Coverage gaps accepted by release owner and rollback decision maker:
 
 ## Finding Entry
 

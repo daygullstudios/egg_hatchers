@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 
 const planPath = 'docs/CLOSED_BETA_PLAN.md';
+const coverageMatrixPath = 'docs/CLOSED_BETA_COVERAGE_MATRIX.md';
 const findingsPath = 'docs/CLOSED_BETA_FINDINGS_LOG_TEMPLATE.md';
 const roadmapPath = 'docs/RELEASE_ROADMAP.md';
 const decisionsPath = 'docs/RELEASE_DECISION_PACKET.md';
@@ -11,6 +12,7 @@ const candidatePath = 'docs/RELEASE_CANDIDATE_RECORD_TEMPLATE.md';
 const evidenceIndexPath = 'docs/RELEASE_EVIDENCE_INDEX.md';
 
 const plan = readFileSync(resolve(root, planPath), 'utf8');
+const coverageMatrix = readFileSync(resolve(root, coverageMatrixPath), 'utf8');
 const findings = readFileSync(resolve(root, findingsPath), 'utf8');
 const roadmap = readFileSync(resolve(root, roadmapPath), 'utf8');
 const decisions = readFileSync(resolve(root, decisionsPath), 'utf8');
@@ -27,6 +29,7 @@ function requirePhrase(path, text, phrase) {
 
 for (const path of [
   planPath,
+  coverageMatrixPath,
   findingsPath,
   decisionsPath,
   candidatePath,
@@ -59,8 +62,33 @@ for (const phrase of [
   'blocked-player/report flow',
   'Do not ask testers to send passwords',
   'Save Transfer file',
+  'docs/CLOSED_BETA_COVERAGE_MATRIX.md',
 ]) {
   requirePhrase(planPath, plan, phrase);
+}
+
+for (const phrase of [
+  'planning and evidence document, not an invitation list',
+  'ordinary fresh accounts',
+  'Do not recruit child testers unless the approved guardian process is active',
+  'Fresh-player path',
+  'Returning/import path',
+  'Multiplayer/trading pair',
+  'Narrow phone layout',
+  'Larger screen/tablet',
+  'Selected web browser',
+  'Android device',
+  'iOS device',
+  'School/work or restricted network',
+  'Parent/guardian-supervised tester',
+  'Tester packet sent',
+  'Do not record passwords',
+  'private Save Transfer files',
+  'child/guardian details',
+  'Every selected launch platform and browser family',
+  'release owner and rollback decision maker',
+]) {
+  requirePhrase(coverageMatrixPath, coverageMatrix, phrase);
 }
 
 for (const phrase of [
@@ -83,9 +111,11 @@ for (const phrase of [
   'Git commit',
   'Release owner',
   'Triage owner',
+  'Closed beta coverage matrix reference',
   'Fresh-player testers',
   'Returning/import testers',
   'Multiplayer/trading pairs',
+  'Coverage gaps accepted by release owner and rollback decision maker',
   'Severity: Critical / High / Medium / Low',
   "Status: New / Investigating / Fixed / Retest passed / Accepted risk / Won't fix",
   'Private data received',
@@ -132,6 +162,7 @@ for (const phrase of [
 
 for (const phrase of [
   'docs/CLOSED_BETA_PLAN.md',
+  'docs/CLOSED_BETA_COVERAGE_MATRIX.md',
   'docs/CLOSED_BETA_FINDINGS_LOG_TEMPLATE.md',
   'Open release dependencies: approved beta entry',
 ]) {

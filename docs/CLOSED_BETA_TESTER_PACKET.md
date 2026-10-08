@@ -34,6 +34,10 @@ Before testing, write down:
 - Tester assignment, such as fresh player, returning/import, multiplayer pair,
   narrow phone, or larger screen.
 
+The release team records assignment coverage in
+`docs/CLOSED_BETA_COVERAGE_MATRIX.md`. Do not send extra personal information
+unless the release owner asks for it through the approved support process.
+
 ## Core test path
 
 Try these in order:

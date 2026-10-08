@@ -178,6 +178,8 @@ Run and record:
 - Security review audit: `node tool/audit_security_review.mjs`
 - Cross-platform acceptance audit: `node tool/audit_cross_platform_acceptance.mjs`
 - Closed beta readiness audit: `node tool/audit_closed_beta_readiness.mjs`
+  covering `docs/CLOSED_BETA_PLAN.md`,
+  `docs/CLOSED_BETA_COVERAGE_MATRIX.md` and the findings log template
 - Closed beta tester packet audit:
   `node tool/audit_closed_beta_tester_packet.mjs` for
   `docs/CLOSED_BETA_TESTER_PACKET.md`

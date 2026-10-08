@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '..');
 
 const packetPath = 'docs/CLOSED_BETA_TESTER_PACKET.md';
+const coverageMatrixPath = 'docs/CLOSED_BETA_COVERAGE_MATRIX.md';
 const planPath = 'docs/CLOSED_BETA_PLAN.md';
 const findingsPath = 'docs/CLOSED_BETA_FINDINGS_LOG_TEMPLATE.md';
 const roadmapPath = 'docs/RELEASE_ROADMAP.md';
@@ -12,6 +13,7 @@ const evidenceIndexPath = 'docs/RELEASE_EVIDENCE_INDEX.md';
 const workflowPath = '.github/workflows/verify.yml';
 
 const packet = readFileSync(resolve(root, packetPath), 'utf8');
+const coverageMatrix = readFileSync(resolve(root, coverageMatrixPath), 'utf8');
 const plan = readFileSync(resolve(root, planPath), 'utf8');
 const roadmap = readFileSync(resolve(root, roadmapPath), 'utf8');
 const runbook = readFileSync(resolve(root, runbookPath), 'utf8');
@@ -28,6 +30,7 @@ function requirePhrase(path, text, phrase) {
 
 for (const path of [
   packetPath,
+  coverageMatrixPath,
   planPath,
   findingsPath,
   roadmapPath,
@@ -71,8 +74,19 @@ for (const phrase of [
   "View another player's animals",
   'preset message',
   'Disconnect or refresh one player',
+  'docs/CLOSED_BETA_COVERAGE_MATRIX.md',
 ]) {
   requirePhrase(packetPath, packet, phrase);
+}
+
+for (const phrase of [
+  'Fresh-player path',
+  'Returning/import path',
+  'Multiplayer/trading pair',
+  'Narrow phone layout',
+  'Tester packet sent',
+]) {
+  requirePhrase(coverageMatrixPath, coverageMatrix, phrase);
 }
 
 for (const phrase of [
@@ -98,6 +112,7 @@ for (const phrase of [
 
 for (const phrase of [
   packetPath,
+  coverageMatrixPath,
   'Open release dependencies: approved beta entry',
 ]) {
   requirePhrase(evidenceIndexPath, evidenceIndex, phrase);

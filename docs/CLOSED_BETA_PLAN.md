@@ -37,6 +37,11 @@ networks. The group should include:
 - A parent/guardian-supervised tester only if the approved privacy plan allows
   it and the consent/support process is ready.
 
+Use `docs/CLOSED_BETA_COVERAGE_MATRIX.md` to record the planned coverage before
+any tester packet is sent. Keep it to counts, assignments and evidence
+references unless the approved privacy/support process permits private tester
+identifiers.
+
 Avoid open invitations, public Discord links, public custom-art sharing, or any
 open text chat. Player communication remains preset-only.
 
