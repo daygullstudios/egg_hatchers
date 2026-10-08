@@ -31,7 +31,7 @@ Current section ranges:
 - Phase 4: starts at `0:40.000`, loops `0:40.000` to `1:06.667`.
 
 `test/manual_battle_test.dart` verifies those exact markers and confirms boss
-music advances as lives are removed.
+music advances as lives are removed instead of restarting the track.
 
 ## Automated WAV normalization guardrail
 
@@ -79,7 +79,8 @@ confirm:
 - Owner listening approval for the normal boss phase loops.
 - Listening approval for hatchery and final boss music transitions.
 - Volume normalization approval for music and SFX.
-- Platform audio behavior checks for every selected launch target.
+- Platform audio behavior checks for every selected platforms list or selected
+  launch target.
 - Source/license confirmation for the three music files in
   `docs/ASSET_RIGHTS_RELEASE_AUDIT.md`.
 

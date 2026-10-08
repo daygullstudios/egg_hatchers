@@ -55,6 +55,9 @@ jobs:
       - name: Verify audio release readiness
         run: node tool/audit_audio_release.mjs
 
+      - name: Verify music rights and listening signoff
+        run: node tool/audit_music_rights_listening.mjs
+
       - name: Verify platform branding readiness
         run: node tool/audit_platform_branding.mjs
 

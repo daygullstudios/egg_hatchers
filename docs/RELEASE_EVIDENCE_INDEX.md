@@ -69,6 +69,8 @@ progression blocker or farming exploit remains.
 - Visual/audio/accessibility audit:
   `docs/VISUAL_AUDIO_ACCESSIBILITY_AUDIT.md`
 - Audio acceptance checklist: `docs/AUDIO_RELEASE_ACCEPTANCE.md`
+- Music rights/listening signoff: `docs/MUSIC_RIGHTS_AND_LISTENING_SIGNOFF.md`
+  verified by `node tool/audit_music_rights_listening.mjs`
 - Asset rights audit: `docs/ASSET_RIGHTS_RELEASE_AUDIT.md`
 - Platform branding readiness: `docs/PLATFORM_BRANDING_READINESS.md`
 

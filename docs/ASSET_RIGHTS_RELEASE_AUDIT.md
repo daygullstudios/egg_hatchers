@@ -60,8 +60,8 @@ the repository sound tooling, as documented in `assets/sounds/SOURCES.md`.
 
 ## Music records requiring owner confirmation
 
-These music files are present in the shipped bundle and need final owner
-confirmation of source and commercial-use rights:
+These music files are present in the shipped bundle and need final owner confirmation
+of source and commercial-use rights:
 
 - `assets/sounds/music/hatchery_chill_loop.mp3`
 - `assets/sounds/music/boss_music.wav`

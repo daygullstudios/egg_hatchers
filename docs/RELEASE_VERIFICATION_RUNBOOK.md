@@ -16,6 +16,7 @@ node tool/audit_release_decisions.mjs
 node tool/audit_public_policy_links.mjs
 node tool/audit_asset_rights.mjs
 node tool/audit_audio_release.mjs
+node tool/audit_music_rights_listening.mjs
 node tool/audit_platform_branding.mjs
 node tool/audit_platform_store.mjs
 node tool/audit_store_listing_checklist.mjs
@@ -81,6 +82,7 @@ npm run deploy:dry-run
 - `node tool/audit_public_policy_links.mjs`
 - `node tool/audit_asset_rights.mjs`
 - `node tool/audit_audio_release.mjs`
+- `node tool/audit_music_rights_listening.mjs`
 - `node tool/audit_platform_branding.mjs`
 - `node tool/audit_platform_store.mjs`
 - `node tool/audit_store_listing_checklist.mjs`
@@ -134,6 +136,9 @@ Run and record:
 - Public policy/support link audit: `node tool/audit_public_policy_links.mjs`
 - Asset rights inventory audit: `node tool/audit_asset_rights.mjs`
 - Audio release audit: `node tool/audit_audio_release.mjs`
+- Music rights/listening audit:
+  `node tool/audit_music_rights_listening.mjs` for
+  `docs/MUSIC_RIGHTS_AND_LISTENING_SIGNOFF.md`
 - Platform branding audit: `node tool/audit_platform_branding.mjs`
 - Platform store audit: `node tool/audit_platform_store.mjs`
 - Store listing checklist audit: `node tool/audit_store_listing_checklist.mjs`
