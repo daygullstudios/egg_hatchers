@@ -21,7 +21,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 37,
+      "line": 53,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -29,7 +29,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 65,
+      "line": 81,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -37,7 +37,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 67,
+      "line": 83,
       "references": [
         "egg_hatchers"
       ],
@@ -45,7 +45,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 453,
+      "line": 469,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -53,7 +53,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 559,
+      "line": 575,
       "references": [
         "egghatchers.game"
       ],
@@ -61,7 +61,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 615,
+      "line": 631,
       "references": [
         "egg_hatchers"
       ],
@@ -69,7 +69,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1452,
+      "line": 1468,
       "references": [
         "egg-hatchers-playtest"
       ],
@@ -77,7 +77,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1633,
+      "line": 1649,
       "references": [
         "egghatchers.game"
       ],
@@ -85,7 +85,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1660,
+      "line": 1676,
       "references": [
         "egg_hatchers"
       ],
@@ -93,7 +93,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1738,
+      "line": 1754,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -101,7 +101,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1756,
+      "line": 1772,
       "references": [
         "egg-hatchers-dev"
       ],
@@ -109,7 +109,7 @@
     },
     {
       "path": "PROJECT_HANDOFF.md",
-      "line": 1763,
+      "line": 1779,
       "references": [
         "egg_hatchers"
       ],
@@ -2616,6 +2616,14 @@
     {
       "path": "test/collection_density_test.dart",
       "line": 6,
+      "references": [
+        "egg_hatchers"
+      ],
+      "reason": "Stable Dart package/import identity."
+    },
+    {
+      "path": "test/collection_density_test.dart",
+      "line": 7,
       "references": [
         "egg_hatchers"
       ],

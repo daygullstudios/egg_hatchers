@@ -2274,6 +2274,86 @@ class GameService extends ChangeNotifier {
   );
 
   /// Combines 2 copies of the same animal/mutation with an 80% success chance.
+  List<OwnedAnimal> _animalsAfterFusion(
+    OwnedAnimal stack,
+    String? outputMutationId,
+  ) {
+    final updated = List<OwnedAnimal>.from(_state.ownedAnimals);
+    final sourceIndex = _indexOfOwnedStack(
+      updated,
+      stack.animalId,
+      stack.mutationId,
+      isProtected: stack.isProtected,
+    );
+    final remaining = stack.quantity - AnimalFusionLogic.inputQuantity;
+    if (remaining <= 0) {
+      updated.removeAt(sourceIndex);
+    } else {
+      updated[sourceIndex] = stack.copyWith(quantity: remaining);
+    }
+    if (outputMutationId == null) return updated;
+    final outputIndex = _indexOfOwnedStack(
+      updated,
+      stack.animalId,
+      outputMutationId,
+      isProtected: false,
+    );
+    if (outputIndex >= 0) {
+      final output = updated[outputIndex];
+      updated[outputIndex] = output.copyWith(
+        quantity: output.quantity + 1,
+        sourceEggId: _mergeSourceEggId(output.sourceEggId, stack.sourceEggId),
+      );
+    } else {
+      updated.add(
+        OwnedAnimal(
+          animalId: stack.animalId,
+          quantity: 1,
+          level: 1,
+          mutationId: outputMutationId,
+          sourceEggId: stack.sourceEggId,
+        ),
+      );
+    }
+    return updated;
+  }
+
+  /// Net hatchery income change, using the same stack merge as the real fusion.
+  /// A null result mutation previews failure; this never changes the save.
+  int? fusionIncomeChange(OwnedAnimal source, String? resultMutationId) {
+    if (!canFuseAnimals(source)) return null;
+    final validResults = {
+      null,
+      AnimalFusionLogic.primaryResultMutationId(source.mutationId),
+      AnimalFusionLogic.luckyResultMutationId(source.mutationId),
+    };
+    if (!validResults.contains(resultMutationId)) return null;
+    final index = _indexOfOwnedStack(
+      _state.ownedAnimals,
+      source.animalId,
+      source.mutationId,
+      isProtected: source.isProtected,
+    );
+    if (index < 0) return null;
+    var total = 0;
+    for (final owned in _animalsAfterFusion(
+      _state.ownedAnimals[index],
+      resultMutationId,
+    )) {
+      if (isStackAutoBattling(
+        animalId: owned.animalId,
+        mutationId: owned.mutationId,
+        isProtected: owned.isProtected,
+      )) {
+        continue;
+      }
+      final animal = GameData.animalById(owned.animalId);
+      if (animal != null) total += incomeForOwned(animal, owned);
+    }
+    return RebirthLogic.applyMultiplier(total, _state.rebirthLevel) -
+        coinsPerSecond;
+  }
+
   AnimalFusionOutcome? fuseAnimals(OwnedAnimal source, {Random? random}) {
     if (!canFuseAnimals(source)) return null;
 
@@ -2298,13 +2378,10 @@ class GameService extends ChangeNotifier {
     final rng = random ?? Random();
     final roll = AnimalFusionLogic.rollFusion(stack.mutationId, rng);
 
-    final updated = List<OwnedAnimal>.from(_state.ownedAnimals);
-    final remaining = stack.quantity - AnimalFusionLogic.inputQuantity;
-    if (remaining <= 0) {
-      updated.removeAt(sourceIndex);
-    } else {
-      updated[sourceIndex] = stack.copyWith(quantity: remaining);
-    }
+    final updated = _animalsAfterFusion(
+      stack,
+      roll.succeeded ? roll.resultMutationId : null,
+    );
 
     String? resultMutationId;
     String? displayName;
@@ -2317,33 +2394,6 @@ class GameService extends ChangeNotifier {
           GameData.mutationById(outputMutationId) ?? GameData.mutations.first;
       displayName = resultMutation.fullName(animal);
       resultMutationId = outputMutationId;
-
-      final outputIndex = _indexOfOwnedStack(
-        updated,
-        stack.animalId,
-        outputMutationId,
-        isProtected: false,
-      );
-      if (outputIndex >= 0) {
-        final outputStack = updated[outputIndex];
-        updated[outputIndex] = outputStack.copyWith(
-          quantity: outputStack.quantity + 1,
-          sourceEggId: _mergeSourceEggId(
-            outputStack.sourceEggId,
-            stack.sourceEggId,
-          ),
-        );
-      } else {
-        updated.add(
-          OwnedAnimal(
-            animalId: stack.animalId,
-            quantity: 1,
-            level: 1,
-            mutationId: outputMutationId,
-            sourceEggId: stack.sourceEggId,
-          ),
-        );
-      }
     }
 
     var progress = _state.questProgress.copyWith(

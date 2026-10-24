@@ -4,12 +4,68 @@ import 'package:egg_hatchers/services/custom_sprite_service.dart';
 import 'package:egg_hatchers/services/game_service.dart';
 import 'package:egg_hatchers/services/preferences_service.dart';
 import 'package:egg_hatchers/services/tutorial_service.dart';
+import 'package:egg_hatchers/widgets/animal_fusion_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets(
+    'fusion income preview fits a narrow phone without spending animals',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+      final game = GameService();
+      final preferences = PreferencesService();
+      final sprites = CustomSpriteService();
+      await Future.wait([
+        game.initialize(),
+        preferences.initialize(),
+        sprites.initialize(),
+      ]);
+      game.skipTutorial();
+      game.devSetOwnedAnimalsForTesting(const [
+        OwnedAnimal(animalId: 'chicken', quantity: 2),
+      ]);
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(1.3)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: AnimalFusionPanel(
+                game: game,
+                theme: preferences.selectedTheme,
+                customSprites: sprites,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Fuse 2').first);
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.textContaining('Hatchery income:'), findsNWidgets(3));
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(game.ownedAnimals.single.quantity, 2);
+      await tester.pumpWidget(const SizedBox.shrink());
+      game.dispose();
+      preferences.dispose();
+      sprites.dispose();
+    },
+  );
 
   testWidgets('collection separates animal management from fusion', (
     tester,

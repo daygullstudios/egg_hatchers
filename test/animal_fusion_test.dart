@@ -109,22 +109,69 @@ void main() {
       game.dispose();
     });
 
-    test('consumes 2 normal chickens and creates golden chicken on success', () {
-      final source = game.ownedAnimals.first;
-      final outcome = game.fuseAnimals(
-        source,
-        random: _valuesRandom([0.5, 0.5]),
-      );
+    test(
+      'consumes 2 normal chickens and creates golden chicken on success',
+      () {
+        final source = game.ownedAnimals.first;
+        final outcome = game.fuseAnimals(
+          source,
+          random: _valuesRandom([0.5, 0.5]),
+        );
 
-      expect(outcome, isNotNull);
-      expect(outcome!.succeeded, isTrue);
-      expect(outcome.resultMutationId, 'golden');
-      expect(outcome.wasLucky, isFalse);
-      expect(game.ownedAnimals, hasLength(1));
-      expect(game.ownedAnimals.first.mutationId, 'golden');
-      expect(game.ownedAnimals.first.quantity, 1);
-      expect(game.questProgress.totalFusionAttempts, 1);
-      expect(game.questProgress.totalSuccessfulFusions, 1);
+        expect(outcome, isNotNull);
+        expect(outcome!.succeeded, isTrue);
+        expect(outcome.resultMutationId, 'golden');
+        expect(outcome.wasLucky, isFalse);
+        expect(game.ownedAnimals, hasLength(1));
+        expect(game.ownedAnimals.first.mutationId, 'golden');
+        expect(game.ownedAnimals.first.quantity, 1);
+        expect(game.questProgress.totalFusionAttempts, 1);
+        expect(game.questProgress.totalSuccessfulFusions, 1);
+      },
+    );
+
+    for (final scenario in [
+      ('golden', [0.5, 0.5]),
+      ('rainbow', [0.5, 0.05]),
+      (null, [0.9]),
+    ]) {
+      test('income preview matches ${scenario.$1 ?? 'failure'} outcome', () {
+        game.devSetOwnedAnimalsForTesting(const [
+          OwnedAnimal(
+            animalId: 'chicken',
+            quantity: 3,
+            level: 8,
+            mutationId: 'none',
+            sourceEggId: 'basic',
+          ),
+          OwnedAnimal(
+            animalId: 'chicken',
+            quantity: 2,
+            level: 4,
+            mutationId: 'golden',
+            sourceEggId: 'farm',
+          ),
+        ]);
+        final before = game.coinsPerSecond;
+        final source = game.ownedAnimals.first;
+        final preview = game.fusionIncomeChange(source, scenario.$1);
+        expect(game.coinsPerSecond, before);
+        expect(game.ownedAnimals.first.quantity, 3);
+        expect(game.questProgress.totalFusionAttempts, 0);
+        game.fuseAnimals(source, random: _valuesRandom(scenario.$2));
+        expect(preview, game.coinsPerSecond - before);
+      });
+    }
+
+    test('income preview refuses invalid results and protected sources', () {
+      expect(game.fusionIncomeChange(game.ownedAnimals.first, 'boss'), isNull);
+      game.devSetOwnedAnimalsForTesting(const [
+        OwnedAnimal(animalId: 'chicken', quantity: 2, isProtected: true),
+      ]);
+      expect(
+        game.fusionIncomeChange(game.ownedAnimals.first, 'golden'),
+        isNull,
+      );
     });
 
     test('failure removes both chickens with no output', () {

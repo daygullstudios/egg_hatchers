@@ -111,6 +111,11 @@ class _AnimalFusionPanelState extends State<AnimalFusionPanel> {
     );
     final successPct = (AnimalFusionLogic.successChance * 100).round();
     final failPct = (AnimalFusionLogic.failureChance * 100).round();
+    String incomeChange(String? mutationId) {
+      final change = widget.game.fusionIncomeChange(owned, mutationId);
+      if (change == null) return 'Income preview unavailable';
+      return 'Hatchery income: ${change >= 0 ? '+' : ''}$change coins/sec';
+    }
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -126,41 +131,60 @@ class _AnimalFusionPanelState extends State<AnimalFusionPanel> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Consumes 2 $inputName.',
-              style: TextStyle(color: widget.theme.cardTextSecondaryColor),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '$successPct% chance: $primaryName',
-              style: TextStyle(
-                color: widget.theme.cardTextPrimaryColor,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '$failPct% chance: Fusion fails and both are lost.',
-              style: TextStyle(
-                color: Colors.red.shade700,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (luckyName != null) ...[
-              const SizedBox(height: 6),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                'Rare lucky chance: $luckyName!',
+                'Consumes 2 $inputName.',
+                style: TextStyle(color: widget.theme.cardTextSecondaryColor),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '$successPct% chance: $primaryName',
                 style: TextStyle(
-                  color: Colors.amber.shade700,
+                  color: widget.theme.cardTextPrimaryColor,
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              const SizedBox(height: 6),
+              Text(
+                incomeChange(
+                  AnimalFusionLogic.primaryResultMutationId(owned.mutationId),
+                ),
+                style: TextStyle(color: widget.theme.cardTextSecondaryColor),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '$failPct% chance: Fusion fails and both are lost.',
+                style: TextStyle(
+                  color: Colors.red.shade700,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                incomeChange(null),
+                style: TextStyle(color: widget.theme.cardTextSecondaryColor),
+              ),
+              if (luckyName != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Rare lucky chance: $luckyName!',
+                  style: TextStyle(
+                    color: Colors.amber.shade700,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  incomeChange(
+                    AnimalFusionLogic.luckyResultMutationId(owned.mutationId),
+                  ),
+                  style: TextStyle(color: widget.theme.cardTextSecondaryColor),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
         actions: [
           TextButton.icon(

@@ -1,5 +1,21 @@
 # Nestarium Project Handoff
 
+## Retro eggs and fusion decisions (2026-10-24)
+
+All 15 Retro Pixel egg PNGs now use individually generated project artwork,
+including Boss and DayGull. See `docs/RETRO_EGG_ART.md` for prompt directions
+and the import record. Classic and Realistic egg files are unchanged.
+
+Fusion confirmation now previews the net hatchery coins/sec change for
+normal success, lucky success and failure. The preview and actual fusion
+share stack consumption/merge logic, including levels, source-egg mastery,
+rebirth multiplier and auto-battle income exclusions. Previewing never rolls
+odds or changes progress. The confirmation scrolls on narrow screens.
+
+Remaining enjoyment ideas include a successful-trade cosmetic achievement
+and optional rotating boss modifiers with repeatable cosmetic unlocks.
+Do not mark those complete or implement seasonal events implicitly.
+
 ## Hatchery showcase and collection cosmetics (2026-10-24)
 
 The hatchery now includes Your Nest: up to three owned favorite species,
