@@ -1,5 +1,22 @@
 # Nestarium Project Handoff
 
+## Hatchery showcase and collection cosmetics (2026-10-24)
+
+The hatchery now includes Your Nest: up to three owned favorite species,
+editable with the pencil button. Completing a built-in egg collection grants
+a permanent collector badge and an egg-art decoration. Existing collections
+are credited on load; badges and customization survive rebirth and use the
+normal per-account save/export/cloud payload. Animals no longer owned are
+filtered from the display. Locked DayGull content remains hidden.
+
+The next-collection goal selects the closest incomplete unlocked egg.
+Manual boss victories grant species mastery titles: Challenger at 1 win,
+Veteran at 10, Master at 25. Automatic battles do not grant this cosmetic
+mastery. Arena Adventurer recognizes a completed online arena battle.
+These features do not grant currency or change hatch odds. Existing hatch
+reveals, fusion previews, hard/nightmare boss variants and projectile feedback
+are retained. Seasonal events and timed rotating modifiers remain future work.
+
 Updated: 2026-09-08
 
 ## Normal manual-boss music sections

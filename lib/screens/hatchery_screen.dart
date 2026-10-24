@@ -20,6 +20,7 @@ import '../widgets/coin_header.dart';
 import '../widgets/game_background.dart';
 import '../widgets/game_primary_navigation.dart';
 import '../widgets/luck_panel.dart';
+import '../widgets/hatchery_showcase.dart';
 import '../widgets/owned_animal_list.dart';
 import '../widgets/phone_width_layout.dart';
 import '../widgets/quest_notification_listener.dart';
@@ -404,6 +405,13 @@ class _HatcheryScreenState extends State<HatcheryScreen> {
                       ),
                     ];
                     final production = <Widget>[
+                      HatcheryShowcase(
+                        game: game,
+                        theme: bg,
+                        customSprites: customSprites,
+                        onOpenCollection: _openCollection,
+                      ),
+                      const SizedBox(height: 14),
                       KeyedSubtree(
                         key: TutorialTargets.animalsSection,
                         child: Text(

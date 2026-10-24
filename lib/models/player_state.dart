@@ -57,6 +57,10 @@ class PlayerState {
     this.onlineArenaWinStreak = 0,
     this.onlineArenaBestStreak = 0,
     this.hostedSettlementReceipts = const [],
+    this.showcaseAnimalIds = const [],
+    this.showcaseDecoration = 'plain',
+    this.collectionBadges = const [],
+    this.animalMasteryWins = const {},
   });
 
   final int coins;
@@ -107,6 +111,10 @@ class PlayerState {
   final int onlineArenaWinStreak;
   final int onlineArenaBestStreak;
   final List<String> hostedSettlementReceipts;
+  final List<String> showcaseAnimalIds;
+  final String showcaseDecoration;
+  final List<String> collectionBadges;
+  final Map<String, int> animalMasteryWins;
 
   static PlayerState initial() {
     return PlayerState(
@@ -173,6 +181,10 @@ class PlayerState {
     int? onlineArenaWinStreak,
     int? onlineArenaBestStreak,
     List<String>? hostedSettlementReceipts,
+    List<String>? showcaseAnimalIds,
+    String? showcaseDecoration,
+    List<String>? collectionBadges,
+    Map<String, int>? animalMasteryWins,
   }) {
     return PlayerState(
       coins: coins ?? this.coins,
@@ -242,12 +254,15 @@ class PlayerState {
       onlineArenaRating: onlineArenaRating ?? this.onlineArenaRating,
       onlineArenaWins: onlineArenaWins ?? this.onlineArenaWins,
       onlineArenaLosses: onlineArenaLosses ?? this.onlineArenaLosses,
-      onlineArenaWinStreak:
-          onlineArenaWinStreak ?? this.onlineArenaWinStreak,
+      onlineArenaWinStreak: onlineArenaWinStreak ?? this.onlineArenaWinStreak,
       onlineArenaBestStreak:
           onlineArenaBestStreak ?? this.onlineArenaBestStreak,
       hostedSettlementReceipts:
           hostedSettlementReceipts ?? this.hostedSettlementReceipts,
+      showcaseAnimalIds: showcaseAnimalIds ?? this.showcaseAnimalIds,
+      showcaseDecoration: showcaseDecoration ?? this.showcaseDecoration,
+      collectionBadges: collectionBadges ?? this.collectionBadges,
+      animalMasteryWins: animalMasteryWins ?? this.animalMasteryWins,
     );
   }
 
@@ -306,6 +321,10 @@ class PlayerState {
     'onlineArenaWinStreak': onlineArenaWinStreak,
     'onlineArenaBestStreak': onlineArenaBestStreak,
     'hostedSettlementReceipts': hostedSettlementReceipts,
+    'showcaseAnimalIds': showcaseAnimalIds,
+    'showcaseDecoration': showcaseDecoration,
+    'collectionBadges': collectionBadges,
+    'animalMasteryWins': animalMasteryWins,
   };
 
   factory PlayerState.fromJson(Map<String, dynamic> json) {
@@ -402,6 +421,35 @@ class PlayerState {
       hostedSettlementReceipts: _settlementReceiptsFromJson(
         json['hostedSettlementReceipts'],
       ),
+      showcaseAnimalIds: (json['showcaseAnimalIds'] is List)
+          ? (json['showcaseAnimalIds'] as List)
+                .whereType<String>()
+                .toSet()
+                .take(3)
+                .toList()
+          : const [],
+      showcaseDecoration: json['showcaseDecoration'] is String
+          ? json['showcaseDecoration'] as String
+          : 'plain',
+      collectionBadges: json['collectionBadges'] is List
+          ? (json['collectionBadges'] as List)
+                .whereType<String>()
+                .toSet()
+                .take(100)
+                .toList()
+          : const [],
+      animalMasteryWins: json['animalMasteryWins'] is Map
+          ? {
+              for (final entry in (json['animalMasteryWins'] as Map).entries)
+                if (entry.key is String &&
+                    entry.value is num &&
+                    (entry.value as num).isFinite)
+                  entry.key as String: (entry.value as num).toInt().clamp(
+                    0,
+                    1000000,
+                  ),
+            }
+          : const {},
     );
   }
 

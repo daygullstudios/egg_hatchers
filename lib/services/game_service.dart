@@ -62,7 +62,22 @@ class GameService extends ChangeNotifier {
   set _state(PlayerState value) {
     // A late battle/dialog/timer callback must not change the held recovery
     // snapshot after saving has paused. Recovery commits bypass this setter.
-    if (!saveNeedsAttention) _playerState = value;
+    if (!saveNeedsAttention) {
+      final ids = value.ownedAnimals
+          .where((a) => a.quantity > 0)
+          .map((a) => a.animalId)
+          .toSet();
+      final badges = value.collectionBadges.toSet();
+      for (final egg in GameData.eggs) {
+        if (egg.possibleAnimalIds.isNotEmpty &&
+            egg.possibleAnimalIds.every(ids.contains)) {
+          badges.add(egg.id);
+        }
+      }
+      _playerState = badges.length == value.collectionBadges.length
+          ? value
+          : value.copyWith(collectionBadges: badges.toList());
+    }
   }
 
   Timer? _idleTimer;
@@ -91,6 +106,44 @@ class GameService extends ChangeNotifier {
 
   PlayerState get state => _state;
   bool get isInitialized => _isInitialized;
+
+  List<Egg> get completedCollectionEggs {
+    final ownedIds = ownedAnimals
+        .where((a) => a.quantity > 0)
+        .map((a) => a.animalId)
+        .toSet();
+    return visibleShopEggs
+        .where(
+          (egg) =>
+              _state.collectionBadges.contains(egg.id) ||
+              (egg.possibleAnimalIds.isNotEmpty &&
+                  egg.possibleAnimalIds.every(ownedIds.contains)),
+        )
+        .toList();
+  }
+
+  bool setHatcheryShowcase(List<String> animalIds, String decoration) {
+    if (!_progressWritesAllowed || saveNeedsAttention || _pausedForImport) {
+      return false;
+    }
+    final ownedIds = ownedAnimals
+        .where((a) => a.quantity > 0)
+        .map((a) => a.animalId)
+        .toSet();
+    final selected = animalIds.toSet().toList();
+    if (selected.length > 3 || !selected.every(ownedIds.contains)) return false;
+    if (decoration != 'plain' &&
+        !completedCollectionEggs.any((egg) => egg.id == decoration)) {
+      return false;
+    }
+    _state = _state.copyWith(
+      showcaseAnimalIds: selected,
+      showcaseDecoration: decoration,
+    );
+    notifyListeners();
+    _saveQuietly();
+    return true;
+  }
 
   static Mutation _mutationFor(OwnedAnimal owned) {
     return GameData.mutationById(owned.mutationId) ?? GameData.mutations.first;
@@ -1068,6 +1121,10 @@ class GameService extends ChangeNotifier {
       rottenShellFinalBattleTutorialCompleted:
           rottenShellFinalBattleTutorialCompleted,
       eggMastery: eggMastery,
+      showcaseAnimalIds: _state.showcaseAnimalIds,
+      showcaseDecoration: _state.showcaseDecoration,
+      collectionBadges: _state.collectionBadges,
+      animalMasteryWins: _state.animalMasteryWins,
     );
     _pendingQuestNotification = null;
     _pendingMasteryNotifications.clear();
@@ -1817,6 +1874,7 @@ class GameService extends ChangeNotifier {
     String? rewardAnimalId,
     bool isManualBattle = true,
     int livesLostThisBattle = 0,
+    String? masteryAnimalId,
   }) {
     var progress = _state.questProgress;
     if (result.won) {
@@ -1838,6 +1896,19 @@ class GameService extends ChangeNotifier {
       notifyListeners();
       save();
       return null;
+    }
+
+    if (isManualBattle &&
+        masteryAnimalId != null &&
+        _state.ownedAnimals.any(
+          (a) => a.animalId == masteryAnimalId && a.quantity > 0,
+        )) {
+      final wins = Map<String, int>.from(_state.animalMasteryWins);
+      wins[masteryAnimalId] = ((wins[masteryAnimalId] ?? 0) + 1).clamp(
+        0,
+        1000000,
+      );
+      _state = _state.copyWith(animalMasteryWins: wins);
     }
 
     final wins = Map<String, int>.from(_state.bossWins);

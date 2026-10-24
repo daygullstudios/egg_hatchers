@@ -985,6 +985,7 @@ class _ManualBossBattleScreenState extends State<ManualBossBattleScreen>
       mode: _won ? _mode : ManualBattleMode.normal,
       rewardAnimalId: _won ? boss.rewardAnimalId : null,
       livesLostThisBattle: _livesLostThisBattle,
+      masteryAnimalId: widget.fighter.animalId,
     );
     _dayGullUnlockPending = dayGullUnlocksNow;
     _earnedRewardAnimalName = grant?.displayName;
