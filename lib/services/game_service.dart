@@ -19,6 +19,7 @@ import '../models/boss_reward_grant.dart';
 import '../models/daily_quest_progress.dart';
 import '../utils/daily_system_logic.dart';
 import '../utils/animal_fusion_logic.dart';
+import '../utils/halloween_fusion_logic.dart';
 import '../utils/battle_upgrade_logic.dart';
 import '../utils/luck_logic.dart';
 import '../models/mutation.dart';
@@ -47,13 +48,16 @@ class GameService extends ChangeNotifier {
     SaveService? saveService,
     Random? random,
     SaveService Function(String?)? saveFactory,
+    DateTime Function()? clock,
   }) : _saveService = saveService ?? SaveService(),
        _saveFactory = saveFactory ?? ((id) => SaveService(accountId: id)),
-       _random = random ?? Random();
+       _random = random ?? Random(),
+       _clock = clock ?? DateTime.now;
 
   SaveService _saveService;
   final SaveService Function(String?) _saveFactory;
   final Random _random;
+  final DateTime Function() _clock;
   String? _activeAccountId;
   void Function(String? accountId)? onProgressSaved;
 
@@ -2273,7 +2277,94 @@ class GameService extends ChangeNotifier {
     inBattle: isOwnedStackAutoBattling(source),
   );
 
-  /// Combines 2 copies of the same animal/mutation with an 80% success chance.
+  bool get halloweenFusionActive => HalloweenFusionLogic.isActive(_clock());
+
+  bool canUseInRandomFusion(OwnedAnimal stack) =>
+      stack.quantity > 0 &&
+      !stack.isProtected &&
+      !stack.isEliteReward &&
+      !stack.isSecretReward &&
+      !isOwnedStackAutoBattling(stack);
+
+  List<OwnedAnimal>? _randomFusionInputs(List<OwnedAnimal> selections) {
+    if (selections.length != HalloweenFusionLogic.inputCount) return null;
+    final counts = <int, int>{};
+    final resolved = <OwnedAnimal>[];
+    for (final selection in selections) {
+      final index = _indexOfOwnedStack(
+        _state.ownedAnimals,
+        selection.animalId,
+        selection.mutationId,
+        isProtected: selection.isProtected,
+      );
+      if (index < 0) return null;
+      final actual = _state.ownedAnimals[index];
+      final count = (counts[index] ?? 0) + 1;
+      if (!canUseInRandomFusion(actual) || count > actual.quantity) return null;
+      counts[index] = count;
+      resolved.add(actual.copyWith(quantity: 1));
+    }
+    return resolved;
+  }
+
+  int? randomFusionPower(List<OwnedAnimal> selections) {
+    final inputs = _randomFusionInputs(selections);
+    if (inputs == null) return null;
+    var income = 0;
+    for (final stack in inputs) {
+      final animal = GameData.animalById(stack.animalId);
+      if (animal == null) return null;
+      income += incomeFor(animal, stack);
+    }
+    return income;
+  }
+
+  Animal? randomFuseAnimals(List<OwnedAnimal> selections) {
+    if (!halloweenFusionActive ||
+        !_progressWritesAllowed ||
+        _pausedForImport ||
+        saveNeedsAttention) {
+      return null;
+    }
+    final inputs = _randomFusionInputs(selections);
+    final power = randomFusionPower(selections);
+    if (inputs == null || power == null) return null;
+    final rewardId = HalloweenFusionLogic.roll(power, _random);
+    final updated = List<OwnedAnimal>.from(_state.ownedAnimals);
+    for (final input in inputs) {
+      final index = _indexOfOwnedStack(
+        updated,
+        input.animalId,
+        input.mutationId,
+        isProtected: input.isProtected,
+      );
+      final stack = updated[index];
+      if (stack.quantity == 1) {
+        updated.removeAt(index);
+      } else {
+        updated[index] = stack.copyWith(quantity: stack.quantity - 1);
+      }
+    }
+    final outputIndex = _indexOfOwnedStack(
+      updated,
+      rewardId,
+      'none',
+      isProtected: false,
+    );
+    if (outputIndex < 0) {
+      updated.add(OwnedAnimal(animalId: rewardId, quantity: 1));
+    } else {
+      final output = updated[outputIndex];
+      updated[outputIndex] = output.copyWith(quantity: output.quantity + 1);
+    }
+    _state = _state.copyWith(ownedAnimals: updated);
+    _refreshQuestNotifications();
+    notifyListeners();
+    _saveQuietly();
+    return GameData.animalById(rewardId);
+  }
+
+  /// Stack transformation shared by the preview and ordinary fusion.
   List<OwnedAnimal> _animalsAfterFusion(
     OwnedAnimal stack,
     String? outputMutationId,

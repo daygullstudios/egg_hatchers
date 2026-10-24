@@ -465,7 +465,37 @@ class GameData {
       emoji: '🔥🐦‍🔥',
       spritePath: EliteBossSpritePaths.shadowPhoenix,
     ),
+    Animal(
+      id: 'pumpkin_prowler',
+      name: 'Pumpkin Prowler',
+      rarity: Rarity.rare,
+      coinsPerSecond: 40,
+      emoji: '🎃',
+      spritePath: 'assets/images/animals/pumpkin_prowler.png',
+    ),
+    Animal(
+      id: 'lantern_wraith',
+      name: 'Lantern Wraith',
+      rarity: Rarity.legendary,
+      coinsPerSecond: 4000,
+      emoji: '🦉',
+      spritePath: 'assets/images/animals/lantern_wraith.png',
+    ),
+    Animal(
+      id: 'count_nocturne',
+      name: 'Count Nocturne',
+      rarity: Rarity.mythic,
+      coinsPerSecond: 400000,
+      emoji: '🦌',
+      spritePath: 'assets/images/animals/count_nocturne.png',
+    ),
   ];
+
+  static const fusionExclusiveAnimalIds = {
+    'pumpkin_prowler',
+    'lantern_wraith',
+    'count_nocturne',
+  };
 
   /// Boss victory rewards are not hatchable and excluded from collection quest totals.
   static const bossVictoryRewardAnimalIds = {
@@ -481,7 +511,8 @@ class GameData {
   static Iterable<Animal> get collectionQuestAnimals => animals.where(
     (animal) =>
         !bossVictoryRewardAnimalIds.contains(animal.id) &&
-        !postRottenShellSecretAnimalIds.contains(animal.id),
+        !postRottenShellSecretAnimalIds.contains(animal.id) &&
+        !fusionExclusiveAnimalIds.contains(animal.id),
   );
 
   static const mutations = <Mutation>[

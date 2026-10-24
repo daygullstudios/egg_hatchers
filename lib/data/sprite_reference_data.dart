@@ -1,4 +1,5 @@
 import '../models/custom_sprite_data.dart';
+import 'halloween_sprite_references.dart';
 
 /// Pre-baked 16×16 reference grids for built-in animal PNG sprites.
 /// Generated from polished sprites — run tool/generate_sprite_references.dart
@@ -9,6 +10,7 @@ class SpriteReferenceData {
   static const int referenceVersion = 2;
 
   static const Map<String, CustomSpriteData> references = {
+    ...halloweenSpriteReferences,
     'chicken': CustomSpriteData(
       pixels: [
         null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,

@@ -63,6 +63,23 @@ class ArenaAbilityData {
   );
 
   static const _loadouts = <String, ArenaAbilityLoadout>{
+    'pumpkin_prowler': ArenaAbilityLoadout(
+      quickName: 'Pumpkin Pounce',
+      techniqueName: 'Harvest Hiss',
+      signatureName: 'Jack-o-Lantern Rush',
+    ),
+    'lantern_wraith': ArenaAbilityLoadout(
+      quickName: 'Lantern Flicker',
+      techniqueName: 'Ghostlight Guard',
+      signatureName: 'Wraithlight Tempest',
+      techniqueEffect: ArenaAbilityEffect.shield,
+    ),
+    'count_nocturne': ArenaAbilityLoadout(
+      quickName: 'Nocturne Charge',
+      techniqueName: 'Crimson Antlers',
+      signatureName: 'Midnight Coronation',
+      signatureEffect: ArenaAbilityEffect.drain,
+    ),
     'chicken': ArenaAbilityLoadout(
       quickName: 'Chicken Scratch',
       techniqueName: 'Wing Slap',

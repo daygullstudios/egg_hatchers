@@ -352,7 +352,7 @@ void main() {
         );
       }
     }
-    expect(GameData.animals.length, 54);
+    expect(GameData.animals.length, 57);
     expect(GameData.eggs.length, 14);
   });
 

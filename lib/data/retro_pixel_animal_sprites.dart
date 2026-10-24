@@ -46,7 +46,9 @@ class RetroPixelAnimalSprites {
   static Set<String> get supportedAnimalIds =>
       GameData.animals.map((animal) => animal.id).toSet();
 
-  static bool hasSprite(String animalId) => _sprites.containsKey(animalId);
+  static bool hasSprite(String animalId) =>
+      _sprites.containsKey(animalId) ||
+      GameData.fusionExclusiveAnimalIds.contains(animalId);
 
   static RetroPixelSpriteDefinition? spriteFor(String animalId) =>
       _sprites[animalId];

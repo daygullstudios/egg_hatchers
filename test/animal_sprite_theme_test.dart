@@ -301,6 +301,13 @@ void main() {
         isTrue,
         reason: 'missing retro pixel sprite for ${animal.id}',
       );
+      if (GameData.fusionExclusiveAnimalIds.contains(animal.id)) {
+        expect(
+          File(RetroPixelAnimalSprites.assetPathFor(animal.id)!).existsSync(),
+          isTrue,
+        );
+        continue;
+      }
       final sprite = RetroPixelAnimalSprites.spriteFor(animal.id)!;
       expect(sprite.hasVisiblePixels, isTrue);
       expect(sprite.width, greaterThanOrEqualTo(48));
@@ -323,8 +330,9 @@ void main() {
     }
   });
 
-  test('Every built-in animal uses native64 Retro Pixel art', () {
+  test('Legacy catalog retains native64 fallback grids', () {
     for (final animal in GameData.animals) {
+      if (GameData.fusionExclusiveAnimalIds.contains(animal.id)) continue;
       final sprite = RetroPixelAnimalSprites.spriteFor(animal.id)!;
       expect(sprite.width, 64, reason: animal.id);
       expect(sprite.height, 64, reason: animal.id);
@@ -342,7 +350,7 @@ void main() {
 
     expect(
       RetroPixelNative64Sprites.native64Ids.length,
-      GameData.animals.length,
+      GameData.animals.length - GameData.fusionExclusiveAnimalIds.length,
     );
   });
 

@@ -1,5 +1,41 @@
 # Nestarium Project Handoff
 
+## Halloween random fusion (2026-10-24)
+
+User approved an event-only four-input random fusion machine for October 24
+through November 2, 2026 inclusive (UTC; ends November 3 at 00:00 UTC).
+It is in Collection > Fusion alongside normal same-species mutation fusion.
+Any available, unprotected species/mutation can be selected, including repeated
+copies. Four pets are consumed atomically for one normal-mutation exclusive pet:
+Pumpkin Prowler (40 base coins/sec), Lantern Wraith (4,000), or Count Nocturne
+(400,000). All three have Classic, Retro Pixel, and Realistic sprites and unique
+arena abilities. They never enter egg drop tables or permanent collection-quest
+requirements. Saved pets remain usable after the event closes.
+
+Power sums the four actual owned pets' base income, mutation, and level;
+it excludes rebirth, egg mastery and temporary global bonuses. The UI displays
+the exact weighted outcome probabilities before a destructive confirmation.
+Mid/high rewards require 4,000/400,000 total input income respectively, with
+increasing odds above those gates. The service rechecks quantity, protection,
+auto-battle assignments, save-write availability, and the date on submission.
+The event clock is local like the existing offline economy; this is not a
+server-authoritative anti-clock-tampering claim. Hosted online inventories
+remain separate and are not credited from a client fusion result.
+
+Art provenance: built-in image generation, nine individually generated images.
+Original character prompts: pumpkin-armored green-eyed black cat; mint-glowing
+antique lantern barn owl; black vampire stag with silver antlers, crimson collar
+and three pumpkin charms. Classic requested flat 2D cartoon outlines and minimal
+shading. Retro requested deliberate 16-bit pixel clusters and stepped outlines.
+Realistic requested detailed fur/feathers and physically believable materials.
+Variants referenced the new project-owned Classic images, not external art.
+Production sizes: Classic 256, Retro 128 nearest-neighbor, Realistic 512 pixels.
+
+The multiplayer catalog adds only the three new pets. Existing hosted income
+values were preserved: the current generator would also pull in unrelated
+offline economy changes for older pets. Review that older catalog drift
+separately before regenerating the full hosted catalog.
+
 ## Retro eggs and fusion decisions (2026-10-24)
 
 All 15 Retro Pixel egg PNGs now use individually generated project artwork,

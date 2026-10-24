@@ -5,6 +5,9 @@ class RealisticAnimalSprites {
   static const assetDirectory = 'assets/images/animal_themes/realistic';
 
   static const supportedAnimalIds = {
+    'pumpkin_prowler',
+    'lantern_wraith',
+    'count_nocturne',
     'chicken',
     'mouse',
     'rabbit',

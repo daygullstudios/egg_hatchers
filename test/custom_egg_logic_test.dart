@@ -341,7 +341,11 @@ void main() {
       'egg_guardian',
       'shadow_phoenix',
     ]);
-    expect(ids.last, 'shadow_phoenix');
+    expect(ids.sublist(54), [
+      'pumpkin_prowler',
+      'lantern_wraith',
+      'count_nocturne',
+    ]);
   });
 
   test('hatchable animals exclude locked selections for shop', () {

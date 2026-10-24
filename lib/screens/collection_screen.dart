@@ -15,6 +15,7 @@ import '../navigation/app_page_route.dart';
 import '../widgets/tutorial_screen_bindings.dart';
 import '../widgets/tutorial_targets.dart';
 import '../widgets/animal_fusion_panel.dart';
+import '../widgets/halloween_fusion_panel.dart';
 import '../widgets/game_background.dart';
 import '../widgets/game_primary_navigation.dart';
 import '../widgets/owned_animal_list.dart';
@@ -380,12 +381,21 @@ class _CollectionScreenState extends State<CollectionScreen> {
                         Expanded(
                           child: _mode == _CollectionMode.fusion
                               ? SingleChildScrollView(
-                                  child: AnimalFusionPanel(
-                                    game: game,
-                                    theme: bg,
-                                    customSprites: customSprites,
-                                    tutorialSectionKey:
-                                        TutorialTargets.fusionSection,
+                                  child: Column(
+                                    children: [
+                                      HalloweenFusionPanel(
+                                        key: ValueKey(game.activeAccountId),
+                                        game: game,
+                                        theme: bg,
+                                      ),
+                                      AnimalFusionPanel(
+                                        game: game,
+                                        theme: bg,
+                                        customSprites: customSprites,
+                                        tutorialSectionKey:
+                                            TutorialTargets.fusionSection,
+                                      ),
+                                    ],
                                   ),
                                 )
                               : game.ownedAnimals.isEmpty

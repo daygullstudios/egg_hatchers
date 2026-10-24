@@ -14,9 +14,9 @@ need owner confirmation before the release checklist item can be closed.
 
 The current Flutter asset bundle includes these media roots:
 
-- `assets/images/animals/` - 51 files.
-- `assets/images/animal_themes/retro_pixel/` - 54 files.
-- `assets/images/animal_themes/realistic/` - 55 files.
+- `assets/images/animals/` - 54 files.
+- `assets/images/animal_themes/retro_pixel/` - 57 files.
+- `assets/images/animal_themes/realistic/` - 58 files.
 - `assets/images/eggs/` - 30 files.
 - `assets/images/egg_themes/retro_pixel/` - 15 files.
 - `assets/images/egg_themes/realistic/` - 16 files.
@@ -29,6 +29,10 @@ The current Flutter asset bundle includes these media roots:
 - `assets/sounds/sfx/` - 31 files.
 
 ## Image source records
+
+- Halloween fusion pets were generated with the built-in image tool in three
+  separate styles from original project character designs. Prompts and import
+  details are recorded in `PROJECT_HANDOFF.md` (Halloween random fusion).
 
 - `assets/images/ui/app_logo.png` and the platform branding source derive from
   `assets/branding/nestarium_source.png`. The prompt and generation record live

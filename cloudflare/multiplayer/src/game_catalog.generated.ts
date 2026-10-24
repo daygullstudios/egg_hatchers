@@ -1405,6 +1405,84 @@ export const animalCatalog = {
         "effectScale": 0.0
       }
     ]
+  },
+  "pumpkin_prowler": {
+    "coinsPerSecond": 40,
+    "abilities": [
+      {
+        "name": "Pumpkin Pounce",
+        "energyCost": 2,
+        "damageScale": 1,
+        "effect": "damage",
+        "effectScale": 0
+      },
+      {
+        "name": "Harvest Hiss",
+        "energyCost": 4,
+        "damageScale": 1.55,
+        "effect": "damage",
+        "effectScale": 0
+      },
+      {
+        "name": "Jack-o-Lantern Rush",
+        "energyCost": 7,
+        "damageScale": 2.45,
+        "effect": "damage",
+        "effectScale": 0
+      }
+    ]
+  },
+  "lantern_wraith": {
+    "coinsPerSecond": 4000,
+    "abilities": [
+      {
+        "name": "Lantern Flicker",
+        "energyCost": 2,
+        "damageScale": 1,
+        "effect": "damage",
+        "effectScale": 0
+      },
+      {
+        "name": "Ghostlight Guard",
+        "energyCost": 4,
+        "damageScale": 0.8,
+        "effect": "shield",
+        "effectScale": 0.85
+      },
+      {
+        "name": "Wraithlight Tempest",
+        "energyCost": 7,
+        "damageScale": 2.45,
+        "effect": "damage",
+        "effectScale": 0
+      }
+    ]
+  },
+  "count_nocturne": {
+    "coinsPerSecond": 400000,
+    "abilities": [
+      {
+        "name": "Nocturne Charge",
+        "energyCost": 2,
+        "damageScale": 1,
+        "effect": "damage",
+        "effectScale": 0
+      },
+      {
+        "name": "Crimson Antlers",
+        "energyCost": 4,
+        "damageScale": 1.55,
+        "effect": "damage",
+        "effectScale": 0
+      },
+      {
+        "name": "Midnight Coronation",
+        "energyCost": 7,
+        "damageScale": 1.75,
+        "effect": "drain",
+        "effectScale": 4
+      }
+    ]
   }
 } as const;
 
