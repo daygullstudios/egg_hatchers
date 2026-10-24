@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:image/image.dart' as image;
 
 void main(List<String> args) {
-  if (args.length != 3) {
+  if (args.length != 3 && args.length != 4) {
     stderr.writeln(
-      'Usage: dart run tool/resize_transparent_asset.dart <input> <output> <size>',
+      'Usage: dart run tool/resize_transparent_asset.dart <input> <output> <size> [pixel]',
     );
     exitCode = 64;
     return;
@@ -23,7 +23,9 @@ void main(List<String> args) {
     source,
     width: size,
     height: size,
-    interpolation: image.Interpolation.cubic,
+    interpolation: args.length == 4 && args[3] == 'pixel'
+        ? image.Interpolation.nearest
+        : image.Interpolation.cubic,
   );
   File(args[1])
     ..createSync(recursive: true)

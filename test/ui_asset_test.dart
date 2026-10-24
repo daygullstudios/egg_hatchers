@@ -18,6 +18,21 @@ const _releaseImageDirectories = [
 ];
 
 void main() {
+  test('retro eggs have compact transparent pixel canvases', () {
+    final files = Directory(
+      'assets/images/egg_themes/retro_pixel',
+    ).listSync().whereType<File>().where((f) => f.path.endsWith('.png'));
+    expect(files.length, 15);
+    for (final file in files) {
+      final sprite = img.decodePng(file.readAsBytesSync())!;
+      expect(sprite.width, 128, reason: file.path);
+      expect(sprite.height, 128, reason: file.path);
+      expect(sprite.any((p) => p.a == 0), isTrue, reason: file.path);
+      expect(sprite.any((p) => p.a > 0), isTrue, reason: file.path);
+      expect(file.lengthSync(), lessThan(64 * 1024), reason: file.path);
+    }
+  });
+
   test('app logo and install icons stay valid and release-sized', () {
     const expectedSizes = {
       'assets/images/ui/app_logo.png': 512,
@@ -54,7 +69,8 @@ void main() {
       final directory = Directory(directoryPath);
       expect(directory.existsSync(), isTrue, reason: directoryPath);
 
-      for (final file in directory.listSync(recursive: true).whereType<File>()) {
+      for (final file
+          in directory.listSync(recursive: true).whereType<File>()) {
         final path = file.path.replaceAll(r'\', '/');
         if (path.split('/').last.startsWith('.')) continue;
 
@@ -65,11 +81,7 @@ void main() {
           isNot(contains('placeholder')),
           reason: path,
         );
-        expect(
-          path.toLowerCase(),
-          isNot(contains('reference')),
-          reason: path,
-        );
+        expect(path.toLowerCase(), isNot(contains('reference')), reason: path);
 
         final image = img.decodeImage(file.readAsBytesSync());
         expect(image, isNotNull, reason: path);
